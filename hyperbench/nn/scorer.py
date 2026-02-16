@@ -89,7 +89,7 @@ class CommonNeighborsScorer(NeighborScorer):
             hyperedge_score = self.score(node_ids, node_to_neighbors)
             scores.append(hyperedge_score)
 
-        return torch.tensor(scores, dtype=torch.float32)
+        return torch.tensor(scores, dtype=torch.float32, device=hyperedge_index.device)
 
     def __to_score_by_aggregation(self, pairwise_counts: List[int]) -> float:
         if not pairwise_counts:
