@@ -81,7 +81,7 @@ class CommonNeighborsHlpModule(HlpModule):
         Returns:
             The computed loss.
         """
-        scores = self.decoder(batch.edge_index, self.node_to_neighbors)
+        scores: Tensor = self.decoder(batch.edge_index, self.node_to_neighbors)
         labels = batch.y
         batch_size = batch.num_nodes
 
