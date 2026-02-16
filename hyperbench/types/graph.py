@@ -24,7 +24,7 @@ class Graph:
         """Return the number of edges in the graph."""
         return len(self.edges)
 
-    def remove_selfloops(self):
+    def remove_selfloops(self) -> "Graph":
         """
         Remove self-loops from the graph.
 
@@ -32,7 +32,7 @@ class Graph:
             List of edges without self-loops.
         """
         if self.num_edges == 0:
-            return
+            return self
 
         graph_edges_tensor = torch.tensor(self.edges, dtype=torch.long)
 
@@ -44,6 +44,7 @@ class Graph:
         #                                         [2, 3]]
         no_selfloop_mask = graph_edges_tensor[:, 0] != graph_edges_tensor[:, 1]
         self.edges = graph_edges_tensor[no_selfloop_mask].tolist()
+        return self
 
     def to_edge_index(self) -> Tensor:
         """
@@ -91,8 +92,8 @@ class EdgeIndex:
     Edge index is a tensor of shape (2, |E|) where the first row contains source node indices and the second row contains destination node indices for each edge.
 
     Example:
-        edge_index = [[0, 1, 2],
-                      [1, 0, 3]]
+        >>> edge_index = [[0, 1, 2],
+        >>>               [1, 0, 3]]
 
         This represents a graph with edges (0, 1), (1, 0), and (2, 3).
         The number of nodes in this graph is 4 (nodes 0, 1, 2, and 3) and the number of edges is 3.
@@ -120,15 +121,15 @@ class EdgeIndex:
             return 0
         return int(self.__edge_index.max().item()) + 1
 
-    def add_selfloops(self, with_duplicate_removal: bool = True) -> None:
-        r"""
+    def add_selfloops(self, with_duplicate_removal: bool = True) -> "EdgeIndex":
+        """
         Add self-loops to each node in the edge index.
 
         Example:
-            edge_index = [[0, 1, 2],
-                          [1, 0, 3]]
-            edge_index_with_selfloops = [[0, 1, 2, 0, 1, 2, 3],
-                                         [1, 0, 3, 0, 1, 2, 3]]
+            >>> edge_index = [[0, 1, 2],
+            >>>               [1, 0, 3]]
+            >>> edge_index_with_selfloops = [[0, 1, 2, 0, 1, 2, 3],
+            >>>                              [1, 0, 3, 0, 1, 2, 3]]
 
         Args:
             with_duplicate_removal: Whether to remove duplicate edges after adding self-loops. Defaults to ``True``.
@@ -151,6 +152,8 @@ class EdgeIndex:
         self.__edge_index = edge_index_with_selfloops
         if with_duplicate_removal:
             self.remove_duplicate_edges()
+
+        return self
 
     def get_sparse_adjacency_matrix(self, num_nodes: Optional[int] = None) -> Tensor:
         """
@@ -274,7 +277,7 @@ class EdgeIndex:
         )
         return normalized_laplacian_matrix.coalesce()
 
-    def remove_duplicate_edges(self) -> None:
+    def remove_duplicate_edges(self) -> "EdgeIndex":
         """Remove duplicate edges from the edge index."""
         # Example: edge_index = [[0, 1, 2, 2, 0, 3, 2],
         #                        [1, 0, 3, 2, 1, 2, 2]], shape (2, |E| = 7)
@@ -282,8 +285,9 @@ class EdgeIndex:
         #             edge_index = [[0, 1, 2, 2, 3],
         #                           [1, 0, 3, 2, 2]], shape (2, |E'| = 5)
         self.__edge_index = torch.unique(self.__edge_index, dim=1)
+        return self
 
-    def to_undirected(self, with_selfloops: bool = False) -> None:
+    def to_undirected(self, with_selfloops: bool = False) -> "EdgeIndex":
         """
         Convert the edge index to an undirected edge index by adding reverse edges.
 
@@ -313,3 +317,5 @@ class EdgeIndex:
             self.add_selfloops(with_duplicate_removal=False)
 
         self.remove_duplicate_edges()
+
+        return self
