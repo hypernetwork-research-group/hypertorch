@@ -1,6 +1,7 @@
 import torch
 
 from torch import Tensor
+from typing import Optional
 
 
 def empty_nodefeatures() -> Tensor:
@@ -20,27 +21,32 @@ def to_non_empty_edgeattr(edge_attr: Tensor | None) -> Tensor:
     return empty_edgeattr(num_edges) if edge_attr is None else edge_attr
 
 
-def to_0based_ids(original_ids: Tensor, ids_to_keep: Tensor, n: int) -> Tensor:
+def to_0based_ids(original_ids: Tensor, ids_to_rebase: Optional[Tensor] = None) -> Tensor:
     """
-    Map original IDs to 0-based ids.
+    Remap IDs to contiguous 0-based indices.
+
+    If ``ids_to_rebase`` is provided, only IDs present in it are kept and remapped.
+    If ``ids_to_rebase`` is not provided, all unique IDs in ``original_ids`` are remapped.
 
     Example:
-        original_ids: [1, 3, 3, 7]
-        ids_to_keep: [3, 7]
-        n = 8                            # total number of elements (nodes or edges) in the original hypergraph
-        Returned 0-based IDs: [0, 0, 1]  # the size is sum of occurrences of ids_to_keep in original_ids
+        >>> to_0based_ids(torch.tensor([1, 3, 3, 7]), torch.tensor([3, 7]))
+        tensor([0, 0, 1])  # 1 is excluded, 3 -> 0, 7 -> 1
+
+        >>> to_0based_ids(torch.tensor([5, 3, 5, 8]))
+        tensor([1, 0, 1, 2])  # 3 -> 0, 5 -> 1, 8 -> 2
 
     Args:
         original_ids: Tensor of original IDs.
-        ids_to_keep: List of selected original IDs to be mapped to 0-based.
-        n: Total number of original IDs.
+        ids_to_rebase: Optional tensor of IDs to keep and remap. If None, all unique IDs are used.
 
     Returns:
-        Tensor of 0-based ids.
+        Tensor of 0-based IDs.
     """
-    device = original_ids.device
+    if ids_to_rebase is None:
+        sorted_unique_original_ids = original_ids.unique(sorted=True)
+        return torch.searchsorted(sorted_unique_original_ids, original_ids)
 
-    id_to_0based_id = torch.zeros(n, dtype=torch.long, device=device)
-    n_ids_to_keep = len(ids_to_keep)
-    id_to_0based_id[ids_to_keep] = torch.arange(n_ids_to_keep, device=device)
-    return id_to_0based_id[original_ids]
+    keep_mask = torch.isin(original_ids, ids_to_rebase)
+    ids_to_keep = original_ids[keep_mask]
+    sorted_unique_ids_to_rebase = ids_to_rebase.unique(sorted=True)
+    return torch.searchsorted(sorted_unique_ids_to_rebase, ids_to_keep)

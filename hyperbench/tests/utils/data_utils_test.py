@@ -1,3 +1,4 @@
+import pytest
 import torch
 
 from hyperbench.utils import (
@@ -5,6 +6,7 @@ from hyperbench.utils import (
     empty_edgeindex,
     empty_edgeattr,
     to_non_empty_edgeattr,
+    to_0based_ids,
 )
 
 
@@ -67,3 +69,32 @@ def test_empty_nodefeatures():
     result = empty_nodefeatures()
 
     assert result.shape == (0, 0)
+
+
+@pytest.mark.parametrize(
+    "original_ids, ids_to_rebase, expected_result",
+    [
+        pytest.param(
+            torch.tensor([1, 3, 3, 7]),
+            torch.tensor([3, 7]),
+            torch.tensor([0, 0, 1]),
+            id="with_ids_to_rebase",
+        ),
+        pytest.param(
+            torch.tensor([1, 3, 3, 7]),
+            torch.tensor([1, 3, 7]),
+            torch.tensor([0, 1, 1, 2]),
+            id="with_ids_to_rebase_all",
+        ),
+        pytest.param(
+            torch.tensor([5, 3, 5, 8]),
+            None,
+            torch.tensor([1, 0, 1, 2]),
+            id="without_ids_to_rebase",
+        ),
+    ],
+)
+def test_to_0based_ids(original_ids, ids_to_rebase, expected_result):
+    result = to_0based_ids(original_ids, ids_to_rebase)
+
+    assert torch.equal(result, expected_result)
