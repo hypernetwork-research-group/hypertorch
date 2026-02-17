@@ -69,10 +69,10 @@ class DataLoader(TorchDataLoader):
 
         batched_data = HData(
             x=x,
-            edge_index=hyperedge_index,
-            edge_attr=hyperedge_attr,
+            hyperedge_index=hyperedge_index,
+            hyperedge_attr=hyperedge_attr,
             num_nodes=total_nodes,
-            num_edges=total_hyperedges,
+            num_hyperedges=total_hyperedges,
             y=y,
         )
 
@@ -146,15 +146,15 @@ class DataLoader(TorchDataLoader):
 
         for data in batch:
             # Offset nodes and hyperedge IDs (indices) in hyperedge_index
-            offset_hyperedge_index = data.edge_index.clone()
+            offset_hyperedge_index = data.hyperedge_index.clone()
             offset_hyperedge_index[0] += node_offset
             offset_hyperedge_index[1] += hyperedge_offset
             hyperedge_indexes.append(offset_hyperedge_index)
 
-            if data.edge_attr is not None:
-                hyperedge_attrs.append(data.edge_attr)
+            if data.hyperedge_attr is not None:
+                hyperedge_attrs.append(data.hyperedge_attr)
 
-            hyperedge_offset += data.num_edges
+            hyperedge_offset += data.num_hyperedges
             node_offset += data.num_nodes
 
         # Concatenate all hyperedge_index tensors along the incidence dimension, so that we get a shape of (2, total_hyperedges)

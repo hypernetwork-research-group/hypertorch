@@ -3,7 +3,7 @@ import torch
 
 from hyperbench.utils import (
     empty_nodefeatures,
-    empty_edgeindex,
+    empty_hyperedgeindex,
     empty_edgeattr,
     to_non_empty_edgeattr,
     to_0based_ids,
@@ -11,7 +11,7 @@ from hyperbench.utils import (
 
 
 def test_empty_edgeindex():
-    result = empty_edgeindex()
+    result = empty_hyperedgeindex()
 
     assert result.shape == (2, 0)
     assert result.dtype == torch.float32

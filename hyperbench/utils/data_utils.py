@@ -8,7 +8,7 @@ def empty_nodefeatures() -> Tensor:
     return torch.empty((0, 0))
 
 
-def empty_edgeindex() -> Tensor:
+def empty_hyperedgeindex() -> Tensor:
     return torch.empty((2, 0))
 
 

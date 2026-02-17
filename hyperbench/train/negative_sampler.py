@@ -188,7 +188,7 @@ class RandomNegativeSampler(NegativeSampler):
         sampled_hyperedge_indexes: List[Tensor] = []
         sampled_hyperedge_attrs: List[Tensor] = []
 
-        new_hyperedge_id_offset = data.num_edges
+        new_hyperedge_id_offset = data.num_hyperedges
         for new_hyperedge_id in range(self.num_negative_samples):
             # Sample with multinomial without replacement to ensure unique node ids
             # and assign each node id equal probability of being selected by setting all of them to 1
@@ -219,8 +219,8 @@ class RandomNegativeSampler(NegativeSampler):
             #          -> negative_node_ids = {0, 1, 2}
             negative_node_ids.update(sampled_node_ids.tolist())
 
-            if data.edge_attr is not None:
-                random_hyperedge_attr = torch.randn_like(data.edge_attr[0], device=device)
+            if data.hyperedge_attr is not None:
+                random_hyperedge_attr = torch.randn_like(data.hyperedge_attr[0], device=device)
                 sampled_hyperedge_attrs.append(random_hyperedge_attr)
 
         negative_node_ids_tensor = torch.tensor(list(negative_node_ids), device=device)
@@ -244,8 +244,8 @@ class RandomNegativeSampler(NegativeSampler):
 
         return HData(
             x=new_x,
-            edge_index=negative_hyperedge_index,
-            edge_attr=self._new_hyperedge_attr(sampled_hyperedge_attrs, data.edge_attr),
+            hyperedge_index=negative_hyperedge_index,
+            hyperedge_attr=self._new_hyperedge_attr(sampled_hyperedge_attrs, data.hyperedge_attr),
             num_nodes=num_negative_nodes,
-            num_edges=self.num_negative_samples,
+            num_hyperedges=self.num_negative_samples,
         ).with_y_zeros()

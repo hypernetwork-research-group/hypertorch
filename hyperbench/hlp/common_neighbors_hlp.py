@@ -64,7 +64,7 @@ class CommonNeighborsHlpModule(HlpModule):
         return self.__step(batch, stage=Stage.TEST)
 
     def predict_step(self, batch: HData, batch_idx: int) -> Tensor:
-        return self.decoder(batch.edge_index, self.node_to_neighbors)
+        return self.decoder(batch.hyperedge_index, self.node_to_neighbors)
 
     def configure_optimizers(self):
         # No training, so no optimizers needed
@@ -81,7 +81,7 @@ class CommonNeighborsHlpModule(HlpModule):
         Returns:
             The computed loss.
         """
-        scores: Tensor = self.decoder(batch.edge_index, self.node_to_neighbors)
+        scores: Tensor = self.decoder(batch.hyperedge_index, self.node_to_neighbors)
         labels = batch.y
         batch_size = batch.num_nodes
 

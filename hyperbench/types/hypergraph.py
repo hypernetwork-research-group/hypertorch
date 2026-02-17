@@ -81,21 +81,21 @@ class Hypergraph:
     A simple hypergraph data structure using edge list representation.
     """
 
-    def __init__(self, edges: List[List[int]]):
-        self.edges = edges
+    def __init__(self, hyperedges: List[List[int]]):
+        self.hyperedges = hyperedges
 
     @property
     def num_nodes(self) -> int:
         """Return the number of nodes in the hypergraph."""
         nodes = set()
-        for edge in self.edges:
+        for edge in self.hyperedges:
             nodes.update(edge)
         return len(nodes)
 
     @property
-    def num_edges(self) -> int:
-        """Return the number of edges in the hypergraph."""
-        return len(self.edges)
+    def num_hyperedges(self) -> int:
+        """Return the number of hyperedges in the hypergraph."""
+        return len(self.hyperedges)
 
     def neighbors_of(self, node: int) -> Neighborhood:
         """
@@ -111,9 +111,9 @@ class Hypergraph:
             A set of neighbor node IDs (excluding the node itself).
         """
         neighbors: Neighborhood = set()
-        for edge in self.edges:
-            if node in edge:
-                neighbors.update(edge)
+        for hyperedge in self.hyperedges:
+            if node in hyperedge:
+                neighbors.update(hyperedge)
 
         neighbors.discard(node)
         return neighbors
@@ -129,8 +129,8 @@ class Hypergraph:
             A dictionary mapping each node ID to its set of neighbors.
         """
         nodes: Set[int] = set()
-        for edge in self.edges:
-            nodes.update(edge)
+        for hyperedge in self.hyperedges:
+            nodes.update(hyperedge)
 
         node_to_neighbors: Dict[int, Neighborhood] = {}
         for node in nodes:
@@ -150,15 +150,15 @@ class Hypergraph:
             Hypergraph instance
         """
         if hyperedge_index.size(1) < 1:
-            return cls(edges=[])
+            return cls(hyperedges=[])
 
-        unique_edge_ids = hyperedge_index[1].unique()
-        edges = [
-            hyperedge_index[0, hyperedge_index[1] == edge_id].tolist()
-            for edge_id in unique_edge_ids
+        unique_hyperedge_ids = hyperedge_index[1].unique()
+        hyperedges = [
+            hyperedge_index[0, hyperedge_index[1] == hyperedge_id].tolist()
+            for hyperedge_id in unique_hyperedge_ids
         ]
 
-        return cls(edges=edges)
+        return cls(hyperedges=hyperedges)
 
 
 class HyperedgeIndex:
@@ -231,7 +231,7 @@ class HyperedgeIndex:
         device = x.device
 
         hypergraph = Hypergraph.from_hyperedge_index(self.__hyperedge_index)
-        hypergraph_edges: List[List[int]] = hypergraph.edges
+        hypergraph_edges: List[List[int]] = hypergraph.hyperedges
         graph_edges: List[List[int]] = []
 
         # Random direction (feature_dim, 1) for projecting nodes in each hyperedge

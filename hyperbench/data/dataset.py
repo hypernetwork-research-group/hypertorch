@@ -130,15 +130,15 @@ class Dataset(TorchDataset):
         new_y = self.hdata.y[sampled_hyperedge_ids]
 
         new_edge_attr = None
-        if self.hdata.edge_attr is not None and len(sampled_hyperedge_ids) > 0:
-            new_edge_attr = self.hdata.edge_attr[sampled_hyperedge_ids]
+        if self.hdata.hyperedge_attr is not None and len(sampled_hyperedge_ids) > 0:
+            new_edge_attr = self.hdata.hyperedge_attr[sampled_hyperedge_ids]
 
         return HData(
             x=new_x,
-            edge_index=new_hyperedge_index,
-            edge_attr=new_edge_attr,
+            hyperedge_index=new_hyperedge_index,
+            hyperedge_attr=new_edge_attr,
             num_nodes=len(sampled_node_ids),
-            num_edges=len(sampled_hyperedge_ids),
+            num_hyperedges=len(sampled_hyperedge_ids),
             y=new_y,
         )
 
@@ -253,7 +253,7 @@ class Dataset(TorchDataset):
             raise ValueError(f"Split ratios must sum to 1.0, got {sum(ratios)}.")
 
         device = self.hdata.device
-        num_hyperedges = self.hdata.num_edges
+        num_hyperedges = self.hdata.num_hyperedges
         hyperedge_ids_permutation = self.__get_hyperedge_ids_permutation(
             num_hyperedges, shuffle, seed
         )
@@ -512,7 +512,7 @@ class Dataset(TorchDataset):
         self,
         sampled_node_ids_list: List[int],
     ) -> Tuple[Tensor, Tensor, Tensor]:
-        hyperedge_index = self.hdata.edge_index
+        hyperedge_index = self.hdata.hyperedge_index
         node_ids = hyperedge_index[0]
         hyperedge_ids = hyperedge_index[1]
 

@@ -34,7 +34,7 @@ class Graph:
         if self.num_edges == 0:
             return self
 
-        graph_edges_tensor = torch.tensor(self.edges, dtype=torch.long)
+        edges_tensor = torch.tensor(self.edges, dtype=torch.long)
 
         # Example: edges = [[0, 1],
         #                   [1, 1],
@@ -42,8 +42,8 @@ class Graph:
         #          -> no_selfloop_mask = [True, False, True]
         #          -> edges without self-loops = [[0, 1],
         #                                         [2, 3]]
-        no_selfloop_mask = graph_edges_tensor[:, 0] != graph_edges_tensor[:, 1]
-        self.edges = graph_edges_tensor[no_selfloop_mask].tolist()
+        no_selfloop_mask = edges_tensor[:, 0] != edges_tensor[:, 1]
+        self.edges = edges_tensor[no_selfloop_mask].tolist()
         return self
 
     def to_edge_index(self) -> Tensor:

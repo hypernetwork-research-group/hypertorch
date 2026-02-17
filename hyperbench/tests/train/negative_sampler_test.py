@@ -9,10 +9,10 @@ from hyperbench.types import HData
 def mock_hdata_with_attr():
     return HData(
         x=torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]]),
-        edge_index=torch.tensor([[0, 1, 2], [0, 1, 2]]),
-        edge_attr=torch.tensor([[0.5, 0.6], [0.7, 0.8], [0.9, 1.0]]),
+        hyperedge_index=torch.tensor([[0, 1, 2], [0, 1, 2]]),
+        hyperedge_attr=torch.tensor([[0.5, 0.6], [0.7, 0.8], [0.9, 1.0]]),
         num_nodes=3,
-        num_edges=3,
+        num_hyperedges=3,
     )
 
 
@@ -20,10 +20,10 @@ def mock_hdata_with_attr():
 def mock_hdata_no_attr():
     return HData(
         x=torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]]),
-        edge_index=torch.tensor([[0, 1, 2], [0, 0, 1]]),
-        edge_attr=None,
+        hyperedge_index=torch.tensor([[0, 1, 2], [0, 0, 1]]),
+        hyperedge_attr=None,
         num_nodes=3,
-        num_edges=3,
+        num_hyperedges=3,
     )
 
 
@@ -48,35 +48,39 @@ def test_random_negative_sampler_with_edge_attr(mock_hdata_with_attr):
     sampler = RandomNegativeSampler(num_negative_samples=2, num_nodes_per_sample=2)
     result = sampler.sample(mock_hdata_with_attr)
 
-    assert result.num_edges == 2
+    assert result.num_hyperedges == 2
     assert result.x.shape[0] <= mock_hdata_with_attr.x.shape[0]
-    assert result.edge_index.shape[0] == 2
-    assert result.edge_index.shape[1] == 4  # 2 negative hyperedges * 2 nodes per negative hyperedge
+    assert result.hyperedge_index.shape[0] == 2
     assert (
-        3 in result.edge_index[1] and 4 in result.edge_index[1]
+        result.hyperedge_index.shape[1] == 4
+    )  # 2 negative hyperedges * 2 nodes per negative hyperedge
+    assert (
+        3 in result.hyperedge_index[1] and 4 in result.hyperedge_index[1]
     )  # New hyperedge IDs (3, 4) should be present
-    assert result.edge_attr is not None
-    assert result.edge_attr.shape[0] == 2
+    assert result.hyperedge_attr is not None
+    assert result.hyperedge_attr.shape[0] == 2
 
 
 def test_random_negative_sampler_sample_no_edge_attr(mock_hdata_no_attr):
     sampler = RandomNegativeSampler(num_negative_samples=1, num_nodes_per_sample=2)
     result = sampler.sample(mock_hdata_no_attr)
 
-    assert result.num_edges == 1
+    assert result.num_hyperedges == 1
     assert result.x.shape[0] <= mock_hdata_no_attr.x.shape[0]
-    assert result.edge_index.shape[0] == 2
-    assert result.edge_index.shape[1] == 2  # 1 negative hyperedge * 2 nodes per negative hyperedge
-    assert 3 in result.edge_index[1]  # New hyperedge ID (3) should be present
-    assert result.edge_attr is None
+    assert result.hyperedge_index.shape[0] == 2
+    assert (
+        result.hyperedge_index.shape[1] == 2
+    )  # 1 negative hyperedge * 2 nodes per negative hyperedge
+    assert 3 in result.hyperedge_index[1]  # New hyperedge ID (3) should be present
+    assert result.hyperedge_attr is None
 
 
 def test_random_negative_sampler_sample_unique_nodes(mock_hdata_no_attr):
     sampler = RandomNegativeSampler(num_negative_samples=3, num_nodes_per_sample=2)
     result = sampler.sample(mock_hdata_no_attr)
 
-    node_ids = result.edge_index[0]
-    hyperedge_ids = result.edge_index[1]
+    node_ids = result.hyperedge_index[0]
+    hyperedge_ids = result.hyperedge_index[1]
 
     # All node indices in hyperedge_index should be valid
     assert torch.all(node_ids < mock_hdata_no_attr.num_nodes)
@@ -93,13 +97,13 @@ def test_random_negative_sampler_sample_new_hyperedges(mock_hdata_no_attr):
     sampler = RandomNegativeSampler(num_negative_samples=3, num_nodes_per_sample=2)
     result = sampler.sample(mock_hdata_no_attr)
 
-    hyperedge_ids = result.edge_index[1]
+    hyperedge_ids = result.hyperedge_index[1]
 
     # All node indices in hyperedge_index should be valid
-    new_hyperedge_id_offset = mock_hdata_no_attr.num_edges + sampler.num_negative_samples
+    new_hyperedge_id_offset = mock_hdata_no_attr.num_hyperedges + sampler.num_negative_samples
     assert torch.all(hyperedge_ids < new_hyperedge_id_offset)
 
-    hyperedge_id_offset = mock_hdata_no_attr.num_edges
+    hyperedge_id_offset = mock_hdata_no_attr.num_hyperedges
     for hyperedge_id in range(hyperedge_id_offset, new_hyperedge_id_offset):
         assert hyperedge_id in hyperedge_ids
 
@@ -122,7 +126,7 @@ def test_random_negative_sampler_sample_depends_on_return_0based_negatives(
     )
     result = sampler.sample(mock_hdata_no_attr)
 
-    node_ids = result.edge_index[0]
+    node_ids = result.hyperedge_index[0]
 
     assert torch.all(node_ids >= 0)
     assert torch.all(node_ids < mock_hdata_no_attr.num_nodes)
@@ -131,9 +135,11 @@ def test_random_negative_sampler_sample_depends_on_return_0based_negatives(
         for node_id in range(max(node_ids) + 1):
             assert node_id in node_ids
 
-    hyperedge_ids = result.edge_index[1]
+    hyperedge_ids = result.hyperedge_index[1]
     assert torch.all(hyperedge_ids >= 0)
-    assert torch.all(hyperedge_ids < mock_hdata_no_attr.num_edges + sampler.num_negative_samples)
+    assert torch.all(
+        hyperedge_ids < mock_hdata_no_attr.num_hyperedges + sampler.num_negative_samples
+    )
 
     if return_0based_negatives:
         for hyperedge_id in range(max(hyperedge_ids) + 1):

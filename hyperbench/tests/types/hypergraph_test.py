@@ -57,7 +57,7 @@ def test_empty_hifhypergraph_returns_empty_hifhypergraph():
 )
 def test_init_preserves_edges(edges, expected_edges):
     hypergraph = Hypergraph(edges)
-    assert hypergraph.edges == expected_edges
+    assert hypergraph.hyperedges == expected_edges
 
 
 @pytest.mark.parametrize(
@@ -109,7 +109,7 @@ def test_num_nodes(edges, expected_num_nodes):
 )
 def test_num_edges(edges, expected_num_edges):
     hypergraph = Hypergraph(edges)
-    assert hypergraph.num_edges == expected_num_edges
+    assert hypergraph.num_hyperedges == expected_num_edges
 
 
 @pytest.mark.parametrize(
@@ -144,7 +144,7 @@ def test_from_edge_index_parametrized(edge_index_data, expected_edges):
     hyperedge_index = torch.tensor([nodes, edges], dtype=torch.long)
     hypergraph = Hypergraph.from_hyperedge_index(hyperedge_index)
 
-    assert hypergraph.edges == expected_edges
+    assert hypergraph.hyperedges == expected_edges
 
 
 @pytest.mark.parametrize(
