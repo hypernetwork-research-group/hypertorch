@@ -3,10 +3,16 @@ import torch
 import pytest
 from unittest.mock import patch, mock_open
 from hyperbench.data import Dataset, HIFConverter
-from hyperbench.types import HIFHypergraph
+from hyperbench.types import HData, HIFHypergraph
 
 from hyperbench.data.dataset import AlgebraDataset
 from hyperbench.tests.mock import *
+
+
+def mock_hdata() -> HData:
+    x = torch.ones((3, 1), dtype=torch.float)
+    hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 1]], dtype=torch.long)
+    return HData(x=x, edge_index=hyperedge_index)
 
 
 @pytest.fixture
@@ -789,6 +795,138 @@ def test_transform_attrs_with_attr_keys_padding():
         attrs = {"weight": 1.5, "score": 0.8}
         result = dataset.transform_attrs(attrs)
         assert torch.allclose(result, torch.tensor([1.5, 0.8]))  # weight, score (insertion order)
+
+
+def test_from_hdata():
+    hdata = mock_hdata()
+
+    dataset = Dataset.from_hdata(hdata)
+
+    assert dataset.hdata is hdata
+    assert dataset.hypergraph is None
+    assert len(dataset) == hdata.num_nodes
+
+
+def test_from_hdata_download_raises():
+    hdata = mock_hdata()
+    dataset = Dataset.from_hdata(hdata)
+
+    with pytest.raises(ValueError, match="download can only be called for the original dataset."):
+        dataset.download()
+
+
+def test_from_hdata_process_raises():
+    hdata = mock_hdata()
+    dataset = Dataset.from_hdata(hdata)
+
+    with pytest.raises(ValueError, match="process can only be called for the original dataset."):
+        dataset.process()
+
+
+def test_split_with_equal_ratios(mock_four_node_hypergraph):
+    with patch.object(HIFConverter, "load_from_hif", return_value=mock_four_node_hypergraph):
+        dataset = AlgebraDataset()
+
+    splits = dataset.split([0.5, 0.5])
+
+    assert len(splits) == 2
+    assert splits[0].hdata.num_edges + splits[1].hdata.num_edges == dataset.hdata.num_edges
+    for split in splits:
+        assert split.hdata.x is not None
+        assert split.hdata.num_nodes > 0
+        assert split.hdata.num_edges > 0
+
+
+def test_split_three_way(mock_multiple_edges_attr_hypergraph):
+    with patch.object(
+        HIFConverter, "load_from_hif", return_value=mock_multiple_edges_attr_hypergraph
+    ):
+        dataset = AlgebraDataset()
+
+    splits = dataset.split([0.5, 0.25, 0.25])
+    total_edges = sum(split.hdata.num_edges for split in splits)
+
+    assert len(splits) == 3
+    assert total_edges == dataset.hdata.num_edges
+
+    for split in splits:
+        assert split.hdata.x is not None
+        assert split.hdata.num_nodes > 0
+        assert split.hdata.num_edges > 0
+
+
+def test_split_raises_when_ratios_do_not_sum_to_one(mock_four_node_hypergraph):
+    with patch.object(HIFConverter, "load_from_hif", return_value=mock_four_node_hypergraph):
+        dataset = AlgebraDataset()
+
+    with pytest.raises(ValueError, match="Split ratios must sum to 1.0"):
+        dataset.split([0.8, 0.1, 0.05])
+
+
+def test_split_with_shuffle_produces_deterministic_results_when_seed_provided(
+    mock_four_node_hypergraph,
+):
+    with patch.object(HIFConverter, "load_from_hif", return_value=mock_four_node_hypergraph):
+        dataset = AlgebraDataset()
+
+    splits_a = dataset.split([0.5, 0.5], shuffle=True, seed=42)
+    splits_b = dataset.split([0.5, 0.5], shuffle=True, seed=42)
+
+    assert torch.equal(splits_a[0].hdata.edge_index, splits_b[0].hdata.edge_index)
+    assert torch.equal(splits_a[1].hdata.edge_index, splits_b[1].hdata.edge_index)
+
+
+def test_split_with_shuffle_when_no_seed_provided(
+    mock_four_node_hypergraph,
+):
+    with patch.object(HIFConverter, "load_from_hif", return_value=mock_four_node_hypergraph):
+        dataset = AlgebraDataset()
+
+    splits = dataset.split([0.5, 0.5], shuffle=True)
+    total_edges = sum(split.hdata.num_edges for split in splits)
+
+    assert len(splits) == 2
+    assert total_edges == dataset.hdata.num_edges
+
+    for split in splits:
+        assert split.hdata.x is not None
+        assert split.hdata.num_nodes > 0
+        assert split.hdata.num_edges > 0
+
+
+def test_split_preserves_edge_attr(mock_multiple_edges_attr_hypergraph):
+    with patch.object(
+        HIFConverter, "load_from_hif", return_value=mock_multiple_edges_attr_hypergraph
+    ):
+        dataset = AlgebraDataset()
+
+    splits = dataset.split([0.5, 0.5])
+
+    for split in splits:
+        assert split.hdata.edge_attr is not None
+        assert split.hdata.edge_attr.shape[0] == split.hdata.num_edges
+
+
+def test_split_without_edge_attr(mock_no_edge_attr_hypergraph):
+    with patch.object(HIFConverter, "load_from_hif", return_value=mock_no_edge_attr_hypergraph):
+        dataset = AlgebraDataset()
+
+    splits = dataset.split([0.5, 0.5])
+
+    for split in splits:
+        assert split.hdata.edge_attr is None
+
+
+def test_to_device():
+    device = torch.device("cpu")
+
+    hdata = mock_hdata()
+    dataset = Dataset.from_hdata(hdata)
+
+    result = dataset.to(device)
+
+    assert result is dataset
+    assert dataset.hdata.device == device
 
 
 def test_load_from_hif_file_exists():

@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from torch import Tensor
 from torch.utils.data import Dataset as TorchDataset
 from hyperbench.types import HData, HIFHypergraph
-from hyperbench.utils import validate_hif_json
+from hyperbench.utils import validate_hif_json, to_0based_ids
 
 
 class DatasetNames(Enum):
@@ -102,12 +102,17 @@ class HIFConverter:
 class Dataset(TorchDataset):
     DATASET_NAME = None
 
-    def __init__(self) -> None:
-        self.hypergraph: HIFHypergraph = self.download()
-        self.hdata: HData = self.process()
+    def __init__(
+        self,
+        hdata: Optional[HData] = None,
+        is_original: Optional[bool] = True,
+    ) -> None:
+        self.__is_original = is_original
+        self.hypergraph: HIFHypergraph = self.download() if hdata is None else None
+        self.hdata: HData = self.process() if hdata is None else hdata
 
     def __len__(self) -> int:
-        return len(self.hypergraph.nodes)
+        return self.hdata.num_nodes
 
     def __getitem__(self, index: int | List[int]) -> HData:
         sampled_node_ids_list = self.__get_node_ids_to_sample(index)
@@ -122,6 +127,7 @@ class Dataset(TorchDataset):
         )
 
         new_x = self.hdata.x[sampled_node_ids]
+        new_y = self.hdata.y[sampled_hyperedge_ids]
 
         new_edge_attr = None
         if self.hdata.edge_attr is not None and len(sampled_hyperedge_ids) > 0:
@@ -133,12 +139,29 @@ class Dataset(TorchDataset):
             edge_attr=new_edge_attr,
             num_nodes=len(sampled_node_ids),
             num_edges=len(sampled_hyperedge_ids),
+            y=new_y,
         )
+
+    @classmethod
+    def from_hdata(cls, hdata: HData) -> "Dataset":
+        """
+        Create a :class:`Dataset` instance from an :class:`HData` object.
+
+        Args:
+            hdata: :class:`HData` object containing the hypergraph data.
+
+        Returns:
+            :class:`Dataset` instance with the provided :class:`HData`.
+        """
+        return cls(hdata=hdata, is_original=False)
 
     def download(self) -> HIFHypergraph:
         """
         Load the hypergraph from HIF format using HIFConverter class.
         """
+        if not self.__is_original:
+            raise ValueError("download can only be called for the original dataset.")
+
         if hasattr(self, "hypergraph") and self.hypergraph is not None:
             return self.hypergraph
         hypergraph = HIFConverter.load_from_hif(self.DATASET_NAME, save_on_disk=True)
@@ -151,6 +174,9 @@ class Dataset(TorchDataset):
         Returns:
             HData: Processed hypergraph data.
         """
+        if not self.__is_original:
+            raise ValueError("process can only be called for the original dataset.")
+
         num_nodes = len(self.hypergraph.nodes)
         x = self.__process_x(num_nodes)
 
@@ -190,6 +216,97 @@ class Dataset(TorchDataset):
         hyperedge_index = torch.tensor([node_ids, hyperedge_ids], dtype=torch.long)
 
         return HData(x, hyperedge_index, hyperedge_attr, num_nodes, num_hyperedges)
+
+    def split(
+        self,
+        ratios: List[float],
+        shuffle: Optional[bool] = False,
+        seed: Optional[int] = None,
+    ) -> List["Dataset"]:
+        """
+        Split the dataset by hyperedges into partitions with contiguous 0-based IDs.
+
+        Boundaries are computed using cumulative floor to prevent early splits from
+        over-consuming edges. The last split absorbs any rounding remainder.
+
+        Example:
+            With ``num_hyperedges = 3`` and ``ratios = [0.5, 0.25, 0.25]``:
+            >>> cumulative_ratios = [0.5, 0.75, 1.0]
+            >>> boundaries:
+            >>>     i=0 -> end = int(0.5 * 3)  = 1 -> slice [0:1] -> 1 edge
+            >>>     i=1 -> end = int(0.75 * 3) = 2 -> slice [1:2] -> 1 edge
+            >>>     i=2 -> end = 3 (clamped)       -> slice [2:3] -> 1 edge
+
+        Args:
+            ratios: List of floats summing to 1.0, e.g. [0.8, 0.1, 0.1].
+            shuffle: Whether to shuffle hyperedges before splitting. Default is ``False`` for deterministic splits.
+            seed: Optional random seed for reproducibility. Ignored if shuffle is set to ``False``.
+
+        Returns:
+            List of Dataset objects, one per split, each with contiguous IDs.
+        """
+        # Allow small imprecision in sum of ratios, but raise error if it's significant
+        # Example: ratios = [0.8, 0.1, 0.1] -> sum = 1.0 (valid)
+        #          ratios = [0.8, 0.1, 0.05] -> sum = 0.95 (invalid, raises ValueError)
+        #          ratios = [0.8, 0.1, 0.1, 0.0000001] -> sum = 1.0000001 (valid, allows small imprecision)
+        if abs(sum(ratios) - 1.0) > 1e-6:
+            raise ValueError(f"Split ratios must sum to 1.0, got {sum(ratios)}.")
+
+        device = self.hdata.device
+        num_hyperedges = self.hdata.num_edges
+        hyperedge_ids_permutation = self.__get_hyperedge_ids_permutation(
+            num_hyperedges, shuffle, seed
+        )
+
+        # Compute cumulative ratio boundaries to avoid independent rounding errors.
+        # Independent rounding (e.g., round(0.5*3)=2, round(0.25*3)=1, round(0.25*3)=1 -> total=4)
+        # can over-allocate edges to early splits and starve later ones.
+        # Cumulative floor boundaries guarantee monotonically increasing cut points.
+        # Example: ratios = [0.5, 0.25, 0.25], num_hyperedges = 3
+        #          cumulative_ratios = [0.5, 0.75, 1.0]
+        cumulative_ratios = []
+        cumsum = 0.0
+        for ratio in ratios:
+            cumsum += ratio
+            cumulative_ratios.append(cumsum)
+
+        split_datasets = []
+        start = 0
+        for i in range(len(ratios)):
+            if i == len(ratios) - 1:
+                # Last split gets everything remaining, absorbing any rounding remainder
+                # Example: start = 2, end = 3 -> permutation[2:3] = [2] (1 edge)
+                end = num_hyperedges
+            else:
+                # Floor of cumulative boundary ensures early splits don't over-consume
+                # Example: i=0 -> int(0.5 * 3) = int(1.5) = 1, end = 1
+                #          i=1 -> int(0.75 * 3) = int(2.25) = 2, end = 2
+                end = int(cumulative_ratios[i] * num_hyperedges)
+
+            # Example: i=0 -> permutation[0:1] = [0] (1 edge)
+            #          i=1 -> permutation[1:2] = [1] (1 edge)
+            #          i=2 -> permutation[2:3] = [2] (1 edge)
+            split_hyperedge_ids = hyperedge_ids_permutation[start:end]
+            split_hdata = HData.split(self.hdata, split_hyperedge_ids).to(device=device)
+            split_dataset = self.__class__(hdata=split_hdata, is_original=False)
+            split_datasets.append(split_dataset)
+
+            start = end
+
+        return split_datasets
+
+    def to(self, device: torch.device) -> "Dataset":
+        """
+        Move the dataset's HData to the specified device.
+
+        Args:
+            device: The target device (e.g., ``torch.device('cuda')`` or ``torch.device('cpu')``).
+
+        Returns:
+            A new Dataset instance with HData moved to the specified device.
+        """
+        self.hdata = self.hdata.to(device)
+        return self
 
     def transform_node_attrs(
         self,
@@ -255,6 +372,30 @@ class Dataset(TorchDataset):
 
         return unique_keys
 
+    def __get_hyperedge_ids_permutation(
+        self,
+        num_hyperedges: int,
+        shuffle: Optional[bool],
+        seed: Optional[int],
+    ) -> Tensor:
+        device = self.hdata.device
+
+        # Shuffle hyperedge IDs if shuffle is requested, otherwise keep original order for deterministic splits
+        if shuffle:
+            generator = torch.Generator(device=device)
+            if seed is not None:
+                generator.manual_seed(seed)
+
+            random_hyperedge_ids_permutation = torch.randperm(
+                n=num_hyperedges,
+                generator=generator,
+                device=device,
+            )
+            return random_hyperedge_ids_permutation
+
+        ranged_hyperedge_ids_permutation = torch.arange(num_hyperedges, device=device)
+        return ranged_hyperedge_ids_permutation
+
     def __get_node_ids_to_sample(self, id: int | List[int]) -> List[int]:
         """
         Get a list of node IDs to sample based on the provided index.
@@ -301,12 +442,8 @@ class Dataset(TorchDataset):
         #          sampled_node_ids = [1, 3],
         #          sampled_edge_ids = [0, 2]
         #          -> new_node_ids = [0, 0, 1], new_edge_ids = [0, 1, 1]
-        new_node_ids = self.__to_0based_ids(
-            sampled_hyperedge_index[0], sampled_node_ids, self.hdata.num_nodes
-        )
-        new_hyperedge_ids = self.__to_0based_ids(
-            sampled_hyperedge_index[1], sampled_hyperedge_ids, self.hdata.num_edges
-        )
+        new_node_ids = to_0based_ids(sampled_hyperedge_index[0], sampled_node_ids)
+        new_hyperedge_ids = to_0based_ids(sampled_hyperedge_index[1], sampled_hyperedge_ids)
 
         # Example: new_node_ids = [0, 1], new_hyperedge_ids = [0, 1]
         #          -> new_hyperedge_index = [[0, 1],
@@ -409,36 +546,6 @@ class Dataset(TorchDataset):
         #                                        [0, 0, 0, 2, 2]]
         sampled_hyperedge_index = hyperedge_index[:, hyperedge_incidence_mask]
         return sampled_hyperedge_index, node_ids_in_sampled_hyperedge, sampled_hyperedge_ids
-
-    def __to_0based_ids(
-        self,
-        original_ids: Tensor,
-        ids_to_keep: Tensor,
-        n: int,
-    ) -> Tensor:
-        """
-        Map original IDs to 0-based ids.
-
-        Example:
-            original_ids: [1, 3, 3, 7]
-            ids_to_keep: [3, 7]
-            n = 8                            # total number of elements (nodes or edges) in the original hypergraph
-            Returned 0-based IDs: [0, 0, 1]  # the size is sum of occurrences of ids_to_keep in original_ids
-
-        Args:
-            original_ids: Tensor of original IDs.
-            n: Total number of original IDs.
-            ids_to_keep: List of selected original IDs to be mapped to 0-based.
-
-        Returns:
-            Tensor of 0-based ids.
-        """
-        device = original_ids.device
-
-        id_to_0based_id = torch.zeros(n, dtype=torch.long, device=device)
-        n_ids_to_keep = len(ids_to_keep)
-        id_to_0based_id[ids_to_keep] = torch.arange(n_ids_to_keep, device=device)
-        return id_to_0based_id[original_ids]
 
     def __validate_node_ids(self, node_ids: List[int]) -> None:
         """
