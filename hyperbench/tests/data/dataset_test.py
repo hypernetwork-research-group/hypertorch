@@ -511,7 +511,7 @@ def test_getitem_single_index(mock_sample_hypergraph):
     assert data.x.shape[0] == 1
 
     # Isolated nodes are included with self-loop edges,
-    # so edge_index should have shape [2, 1] for the self-loop
+    # so hyperedge_index should have shape [2, 1] for the self-loop
     assert data.hyperedge_index.shape == (2, 1)
 
 
