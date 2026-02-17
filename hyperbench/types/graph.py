@@ -112,6 +112,8 @@ class EdgeIndex:
         """Return the number of edges in the graph."""
         if self.__edge_index.size(1) < 1:
             return 0
+        # Number of edges is the number of columns in edge_index, which is dim=1,
+        # as each column represents an edge (source, destination)
         return self.__edge_index.size(1)
 
     @property
@@ -119,7 +121,8 @@ class EdgeIndex:
         """Return the number of nodes in the graph."""
         if self.__edge_index.size(1) < 1:
             return 0
-        return int(self.__edge_index.max().item()) + 1
+        unique_nodes = torch.unique(self.__edge_index)
+        return len(unique_nodes)
 
     def add_selfloops(self, with_duplicate_removal: bool = True) -> "EdgeIndex":
         """

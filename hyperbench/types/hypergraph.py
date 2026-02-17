@@ -2,6 +2,7 @@ import torch
 
 from torch import Tensor
 from typing import Optional, List, Dict, Any, Literal, Set, TypeAlias
+from hyperbench.utils import to_0based_ids
 
 from .graph import Graph
 
@@ -151,11 +152,12 @@ class Hypergraph:
         if hyperedge_index.size(1) < 1:
             return cls(edges=[])
 
-        max_edge_id = int(hyperedge_index[1].max().item())
+        unique_edge_ids = hyperedge_index[1].unique()
         edges = [
             hyperedge_index[0, hyperedge_index[1] == edge_id].tolist()
-            for edge_id in range(max_edge_id + 1)
+            for edge_id in unique_edge_ids
         ]
+
         return cls(edges=edges)
 
 
@@ -179,34 +181,34 @@ class HyperedgeIndex:
     """
 
     def __init__(self, hyperedge_index: Tensor):
-        self.hyperedge_index = hyperedge_index
+        self.__hyperedge_index = hyperedge_index
 
     @property
     def item(self) -> Tensor:
         """Return the hyperedge index tensor."""
-        return self.hyperedge_index
+        return self.__hyperedge_index
 
     @property
     def num_hyperedges(self) -> int:
         """Return the number of hyperedges in the hypergraph."""
-        if self.hyperedge_index.size(1) < 1:
+        if self.__hyperedge_index.size(1) < 1:
             return 0
 
-        hyperedges = self.hyperedge_index[1]
-        return int(hyperedges.max().item()) + 1
+        hyperedges = self.__hyperedge_index[1]
+        return len(hyperedges.unique())
 
     @property
     def num_nodes(self) -> int:
         """Return the number of nodes in the hypergraph."""
-        if self.hyperedge_index.size(1) < 1:
+        if self.__hyperedge_index.size(1) < 1:
             return 0
 
-        nodes = self.hyperedge_index[0]
-        return int(nodes.max().item()) + 1
+        nodes = self.__hyperedge_index[0]
+        return len(nodes.unique())
 
     def nodes_in(self, hyperedge_id: int) -> List[int]:
         """Return the list of node IDs that belong to the given hyperedge."""
-        return self.hyperedge_index[0, self.hyperedge_index[1] == hyperedge_id].tolist()
+        return self.__hyperedge_index[0, self.__hyperedge_index[1] == hyperedge_id].tolist()
 
     def reduce_to_edge_index_on_random_direction(
         self,
@@ -228,7 +230,7 @@ class HyperedgeIndex:
         """
         device = x.device
 
-        hypergraph = Hypergraph.from_hyperedge_index(self.hyperedge_index)
+        hypergraph = Hypergraph.from_hyperedge_index(self.__hyperedge_index)
         hypergraph_edges: List[List[int]] = hypergraph.edges
         graph_edges: List[List[int]] = []
 
@@ -265,3 +267,29 @@ class HyperedgeIndex:
             graph.remove_selfloops()
 
         return graph.to_edge_index()
+
+    def to_0based(
+        self,
+        node_ids_to_rebase: Tensor,
+        hyperedge_ids_to_rebase: Tensor,
+    ) -> "HyperedgeIndex":
+        """
+        Convert hyperedge index to the 0-based format by rebasing node IDs to the range ``[0, num_nodes-1]`` and hyperedge IDs ``[0, num_hyperedges-1]``.
+        """
+        node_ids = self.__hyperedge_index[0]
+        hyperedge_ids = self.__hyperedge_index[1]
+
+        # Example: negative_hyperedge_index after sorting: [[0, 0, 1, 2, 3, 4],
+        #                                                    [3, 4, 4, 3, 4, 3]]
+        #          -> negative_hyperedge_index after remapping: [[0, 0, 1, 2, 3, 4],
+        #                                                        [3, 4, 4, 3, 4, 3]]
+        self.__hyperedge_index[0] = to_0based_ids(node_ids, node_ids_to_rebase)
+
+        # Example: negative_hyperedge_index after remapping nodes: [[0, 0, 1, 2, 3, 4],
+        #                                                           [3, 4, 4, 3, 4, 3]]
+        #          negative_hyperedge_ids = [3, 4]
+        #          -> negative_hyperedge_index after remapping hyperedges: [[0, 0, 1, 2, 3, 4],
+        #                                                                   [0, 0, 1, 0, 1, 0]]
+        self.__hyperedge_index[1] = to_0based_ids(hyperedge_ids, hyperedge_ids_to_rebase)
+
+        return self

@@ -508,7 +508,7 @@ def test_edge_index_num_edges(edge_index_tensor, expected_num_edges):
         pytest.param(torch.tensor([[0], [1]]), 2, id="single_edge"),
         pytest.param(torch.tensor([[0, 1, 2], [1, 2, 3]]), 4, id="multiple_edges"),
         pytest.param(torch.tensor([[], []]), 0, id="empty_edge_index"),
-        pytest.param(torch.tensor([[0, 5], [3, 7]]), 8, id="non_consecutive_indices"),
+        pytest.param(torch.tensor([[0, 5], [3, 7]]), 4, id="non_consecutive_indices"),
         pytest.param(torch.tensor([[0, 1, 1], [0, 1, 2]]), 3, id="with_selfloops"),
     ],
 )
@@ -831,7 +831,8 @@ def test_get_sparse_normalized_laplacian_returns_sparse_tensor():
 )
 def test_get_sparse_normalized_laplacian_shape(edge_index, num_nodes):
     gcn_laplacian = EdgeIndex(edge_index).get_sparse_normalized_gcn_laplacian(num_nodes=num_nodes)
-    expected_num_nodes = num_nodes if num_nodes else edge_index.max().item() + 1
+    unique_nodes = torch.unique(edge_index)
+    expected_num_nodes = num_nodes if num_nodes else len(unique_nodes)
 
     assert gcn_laplacian.shape == (expected_num_nodes, expected_num_nodes)
 

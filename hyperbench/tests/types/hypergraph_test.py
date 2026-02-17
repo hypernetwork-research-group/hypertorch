@@ -192,17 +192,93 @@ def test_hyperedge_index_num_hyperedges(hyperedge_index_tensor, expected_num_hyp
         pytest.param(torch.tensor([[0], [0]]), 1, id="single_node"),
         pytest.param(torch.tensor([[0, 1, 2], [0, 0, 0]]), 3, id="three_nodes_one_hyperedge"),
         pytest.param(torch.tensor([[0, 1], [0, 1]]), 2, id="two_nodes_two_hyperedges"),
-        pytest.param(torch.tensor([[0, 5], [0, 0]]), 6, id="non_consecutive_node_indices"),
+        pytest.param(torch.tensor([[0, 5], [0, 0]]), 2, id="non_consecutive_node_indices"),
         pytest.param(
             torch.tensor([[0, 1, 2, 3, 4], [0, 0, 1, 1, 2]]), 5, id="five_nodes_three_hyperedges"
         ),
-        pytest.param(torch.tensor([[9, 2, 5], [0, 0, 0]]), 10, id="sparse_node_indices"),
+        pytest.param(torch.tensor([[9, 2, 5], [0, 0, 0]]), 3, id="sparse_node_indices"),
     ],
 )
 def test_hyperedge_index_num_nodes(hyperedge_index_tensor, expected_num_nodes):
     hyperedge_index = HyperedgeIndex(hyperedge_index_tensor)
 
     assert hyperedge_index.num_nodes == expected_num_nodes
+
+
+@pytest.mark.parametrize(
+    "hyperedges, node, expected_neighbors",
+    [
+        pytest.param([], 0, set(), id="empty_hypergraph"),
+        pytest.param([[0, 1, 2]], 0, {1, 2}, id="single_hyperedge_node_in_hyperedge"),
+        pytest.param([[0, 1, 2]], 3, set(), id="single_hyperedge_node_not_in_hyperedge"),
+        pytest.param([[0, 1], [1, 2]], 1, {0, 2}, id="node_in_multiple_hyperedges"),
+        pytest.param([[0, 1], [2, 3]], 0, {1}, id="node_in_one_of_two_disjoint_hyperedges"),
+        pytest.param([[0, 1, 2], [2, 3, 4]], 2, {0, 1, 3, 4}, id="node_bridging_two_hyperedges"),
+        pytest.param([[0, 1], [0, 2], [0, 3]], 0, {1, 2, 3}, id="node_in_all_hyperedges"),
+    ],
+)
+def test_neighbors_of(hyperedges, node, expected_neighbors):
+    hypergraph = Hypergraph(hyperedges)
+    assert hypergraph.neighbors_of(node) == expected_neighbors
+
+
+@pytest.mark.parametrize(
+    "hyperedges, expected_neighbors_map",
+    [
+        pytest.param([], {}, id="empty_hypergraph"),
+        pytest.param(
+            [[0, 1]],
+            {0: {1}, 1: {0}},
+            id="single_hyperedge_two_nodes",
+        ),
+        pytest.param(
+            [[0, 1, 2]],
+            {0: {1, 2}, 1: {0, 2}, 2: {0, 1}},
+            id="single_hyperedge_three_nodes",
+        ),
+        pytest.param(
+            [[0, 1], [2, 3]],
+            {0: {1}, 1: {0}, 2: {3}, 3: {2}},
+            id="two_disjoint_hyperedges",
+        ),
+        pytest.param(
+            [[0, 1], [1, 2]],
+            {0: {1}, 1: {0, 2}, 2: {1}},
+            id="two_overlapping_hyperedges",
+        ),
+    ],
+)
+def test_neighbors_of_all(hyperedges, expected_neighbors_map):
+    hypergraph = Hypergraph(hyperedges)
+    assert hypergraph.neighbors_of_all() == expected_neighbors_map
+
+
+@pytest.mark.parametrize(
+    "hyperedge_index_tensor, hyperedge_id, expected_nodes",
+    [
+        pytest.param(
+            torch.tensor([[0, 1, 2], [0, 0, 0]]),
+            0,
+            [0, 1, 2],
+            id="single_hyperedge_all_nodes",
+        ),
+        pytest.param(
+            torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]]),
+            0,
+            [0, 1],
+            id="first_of_two_hyperedges",
+        ),
+        pytest.param(
+            torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]]),
+            1,
+            [2, 3],
+            id="second_of_two_hyperedges",
+        ),
+    ],
+)
+def test_hyperedge_index_nodes_in(hyperedge_index_tensor, hyperedge_id, expected_nodes):
+    hyperedge_index = HyperedgeIndex(hyperedge_index_tensor)
+    assert hyperedge_index.nodes_in(hyperedge_id) == expected_nodes
 
 
 @pytest.mark.parametrize(
