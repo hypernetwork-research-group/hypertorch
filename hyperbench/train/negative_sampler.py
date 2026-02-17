@@ -182,7 +182,7 @@ class RandomNegativeSampler(NegativeSampler):
                 f"Asked to create samples with {self.num_nodes_per_sample} nodes, but only {data.num_nodes} nodes are available."
             )
 
-        device = data.x.device
+        device = data.device
 
         negative_node_ids: Set[int] = set()
         sampled_hyperedge_indexes: List[Tensor] = []
@@ -196,7 +196,9 @@ class RandomNegativeSampler(NegativeSampler):
             #          -> possible output: [2, 0, 4]
             equal_probabilities = torch.ones(data.num_nodes, device=device)
             sampled_node_ids = torch.multinomial(
-                equal_probabilities, self.num_nodes_per_sample, replacement=False
+                input=equal_probabilities,
+                num_samples=self.num_nodes_per_sample,
+                replacement=False,
             )
 
             # Example: sampled_node_ids = [2, 0, 4], new_hyperedge_id=0, new_hyperedge_id_offset=3
@@ -218,8 +220,8 @@ class RandomNegativeSampler(NegativeSampler):
             negative_node_ids.update(sampled_node_ids.tolist())
 
             if data.edge_attr is not None:
-                random_edge_attr = torch.randn_like(data.edge_attr[0])
-                sampled_hyperedge_attrs.append(random_edge_attr)
+                random_hyperedge_attr = torch.randn_like(data.edge_attr[0], device=device)
+                sampled_hyperedge_attrs.append(random_hyperedge_attr)
 
         negative_node_ids_tensor = torch.tensor(list(negative_node_ids), device=device)
         new_x, num_negative_nodes = self._new_x(data.x, negative_node_ids_tensor)
