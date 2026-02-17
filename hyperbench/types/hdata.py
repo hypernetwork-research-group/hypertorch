@@ -59,7 +59,7 @@ class HData:
             else torch.ones((self.num_edges,), dtype=torch.float, device=self.x.device)
         )
 
-        self.device = self.__validate_device_consistency_and_get()
+        self.device = self.get_device_if_all_consistent()
 
     def __repr__(self) -> str:
         return (
@@ -207,6 +207,15 @@ class HData:
             y=new_y,
         )
 
+    def get_device_if_all_consistent(self) -> torch.device:
+        devices = {self.x.device, self.edge_index.device, self.y.device}
+        if self.edge_attr is not None:
+            devices.add(self.edge_attr.device)
+        if len(devices) > 1:
+            raise ValueError(f"Inconsistent device placement: {devices}")
+
+        return devices.pop() if len(devices) == 1 else torch.device("cpu")
+
     def to(self, device: torch.device | str, non_blocking: bool = False) -> "HData":
         self.x = self.x.to(device=device, non_blocking=non_blocking)
         self.edge_index = self.edge_index.to(device=device, non_blocking=non_blocking)
@@ -236,12 +245,3 @@ class HData:
     def with_y_zeros(self) -> "HData":
         """Return a copy of this instance with a y attribute of all zeros."""
         return self.with_y_to(0.0)
-
-    def __validate_device_consistency_and_get(self) -> torch.device:
-        devices = {self.x.device, self.edge_index.device, self.y.device}
-        if self.edge_attr is not None:
-            devices.add(self.edge_attr.device)
-        if len(devices) > 1:
-            raise ValueError(f"Inconsistent device placement: {devices}")
-
-        return devices.pop() if len(devices) == 1 else torch.device("cpu")

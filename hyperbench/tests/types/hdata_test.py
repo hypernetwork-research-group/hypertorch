@@ -1,3 +1,4 @@
+from unittest.mock import MagicMock
 import pytest
 import torch
 
@@ -427,6 +428,39 @@ def test_with_y_zeros_returns_all_zeros(mock_hdata):
     result = mock_hdata.with_y_zeros()
 
     assert torch.equal(result.y, torch.zeros(mock_hdata.num_edges, dtype=torch.float))
+
+
+def test_get_device_if_all_consistent_returns_device_when_all_consistent():
+    x = torch.randn(3, 2)
+    hyperedge_index = torch.tensor([[0, 1], [0, 0]])
+    hdata = HData(x=x, edge_index=hyperedge_index)
+
+    assert hdata.get_device_if_all_consistent() == torch.device("cpu")
+
+
+def test_get_device_if_all_consistent_raises_on_mixed_devices():
+    x = torch.randn(3, 2)
+    hyperedge_index = torch.tensor([[0, 1], [0, 0]])
+    hdata = HData(x=x, edge_index=hyperedge_index)
+
+    # Mock a different device on x
+    hdata.x = MagicMock(device=torch.device("cuda:0"))
+
+    with pytest.raises(ValueError, match="Inconsistent device placement"):
+        hdata.get_device_if_all_consistent()
+
+
+def test_get_device_if_all_consistent_includes_edge_attr():
+    x = torch.randn(3, 2)
+    hyperedge_index = torch.tensor([[0, 1], [0, 0]])
+    hyperedge_attr = torch.randn(1, 4)
+    hdata = HData(x=x, edge_index=hyperedge_index, edge_attr=hyperedge_attr)
+
+    # All on CPU, but hyperedge_attr on different device
+    hdata.edge_attr = MagicMock(device=torch.device("cuda:0"))
+
+    with pytest.raises(ValueError, match="Inconsistent device placement"):
+        hdata.get_device_if_all_consistent()
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA not available")
