@@ -90,11 +90,11 @@ class Graph:
 class EdgeIndex:
     """
     A wrapper for edge index representation of a graph.
-    Edge index is a tensor of shape (2, |E|) where the first row contains source node indices and the second row contains destination node indices for each edge.
+    Edge index is a tensor of shape ``(2, |E|)`` where the first row contains source node indices and the second row contains destination node indices for each edge.
 
-    Example:
+    Examples:
         >>> edge_index = [[0, 1, 2],
-        >>>               [1, 0, 3]]
+        ...               [1, 0, 3]]
 
         This represents a graph with edges (0, 1), (1, 0), and (2, 3).
         The number of nodes in this graph is 4 (nodes 0, 1, 2, and 3) and the number of edges is 3.
@@ -129,11 +129,11 @@ class EdgeIndex:
         """
         Add self-loops to each node in the edge index.
 
-        Example:
+        Examples:
             >>> edge_index = [[0, 1, 2],
-            >>>               [1, 0, 3]]
+            ...               [1, 0, 3]]
             >>> edge_index_with_selfloops = [[0, 1, 2, 0, 1, 2, 3],
-            >>>                              [1, 0, 3, 0, 1, 2, 3]]
+            ...                              [1, 0, 3, 0, 1, 2, 3]]
 
         Args:
             with_duplicate_removal: Whether to remove duplicate edges after adding self-loops. Defaults to ``True``.
@@ -142,7 +142,7 @@ class EdgeIndex:
             This :class:`EdgeIndex` instance with self-loops added.
 
         Raises:
-            ValueError: If the input edge index has no edges (i.e., shape (2, 0)).
+            ValueError: If the input edge index has no edges (i.e., ``shape (2, 0)``).
         """
         if self.__edge_index.size(1) < 1:
             raise ValueError("Edge index must have at least one edge to add self-loops.")

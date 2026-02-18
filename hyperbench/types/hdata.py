@@ -11,7 +11,7 @@ class HData:
     """
     Container for hypergraph data.
 
-    Example:
+    Examples:
         >>> x = torch.randn(10, 16)  # 10 nodes with 16 features each
         >>> hyperedge_index = torch.tensor([[0, 0, 1, 1, 1],  # node IDs
         ...                                 [0, 1, 2, 3, 4]]) # hyperedge IDs
@@ -90,7 +90,7 @@ class HData:
     @classmethod
     def cat_same_node_space(cls, hdatas: Sequence["HData"], x: Optional[Tensor] = None) -> "HData":
         """
-        Concatenate HData instances that share the same node space, meaning nodes with the same ID in different instances are the same node.
+        Concatenate :class:`HData` instances that share the same node space, meaning nodes with the same ID in different instances are the same node.
         This is useful when combining positive and negative hyperedges that reference the same set of nodes.
 
         Notes:
@@ -99,13 +99,13 @@ class HData:
             - ``hyperedge_attr`` is the concatenation of all input hyperedge attributes, if present. If some instances have hyperedge attributes and others do not, the resulting ``hyperedge_attr`` will be set to ``None``.
             - ``y`` is the concatenation of all input labels.
 
-        Example:
+        Examples:
             >>> x = torch.randn(5, 8)
             >>> pos = HData(x, torch.tensor([[0, 1, 2, 3, 4], [0, 0, 1, 2, 2]]))
             >>> neg = HData(x, torch.tensor([[0, 2], [3, 3]]))
             >>> new = HData.cat_same_node_space([pos, neg])
-            >>> new.num_nodes -> 5 -> [0, 1, 2, 3, 4]
-            >>> new.num_hyperedges -> 4 -> [0, 1, 2, 3]
+            >>> new.num_nodes  # 5 — nodes [0, 1, 2, 3, 4]
+            >>> new.num_hyperedges  # 4 — hyperedges [0, 1, 2, 3]
 
         Args:
             hdatas: One or more :class:`HData` instances sharing the same node space.
@@ -153,12 +153,12 @@ class HData:
         """
         Build an :class:`HData` for a single split from the given hyperedge IDs.
 
-        Example:
+        Examples:
             >>> hyperedge_index = [[0, 0, 1, 2, 3, 4],
-            >>>                    [0, 0, 0, 1, 2, 2]]
+            ...                    [0, 0, 0, 1, 2, 2]]
             >>> split_hyperedge_ids = [0, 2]
             >>> new_hyperedge_index = [[0, 0, 1, 2, 3],  # nodes 0 -> 0, 1 -> 1, 3 -> 2, 4 -> 3 (remapped to 0-based)
-            >>>                        [0, 0, 0, 1, 1]]  # hyperedges 0 -> 0, 2 -> 1 (remapped to 0-based)
+            ...                        [0, 0, 0, 1, 1]]  # hyperedges 0 -> 0, 2 -> 1 (remapped to 0-based)
             >>> new_x = [x[0], x[1], x[3], x[4]]
             >>> new_hyperedge_attr = [hyperedge_attr[0], hyperedge_attr[2]]
 
@@ -211,6 +211,16 @@ class HData:
         )
 
     def get_device_if_all_consistent(self) -> torch.device:
+        """
+        Check that all tensors are on the same device and return that device.
+        If there are no tensors or if they are on different devices, return CPU.
+
+        Returns:
+            The common device if all tensors are on the same device, otherwise CPU.
+
+        Raises:
+            ValueError: If tensors are on different devices.
+        """
         devices = {self.x.device, self.hyperedge_index.device, self.y.device}
         if self.hyperedge_attr is not None:
             devices.add(self.hyperedge_attr.device)
@@ -220,6 +230,16 @@ class HData:
         return devices.pop() if len(devices) == 1 else torch.device("cpu")
 
     def to(self, device: torch.device | str, non_blocking: bool = False) -> "HData":
+        """
+        Move all tensors to the specified device.
+
+        Args:
+            device: The target device (e.g., 'cpu', 'cuda:0').
+            non_blocking: If ``True`` and the source and destination devices are both CUDA, the copy will be non-blocking.
+
+        Returns:
+            The :class:`HData` instance with all tensors moved to the specified device.
+        """
         self.x = self.x.to(device=device, non_blocking=non_blocking)
         self.hyperedge_index = self.hyperedge_index.to(device=device, non_blocking=non_blocking)
         self.y = self.y.to(device=device, non_blocking=non_blocking)
@@ -231,7 +251,15 @@ class HData:
         return self
 
     def with_y_to(self, value: float) -> "HData":
-        """Return a copy of this instance with a y attribute set to the given value."""
+        """
+        Return a copy of this instance with a y attribute set to the given value.
+
+        Args:
+            value: The value to set for all entries in the y attribute.
+
+        Returns:
+            A new :class:`HData` instance with the same attributes except for y, which is set to a tensor of the given value.
+        """
         return HData(
             x=self.x,
             hyperedge_index=self.hyperedge_index,

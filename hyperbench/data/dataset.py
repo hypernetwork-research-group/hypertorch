@@ -148,7 +148,7 @@ class Dataset(TorchDataset):
             hdata: :class:`HData` object containing the hypergraph data.
 
         Returns:
-            :class:`Dataset` instance with the provided :class:`HData`.
+            The :class:`Dataset` instance with the provided :class:`HData`.
         """
         return cls(hdata=hdata, is_original=False)
 
@@ -166,10 +166,10 @@ class Dataset(TorchDataset):
 
     def process(self) -> HData:
         """
-        Process the loaded hypergraph into HData format, mapping HIF structure to tensors.
+        Process the loaded hypergraph into :class:`HData` format, mapping HIF structure to tensors.
 
         Returns:
-            HData: Processed hypergraph data.
+            The processed hypergraph data.
         """
         if not self.__is_original:
             raise ValueError("process can only be called for the original dataset.")
@@ -226,13 +226,16 @@ class Dataset(TorchDataset):
         Boundaries are computed using cumulative floor to prevent early splits from
         over-consuming edges. The last split absorbs any rounding remainder.
 
-        Example:
+        Examples:
             With ``num_hyperedges = 3`` and ``ratios = [0.5, 0.25, 0.25]``:
+
             >>> cumulative_ratios = [0.5, 0.75, 1.0]
-            >>> boundaries:
-            >>>     i=0 -> end = int(0.5 * 3)  = 1 -> slice [0:1] -> 1 edge
-            >>>     i=1 -> end = int(0.75 * 3) = 2 -> slice [1:2] -> 1 edge
-            >>>     i=2 -> end = 3 (clamped)       -> slice [2:3] -> 1 edge
+
+            Boundaries:
+
+            - ``i=0`` -> ``end = int(0.5 * 3) = 1`` -> slice ``[0:1]`` -> 1 edge
+            - ``i=1`` -> ``end = int(0.75 * 3) = 2`` -> slice ``[1:2]`` -> 1 edge
+            - ``i=2`` -> ``end = 3`` (clamped) -> slice ``[2:3]`` -> 1 edge
 
         Args:
             ratios: List of floats summing to 1.0, e.g. [0.8, 0.1, 0.1].

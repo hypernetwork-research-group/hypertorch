@@ -168,9 +168,9 @@ class HyperedgeIndex:
     Each column in the tensor represents an incidence between a node and a hyperedge, with the first row containing node indices
     and the second row containing corresponding hyperedge indices.
 
-    Example:
-        hyperedge_index = [[0, 1, 2, 0],
-                           [0, 0, 0, 1]]
+    Examples:
+        >>> hyperedge_index = [[0, 1, 2, 0],
+        ...                    [0, 0, 0, 1]]
 
         This represents two hyperedges:
             - Hyperedge 0 connects nodes 0, 1, and 2.
@@ -216,8 +216,8 @@ class HyperedgeIndex:
         with_mediators: bool = False,
         remove_selfloops: bool = True,
     ) -> Tensor:
-        r"""
-        Construct a graph from a hypergraph with methods proposed in `HyperGCN: A New Method of Training Graph Convolutional Networks on Hypergraphs <https://arxiv.org/pdf/1809.02589.pdf>`_ paper
+        """
+        Construct a graph from a hypergraph with methods proposed in `HyperGCN: A New Method of Training Graph Convolutional Networks on Hypergraphs <https://arxiv.org/pdf/1809.02589.pdf>`_ paper.
         Reference implementation: `source <https://deephypergraph.readthedocs.io/en/latest/_modules/dhg/structure/graphs/graph.html#Graph.from_hypergraph_hypergcn>`_.
 
         Args:
@@ -227,6 +227,9 @@ class HyperedgeIndex:
 
         Returns:
             The edge index. Size ``(2, |E'|)``.
+
+        Raises:
+            ValueError: If any hyperedge contains fewer than 2 nodes.
         """
         device = x.device
 
@@ -275,6 +278,13 @@ class HyperedgeIndex:
     ) -> "HyperedgeIndex":
         """
         Convert hyperedge index to the 0-based format by rebasing node IDs to the range ``[0, num_nodes-1]`` and hyperedge IDs ``[0, num_hyperedges-1]``.
+
+        Args:
+            node_ids_to_rebase: Tensor of shape ``(num_nodes,)`` containing the original node IDs that need to be rebased to 0-based format.
+            hyperedge_ids_to_rebase: Tensor of shape ``(num_hyperedges,)`` containing the original hyperedge IDs that need to be rebased to 0-based format.
+
+        Returns:
+            A new :class:`HyperedgeIndex` instance with the hyperedge index converted to 0-based format.
         """
         node_ids = self.__hyperedge_index[0]
         hyperedge_ids = self.__hyperedge_index[1]

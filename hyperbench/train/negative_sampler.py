@@ -151,22 +151,30 @@ class RandomNegativeSampler(NegativeSampler):
         The resulting negative samples are returned as a new :class:`HData` object with remapped 0-based node and hyperedge IDs, if ``self.return_0based_negatives == True``.
         Otherwise, the negative samples retain their original global node and hyperedge IDs from the input data.
 
-        Example:
+        Examples:
             With ``self.return_0based_negatives = True``:
-            >>> num_negative_samples = 2, num_nodes_per_sample = 3
+
+            >>> num_negative_samples = 2
+            >>> num_nodes_per_sample = 3
             >>> negative_hyperedge_index = [[0, 0, 1, 2, 3, 4],
-                                            [0, 1, 1, 0, 1, 0]]
-                The negative hyperedge 0 connects nodes 0, 2, 3.
-                The second negative hyperedge 1 connects nodes 0, 1, 4.
+            ...                             [0, 1, 1, 0, 1, 0]]
+
+            The negative hyperedge 0 connects nodes 0, 2, 3.
+            The second negative hyperedge 1 connects nodes 0, 1, 4.
+
             >>> negative_x = data.x[[0, 1, 2, 3, 4]]
-            >>> negative_hyperedge_attr = random_attributes_for_2_negative_hyperedges if data.edge_attr is not None
+            >>> negative_hyperedge_attr = random_attributes_for_2_negative_hyperedges
 
             With ``self.return_0based_negatives = False``:
-            >>> num_negative_samples = 2, num_nodes_per_sample = 3
+
+            >>> num_negative_samples = 2
+            >>> num_nodes_per_sample = 3
             >>> negative_hyperedge_index = [[100, 120, 300, 450, 500, 501],
-                                            [3, 3, 3, 4, 4, 4]]
-            >>> negative_x = data.x  # since node IDs are not remapped, we can directly use the original feature matrix and index into it with the original node IDs of the negative samples
-            >>> negative_hyperedge_attr = data.edge_attr.cat([data.edge_attr, random_attributes_for_2_negative_hyperedges]) if data.edge_attr is not None
+            ...                             [3, 3, 3, 4, 4, 4]]
+
+            Since node IDs are not remapped, the original feature matrix can be used directly.
+
+            >>> negative_x = data.x
 
         Args:
             data: The input data object containing node and hyperedge information.

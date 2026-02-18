@@ -5,11 +5,11 @@ from hyperbench.types import EdgeIndex, HyperedgeIndex
 
 
 class HyperGCN(nn.Module):
-    r"""
+    """
     HyperGCN approximates each hyperedge of the hypergraph by a set of pairwise edges connecting the vertices of the hyperedge
     and treats the learning problem as a graph learning problem on the approximation.
-    Proposed in `HyperGCN: A New Method of Training Graph Convolutional Networks on Hypergraphs <https://dl.acm.org/doi/10.5555/3454287.3454422>`_ paper (NeurIPS 2019).
-    Reference implementation: `source <https://deephypergraph.readthedocs.io/en/latest/_modules/dhg/models/hypergraphs/hypergcn.html#HyperGCN>`_.
+    - Proposed in `HyperGCN: A New Method of Training Graph Convolutional Networks on Hypergraphs <https://dl.acm.org/doi/10.5555/3454287.3454422>`_ paper (NeurIPS 2019).
+    - Reference implementation: `source <https://deephypergraph.readthedocs.io/en/latest/_modules/dhg/models/hypergraphs/hypergcn.html#HyperGCN>`_.
 
     Args:
         in_channels: The number of input channels.
@@ -18,7 +18,7 @@ class HyperGCN(nn.Module):
         use_batch_normalization: If set to ``True``, layers will use batch normalization. Defaults to ``False``.
         drop_rate: Dropout ratio. Defaults to ``0.5``.
         use_mediator: Whether to use mediator to transform the hyperedges to edges in the graph. Defaults to ``False``.
-        fast: If set to True, the transformed graph structure will be computed once from the input hypergraph and vertex features, and cached for future use. Defaults to ``True``.
+        fast: If set to ``True``, the transformed graph structure will be computed once from the input hypergraph and vertex features, and cached for future use. Defaults to ``True``.
     """
 
     def __init__(

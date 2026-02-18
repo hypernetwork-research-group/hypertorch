@@ -4,7 +4,7 @@ from hyperbench.types import EdgeIndex, Graph, HyperedgeIndex
 
 
 class HyperGCNConv(nn.Module):
-    r"""
+    """
     The HyperGCNConv layer proposed in `HyperGCN: A New Method of Training Graph Convolutional Networks on Hypergraphs <https://dl.acm.org/doi/10.5555/3454287.3454422>`_ paper (NeurIPS 2019).
     Reference implementation: `source <https://deephypergraph.readthedocs.io/en/latest/_modules/dhg/nn/convs/hypergraphs/hypergcn_conv.html#HyperGCNConv>`_.
 
