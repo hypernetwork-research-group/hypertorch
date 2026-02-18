@@ -20,7 +20,7 @@ class NegativeSampler(ABC):
     Abstract base class for negative samplers.
 
     Args:
-        return_0based_negatives (bool, optional):
+        return_0based_negatives:
             - If ``True``, the negative samples returned by the ``sample`` method will have 0-based node and hyperedge IDs.
             - If ``False``, the negative samples will retain the original global node and hyperedge IDs from the input data.
     """
@@ -36,10 +36,9 @@ class NegativeSampler(ABC):
 
         Args:
             data: The input data object containing graph or hypergraph information.
-            return_0based_negatives: If ``True``, return negative samples with 0-based node and hyperedge IDs.
 
         Returns:
-            HData: The negative samples as a new :class:`HData` object.
+            The negative samples as a new :class:`HData` object.
 
         Raises:
             NotImplementedError: If the method is not implemented in a subclass.
@@ -56,9 +55,9 @@ class NegativeSampler(ABC):
         Concatenate, sort, and remap the sampled hyperedge indexes for negative samples.
 
         Args:
-            sampled_hyperedge_indexes (List[Tensor]): List of hyperedge index tensors for each negative sample.
-            negative_node_ids (Tensor): Tensor of negative node IDs.
-            negative_hyperedge_ids (Tensor): Tensor of negative hyperedge IDs.
+            sampled_hyperedge_indexes: List of hyperedge index tensors for each negative sample.
+            negative_node_ids: Tensor of negative node IDs.
+            negative_hyperedge_ids: Tensor of negative hyperedge IDs.
 
         Returns:
             The concatenated, sorted, and remapped hyperedge index tensor.
@@ -85,8 +84,8 @@ class NegativeSampler(ABC):
         Concatenate the hyperedge attributes for the negative samples.
 
         Args:
-            sampled_hyperedge_attrs (List[Tensor]): List of hyperedge attribute tensors for each negative sample.
-            hyperedge_attr (Tensor, optional): The original hyperedge attributes from the input data.
+            sampled_hyperedge_attrs: List of hyperedge attribute tensors for each negative sample.
+            hyperedge_attr: The original hyperedge attributes from the input data.
 
         Returns:
             The concatenated hyperedge attribute tensor for the negative samples.
@@ -102,8 +101,8 @@ class NegativeSampler(ABC):
         Get the node feature matrix for the negative samples.
 
         Args:
-            x (Tensor): The original node feature matrix from the input data.
-            negative_node_ids (Tensor): Tensor of negative node IDs.
+            x: The original node feature matrix from the input data.
+            negative_node_ids: Tensor of negative node IDs.
 
         Returns:
             The node feature matrix for the negative samples and the number of negative nodes.
@@ -119,9 +118,9 @@ class RandomNegativeSampler(NegativeSampler):
     that can be indexed with the negative samples' IDs.
 
     Args:
-        num_negative_samples (int): Number of negative hyperedges to generate.
-        num_nodes_per_sample (int): Number of nodes per negative hyperedge.
-        return_0based_negatives (bool, optional):
+        num_negative_samples: Number of negative hyperedges to generate.
+        num_nodes_per_sample: Number of nodes per negative hyperedge.
+        return_0based_negatives:
             - If ``True``, the negative samples returned by the ``sample`` method will have 0-based node and hyperedge IDs.
             - If ``False``, the negative samples will retain the original global node and hyperedge IDs from the input data.
 
@@ -168,8 +167,9 @@ class RandomNegativeSampler(NegativeSampler):
                                             [3, 3, 3, 4, 4, 4]]
             >>> negative_x = data.x  # since node IDs are not remapped, we can directly use the original feature matrix and index into it with the original node IDs of the negative samples
             >>> negative_hyperedge_attr = data.edge_attr.cat([data.edge_attr, random_attributes_for_2_negative_hyperedges]) if data.edge_attr is not None
+
         Args:
-            data (HData): The input data object containing node and hyperedge information.
+            data: The input data object containing node and hyperedge information.
 
         Returns:
             A new :class:`HData` instance containing the negative samples.

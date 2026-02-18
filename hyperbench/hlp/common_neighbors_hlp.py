@@ -16,8 +16,8 @@ class CommonNeighborsHlpModule(HlpModule):
 
     Args:
         aggregation: The aggregation method for common neighbors ("mean", "min", or "sum").
-        decoder: An optional decoder module. Default is ``CommonNeighbors`` decoder.
-        loss_fn: An optional loss function. Default is ``BCEWithLogitsLoss``.
+        decoder: An optional decoder module. Defaults to :class:`CommonNeighbors`.
+        loss_fn: An optional loss function. Defaults to ``BCEWithLogitsLoss``.
     """
 
     # No train/validation, so return default loss

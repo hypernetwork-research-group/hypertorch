@@ -23,11 +23,11 @@ class HlpModule(L.LightningModule):
     Args:
         decoder: Decoder module to use to predict whether hyperedges are positive or negative.
         loss_fn: Loss function.
-        encoder: Optional encoder module. Default is ``None`` as not all HLP model will use an encoder.
+        encoder: Optional encoder module. Defaults to ``None`` as not all HLP model will use an encoder.
         metrics: Optional dictionary of metric functions to compute during evaluation.
         negative_sampler: Optional negative sampler. If None, no negative sampling is performed.
-        negative_sampling_schedule: When to perform negative sampling during training. Default is ``EVERY_EPOCH``.
-        negative_sampling_every_n: If using ``EVERY_N_EPOCHS`` schedule, how many epochs between negative sampling runs. Default is ``1``.
+        negative_sampling_schedule: When to perform negative sampling during training. Defaults to ``EVERY_EPOCH``.
+        negative_sampling_every_n: If using ``EVERY_N_EPOCHS`` schedule, how many epochs between negative sampling runs. Defaults to ``1``.
     """
 
     def __init__(

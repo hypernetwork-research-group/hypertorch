@@ -44,10 +44,7 @@ class DatasetNames(Enum):
 
 
 class HIFConverter:
-    """
-    Docstring for HIFConverter
-    A utility class to load hypergraphs from HIF format.
-    """
+    """A utility class to load hypergraphs from HIF format."""
 
     @staticmethod
     def load_from_hif(dataset_name: Optional[str], save_on_disk: bool = False) -> HIFHypergraph:
@@ -239,7 +236,7 @@ class Dataset(TorchDataset):
 
         Args:
             ratios: List of floats summing to 1.0, e.g. [0.8, 0.1, 0.1].
-            shuffle: Whether to shuffle hyperedges before splitting. Default is ``False`` for deterministic splits.
+            shuffle: Whether to shuffle hyperedges before splitting. Defaults to ``False`` for deterministic splits.
             seed: Optional random seed for reproducibility. Ignored if shuffle is set to ``False``.
 
         Returns:
@@ -327,7 +324,7 @@ class Dataset(TorchDataset):
         attrs: Dict[str, Any],
         attr_keys: Optional[List[str]] = None,
     ) -> Tensor:
-        r"""
+        """
         Extract and encode numeric attributes to tensor.
         Non-numeric attributes are discarded. Missing attributes are filled with ``0.0``.
 
@@ -359,7 +356,7 @@ class Dataset(TorchDataset):
         Collect unique numeric attribute keys from a list of attribute dictionaries.
 
         Args:
-            attrs_list: List of attribute dictionaries.
+            attr_keys: List of attribute dictionaries.
 
         Returns:
             List of unique numeric attribute keys.

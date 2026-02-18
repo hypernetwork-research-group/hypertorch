@@ -222,7 +222,7 @@ class HyperedgeIndex:
 
         Args:
             x: Node feature matrix. Size ``(|V|, C)``.
-            with_mediator: Whether to use mediator to transform the hyperedges to edges in the graph. Defaults to ``False``.
+            with_mediators: Whether to use mediator to transform the hyperedges to edges in the graph. Defaults to ``False``.
             remove_selfloops: Whether to remove self-loops. Defaults to ``True``.
 
         Returns:

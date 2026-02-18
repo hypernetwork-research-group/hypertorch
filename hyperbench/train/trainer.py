@@ -23,18 +23,18 @@ class MultiModelTrainer:
 
         devices: The devices to use. Can be set to a positive number (int or str), a sequence of device indices
             (list or str), the value ``-1`` to indicate all available devices should be used, or ``"auto"`` for
-            automatic selection based on the chosen accelerator. Default: ``"auto"``.
+            automatic selection based on the chosen accelerator. Defaults to ``"auto"``.
 
         strategy: Supports different training strategies with aliases as well custom strategies.
-            Default: ``"auto"``.
+            Defaults to ``"auto"``.
 
         num_nodes: Number of GPU nodes for distributed training.
-            Default: ``1``.
+            Defaults to ``1``.
 
         precision: Double precision (64, '64' or '64-true'), full precision (32, '32' or '32-true'),
             16bit mixed precision (16, '16', '16-mixed') or bfloat16 mixed precision ('bf16', 'bf16-mixed').
             Can be used on CPU, GPU, TPUs, or HPUs.
-            Default: ``'32-true'``.
+            Defaults to ``'32-true'``.
 
         max_epochs: Stop training once this number of epochs is reached. Disabled by default (None).
             If both max_epochs and max_steps are not specified, defaults to ``max_epochs = 1000``.
@@ -56,44 +56,44 @@ class MultiModelTrainer:
             and the timer resets; if it elapses during a multiple-N epoch, validation runs after the current batch.
             For ``None`` or ``1`` cases, the time-based behavior of ``val_check_interval`` applies without
             additional alignment.
-            Default: ``1``.
+            Defaults to ``1``.
 
         logger: Logger (or iterable collection of loggers) for experiment tracking. A ``True`` value uses
             the default ``TensorBoardLogger`` if it is installed, otherwise ``CSVLogger``.
             ``False`` will disable logging. If multiple loggers are provided, local files
             (checkpoints, profiler traces, etc.) are saved in the ``log_dir`` of the first logger.
-            Default: ``True``.
+            Defaults to ``True``.
 
         default_root_dir: Default path for logs and weights when no logger/ckpt_callback passed.
-            Default: ``os.getcwd()``.
+            Defaults to ``os.getcwd()``.
             Can be remote file paths such as `s3://mybucket/path` or 'hdfs://path/'
 
         enable_autolog_hparams: Whether to log hyperparameters at the start of a run.
-            Default: ``True``.
+            Defaults to ``True``.
 
         log_every_n_steps: How often to log within steps.
-            Default: ``50``.
+            Defaults to ``50``.
 
         profiler: To profile individual steps during training and assist in identifying bottlenecks.
-            Default: ``None``.
+            Defaults to ``None``.
 
         fast_dev_run: Runs n if set to ``n`` (int) else 1 if set to ``True`` batch(es)
             of train, val and test to find any bugs (ie: a sort of unit test).
-            Default: ``False``.
+            Defaults to ``False``.
 
         enable_checkpointing: If ``True``, enable checkpointing.
             It will configure a default ModelCheckpoint callback if there is no user-defined ModelCheckpoint in
             :paramref:`~hyperbench.train.MultiModelTrainer.callbacks`.
-            Default: ``True``.
+            Defaults to ``True``.
 
         enable_progress_bar: Whether to enable the progress bar by default.
-            Default: ``True``.
+            Defaults to ``True``.
 
         enable_model_summary: Whether to enable model summarization by default.
-            Default: ``True``.
+            Defaults to ``True``.
 
         callbacks: Add a callback or list of callbacks.
-            Default: ``None``.
+            Defaults to ``None``.
     """
 
     def __init__(

@@ -8,7 +8,10 @@ def sparse_dropout(
     dropout_prob: float,
     fill_value: float = 0.0,
 ) -> Tensor:
-    r"""Dropout function for sparse matrix. This function will return a new sparse matrix with the same shape as the input sparse matrix, but with some elements dropped out.
+    """Dropout function for sparse matrix.
+
+    Returns a new sparse matrix with the same shape as the input sparse matrix,
+    but with some elements dropped out.
 
     Args:
         sparse_tensor: The sparse matrix with format ``torch.sparse_coo_tensor``.

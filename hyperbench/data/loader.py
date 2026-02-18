@@ -24,7 +24,8 @@ class DataLoader(TorchDataLoader):
         )
 
     def collate(self, batch: List[HData]) -> HData:
-        """Collates a list of HData objects into a single batched HData object.
+        """
+        Collates a list of HData objects into a single batched HData object.
 
         This function combines multiple separate hypergraph samples into a single
         batched representation suitable for mini-batch training. It handles:
@@ -33,35 +34,35 @@ class DataLoader(TorchDataLoader):
         - Concatenating edge attributes from all samples, if present
 
         Example:
-            Given batch = [HData_0, HData_1].
+            >>> # Given:
+            >>> batch = [HData_0, HData_1]
 
-            For node features:
-                HData_0.x.shape = (3, 64) # 3 nodes with 64 features
-                HData_1.x.shape = (2, 64) # 2 nodes with 64 features
+            >>> # For node features:
+            >>> HData_0.x.shape = (3, 64) # 3 nodes with 64 features
+            >>> HData_1.x.shape = (2, 64) # 2 nodes with 64 features
+            >>> # The output will be HData with:
+            >>> x.shape = (5, 64) # All 5 nodes concatenated
 
-                The output will be HData with:
-                    x.shape = (5, 64) # All 5 nodes concatenated
+            >>> # For hyperedge index:
+            >>> HData_0 (3 nodes, 2 hyperedges):
+            >>> hyperedge_index = [[0, 1, 1, 2], # Nodes 0, 1, 1, 2
+            >>>                    [0, 0, 1, 1]] # Hyperedge 0 contains {0,1}, Hyperedge 1 contains {1,2}
 
-            For hyperedge index:
-                HData_0 (3 nodes, 2 hyperedges):
-                    hyperedge_index = [[0, 1, 1, 2], # Nodes 0, 1, 1, 2
-                                  [0, 0, 1, 1]] # Hyperedge 0 contains {0,1}, Hyperedge 1 contains {1,2}
+            >>> HData_1 (2 nodes, 1 hyperedge):
+            >>> hyperedge_index = [[0, 1], # Nodes 0, 1
+            >>>                    [0, 0]] # Hyperedge 0 contains {0,1}
 
-                HData_1 (2 nodes, 1 hyperedge):
-                    hyperedge_index = [[0, 1], # Nodes 0, 1
-                                  [0, 0]] # Hyperedge 0 contains {0,1}
-
-                Batched result:
-                    hyperedge_index = [[0, 1, 1, 2, 3, 4], # Node indices: original then offset by 3, so 0->3, 1->4
-                                  [0, 0, 1, 1, 2, 2]] # Hyperedge IDs: original then offset by 2, so 0->2, 0->2
-                                   ^^^^^^^^^^  ^^^^
-                                   Sample 0    Sample 1 (nodes +3, edges +2)
+            >>> # Batched result:
+            >>> hyperedge_index = [[0, 1, 1, 2, 3, 4], # Node indices: original then offset by 3, so 0->3, 1->4
+            >>>                    [0, 0, 1, 1, 2, 2]] # Hyperedge IDs: original then offset by 2, so 0->2, 0->2
+            >>>                     ^^^^^^^^^^  ^^^^
+            >>>                     Sample 0    Sample 1 (nodes +3, edges +2)
 
         Args:
             batch: List of HData objects to collate.
 
         Returns:
-            HData: A single HData object containing the batched data.
+            A single :class:`HData` object containing the batched data.
         """
         x, total_nodes = self.__batch_x(batch)
         hyperedge_index, hyperedge_attr, total_hyperedges = self.__batch_hyperedges(batch)
@@ -97,7 +98,7 @@ class DataLoader(TorchDataLoader):
             batch: List of HData objects.
 
         Returns:
-            Tensor: Concatenated node features with shape (total_nodes, num_features).
+            Concatenated node features with shape (total_nodes, num_features).
         """
         per_sample_x = [data.x for data in batch]
 

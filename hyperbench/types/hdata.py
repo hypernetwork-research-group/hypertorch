@@ -93,7 +93,7 @@ class HData:
         Concatenate HData instances that share the same node space, meaning nodes with the same ID in different instances are the same node.
         This is useful when combining positive and negative hyperedges that reference the same set of nodes.
 
-        Results:
+        Notes:
             - ``x`` is derived from the instance with the largest number of nodes, if not provided explicitly. If there are conflicting features for the same node ID across instances, the features from the instance with the largest number of nodes will be used.
             - ``hyperedge_index`` is the concatenation of all input hyperedge indices.
             - ``hyperedge_attr`` is the concatenation of all input hyperedge attributes, if present. If some instances have hyperedge attributes and others do not, the resulting ``hyperedge_attr`` will be set to ``None``.
@@ -161,6 +161,7 @@ class HData:
             >>>                        [0, 0, 0, 1, 1]]  # hyperedges 0 -> 0, 2 -> 1 (remapped to 0-based)
             >>> new_x = [x[0], x[1], x[3], x[4]]
             >>> new_hyperedge_attr = [hyperedge_attr[0], hyperedge_attr[2]]
+
         Args:
             hdata: The original :class:`HData` containing the full hypergraph.
             split_hyperedge_ids: Tensor of hyperedge IDs to include in this split.

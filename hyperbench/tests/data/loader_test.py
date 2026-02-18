@@ -181,7 +181,7 @@ def test_collate_empty_edge_index():
     assert batched.num_nodes == 2
     assert batched.hyperedge_index.size(1) == 0
 
-    assert batched.num_hyperedges == 0  # max_hyperedge_id (-1) + 1 = 0
+    assert batched.num_hyperedges == 0
 
 
 def test_collate_multi_dimensional_edge_attributes(mock_dataset_multiple_samples):

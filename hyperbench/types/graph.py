@@ -76,7 +76,8 @@ class Graph:
 
         Args:
             x: Node feature matrix. Size ``(|V|, C)``.
-            drop_rate: Randomly dropout the connections in adjacency matrix with probability ``drop_rate``. Default: ``0.0``.
+            laplacian_matrix: The GCN Laplacian matrix. Size ``(|V|, |V|)``.
+            drop_rate: Randomly dropout the connections in adjacency matrix with probability ``drop_rate``. Defaults to ``0.0``.
 
         Returns:
             The smoothed feature matrix. Size ``(|V|, C)``.
@@ -136,6 +137,9 @@ class EdgeIndex:
 
         Args:
             with_duplicate_removal: Whether to remove duplicate edges after adding self-loops. Defaults to ``True``.
+
+        Returns:
+            This :class:`EdgeIndex` instance with self-loops added.
 
         Raises:
             ValueError: If the input edge index has no edges (i.e., shape (2, 0)).
@@ -296,6 +300,9 @@ class EdgeIndex:
 
         Args:
             with_selfloops: Whether to add self-loops to each node. Defaults to ``False``.
+
+        Returns:
+            This :class:`EdgeIndex` instance converted to undirected.
         """
         device = self.__edge_index.device
 
