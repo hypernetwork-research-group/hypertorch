@@ -1,3 +1,5 @@
+import torch
+
 from torch import Tensor, nn
 from typing import Dict, Optional
 from hyperbench.nn import Aggregation, CommonNeighborsScorer, NeighborScorer
@@ -11,9 +13,7 @@ class CommonNeighbors(nn.Module):
         scorer: Optional[NeighborScorer] = None,
     ) -> None:
         super().__init__()
-        self.scorer = (
-            scorer if scorer is not None else CommonNeighborsScorer(aggregation=aggregation)
-        )
+        self.scorer = scorer if scorer is not None else CommonNeighborsScorer(aggregation)
 
     def forward(
         self,
@@ -30,4 +30,6 @@ class CommonNeighbors(nn.Module):
         Returns:
             A 1-D tensor of shape (num_hyperedges,) with CN scores.
         """
-        return self.scorer.score_batch(hyperedge_index, node_to_neighbors)
+        scores = self.scorer.score_batch(hyperedge_index, node_to_neighbors)
+        torch.log1p(scores, out=scores)
+        return scores
