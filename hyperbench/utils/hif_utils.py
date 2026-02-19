@@ -3,8 +3,9 @@ import json
 import requests
 
 
-def validate_hif_json(filename):
-    """Validate a JSON file against the HIF (Hypergraph Interchange Format) schema.
+def validate_hif_json(filename: str) -> bool:
+    """
+    Validate a JSON file against the HIF (Hypergraph Interchange Format) schema.
 
     Args:
         filename: Path to the JSON file to validate.

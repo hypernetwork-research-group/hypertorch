@@ -23,13 +23,14 @@ theme:
         icon: material/brightness-4
         name: Switch to light mode
   features:
-    - navigation.tabs
-    - navigation.sections
-    - navigation.expand
-    - navigation.top
-    - search.suggest
-    - search.highlight
-    - content.code.copy
+    - navigation.tabs # add top nav
+    - navigation.sections # left sidebar organized by sections
+    - navigation.tracking # highlights the current page in the sideba
+    - navigation.expand # allows sidebar items to expand/collapse
+    - toc.integrate # integrates the table of contents into the sidebar
+    - search.suggest # add search suggestions
+    - search.highlight # highlight search terms in results
+    - content.code.copy # add copy button to code blocks
 
 nav:
   - Home: index.md
@@ -39,18 +40,19 @@ nav:
       - Overview: user-guide/user.md
   - API Reference:
       - API: api/reference.md
-  - Dev: ref.md
   - Contributing: contributing.md
 
 markdown_extensions:
   - admonition
   - codehilite
-  - pymdownx.highlight:
-      anchor_linenums: true
+  - footnotes
   - pymdownx.superfences
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.details
+  - pymdownx.tasklist
+  - pymdownx.highlight:
+      anchor_linenums: true
   - pymdownx.tabbed:
       alternate_style: true
   - toc:

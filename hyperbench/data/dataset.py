@@ -238,7 +238,7 @@ class Dataset(TorchDataset):
             - ``i=2`` -> ``end = 3`` (clamped) -> slice ``[2:3]`` -> 1 edge
 
         Args:
-            ratios: List of floats summing to 1.0, e.g. [0.8, 0.1, 0.1].
+            ratios: List of floats summing to ``1.0``, e.g., ``[0.8, 0.1, 0.1]``.
             shuffle: Whether to shuffle hyperedges before splitting. Defaults to ``False`` for deterministic splits.
             seed: Optional random seed for reproducibility. Ignored if shuffle is set to ``False``.
 
