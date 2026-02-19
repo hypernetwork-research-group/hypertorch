@@ -32,7 +32,7 @@ class CommonNeighborsHlpModule(HlpModule):
         metrics: Optional[Dict[str, MetricFn]] = None,
     ):
         super().__init__(
-            decoder=decoder if decoder is not None else CommonNeighbors(aggregation=aggregation),
+            decoder=decoder if decoder is not None else CommonNeighbors(aggregation),
             loss_fn=loss_fn if loss_fn is not None else nn.BCEWithLogitsLoss(),
             metrics=metrics,
         )

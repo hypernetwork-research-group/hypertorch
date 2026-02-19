@@ -18,14 +18,14 @@ class Stage(Enum):
 
 class HlpModule(L.LightningModule):
     """
-    A LightningModule for the HLP model with optional negative sampling.
+    A LightningModule for HLP models with optional negative sampling.
 
     Args:
+        encoder: Optional encoder module. Defaults to ``None`` as not all HLP model will use an encoder.
         decoder: Decoder module to use to predict whether hyperedges are positive or negative.
         loss_fn: Loss function.
-        encoder: Optional encoder module. Defaults to ``None`` as not all HLP model will use an encoder.
         metrics: Optional dictionary of metric functions to compute during evaluation.
-        negative_sampler: Optional negative sampler. If None, no negative sampling is performed.
+        negative_sampler: Optional negative sampler. If ``None``, no negative sampling is performed.
         negative_sampling_schedule: When to perform negative sampling during training. Defaults to ``EVERY_EPOCH``.
         negative_sampling_every_n: If using ``EVERY_N_EPOCHS`` schedule, how many epochs between negative sampling runs. Defaults to ``1``.
     """
@@ -57,7 +57,18 @@ class HlpModule(L.LightningModule):
         batch_size: int,
         stage: Stage,
     ) -> Tensor:
-        """Compute and log loss based on scores and labels."""
+        """
+        Compute and log loss based on scores and labels.
+
+        Args:
+            scores: The predicted scores from the model.
+            labels: The true labels corresponding to the scores.
+            batch_size: The size of the current batch, used for logging.
+            stage: The current stage (train/val/test) for logging purposes.
+
+        Returns:
+            The computed loss tensor.
+        """
         loss = self.loss_fn(scores, labels)
         self.log(name=f"{stage.value}_loss", value=loss, prog_bar=True, batch_size=batch_size)
         return loss
@@ -69,7 +80,15 @@ class HlpModule(L.LightningModule):
         batch_size: int,
         stage: Stage,
     ) -> None:
-        """Compute and log metrics based on scores and labels."""
+        """
+        Compute and log metrics based on scores and labels.
+
+        Args:
+            scores: The predicted scores from the model.
+            labels: The true labels corresponding to the scores.
+            batch_size: The size of the current batch, used for logging.
+            stage: The current stage (train/val/test) for logging purposes.
+        """
         for metric_name, metric_fn in self.metrics.items():
             metric_value = metric_fn(scores, labels)
             self.log(
@@ -95,7 +114,15 @@ class HlpModule(L.LightningModule):
         return False
 
     def _sample_negatives(self, batch: HData) -> HData:
-        """Sample fresh negatives if the schedule requires it, otherwise return cache."""
+        """
+        Sample fresh negatives if the schedule requires it, otherwise return cache.
+
+        Args:
+            batch: The current batch of data for which to sample negatives.
+
+        Returns:
+            A batch of negative samples, either freshly sampled or from cache.
+        """
         if self._should_sample_negatives():
             if self.negative_sampler is not None:
                 self.__cached_negative_samples = self.negative_sampler.sample(batch)

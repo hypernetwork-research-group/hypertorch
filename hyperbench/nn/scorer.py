@@ -70,7 +70,7 @@ class CommonNeighborsScorer(NeighborScorer):
         node_to_neighbors: Optional[Dict[int, Neighborhood]] = None,
     ) -> Tensor:
         """
-        Score all hyperedges in a hyperedge_index tensor.
+        Score all hyperedges in a hyperedge index tensor.
 
         Args:
             hyperedge_index: Tensor of shape ``(2, |E|)``.
