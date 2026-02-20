@@ -54,7 +54,7 @@ class HData:
             if num_nodes is not None
             # There should never be isolated nodes when HData is created by Dataset
             # as each isolted node gets its own self-loop hyperedge
-            else hyperedge_index_wrapper.num_nodes_if_isolated_exist(num_nodes=x.size(0))
+            else hyperedge_index_wrapper.num_nodes_if_isolated_exist(x.size(0))
         )
 
         self.num_hyperedges: int = (
