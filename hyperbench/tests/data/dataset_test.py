@@ -149,16 +149,14 @@ def test_HIFConverter():
     assert hypergraph.num_edges == 1268
 
 
-def test_HIFConverter_invalid_dataset():
-    """Test loading an invalid dataset"""
+def test_HIFConverter_loads_invalid_dataset():
     dataset_name = "INVALID_DATASET"
 
     with pytest.raises(ValueError, match="Dataset 'INVALID_DATASET' not found"):
         HIFConverter.load_from_hif(dataset_name)
 
 
-def test_HIFConverter_invalid_hif_format():
-    """Test loading an invalid HIF format dataset."""
+def test_HIFConverter_loads_invalid_hif_format():
     dataset_name = "ALGEBRA"
 
     invalid_hif_json = '{"network-type": "undirected", "nodes": []}'
@@ -177,8 +175,7 @@ def test_HIFConverter_invalid_hif_format():
             HIFConverter.load_from_hif(dataset_name)
 
 
-def test_HIFConverter_save_on_disk():
-    """Test downloading dataset with save_on_disk=True."""
+def test_HIFConverter_stores_on_disk_when_save_on_disk_true():
     dataset_name = "ALGEBRA"
 
     mock_hypergraph = HIFHypergraph(
@@ -224,8 +221,7 @@ def test_HIFConverter_save_on_disk():
         assert mock_file.call_count >= 2  # Once for write, once for read
 
 
-def test_HIFConverter_temp_file():
-    """Test downloading dataset with save_on_disk=False (uses temp file)."""
+def test_HIFConverter_uses_temp_file_when_save_on_disk_false():
     dataset_name = "ALGEBRA"
 
     mock_hypergraph = HIFHypergraph(
@@ -276,7 +272,6 @@ def test_HIFConverter_temp_file():
 
 
 def test_HIFConverter_download_failure():
-    """Test handling of failed download from GitHub."""
     dataset_name = "ALGEBRA"
 
     with (
@@ -298,8 +293,7 @@ def test_HIFConverter_download_failure():
         )
 
 
-def test_HIFConverter_network_error():
-    """Test handling of network errors during download."""
+def test_HIFConverter_download_raises_when_network_error():
     dataset_name = "ALGEBRA"
 
     with (
@@ -313,9 +307,7 @@ def test_HIFConverter_network_error():
             HIFConverter.load_from_hif(dataset_name)
 
 
-def test_dataset_not_available():
-    """Test loading an unavailable dataset."""
-
+def test_dataset_is_not_available():
     class FakeMockDataset(Dataset):
         DATASET_NAME = "FAKE"
 
@@ -323,9 +315,7 @@ def test_dataset_not_available():
         FakeMockDataset()
 
 
-def test_AlgebraDataset_available():
-    """Test loading the ALGEBRA dataset."""
-
+def test_dataset_is_available():
     mock_hypergraph = HIFHypergraph(
         network_type="undirected",
         nodes=[{"node": str(i)} for i in range(423)],
@@ -341,9 +331,7 @@ def test_AlgebraDataset_available():
         assert dataset.__len__() == dataset.hypergraph.num_nodes
 
 
-def test_double_download():
-    """Test that downloading the same dataset twice uses local value."""
-
+def test_download_already_downloaded_dataset_uses_local_value():
     dataset = AlgebraDataset()
 
     with patch.object(
@@ -425,8 +413,6 @@ def test_dataset_process_with_edge_attributes():
 
 
 def test_dataset_process_without_edge_attributes(mock_no_edge_attr_hypergraph):
-    """Test that process handles edges without attributes."""
-
     with patch.object(HIFConverter, "load_from_hif", return_value=mock_no_edge_attr_hypergraph):
         dataset = AlgebraDataset()
 
@@ -436,9 +422,7 @@ def test_dataset_process_without_edge_attributes(mock_no_edge_attr_hypergraph):
     assert dataset.hdata.hyperedge_attr is None
 
 
-def test_dataset_process_edge_index_format(mock_four_node_hypergraph):
-    """Test that hyperedge_index has correct format [node_ids, edge_ids]."""
-
+def test_dataset_process_hyperedge_index_in_correct_format(mock_four_node_hypergraph):
     with patch.object(HIFConverter, "load_from_hif", return_value=mock_four_node_hypergraph):
         dataset = AlgebraDataset()
 
@@ -482,8 +466,7 @@ def test_getitem_index_list_empty(mock_simple_hypergraph):
         dataset[[]]
 
 
-def test_getitem_index_list_too_large(mock_five_node_hypergraph):
-    """Test __getitem__ with index list larger than number of nodes raises ValueError."""
+def test_getitem_raises_when_index_list_larger_then_num_nodes(mock_five_node_hypergraph):
     with patch.object(HIFConverter, "load_from_hif", return_value=mock_five_node_hypergraph):
         dataset = AlgebraDataset()
 
@@ -494,8 +477,7 @@ def test_getitem_index_list_too_large(mock_five_node_hypergraph):
         dataset[[0, 1, 2, 3, 4, 5]]
 
 
-def test_getitem_index_out_of_bounds(mock_four_node_hypergraph):
-    """Test __getitem__ with out-of-bounds index raises IndexError."""
+def test_getitem_raises_when_index_out_of_bounds(mock_four_node_hypergraph):
     with patch.object(HIFConverter, "load_from_hif", return_value=mock_four_node_hypergraph):
         dataset = AlgebraDataset()
 
@@ -508,11 +490,10 @@ def test_getitem_single_index(mock_sample_hypergraph):
         dataset = AlgebraDataset()
 
     data = dataset[1]
-    assert data.x.shape[0] == 1
 
-    # Isolated nodes are included with self-loop edges,
-    # so hyperedge_index should have shape [2, 1] for the self-loop
+    # Node 1 is isolated (self-loop hyperedge), so hyperedge_index has shape [2, 1]
     assert data.hyperedge_index.shape == (2, 1)
+    assert data.num_hyperedges == 1
 
 
 def test_getitem_when_list_index_provided(mock_four_node_hypergraph):
@@ -522,9 +503,9 @@ def test_getitem_when_list_index_provided(mock_four_node_hypergraph):
     data = dataset[[0, 2, 3]]
 
     # Node 1 is part of the hyperedge that contains node 0,
-    # so it's included in the hyperedge index
-    assert data.x.shape[0] == 4
+    # so it's included in the hyperedge index (4 incidences across 2 hyperedges)
     assert data.hyperedge_index.shape == (2, 4)
+    assert data.num_hyperedges == 2
 
 
 def test_getitem_with_edge_attr(mock_three_node_weighted_hypergraph):
@@ -535,16 +516,14 @@ def test_getitem_with_edge_attr(mock_three_node_weighted_hypergraph):
 
     data = dataset[0]
 
-    assert data.x.shape[0] == 2
+    # __getitem__ now returns only hyperedge_index with global IDs,
+    # x is empty and hyperedge_attr is None
     assert data.hyperedge_index.shape == (2, 2)
-    assert data.hyperedge_attr is not None
-    assert data.hyperedge_attr.shape == (1, 1)
-    assert data.hyperedge_attr[0].item() == 1
+    assert data.num_hyperedges == 1
+    assert data.hyperedge_attr is None
 
 
 def test_getitem_without_edge_attr(mock_no_edge_attr_hypergraph):
-    """Test __getitem__ returns None for edge_attr when not present."""
-
     with patch.object(HIFConverter, "load_from_hif", return_value=mock_no_edge_attr_hypergraph):
         dataset = AlgebraDataset()
 
@@ -553,22 +532,20 @@ def test_getitem_without_edge_attr(mock_no_edge_attr_hypergraph):
 
 
 def test_getitem_with_multiple_edges_attr(mock_multiple_edges_attr_hypergraph):
-    """Test __getitem__ correctly filters edge_attr for sampled edges."""
-
     with patch.object(
         HIFConverter, "load_from_hif", return_value=mock_multiple_edges_attr_hypergraph
     ):
         dataset = AlgebraDataset()
 
     node_data = dataset[[0, 2]]
-    assert node_data.hyperedge_attr is not None
-    assert node_data.hyperedge_attr.shape[0] == 2
     assert node_data.num_hyperedges == 2
-    assert torch.allclose(node_data.hyperedge_attr, torch.tensor([[1.0], [2.0]]))
+
+    # Even though the original hypergraph has edge attributes, __getitem__ should return hyperedge_attr as None
+    # as the hyperedge attributes are handled by the loader's collate function during batching
+    assert node_data.hyperedge_attr is None
 
 
-def test_getitem_edge_attr_no_uniform_edges():
-    """Test edge attributes are padded with 0.0 when edges have inconsistent attributes."""
+def test_getitem_hyperedge_attr_are_padded_with_zero_when_no_uniform_edges():
     mock_hypergraph = HIFHypergraph(
         network_type="undirected",
         nodes=[
@@ -610,7 +587,6 @@ def test_getitem_edge_attr_no_uniform_edges():
 
 
 def test_transform_attrs_empty_attrs():
-    """Test transform_attrs with empty or no numeric attributes."""
     mock_hypergraph = HIFHypergraph(
         network_type="undirected",
         nodes=[{"node": "0", "attrs": {}}],
@@ -633,8 +609,7 @@ def test_transform_attrs_empty_attrs():
         assert len(result) == 0
 
 
-def test_process_with_inconsistent_node_attributes():
-    """Test process() pads missing node attributes with 0.0 (insertion order)."""
+def test_process_adds_padding_zero_when_inconsistent_node_attributes():
     mock_hypergraph = HIFHypergraph(
         network_type="undirected",
         nodes=[
@@ -666,8 +641,7 @@ def test_process_with_inconsistent_node_attributes():
         assert torch.allclose(dataset.hdata.x[2], torch.tensor([0.0, 0.5]))  # weight=0.0, score=0.5
 
 
-def test_process_with_no_node_attributes_fallback():
-    """Test process() falls back to torch ones when no node features."""
+def test_process_with_no_node_attributes_fallback_to_one():
     mock_hypergraph = HIFHypergraph(
         network_type="undirected",
         nodes=[
@@ -690,7 +664,6 @@ def test_process_with_no_node_attributes_fallback():
 
 
 def test_process_with_single_node_attribute():
-    """Test process() with single numeric attribute per node."""
     mock_hypergraph = HIFHypergraph(
         network_type="undirected",
         nodes=[
@@ -718,8 +691,7 @@ def test_process_with_single_node_attribute():
         assert torch.allclose(dataset.hdata.x, torch.tensor([[1.5], [2.5], [3.5]]))
 
 
-def test_getitem_preserves_node_attributes():
-    """Test that __getitem__ correctly samples node attributes."""
+def test_getitem_returns_global_ids():
     mock_hypergraph = HIFHypergraph(
         network_type="undirected",
         nodes=[
@@ -746,23 +718,26 @@ def test_getitem_preserves_node_attributes():
         dataset = TestDataset()
 
         data = dataset[0]
-        # Node 0 and node 1 are included due to the hyperedge, so we get 2 nodes in the output
-        assert data.x.shape == (2, 1)
-        assert torch.allclose(data.x, torch.tensor([[1.0], [2.0]]))
+        # Node 0 and node 1 are in hyperedge 0
+        assert data.num_hyperedges == 1
+        assert data.hyperedge_index.shape == (2, 2)
+        # Global IDs preserved: nodes 0,1 and hyperedge 0
+        assert torch.equal(data.hyperedge_index[0], torch.tensor([0, 1]))
+        assert torch.equal(data.hyperedge_index[1], torch.tensor([0, 0]))
 
         data = dataset[[0, 2]]
-        # Node 0, node 1, and node 2 are included due to the hyperedges, so we get 3 nodes in the output
-        assert data.x.shape == (3, 1)
-        assert torch.allclose(data.x, torch.tensor([[1.0], [2.0], [3.0]]))
+        # All 3 nodes, both hyperedges
+        assert data.num_hyperedges == 2
+        assert data.hyperedge_index.shape == (2, 3)
 
         data = dataset[2]
-        # Only node 2 is included, so we get 1 node in the output
-        assert data.x.shape == (1, 1)
-        assert torch.allclose(data.x, torch.tensor([[3.0]]))
+        # Only node 2 in hyperedge 1
+        assert data.num_hyperedges == 1
+        assert torch.equal(data.hyperedge_index[0], torch.tensor([2]))
+        assert torch.equal(data.hyperedge_index[1], torch.tensor([1]))
 
 
-def test_transform_attrs_with_attr_keys_padding():
-    """Test transform_attrs pads missing attributes with 0.0 when attr_keys provided."""
+def test_transform_attrs_adds_padding_zero_when_attr_keys_padding():
     mock_hypergraph = HIFHypergraph(
         network_type="undirected",
         nodes=[{"node": "0", "attrs": {}}],
@@ -932,8 +907,7 @@ def test_to_device():
     assert dataset.hdata.device == device
 
 
-def test_load_from_hif_file_exists():
-    """Test loading dataset when file already exists locally (skip download)."""
+def test_load_from_hif_skips_download_when_file_exists():
     dataset_name = "ALGEBRA"
 
     sample_hif = {

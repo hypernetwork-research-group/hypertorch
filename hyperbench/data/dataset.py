@@ -112,32 +112,24 @@ class Dataset(TorchDataset):
         return self.hdata.num_nodes
 
     def __getitem__(self, index: int | List[int]) -> HData:
+        """
+        Sample a sub-hypergraph containing the specified node(s) and all hyperedges incident to those nodes.
+
+        Note:
+            The returned :class:`HData` contains only the sampled nodes and their incident hyperedges.
+            Node features (x) and hyperedge attributes are not included in the returned :class:`HData`  .
+
+        Args:
+            index: An integer or a list of integers representing node IDs to sample.
+
+        Returns:
+            An :class:`HData` object containing the sub-hypergraph induced by the specified node(s) and their incident hyperedges.
+        """
         sampled_node_ids_list = self.__get_node_ids_to_sample(index)
         self.__validate_node_ids(sampled_node_ids_list)
 
-        sampled_hyperedge_index, sampled_node_ids, sampled_hyperedge_ids = (
-            self.__sample_hyperedge_index(sampled_node_ids_list)
-        )
-
-        new_hyperedge_index = self.__new_hyperedge_index(
-            sampled_hyperedge_index, sampled_node_ids, sampled_hyperedge_ids
-        )
-
-        new_x = self.hdata.x[sampled_node_ids]
-        new_y = self.hdata.y[sampled_hyperedge_ids]
-
-        new_edge_attr = None
-        if self.hdata.hyperedge_attr is not None and len(sampled_hyperedge_ids) > 0:
-            new_edge_attr = self.hdata.hyperedge_attr[sampled_hyperedge_ids]
-
-        return HData(
-            x=new_x,
-            hyperedge_index=new_hyperedge_index,
-            hyperedge_attr=new_edge_attr,
-            num_nodes=len(sampled_node_ids),
-            num_hyperedges=len(sampled_hyperedge_ids),
-            y=new_y,
-        )
+        sampled_hyperedge_index, _, _ = self.__sample_hyperedge_index(sampled_node_ids_list)
+        return HData.from_hyperedge_index(sampled_hyperedge_index)
 
     @classmethod
     def from_hdata(cls, hdata: HData) -> "Dataset":
@@ -303,7 +295,7 @@ class Dataset(TorchDataset):
             device: The target device (e.g., ``torch.device('cuda')`` or ``torch.device('cpu')``).
 
         Returns:
-            A new Dataset instance with HData moved to the specified device.
+            The Dataset instance moved to the specified device.
         """
         self.hdata = self.hdata.to(device)
         return self
@@ -419,37 +411,6 @@ class Dataset(TorchDataset):
             return list(set(id))
 
         return [id]
-
-    def __new_hyperedge_index(
-        self,
-        sampled_hyperedge_index: Tensor,
-        sampled_node_ids: Tensor,
-        sampled_hyperedge_ids: Tensor,
-    ) -> Tensor:
-        """
-        Create new hyperedge_index with 0-based node and hyperedge IDs.
-
-        Args:
-            sampled_hyperedge_index: Original hyperedge_index tensor with sampled incidences.
-            sampled_node_ids: List of sampled original node IDs.
-            sampled_hyperedge_ids: List of sampled original hyperedge IDs.
-
-        Returns:
-            New hyperedge_index tensor with 0-based node and edge IDs.
-        """
-        # Example: sampled_edge_index = [[1, 1, 3],
-        #                                [0, 2, 2]]
-        #          sampled_node_ids = [1, 3],
-        #          sampled_edge_ids = [0, 2]
-        #          -> new_node_ids = [0, 0, 1], new_edge_ids = [0, 1, 1]
-        new_node_ids = to_0based_ids(sampled_hyperedge_index[0], sampled_node_ids)
-        new_hyperedge_ids = to_0based_ids(sampled_hyperedge_index[1], sampled_hyperedge_ids)
-
-        # Example: new_node_ids = [0, 1], new_hyperedge_ids = [0, 1]
-        #          -> new_hyperedge_index = [[0, 1],
-        #                                    [0, 1]]
-        new_hyperedge_index = torch.stack([new_node_ids, new_hyperedge_ids], dim=0)
-        return new_hyperedge_index
 
     def __process_hyperedge_attr(
         self,
