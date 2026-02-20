@@ -184,9 +184,29 @@ class HyperedgeIndex:
         self.__hyperedge_index = hyperedge_index
 
     @property
+    def all_node_ids(self) -> Tensor:
+        """Return the tensor of all node IDs in the hyperedge index."""
+        return self.__hyperedge_index[0]
+
+    @property
+    def all_hyperedge_ids(self) -> Tensor:
+        """Return the tensor of all hyperedge IDs in the hyperedge index."""
+        return self.__hyperedge_index[1]
+
+    @property
     def item(self) -> Tensor:
         """Return the hyperedge index tensor."""
         return self.__hyperedge_index
+
+    @property
+    def node_ids(self) -> Tensor:
+        """Return the sorted unique node IDs from the hyperedge index."""
+        return self.__hyperedge_index[0].unique(sorted=True)
+
+    @property
+    def hyperedge_ids(self) -> Tensor:
+        """Return the sorted unique hyperedge IDs from the hyperedge index."""
+        return self.__hyperedge_index[1].unique(sorted=True)
 
     @property
     def num_hyperedges(self) -> int:
@@ -209,6 +229,18 @@ class HyperedgeIndex:
     def nodes_in(self, hyperedge_id: int) -> List[int]:
         """Return the list of node IDs that belong to the given hyperedge."""
         return self.__hyperedge_index[0, self.__hyperedge_index[1] == hyperedge_id].tolist()
+
+    def num_nodes_if_isolated_exist(self, num_nodes: int) -> int:
+        """
+        Return the number of nodes in the hypergraph, accounting for isolated nodes that may not appear in the hyperedge index.
+
+        Args:
+            num_nodes: The total number of nodes in the hypergraph, including isolated nodes.
+
+        Returns:
+            The number of nodes in the hypergraph, which is the maximum of the number of unique nodes in the hyperedge index and the provided ``num_nodes``.
+        """
+        return max(self.num_nodes, num_nodes)
 
     def reduce_to_edge_index_on_random_direction(
         self,
@@ -271,35 +303,48 @@ class HyperedgeIndex:
 
         return graph.to_edge_index()
 
+    def remove_duplicate_edges(self) -> "HyperedgeIndex":
+        """Remove duplicate edges from the hyperedge index. Keeps the tensor contiguous in memory."""
+        # Example: hyperedge_index = [[0, 1, 2, 2, 0, 3, 2],
+        #                             [3, 4, 4, 3, 4, 3, 3]], shape (2, 7)
+        #          -> after torch.unique(..., dim=1):
+        #             hyperedge_index = [[0, 1, 2, 2, 0, 3],
+        #                                [3, 4, 4, 3, 4, 3]], shape (2, |E'| = 6)
+        # Note: we need to call contiguous() after torch.unique() to ensure
+        # the resulting tensor is contiguous in memory, which is important for efficient indexing
+        # and further operations (e.g., searchsorted)
+        self.__hyperedge_index = torch.unique(self.__hyperedge_index, dim=1).contiguous()
+        return self
+
     def to_0based(
         self,
-        node_ids_to_rebase: Tensor,
-        hyperedge_ids_to_rebase: Tensor,
+        node_ids_to_rebase: Optional[Tensor] = None,
+        hyperedge_ids_to_rebase: Optional[Tensor] = None,
     ) -> "HyperedgeIndex":
         """
         Convert hyperedge index to the 0-based format by rebasing node IDs to the range ``[0, num_nodes-1]`` and hyperedge IDs ``[0, num_hyperedges-1]``.
 
         Args:
             node_ids_to_rebase: Tensor of shape ``(num_nodes,)`` containing the original node IDs that need to be rebased to 0-based format.
+                If ``None``, all node IDs in the hyperedge index will be rebased to 0-based format based on their unique sorted order.
             hyperedge_ids_to_rebase: Tensor of shape ``(num_hyperedges,)`` containing the original hyperedge IDs that need to be rebased to 0-based format.
+                If ``None``, all hyperedge IDs in the hyperedge index will be rebased to 0-based format based on their unique sorted order.
 
         Returns:
             A new :class:`HyperedgeIndex` instance with the hyperedge index converted to 0-based format.
         """
-        node_ids = self.__hyperedge_index[0]
-        hyperedge_ids = self.__hyperedge_index[1]
+        # Example: hyperedge_index after sorting: [[0, 0, 1, 2, 3, 4],
+        #                                          [3, 4, 4, 3, 4, 3]]
+        #          node_ids_to_rebase = [0, 1, 2, 3, 4]
+        #          -> hyperedge_index after remapping: [[0, 0, 1, 2, 3, 4],
+        #                                               [3, 4, 4, 3, 4, 3]]
+        self.__hyperedge_index[0] = to_0based_ids(self.all_node_ids, node_ids_to_rebase)
 
-        # Example: negative_hyperedge_index after sorting: [[0, 0, 1, 2, 3, 4],
-        #                                                    [3, 4, 4, 3, 4, 3]]
-        #          -> negative_hyperedge_index after remapping: [[0, 0, 1, 2, 3, 4],
-        #                                                        [3, 4, 4, 3, 4, 3]]
-        self.__hyperedge_index[0] = to_0based_ids(node_ids, node_ids_to_rebase)
-
-        # Example: negative_hyperedge_index after remapping nodes: [[0, 0, 1, 2, 3, 4],
-        #                                                           [3, 4, 4, 3, 4, 3]]
-        #          negative_hyperedge_ids = [3, 4]
-        #          -> negative_hyperedge_index after remapping hyperedges: [[0, 0, 1, 2, 3, 4],
-        #                                                                   [0, 0, 1, 0, 1, 0]]
-        self.__hyperedge_index[1] = to_0based_ids(hyperedge_ids, hyperedge_ids_to_rebase)
+        # Example: hyperedge_index after remapping nodes: [[0, 0, 1, 2, 3, 4],
+        #                                                  [3, 4, 4, 3, 4, 3]]
+        #          hyperedge_ids_to_rebase = [3, 4]
+        #          -> hyperedge_index after remapping hyperedges: [[0, 0, 1, 2, 3, 4],
+        #                                                          [0, 0, 1, 0, 1, 0]]
+        self.__hyperedge_index[1] = to_0based_ids(self.all_hyperedge_ids, hyperedge_ids_to_rebase)
 
         return self

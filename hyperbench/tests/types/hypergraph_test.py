@@ -206,6 +206,49 @@ def test_hyperedge_index_num_nodes(hyperedge_index_tensor, expected_num_nodes):
 
 
 @pytest.mark.parametrize(
+    "hyperedge_index_tensor, num_nodes_arg, expected",
+    [
+        pytest.param(
+            torch.tensor([[0, 1, 2], [0, 0, 1]]),
+            10,
+            10,
+            id="isolated_nodes_exist",
+        ),
+        pytest.param(
+            torch.tensor([[0, 1, 2], [0, 0, 1]]),
+            3,
+            3,
+            id="no_isolated_nodes",
+        ),
+        pytest.param(
+            torch.tensor([[0, 1, 2], [0, 0, 1]]),
+            1,
+            3,
+            id="arg_less_than_unique_nodes",
+        ),
+        pytest.param(
+            torch.zeros((2, 0), dtype=torch.long),
+            0,
+            0,
+            id="empty_index_zero_nodes",
+        ),
+        pytest.param(
+            torch.zeros((2, 0), dtype=torch.long),
+            5,
+            5,
+            id="empty_index_with_isolated_nodes",
+        ),
+    ],
+)
+def test_hyperedge_index_num_nodes_if_isolated_exist(
+    hyperedge_index_tensor, num_nodes_arg, expected
+):
+    hyperedge_index = HyperedgeIndex(hyperedge_index_tensor)
+
+    assert hyperedge_index.num_nodes_if_isolated_exist(num_nodes_arg) == expected
+
+
+@pytest.mark.parametrize(
     "hyperedges, node, expected_neighbors",
     [
         pytest.param([], 0, set(), id="empty_hypergraph"),
