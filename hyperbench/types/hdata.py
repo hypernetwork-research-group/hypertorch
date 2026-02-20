@@ -2,7 +2,7 @@ import torch
 
 from torch import Tensor
 from typing import Optional, Sequence
-from hyperbench import utils
+from hyperbench.utils import empty_hyperedgeindex, empty_nodefeatures
 
 from .hypergraph import HyperedgeIndex
 
@@ -47,12 +47,18 @@ class HData:
 
         self.hyperedge_attr: Optional[Tensor] = hyperedge_attr
 
-        self.num_nodes: int = num_nodes if num_nodes is not None else x.size(0)
+        hyperedge_index_wrapper = HyperedgeIndex(hyperedge_index)
+
+        self.num_nodes: int = (
+            num_nodes
+            if num_nodes is not None
+            # There should never be isolated nodes when HData is created by Dataset
+            # as each isolted node gets its own self-loop hyperedge
+            else hyperedge_index_wrapper.num_nodes_if_isolated_exist(x.size(0))
+        )
 
         self.num_hyperedges: int = (
-            num_hyperedges
-            if num_hyperedges is not None
-            else HyperedgeIndex(hyperedge_index).num_hyperedges
+            num_hyperedges if num_hyperedges is not None else hyperedge_index_wrapper.num_hyperedges
         )
 
         self.y = (
@@ -74,17 +80,6 @@ class HData:
             f"    y_shape={self.y.shape if self.y is not None else None}\n"
             f"    device={self.device}\n"
             f")"
-        )
-
-    @classmethod
-    def empty(cls) -> "HData":
-        return cls(
-            x=utils.empty_nodefeatures(),
-            hyperedge_index=utils.empty_hyperedgeindex(),
-            hyperedge_attr=None,
-            num_nodes=0,
-            num_hyperedges=0,
-            y=None,
         )
 
     @classmethod
@@ -146,6 +141,47 @@ class HData:
             num_nodes=new_x.size(0),
             num_hyperedges=new_y.size(0),
             y=new_y,
+        )
+
+    @classmethod
+    def empty(cls) -> "HData":
+        return cls(
+            x=empty_nodefeatures(),
+            hyperedge_index=empty_hyperedgeindex(),
+            hyperedge_attr=None,
+            num_nodes=0,
+            num_hyperedges=0,
+            y=None,
+        )
+
+    @classmethod
+    def from_hyperedge_index(cls, hyperedge_index: Tensor) -> "HData":
+        """
+        Build an :class:`HData` from a given hyperedge index, with empty node features and hyperedge attributes.
+
+        - Node features are initialized as an empty tensor of shape ``[0, 0]``.
+        - Hyperedge attributes are set to ``None``.
+        - The number of nodes and hyperedges are inferred from the hyperedge index.
+
+        Examples:
+            >>> hyperedge_index = [[0, 0, 1, 2, 3, 4],
+            ...                    [0, 0, 0, 1, 2, 2]]
+            >>> num_nodes = 5
+            >>> num_hyperedges = 3
+            >>> x = []  # Empty node features with shape [0, 0]
+            >>> hyperedge_attr = None
+
+        Args:
+            hyperedge_index: Tensor of shape ``[2, num_incidences]`` representing the hypergraph connectivity.
+
+        Returns:
+            An :class:`HData` instance with the given hyperedge index and default values for other attributes.
+        """
+        return cls(
+            x=empty_nodefeatures(),
+            hyperedge_index=hyperedge_index,
+            hyperedge_attr=None,
+            y=None,
         )
 
     @classmethod

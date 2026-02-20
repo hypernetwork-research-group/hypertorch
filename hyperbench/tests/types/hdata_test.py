@@ -138,6 +138,47 @@ def test_empty_returns_empty_hdata():
     assert data.num_hyperedges == 0
 
 
+@pytest.mark.parametrize(
+    "hyperedge_index, expected_num_nodes, expected_num_hyperedges",
+    [
+        pytest.param(
+            torch.tensor([[0, 1, 2], [0, 0, 1]]),
+            3,
+            2,
+            id="standard",
+        ),
+        pytest.param(
+            torch.tensor([[0, 0, 1, 2, 3, 4], [0, 1, 0, 1, 2, 2]]),
+            5,
+            3,
+            id="nodes_in_multiple_hyperedges",
+        ),
+        pytest.param(
+            torch.zeros((2, 0), dtype=torch.long),
+            0,
+            0,
+            id="empty_hyperedge_index",
+        ),
+    ],
+)
+def test_from_hyperedge_index_counts(hyperedge_index, expected_num_nodes, expected_num_hyperedges):
+    data = HData.from_hyperedge_index(hyperedge_index)
+
+    assert data.num_nodes == expected_num_nodes
+    assert data.num_hyperedges == expected_num_hyperedges
+    assert torch.equal(data.hyperedge_index, hyperedge_index)
+    assert data.x.shape == (0, 0)
+    assert data.hyperedge_attr is None
+
+
+def test_from_hyperedge_index_has_empty_features():
+    hyperedge_index = torch.tensor([[0, 1], [0, 0]])
+    data = HData.from_hyperedge_index(hyperedge_index)
+
+    assert data.x.shape == (0, 0)
+    assert data.hyperedge_attr is None
+
+
 def test_hdata_to_cpu(mock_hdata):
     returned = mock_hdata.to("cpu")
 
