@@ -285,13 +285,15 @@ class EdgeIndex:
         return normalized_laplacian_matrix.coalesce()
 
     def remove_duplicate_edges(self) -> "EdgeIndex":
-        """Remove duplicate edges from the edge index."""
+        """Remove duplicate edges from the edge index. Keeps the tensor contiguous in memory."""
         # Example: edge_index = [[0, 1, 2, 2, 0, 3, 2],
         #                        [1, 0, 3, 2, 1, 2, 2]], shape (2, |E| = 7)
         #          -> after torch.unique(..., dim=1):
         #             edge_index = [[0, 1, 2, 2, 3],
         #                           [1, 0, 3, 2, 2]], shape (2, |E'| = 5)
-        self.__edge_index = torch.unique(self.__edge_index, dim=1)
+        # Note: we call contiguous() to ensure that the resulting tensor is contiguous in memory,
+        # which can improve performance for subsequent operations that require contiguous tensors
+        self.__edge_index = torch.unique(self.__edge_index, dim=1).contiguous()
         return self
 
     def to_undirected(self, with_selfloops: bool = False) -> "EdgeIndex":
