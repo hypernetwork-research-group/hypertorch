@@ -1,18 +1,9 @@
 import torch
 
 from abc import ABC, abstractmethod
-from enum import Enum
 from torch import Tensor
 from typing import List, Optional, Set, Tuple
 from hyperbench.types import HData, HyperedgeIndex
-
-
-class NegativeSamplingSchedule(Enum):
-    """When to run negative sampling during training."""
-
-    FIRST_EPOCH = "first_epoch"  # Only at epoch 0, cached for all subsequent epochs
-    EVERY_N_EPOCHS = "every_n_epochs"  # Every N epochs (N provided separately)
-    EVERY_EPOCH = "every_epoch"  # Negatives generated every epoch
 
 
 class NegativeSampler(ABC):

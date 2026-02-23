@@ -2,8 +2,8 @@ import lightning as L
 from enum import Enum
 
 from torch import Tensor, nn
-from typing import Callable, Dict, Optional, TypeAlias
-from hyperbench.train import NegativeSampler, NegativeSamplingSchedule
+from typing import Any, Callable, Dict, Optional, TypeAlias
+from hyperbench.train import NegativeSampler, NegativeSamplingSchedule, NegativeSamplingScheduler
 from hyperbench.types import HData
 
 
@@ -45,10 +45,20 @@ class HlpModule(L.LightningModule):
         self.decoder = decoder
         self.loss_fn = loss_fn
         self.metrics = metrics if metrics is not None else {}
-        self.negative_sampler = negative_sampler
-        self.negative_sampling_schedule = negative_sampling_schedule
-        self.negative_sampling_every_n = negative_sampling_every_n
-        self.__cached_negative_samples: Optional[HData] = None
+
+        self.__negative_sampling_scheduler = None
+        if negative_sampler is not None:
+            self.__negative_sampling_scheduler = NegativeSamplingScheduler(
+                negative_sampler,
+                negative_sampling_schedule,
+                negative_sampling_every_n,
+            )
+
+    @property
+    def negative_sampling_config(self) -> Dict[str, Any]:
+        if self.__negative_sampling_scheduler is None:
+            return {}
+        return self.__negative_sampling_scheduler.config
 
     def _compute_loss(
         self,
@@ -100,18 +110,11 @@ class HlpModule(L.LightningModule):
 
     def _should_sample_negatives(self) -> bool:
         """Whether to resample negatives for the current epoch."""
-        if self.negative_sampler is None:
-            return False
-
-        match self.negative_sampling_schedule:
-            case NegativeSamplingSchedule.EVERY_EPOCH:
-                return True
-            case NegativeSamplingSchedule.EVERY_N_EPOCHS:
-                return self.current_epoch % self.negative_sampling_every_n == 0
-            case NegativeSamplingSchedule.FIRST_EPOCH:
-                return self.current_epoch == 0
-
-        return False
+        if self.__negative_sampling_scheduler is None:
+            raise ValueError(
+                "Asked to check negative sampling schedule but no negative sampler is configured."
+            )
+        return self.__negative_sampling_scheduler.should_sample(self.current_epoch)
 
     def _sample_negatives(self, batch: HData) -> HData:
         """
@@ -123,11 +126,6 @@ class HlpModule(L.LightningModule):
         Returns:
             A batch of negative samples, either freshly sampled or from cache.
         """
-        if self._should_sample_negatives():
-            if self.negative_sampler is not None:
-                self.__cached_negative_samples = self.negative_sampler.sample(batch)
-
-        if self.__cached_negative_samples is None:
-            raise ValueError("Negative sampling requested but no negative sampler is provided.")
-
-        return self.__cached_negative_samples
+        if self.__negative_sampling_scheduler is None:
+            raise ValueError("Asked to sample negatives but no negative sampler is not configured.")
+        return self.__negative_sampling_scheduler.sample(batch, self.current_epoch)
