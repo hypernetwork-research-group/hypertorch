@@ -39,7 +39,7 @@ class NegativeSamplingScheduler:
         Whether to resample negatives for the current epoch.
 
         Args:
-            epoch: The current epoch number, used to determine if sampling should occur based on the schedule
+            epoch: The current epoch number, used to determine if sampling should occur based on the schedule.
 
         Returns:
             True if negatives should be resampled for the current epoch, False otherwise.
