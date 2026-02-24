@@ -83,6 +83,40 @@ def test_collate_single_sample(mock_dataset_single_sample):
     assert batched.num_hyperedges == 2
 
 
+def test_collate_single_sample_rebases_to_0based():
+    # Full dataset: 5 nodes (0-4), 3 hyperedges (0-2)
+    x = torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0], [7.0, 8.0], [9.0, 10.0]])
+    full_hyperedge_index = torch.tensor([[0, 1, 1, 2, 3, 4], [0, 0, 1, 1, 2, 2]])
+    hyperedge_attr = torch.tensor([[0.1], [0.2], [0.3]])
+    hdata = HData(x=x, hyperedge_index=full_hyperedge_index, hyperedge_attr=hyperedge_attr)
+
+    # Single sample with non-0-based global IDs: nodes [3, 4] in hyperedge [2]
+    sample = HData.from_hyperedge_index(torch.tensor([[3, 4], [2, 2]]))
+
+    dataset = MagicMock(spec=Dataset)
+    dataset.hdata = hdata
+    dataset.__len__.return_value = 5
+    dataset.__getitem__.return_value = sample
+
+    loader = DataLoader(dataset, batch_size=1)
+    batched = loader.collate([sample])
+
+    # Global nodes [3, 4] should be rebased to [0, 1]
+    expected_hyperedge_index = torch.tensor([[0, 1], [0, 0]])
+    assert torch.equal(batched.hyperedge_index, expected_hyperedge_index)
+
+    # Features should come from global indices 3 and 4
+    expected_x = torch.tensor([[7.0, 8.0], [9.0, 10.0]])
+    assert torch.equal(batched.x, expected_x)
+
+    # Hyperedge attr should come from global hyperedge 2
+    expected_hyperedge_attr = torch.tensor([[0.3]])
+    assert torch.equal(utils.to_non_empty_edgeattr(batched.hyperedge_attr), expected_hyperedge_attr)
+
+    assert batched.num_nodes == 2
+    assert batched.num_hyperedges == 1
+
+
 def test_collate_two_samples_no_edge_attr(mock_dataset_multiple_samples):
     loader = DataLoader(mock_dataset_multiple_samples, batch_size=2)
 

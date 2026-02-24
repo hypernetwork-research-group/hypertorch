@@ -778,7 +778,6 @@ def test_from_hdata():
     dataset = Dataset.from_hdata(hdata)
 
     assert dataset.hdata is hdata
-    assert dataset.hypergraph is None
     assert len(dataset) == hdata.num_nodes
 
 

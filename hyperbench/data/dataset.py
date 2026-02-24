@@ -105,7 +105,8 @@ class Dataset(TorchDataset):
         is_original: Optional[bool] = True,
     ) -> None:
         self.__is_original = is_original
-        self.hypergraph: HIFHypergraph = self.download() if hdata is None else None
+
+        self.hypergraph: HIFHypergraph = self.download() if hdata is None else HIFHypergraph.empty()
         self.hdata: HData = self.process() if hdata is None else hdata
 
     def __len__(self) -> int:
@@ -153,8 +154,8 @@ class Dataset(TorchDataset):
 
         if hasattr(self, "hypergraph") and self.hypergraph is not None:
             return self.hypergraph
-        hypergraph = HIFConverter.load_from_hif(self.DATASET_NAME, save_on_disk=True)
-        return hypergraph
+
+        return HIFConverter.load_from_hif(self.DATASET_NAME, save_on_disk=True)
 
     def process(self) -> HData:
         """
