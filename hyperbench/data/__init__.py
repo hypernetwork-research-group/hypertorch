@@ -1,5 +1,8 @@
 from .dataset import (
     Dataset,
+    HIFConverter,
+)
+from .supported_datasets import (
     AlgebraDataset,
     CoraDataset,
     CourseraDataset,
@@ -7,7 +10,6 @@ from .dataset import (
     IMDBDataset,
     PatentDataset,
     ThreadsMathsxDataset,
-    HIFConverter,
 )
 
 from .loader import DataLoader

@@ -2,10 +2,9 @@ import requests
 import torch
 import pytest
 from unittest.mock import patch, mock_open
-from hyperbench.data import Dataset, HIFConverter
+from hyperbench.data import AlgebraDataset, Dataset, HIFConverter
 from hyperbench.types import HData, HIFHypergraph
 
-from hyperbench.data.dataset import AlgebraDataset
 from hyperbench.tests.mock import *
 
 
