@@ -2,12 +2,13 @@ import requests
 import torch
 import pytest
 from unittest.mock import patch, mock_open
-from hyperbench.data import AlgebraDataset, Dataset, HIFConverter
+from hyperbench.data import AlgebraDataset, Dataset, HIFConverter, SamplingStrategy
 from hyperbench.types import HData, HIFHypergraph
 
 from hyperbench.tests.mock import *
 
 
+@pytest.fixture
 def mock_hdata() -> HData:
     x = torch.ones((3, 1), dtype=torch.float)
     hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 1]], dtype=torch.long)
@@ -314,20 +315,40 @@ def test_dataset_is_not_available():
         FakeMockDataset()
 
 
-def test_dataset_is_available():
+@pytest.mark.parametrize(
+    "strategy, expected_len",
+    [
+        pytest.param(SamplingStrategy.NODE, 4, id="node_strategy"),
+        pytest.param(SamplingStrategy.HYPEREDGE, 2, id="hyperedge_strategy"),
+    ],
+)
+def test_dataset_is_available(strategy, expected_len):
     mock_hypergraph = HIFHypergraph(
         network_type="undirected",
-        nodes=[{"node": str(i)} for i in range(423)],
-        edges=[{"edge": str(i)} for i in range(1268)],
-        incidences=[{"node": "0", "edge": "0"}],
+        nodes=[
+            {"node": "0"},
+            {"node": "1"},
+            {"node": "2"},
+            {"node": "3"},
+        ],
+        edges=[
+            {"edge": "0"},
+            {"edge": "1"},
+        ],
+        incidences=[
+            {"node": "0", "edge": "0"},
+            {"node": "1", "edge": "0"},
+            {"node": "2", "edge": "1"},
+            {"node": "3", "edge": "1"},
+        ],
     )
 
     with patch.object(HIFConverter, "load_from_hif", return_value=mock_hypergraph):
-        dataset = AlgebraDataset()
+        dataset = AlgebraDataset(sampling_strategy=strategy)
 
         assert dataset.DATASET_NAME == "ALGEBRA"
         assert dataset.hypergraph is not None
-        assert dataset.__len__() == dataset.hypergraph.num_nodes
+        assert len(dataset) == expected_len
 
 
 def test_download_already_downloaded_dataset_uses_local_value():
@@ -456,92 +477,170 @@ def test_dataset_process_random_ids():
     assert dataset.hdata.hyperedge_attr.shape == (2, 0)  # 2 edges, 0 attributes each
 
 
-def test_getitem_index_list_empty(mock_simple_hypergraph):
-    """Test __getitem__ with empty index list raises ValueError."""
+@pytest.mark.parametrize(
+    "strategy",
+    [
+        pytest.param(SamplingStrategy.NODE, id="node_strategy"),
+        pytest.param(SamplingStrategy.HYPEREDGE, id="hyperedge_strategy"),
+    ],
+)
+def test_getitem_index_list_empty(mock_simple_hypergraph, strategy):
     with patch.object(HIFConverter, "load_from_hif", return_value=mock_simple_hypergraph):
-        dataset = AlgebraDataset()
+        dataset = AlgebraDataset(sampling_strategy=strategy)
 
     with pytest.raises(ValueError, match="Index list cannot be empty."):
         dataset[[]]
 
 
-def test_getitem_raises_when_index_list_larger_then_num_nodes(mock_five_node_hypergraph):
-    with patch.object(HIFConverter, "load_from_hif", return_value=mock_five_node_hypergraph):
-        dataset = AlgebraDataset()
-
-    with pytest.raises(
-        ValueError,
-        match="Index list length cannot exceed number of nodes in the hypergraph.",
-    ):
-        dataset[[0, 1, 2, 3, 4, 5]]
-
-
-def test_getitem_raises_when_index_out_of_bounds(mock_four_node_hypergraph):
+@pytest.mark.parametrize(
+    "strategy, index_list, expected_message",
+    [
+        pytest.param(
+            SamplingStrategy.NODE,
+            [0, 1, 2, 3, 4],
+            r"Index list length \(5\) cannot exceed the number of sampleable items \(4\)\.",
+            id="node_strategy",
+        ),
+        pytest.param(
+            SamplingStrategy.HYPEREDGE,
+            [0, 1, 2],
+            r"Index list length \(3\) cannot exceed the number of sampleable items \(2\)\.",
+            id="hyperedge_strategy",
+        ),
+    ],
+)
+def test_getitem_raises_when_index_list_larger_than_max(
+    mock_four_node_hypergraph, strategy, index_list, expected_message
+):
     with patch.object(HIFConverter, "load_from_hif", return_value=mock_four_node_hypergraph):
-        dataset = AlgebraDataset()
+        dataset = AlgebraDataset(sampling_strategy=strategy)
 
-    with pytest.raises(IndexError, match="Node ID 4 is out of bounds."):
-        dataset[4]
+    with pytest.raises(ValueError, match=expected_message):
+        dataset[index_list]
 
 
-def test_getitem_single_index(mock_sample_hypergraph):
+@pytest.mark.parametrize(
+    "strategy, index, expected_message",
+    [
+        pytest.param(
+            SamplingStrategy.NODE, 4, r"Node ID 4 is out of bounds \(0, 3\)\.", id="node_strategy"
+        ),
+        pytest.param(
+            SamplingStrategy.HYPEREDGE,
+            2,
+            r"Hyperedge ID 2 is out of bounds \(0, 1\)\.",
+            id="hyperedge_strategy",
+        ),
+    ],
+)
+def test_getitem_raises_when_index_out_of_bounds(
+    mock_four_node_hypergraph, strategy, index, expected_message
+):
+    with patch.object(HIFConverter, "load_from_hif", return_value=mock_four_node_hypergraph):
+        dataset = AlgebraDataset(sampling_strategy=strategy)
+
+    with pytest.raises(IndexError, match=expected_message):
+        dataset[index]
+
+
+@pytest.mark.parametrize(
+    "strategy, index, expected_shape, expected_num_hyperedges",
+    [
+        # When node 1 is selected, we get hyperedge 0 with nodes 0 and 1 -> 2 incidences, 1 hyperedge
+        pytest.param(SamplingStrategy.NODE, 1, (2, 1), 1, id="node_strategy"),
+        # When hyperedge 0 is selected, we get nodes 0 and 1 -> 2 incidences, 1 hyperedge
+        pytest.param(SamplingStrategy.HYPEREDGE, 0, (2, 1), 1, id="hyperedge_strategy"),
+    ],
+)
+def test_getitem_single_index(
+    mock_sample_hypergraph, strategy, index, expected_shape, expected_num_hyperedges
+):
     with patch.object(HIFConverter, "load_from_hif", return_value=mock_sample_hypergraph):
-        dataset = AlgebraDataset()
+        dataset = AlgebraDataset(sampling_strategy=strategy)
 
-    data = dataset[1]
+    data = dataset[index]
 
-    # Node 1 is isolated (self-loop hyperedge), so hyperedge_index has shape [2, 1]
-    assert data.hyperedge_index.shape == (2, 1)
-    assert data.num_hyperedges == 1
+    assert data.hyperedge_index.shape == expected_shape
+    assert data.num_hyperedges == expected_num_hyperedges
 
 
-def test_getitem_when_list_index_provided(mock_four_node_hypergraph):
+@pytest.mark.parametrize(
+    "strategy, index, expected_shape, expected_num_hyperedges",
+    [
+        # When nodes (0, 2, 3) -> hyperedge 0 (nodes 0, 1) + hyperedge 1 (nodes 2, 3) -> 4 incidences, 2 hyperedges
+        pytest.param(SamplingStrategy.NODE, [0, 2, 3], (2, 4), 2, id="node_strategy"),
+        # When hyperedge 0 (nodes 0, 1) + hyperedge 1 (nodes 2, 3) -> 4 incidences, 2 hyperedges
+        pytest.param(SamplingStrategy.HYPEREDGE, [0, 1], (2, 4), 2, id="hyperedge_strategy"),
+    ],
+)
+def test_getitem_when_list_index_provided(
+    mock_four_node_hypergraph, strategy, index, expected_shape, expected_num_hyperedges
+):
     with patch.object(HIFConverter, "load_from_hif", return_value=mock_four_node_hypergraph):
-        dataset = AlgebraDataset()
+        dataset = AlgebraDataset(sampling_strategy=strategy)
 
-    data = dataset[[0, 2, 3]]
+    data = dataset[index]
 
-    # Node 1 is part of the hyperedge that contains node 0,
-    # so it's included in the hyperedge index (4 incidences across 2 hyperedges)
-    assert data.hyperedge_index.shape == (2, 4)
-    assert data.num_hyperedges == 2
+    assert data.hyperedge_index.shape == expected_shape
+    assert data.num_hyperedges == expected_num_hyperedges
 
 
-def test_getitem_with_edge_attr(mock_three_node_weighted_hypergraph):
+@pytest.mark.parametrize(
+    "strategy",
+    [
+        pytest.param(SamplingStrategy.NODE, id="node_strategy"),
+        pytest.param(SamplingStrategy.HYPEREDGE, id="hyperedge_strategy"),
+    ],
+)
+def test_getitem_with_edge_attr(mock_three_node_weighted_hypergraph, strategy):
     with patch.object(
         HIFConverter, "load_from_hif", return_value=mock_three_node_weighted_hypergraph
     ):
-        dataset = AlgebraDataset()
+        dataset = AlgebraDataset(sampling_strategy=strategy)
 
     data = dataset[0]
 
-    # __getitem__ now returns only hyperedge_index with global IDs,
-    # x is empty and hyperedge_attr is None
     assert data.hyperedge_index.shape == (2, 2)
     assert data.num_hyperedges == 1
     assert data.hyperedge_attr is None
 
 
-def test_getitem_without_edge_attr(mock_no_edge_attr_hypergraph):
+@pytest.mark.parametrize(
+    "strategy",
+    [
+        pytest.param(SamplingStrategy.NODE, id="node_strategy"),
+        pytest.param(SamplingStrategy.HYPEREDGE, id="hyperedge_strategy"),
+    ],
+)
+def test_getitem_without_edge_attr(mock_no_edge_attr_hypergraph, strategy):
     with patch.object(HIFConverter, "load_from_hif", return_value=mock_no_edge_attr_hypergraph):
-        dataset = AlgebraDataset()
+        dataset = AlgebraDataset(sampling_strategy=strategy)
 
-    node_data = dataset[0]
-    assert node_data.hyperedge_attr is None
+    data = dataset[0]
+    assert data.hyperedge_attr is None
 
 
-def test_getitem_with_multiple_edges_attr(mock_multiple_edges_attr_hypergraph):
+@pytest.mark.parametrize(
+    "strategy, index",
+    [
+        # When nodes 0,2 -> hyperedge 0 (nodes 0, 1) + hyperedge 1 (node 2) -> 2 hyperedges
+        pytest.param(SamplingStrategy.NODE, [0, 2], id="node_strategy"),
+        # When hyperedge 0 (nodes 0, 1) + hyperedge 1 (node 2) -> 2 hyperedges
+        pytest.param(SamplingStrategy.HYPEREDGE, [0, 1], id="hyperedge_strategy"),
+    ],
+)
+def test_getitem_with_multiple_edges_attr(mock_multiple_edges_attr_hypergraph, strategy, index):
     with patch.object(
         HIFConverter, "load_from_hif", return_value=mock_multiple_edges_attr_hypergraph
     ):
-        dataset = AlgebraDataset()
+        dataset = AlgebraDataset(sampling_strategy=strategy)
 
-    node_data = dataset[[0, 2]]
-    assert node_data.num_hyperedges == 2
+    data = dataset[index]
+    assert data.num_hyperedges == 2
 
     # Even though the original hypergraph has edge attributes, __getitem__ should return hyperedge_attr as None
     # as the hyperedge attributes are handled by the loader's collate function during batching
-    assert node_data.hyperedge_attr is None
+    assert data.hyperedge_attr is None
 
 
 def test_getitem_hyperedge_attr_are_padded_with_zero_when_no_uniform_edges():
@@ -690,52 +789,6 @@ def test_process_with_single_node_attribute():
         assert torch.allclose(dataset.hdata.x, torch.tensor([[1.5], [2.5], [3.5]]))
 
 
-def test_getitem_returns_global_ids():
-    mock_hypergraph = HIFHypergraph(
-        network_type="undirected",
-        nodes=[
-            {"node": "0", "attrs": {"weight": 1.0}},
-            {"node": "1", "attrs": {"weight": 2.0}},
-            {"node": "2", "attrs": {"weight": 3.0}},
-        ],
-        edges=[
-            {"edge": "0", "attrs": {}},
-            {"edge": "1", "attrs": {}},
-        ],
-        incidences=[
-            {"node": "0", "edge": "0"},
-            {"node": "1", "edge": "0"},
-            {"node": "2", "edge": "1"},
-        ],
-    )
-
-    with patch.object(HIFConverter, "load_from_hif", return_value=mock_hypergraph):
-
-        class TestDataset(Dataset):
-            DATASET_NAME = "TEST"
-
-        dataset = TestDataset()
-
-        data = dataset[0]
-        # Node 0 and node 1 are in hyperedge 0
-        assert data.num_hyperedges == 1
-        assert data.hyperedge_index.shape == (2, 2)
-        # Global IDs preserved: nodes 0,1 and hyperedge 0
-        assert torch.equal(data.hyperedge_index[0], torch.tensor([0, 1]))
-        assert torch.equal(data.hyperedge_index[1], torch.tensor([0, 0]))
-
-        data = dataset[[0, 2]]
-        # All 3 nodes, both hyperedges
-        assert data.num_hyperedges == 2
-        assert data.hyperedge_index.shape == (2, 3)
-
-        data = dataset[2]
-        # Only node 2 in hyperedge 1
-        assert data.num_hyperedges == 1
-        assert torch.equal(data.hyperedge_index[0], torch.tensor([2]))
-        assert torch.equal(data.hyperedge_index[1], torch.tensor([1]))
-
-
 def test_transform_attrs_adds_padding_zero_when_attr_keys_padding():
     mock_hypergraph = HIFHypergraph(
         network_type="undirected",
@@ -771,26 +824,30 @@ def test_transform_attrs_adds_padding_zero_when_attr_keys_padding():
         assert torch.allclose(result, torch.tensor([1.5, 0.8]))  # weight, score (insertion order)
 
 
-def test_from_hdata():
-    hdata = mock_hdata()
+@pytest.mark.parametrize(
+    "strategy, expected_len",
+    [
+        # mock_hdata: 3 nodes, 2 hyperedges
+        pytest.param(SamplingStrategy.NODE, 3, id="node_strategy"),
+        pytest.param(SamplingStrategy.HYPEREDGE, 2, id="hyperedge_strategy"),
+    ],
+)
+def test_from_hdata(strategy, expected_len, mock_hdata):
+    dataset = Dataset.from_hdata(mock_hdata, sampling_strategy=strategy)
 
-    dataset = Dataset.from_hdata(hdata)
-
-    assert dataset.hdata is hdata
-    assert len(dataset) == hdata.num_nodes
+    assert dataset.hdata is mock_hdata
+    assert len(dataset) == expected_len
 
 
-def test_from_hdata_download_raises():
-    hdata = mock_hdata()
-    dataset = Dataset.from_hdata(hdata)
+def test_from_hdata_download_raises(mock_hdata):
+    dataset = Dataset.from_hdata(mock_hdata)
 
     with pytest.raises(ValueError, match="download can only be called for the original dataset."):
         dataset.download()
 
 
-def test_from_hdata_process_raises():
-    hdata = mock_hdata()
-    dataset = Dataset.from_hdata(hdata)
+def test_from_hdata_process_raises(mock_hdata):
+    dataset = Dataset.from_hdata(mock_hdata)
 
     with pytest.raises(ValueError, match="process can only be called for the original dataset."):
         dataset.process()
@@ -893,11 +950,10 @@ def test_split_without_edge_attr(mock_no_edge_attr_hypergraph):
         assert split.hdata.hyperedge_attr is None
 
 
-def test_to_device():
+def test_to_device(mock_hdata):
     device = torch.device("cpu")
 
-    hdata = mock_hdata()
-    dataset = Dataset.from_hdata(hdata)
+    dataset = Dataset.from_hdata(mock_hdata)
 
     result = dataset.to(device)
 
@@ -941,3 +997,45 @@ def test_load_from_hif_skips_download_when_file_exists():
         result = HIFConverter.load_from_hif(dataset_name, save_on_disk=True)
         mock_get.assert_not_called()
         assert result == mock_hypergraph
+
+
+def test_default_sampling_strategy_is_hyperedge(mock_four_node_hypergraph):
+    with patch.object(HIFConverter, "load_from_hif", return_value=mock_four_node_hypergraph):
+        dataset = AlgebraDataset()
+
+    # Default strategy is HYPEREDGE, so len should be num_hyperedges (2), not num_nodes (4)
+    assert dataset.sampling_strategy == SamplingStrategy.HYPEREDGE
+    assert len(dataset) == 2
+
+
+def test_explicit_node_sampling_strategy(mock_four_node_hypergraph):
+    with patch.object(HIFConverter, "load_from_hif", return_value=mock_four_node_hypergraph):
+        dataset = AlgebraDataset(sampling_strategy=SamplingStrategy.NODE)
+
+    # NODE strategy, so len should be num_nodes (4), not num_hyperedges (2)
+    assert dataset.sampling_strategy == SamplingStrategy.NODE
+    assert len(dataset) == 4
+
+
+@pytest.mark.parametrize(
+    "strategy",
+    [
+        pytest.param(SamplingStrategy.NODE, id="node_strategy"),
+        pytest.param(SamplingStrategy.HYPEREDGE, id="hyperedge_strategy"),
+    ],
+)
+def test_split_preserves_sampling_strategy(mock_four_node_hypergraph, strategy):
+    with patch.object(HIFConverter, "load_from_hif", return_value=mock_four_node_hypergraph):
+        dataset = AlgebraDataset(sampling_strategy=strategy)
+
+    splits = dataset.split([0.5, 0.5])
+
+    for split in splits:
+        assert split.sampling_strategy == strategy
+
+
+def test_from_hdata_with_explicit_strategy(mock_hdata):
+    dataset = Dataset.from_hdata(mock_hdata, sampling_strategy=SamplingStrategy.NODE)
+
+    assert dataset.sampling_strategy == SamplingStrategy.NODE
+    assert len(dataset) == 3  # mock_hdata has 3 nodes

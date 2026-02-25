@@ -301,3 +301,70 @@ def test_iteration_over_dataloader():
 
     assert batch_count == 3  # 5 samples with batch_size=2 -> 3 batches (2 + 2 + 1)
     assert dataset.__getitem__.call_count == n_samples  # Ensure all samples were accessed
+
+
+def test_collate_with_hyperedge_sampled_batch():
+    # Full dataset with 4 nodes and 2 hyperedges
+    x = torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0], [7.0, 8.0]])
+    hyperedge_index = torch.tensor([[0, 1, 2, 3], [0, 0, 1, 2]])
+    hyperedge_attr = torch.tensor([[0.5], [0.7], [0.9]])
+    hdata = HData(x=x, hyperedge_index=hyperedge_index, hyperedge_attr=hyperedge_attr)
+
+    # hyperedge 0 -> nodes 0 and 1
+    sample0 = HData.from_hyperedge_index(torch.tensor([[0, 1], [0, 0]]))
+    # hyperedge 2 -> node 3
+    sample1 = HData.from_hyperedge_index(torch.tensor([[3], [2]]))
+
+    dataset = MagicMock(spec=Dataset)
+    dataset.hdata = hdata
+
+    loader = DataLoader(dataset, batch_size=2)
+    batched = loader.collate([sample0, sample1])
+
+    assert batched.num_nodes == 3  # Nodes 0, 1 from sample0 and node 3 from sample1
+    assert batched.num_hyperedges == 2  # Hyperedges 0 from sample0 and 2 from sample1
+
+    expected_x = torch.tensor([[1.0, 2.0], [3.0, 4.0], [7.0, 8.0]])
+    assert torch.equal(batched.x, expected_x)
+
+    # 0-based rebasing:
+    # - global nodes [0, 1, 3] -> local nodes [0, 1, 2]
+    # - global hyperedges [0, 2] -> local hyperedges [0, 1]
+    expected_hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 1]])
+    assert torch.equal(batched.hyperedge_index, expected_hyperedge_index)
+
+    expected_hyperedge_attr = torch.tensor([[0.5], [0.9]])  # From global hyperedges 0 and 2
+    assert torch.equal(utils.to_non_empty_edgeattr(batched.hyperedge_attr), expected_hyperedge_attr)
+
+
+def test_collate_with_node_sampled_batch():
+    # Full dataset with 4 nodes and 2 hyperedges
+    x = torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0], [7.0, 8.0]])
+    hyperedge_index = torch.tensor([[0, 1, 2, 3], [0, 0, 1, 2]])
+    hdata = HData(x=x, hyperedge_index=hyperedge_index)
+
+    # Samples contain node's incident hyperedges to simulate NODE strategy
+    # Node 0 -> hyperedge 0 (nodes 0, 1)
+    sample0 = HData.from_hyperedge_index(torch.tensor([[0, 1], [0, 0]]))
+    # Node 3 -> hyperedge 2 (nodes 3)
+    sample1 = HData.from_hyperedge_index(torch.tensor([[3], [2]]))
+
+    dataset = MagicMock(spec=Dataset)
+    dataset.hdata = hdata
+
+    loader = DataLoader(dataset, batch_size=2)
+    batched = loader.collate([sample0, sample1])
+
+    assert batched.num_nodes == 3  # Nodes 0, 1 from sample0 and node 3 from sample1
+    assert batched.num_hyperedges == 2  # Hyperedges 0 from sample0 and 2 from sample1
+
+    expected_x = torch.tensor([[1.0, 2.0], [3.0, 4.0], [7.0, 8.0]])
+    assert torch.equal(batched.x, expected_x)
+
+    # 0-based rebasing:
+    # - global nodes [0, 1, 3] -> local nodes [0, 1, 2]
+    # - global hyperedges [0, 2] -> local hyperedges [0, 1]
+    expected_hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 1]])
+    assert torch.equal(batched.hyperedge_index, expected_hyperedge_index)
+
+    assert batched.hyperedge_attr is None
