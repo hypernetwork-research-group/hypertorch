@@ -122,8 +122,8 @@ class Dataset(TorchDataset):
         self.__sampler = create_sampler_from_strategy(sampling_strategy)
 
         self.sampling_strategy = sampling_strategy
-        self.hypergraph: HIFHypergraph = self.download() if hdata is None else HIFHypergraph.empty()
-        self.hdata: HData = self.process() if hdata is None else hdata
+        self.hypergraph = self.download() if hdata is None else HIFHypergraph.empty()
+        self.hdata = self.process() if hdata is None else hdata
 
     def __len__(self) -> int:
         return self.__sampler.len(self.hdata)
