@@ -265,6 +265,73 @@ class HData:
 
         return devices.pop() if len(devices) == 1 else torch.device("cpu")
 
+    def shuffle(self, seed: Optional[int] = None) -> "HData":
+        """
+        Return a new :class:`HData` instance with hyperedge IDs randomly reassigned.
+
+        Each hyperedge keeps its original set of nodes, but is assigned a new ID via a random permutation.
+        ``y`` and ``hyperedge_attr`` are reordered to match, so that ``y[new_id]`` still corresponds to the correct hyperedge.
+        Same for ``hyperedge_attr[new_id]`` if hyperedge attributes are present.
+
+        Examples:
+            >>> hyperedge_index = torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]])
+            >>> y  = torch.tensor([1, 0])
+            >>> hdata = HData(x, hyperedge_index=hyperedge_index, y=y)
+            >>> shuffled_hdata = hdata.shuffle(seed=42)
+            >>> shuffled_hdata.hyperedge_index  # hyperedges may be reassigned
+            ... # e.g.,
+            ...     [[0, 1, 2, 3],
+            ...      [1, 1, 0, 0]]
+            >>> shuffled_hdata.y  # labels are permuted to match new hyperedge IDs, e.g., [0, 1]
+
+        Args:
+            seed: Optional random seed for reproducibility. If ``None``, the shuffle will be non-deterministic.
+
+        Returns:
+            A new :class:`HData` instance with hyperedge IDs, ``y``, and ``hyperedge_attr`` permuted.
+        """
+        generator = torch.Generator(device=self.device)
+        if seed is not None:
+            generator.manual_seed(seed)
+
+        permutation = torch.randperm(self.num_hyperedges, generator=generator, device=self.device)
+
+        # permutation[new_id] = old_id, so y[permutation] puts old labels into new slots
+        # inverse_permutation[old_id] = new_id, used to remap hyperedge IDs in incidences
+        # Example: permutation = [1, 2, 0] means new_id 0 gets old_id 1, new_id 1 gets old_id 2, new_id 2 gets old_id 0
+        #          -> inverse_permutation = [2, 0, 1] means old_id 0 gets new_id 2, old_id 1 gets new_id 0, old_id 2 gets new_id 1
+        inverse_permutation = torch.empty_like(permutation)
+        inverse_permutation[permutation] = torch.arange(self.num_hyperedges, device=self.device)
+
+        new_hyperedge_index = self.hyperedge_index.clone()
+
+        # Example: hyperedge_index = [[0, 1, 2, 3, 4],
+        #                             [0, 0, 1, 1, 2]],
+        #          inverse_permutation = [2, 0, 1] (new_id 0 -> old_id 2, new_id 1 -> old_id 0, new_id 2 -> old_id 1)
+        #          -> new_hyperedge_index = [[0, 1, 2, 3, 4],
+        #                                    [2, 2, 0, 0, 1]]
+        old_hyperedge_ids = self.hyperedge_index[1]
+        new_hyperedge_index[1] = inverse_permutation[old_hyperedge_ids]
+
+        # Example: hyperedge_attr = [attr_0, attr_1, attr_2], permutation = [1, 2, 0]
+        #          -> new_hyperedge_attr = [attr_1  (attr of old_id 1), attr_2 (attr of old_id 2), attr_0 (attr of old_id 0)]
+        new_hyperedge_attr = (
+            self.hyperedge_attr[permutation] if self.hyperedge_attr is not None else None
+        )
+
+        # Example: y = [1, 1, 0], permutation = [1, 2, 0]
+        #          -> new_y = [y[1], y[2], y[0]] = [1, 0, 1]
+        new_y = self.y[permutation]
+
+        return HData(
+            x=self.x,
+            hyperedge_index=new_hyperedge_index,
+            hyperedge_attr=new_hyperedge_attr,
+            num_nodes=self.num_nodes,
+            num_hyperedges=self.num_hyperedges,
+            y=new_y,
+        )
+
     def to(self, device: torch.device | str, non_blocking: bool = False) -> "HData":
         """
         Move all tensors to the specified device.

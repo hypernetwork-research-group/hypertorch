@@ -444,33 +444,33 @@ def test_split_handles_none_edge_attr():
     ],
 )
 def test_with_y_to_sets_all_labels_to_value(mock_hdata, value):
-    result = mock_hdata.with_y_to(value)
+    hdata = mock_hdata.with_y_to(value)
     expected_y = torch.full((mock_hdata.num_hyperedges,), value, dtype=torch.float)
 
-    assert torch.equal(result.y, expected_y)
+    assert torch.equal(hdata.y, expected_y)
 
 
 def test_with_y_to_preserves_other_fields(mock_hdata):
-    result = mock_hdata.with_y_to(0.5)
+    hdata = mock_hdata.with_y_to(0.5)
     expected_y = torch.full((mock_hdata.num_hyperedges,), 0.5, dtype=torch.float)
 
-    assert torch.equal(result.x, mock_hdata.x)
-    assert torch.equal(result.hyperedge_index, mock_hdata.hyperedge_index)
-    assert torch.equal(result.y, expected_y)
-    assert result.num_nodes == mock_hdata.num_nodes
-    assert result.num_hyperedges == mock_hdata.num_hyperedges
+    assert torch.equal(hdata.x, mock_hdata.x)
+    assert torch.equal(hdata.hyperedge_index, mock_hdata.hyperedge_index)
+    assert torch.equal(hdata.y, expected_y)
+    assert hdata.num_nodes == mock_hdata.num_nodes
+    assert hdata.num_hyperedges == mock_hdata.num_hyperedges
 
 
 def test_with_y_ones_returns_all_ones(mock_hdata):
-    result = mock_hdata.with_y_ones()
+    hdata = mock_hdata.with_y_ones()
 
-    assert torch.equal(result.y, torch.ones(mock_hdata.num_hyperedges, dtype=torch.float))
+    assert torch.equal(hdata.y, torch.ones(mock_hdata.num_hyperedges, dtype=torch.float))
 
 
 def test_with_y_zeros_returns_all_zeros(mock_hdata):
-    result = mock_hdata.with_y_zeros()
+    hdata = mock_hdata.with_y_zeros()
 
-    assert torch.equal(result.y, torch.zeros(mock_hdata.num_hyperedges, dtype=torch.float))
+    assert torch.equal(hdata.y, torch.zeros(mock_hdata.num_hyperedges, dtype=torch.float))
 
 
 def test_get_device_if_all_consistent_returns_device_when_all_consistent():
@@ -522,3 +522,110 @@ def test_raises_on_inconsistent_device_placement_on_mps():
 
     with pytest.raises(ValueError, match="Inconsistent device placement"):
         HData(x=x, hyperedge_index=hyperedge_index)
+
+
+def test_shuffle_preserves_num_nodes_and_num_hyperedges(mock_hdata):
+    shuffled_hdata = mock_hdata.shuffle(seed=42)
+
+    assert shuffled_hdata.num_nodes == mock_hdata.num_nodes
+    assert shuffled_hdata.num_hyperedges == mock_hdata.num_hyperedges
+
+
+def test_shuffle_preserves_incidence_structure(mock_hdata):
+    shuffled_hdata = mock_hdata.shuffle(seed=7)
+
+    def nodes_per_hyperegde(hyperedge_index, num_hyperedge):
+        hyperedges = set()
+        for hyperedge_id in range(num_hyperedge):
+            hyperedge_mask = hyperedge_index[1] == hyperedge_id
+            nodes_in_hyperedge = tuple(sorted(hyperedge_index[0][hyperedge_mask].tolist()))
+            hyperedges.add(nodes_in_hyperedge)
+        return hyperedges
+
+    original_hyperedges = nodes_per_hyperegde(mock_hdata.hyperedge_index, mock_hdata.num_hyperedges)
+    shuffled_hyperedges = nodes_per_hyperegde(
+        shuffled_hdata.hyperedge_index, shuffled_hdata.num_hyperedges
+    )
+
+    assert original_hyperedges == shuffled_hyperedges
+
+
+def test_shuffle_matches_labels_and_attr_with_correct_hyperedge():
+    x = torch.randn(4, 2)
+    # Hyperedge 0 has nodes {0, 1}, hyperedge 1 has nodes {2, 3}
+    hyperedge_index = torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]])
+    y = torch.tensor([1.0, 0.0])
+    hyperedge_attr = torch.tensor([[10.0], [20.0]])
+    hdata = HData(x=x, hyperedge_index=hyperedge_index, y=y, hyperedge_attr=hyperedge_attr)
+
+    shuffled_hdata = hdata.shuffle(seed=42)
+
+    # For each new hyperedge ID, find which nodes it has and verify the label/attr match
+    for new_hyperedge_id in range(shuffled_hdata.num_hyperedges):
+        new_hyperedge_mask = shuffled_hdata.hyperedge_index[1] == new_hyperedge_id
+        new_nodes = set(shuffled_hdata.hyperedge_index[0][new_hyperedge_mask].tolist())
+
+        # Find the original hyperedge with the same nodes
+        for old_hyperedge_id in range(hdata.num_hyperedges):
+            old_hyperedge_mask = hdata.hyperedge_index[1] == old_hyperedge_id
+            old_nodes = set(hdata.hyperedge_index[0][old_hyperedge_mask].tolist())
+            if old_nodes == new_nodes:
+                assert shuffled_hdata.y[new_hyperedge_id] == hdata.y[old_hyperedge_id]
+                assert torch.equal(
+                    utils.to_non_empty_edgeattr(shuffled_hdata.hyperedge_attr)[new_hyperedge_id],
+                    utils.to_non_empty_edgeattr(hdata.hyperedge_attr)[old_hyperedge_id],
+                )
+                break
+
+
+def test_shuffle_permutes_labels(mock_hdata):
+    mock_hdata.y = torch.tensor([1.0, 0.0, 0.5])
+    shuffled_hdata = mock_hdata.shuffle(seed=42)
+
+    # Same multiset of labels
+    assert sorted(shuffled_hdata.y.tolist()) == sorted(mock_hdata.y.tolist())
+
+
+def test_shuffle_permutes_hyperedge_attr(mock_hdata):
+    mock_hdata.hyperedge_attr = torch.tensor([[10.0], [20.0], [30.0]])
+    shuffled_hdata = mock_hdata.shuffle(seed=42)
+
+    # Same multiset of attribute rows
+    original_attr = {tuple(attrs.tolist()) for attrs in mock_hdata.hyperedge_attr}
+    shuffled_attr = {tuple(attrs.tolist()) for attrs in shuffled_hdata.hyperedge_attr}
+
+    assert original_attr == shuffled_attr
+
+
+def test_shuffle_handles_none_hyperedge_attr(mock_hdata):
+    mock_hdata.hyperedge_attr = None
+    shuffled_hdata = mock_hdata.shuffle(seed=42)
+
+    assert shuffled_hdata.hyperedge_attr is None
+
+
+def test_shuffle_does_not_modify_x(mock_hdata):
+    shuffled_hdata = mock_hdata.shuffle(seed=42)
+
+    assert torch.equal(shuffled_hdata.x, mock_hdata.x)
+
+
+def test_shuffle_with_seed_is_reproducible():
+    x = torch.randn(5, 4)
+    hyperedge_index = torch.tensor([[0, 1, 2, 3, 4], [0, 0, 1, 1, 2]])
+    y = torch.tensor([1.0, 0.0, 0.5])
+    hdata = HData(x=x, hyperedge_index=hyperedge_index, y=y)
+
+    shuffled_hdata1 = hdata.shuffle(seed=123)
+    shuffled_hdata2 = hdata.shuffle(seed=123)
+
+    assert torch.equal(shuffled_hdata1.hyperedge_index, shuffled_hdata2.hyperedge_index)
+    assert torch.equal(shuffled_hdata1.y, shuffled_hdata2.y)
+
+
+def test_shuffle_with_no_seed_set(mock_hdata):
+    shuffled_hdata1 = mock_hdata.shuffle()
+
+    assert shuffled_hdata1.num_nodes == mock_hdata.num_nodes
+    assert shuffled_hdata1.num_hyperedges == mock_hdata.num_hyperedges
+    assert shuffled_hdata1.hyperedge_index.shape == mock_hdata.hyperedge_index.shape
