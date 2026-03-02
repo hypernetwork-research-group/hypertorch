@@ -83,7 +83,10 @@ class CommonNeighborsHlpModule(HlpModule):
         """
         scores: Tensor = self.decoder(batch.hyperedge_index, self.node_to_neighbors)
         labels = batch.y
-        batch_size = batch.num_nodes
+
+        # We need to use the number of hyperedges as batch size for logging purposes,
+        # since each hyperedge is a separate prediction
+        batch_size = batch.num_hyperedges
 
         loss = self._compute_loss(scores, labels, batch_size, stage)
         self._compute_metrics(scores, labels, batch_size, stage)

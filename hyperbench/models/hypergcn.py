@@ -36,24 +36,23 @@ class HyperGCN(nn.Module):
         self.use_mediator = use_mediator
         self.cached_gcn_laplacian_matrix: Optional[Tensor] = None
 
-        self.layers = nn.ModuleList()
-        self.layers.append(
-            HyperGCNConv(
-                in_channels=in_channels,
-                out_channels=hid_channels,
-                use_batch_normalization=use_batch_normalization,
-                drop_rate=drop_rate,
-                use_mediator=use_mediator,
-            )
-        )
-        self.layers.append(
-            HyperGCNConv(
-                in_channels=hid_channels,
-                out_channels=num_classes,
-                use_batch_normalization=use_batch_normalization,
-                use_mediator=use_mediator,
-                is_last=True,
-            )
+        self.layers = nn.ModuleList(
+            [
+                HyperGCNConv(
+                    in_channels=in_channels,
+                    out_channels=hid_channels,
+                    use_batch_normalization=use_batch_normalization,
+                    drop_rate=drop_rate,
+                    use_mediator=use_mediator,
+                ),
+                HyperGCNConv(
+                    in_channels=hid_channels,
+                    out_channels=num_classes,
+                    use_batch_normalization=use_batch_normalization,
+                    use_mediator=use_mediator,
+                    is_last=True,
+                ),
+            ]
         )
 
     def forward(self, x: Tensor, hyperedge_index: Tensor) -> Tensor:

@@ -35,9 +35,8 @@ class HyperGCNConv(nn.Module):
         self.activation_fn = nn.ReLU(inplace=True)
         self.dropout = nn.Dropout(drop_rate)
 
-        # θ is the learnable weight matrix (as in the HyperGCN paper)
-        # # it projects node features from in_channels to out_channels
-        # and learns how to mix feature channels
+        # θ is the learnable weight matrix (as in the HyperGCN paper),
+        # it projects node features from in_channels to out_channels and learns how to mix feature channels
         self.theta = nn.Linear(in_channels, out_channels, bias=bias)
 
     def forward(
