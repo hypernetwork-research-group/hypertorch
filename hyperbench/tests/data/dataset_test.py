@@ -1,11 +1,10 @@
+import pytest
 import requests
 import torch
-import pytest
+
 from unittest.mock import patch, mock_open
 from hyperbench.data import AlgebraDataset, Dataset, HIFConverter, SamplingStrategy
 from hyperbench.types import HData, HIFHypergraph
-
-from hyperbench.tests.mock import *
 
 
 @pytest.fixture
@@ -132,11 +131,17 @@ def mock_multiple_edges_attr_hypergraph():
     )
 
 
-def test_HIFConverter():
-    """Test loading a known HIF dataset using HIFConverter."""
+def test_HIFConverter_num_nodes_and_edges():
     dataset_name = "ALGEBRA"
+    mock_hypergraph = HIFHypergraph(
+        network_type="undirected",
+        nodes=[{"node": str(i)} for i in range(20)],
+        edges=[{"edge": str(i)} for i in range(30)],
+        incidences=[{"node": "0", "edge": "0"}],
+    )
 
-    hypergraph = HIFConverter.load_from_hif(dataset_name)
+    with patch.object(HIFConverter, "load_from_hif", return_value=mock_hypergraph):
+        hypergraph = HIFConverter.load_from_hif(dataset_name)
 
     assert hypergraph is not None
     assert hasattr(hypergraph, "nodes")
@@ -145,8 +150,8 @@ def test_HIFConverter():
     assert hasattr(hypergraph, "metadata")
     assert hasattr(hypergraph, "network_type")
 
-    assert hypergraph.num_nodes == 423
-    assert hypergraph.num_edges == 1268
+    assert hypergraph.num_nodes == 20
+    assert hypergraph.num_edges == 30
 
 
 def test_HIFConverter_loads_invalid_dataset():
@@ -322,28 +327,10 @@ def test_dataset_is_not_available():
         pytest.param(SamplingStrategy.HYPEREDGE, 2, id="hyperedge_strategy"),
     ],
 )
-def test_dataset_is_available(strategy, expected_len):
-    mock_hypergraph = HIFHypergraph(
-        network_type="undirected",
-        nodes=[
-            {"node": "0"},
-            {"node": "1"},
-            {"node": "2"},
-            {"node": "3"},
-        ],
-        edges=[
-            {"edge": "0"},
-            {"edge": "1"},
-        ],
-        incidences=[
-            {"node": "0", "edge": "0"},
-            {"node": "1", "edge": "0"},
-            {"node": "2", "edge": "1"},
-            {"node": "3", "edge": "1"},
-        ],
-    )
-
-    with patch.object(HIFConverter, "load_from_hif", return_value=mock_hypergraph):
+def test_dataset_is_available_with_all_strategies(
+    strategy, expected_len, mock_four_node_hypergraph
+):
+    with patch.object(HIFConverter, "load_from_hif", return_value=mock_four_node_hypergraph):
         dataset = AlgebraDataset(sampling_strategy=strategy)
 
         assert dataset.DATASET_NAME == "ALGEBRA"
@@ -351,18 +338,14 @@ def test_dataset_is_available(strategy, expected_len):
         assert len(dataset) == expected_len
 
 
-def test_download_already_downloaded_dataset_uses_local_value():
-    dataset = AlgebraDataset()
+def test_download_already_downloaded_dataset_uses_local_value(mock_four_node_hypergraph):
+    with patch.object(HIFConverter, "load_from_hif", return_value=mock_four_node_hypergraph):
+        dataset = AlgebraDataset()
 
-    with patch.object(
-        HIFConverter,
-        "load_from_hif",
-        wraps=HIFConverter.load_from_hif,
-    ) as _:
-        hg1 = dataset.download()
-        hg2 = dataset.download()
+    hg1 = dataset.download()
+    hg2 = dataset.download()
 
-        assert hg1 is hg2
+    assert hg1 is hg2
 
 
 def test_throw_when_dataset_name_is_none():
