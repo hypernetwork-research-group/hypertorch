@@ -2,12 +2,12 @@ import torch
 import logging as log
 
 from torch import Tensor, nn
-from typing import Dict, Optional
+from typing import Optional
 from hyperbench.models import CommonNeighbors
-from hyperbench.nn import Aggregation
 from hyperbench.types import HData, Hypergraph
+from hyperbench.utils import Aggregation, Metrics, Stage
 
-from .hlp import HlpModule, MetricFn, Stage
+from .hlp import HlpModule
 
 
 class CommonNeighborsHlpModule(HlpModule):
@@ -18,6 +18,7 @@ class CommonNeighborsHlpModule(HlpModule):
         aggregation: The aggregation method for common neighbors ("mean", "min", or "sum").
         decoder: An optional decoder module. Defaults to :class:`CommonNeighbors`.
         loss_fn: An optional loss function. Defaults to ``BCEWithLogitsLoss``.
+        metrics: An optional dictionary of metric functions.
     """
 
     # No train/validation, so return default loss
@@ -26,10 +27,10 @@ class CommonNeighborsHlpModule(HlpModule):
     def __init__(
         self,
         train_hyperedge_index: Tensor,
-        aggregation: Optional[Aggregation] = None,
+        aggregation: Aggregation = Aggregation.MEAN,
         decoder: Optional[nn.Module] = None,
         loss_fn: Optional[nn.Module] = None,
-        metrics: Optional[Dict[str, MetricFn]] = None,
+        metrics: Optional[Metrics] = None,
     ):
         super().__init__(
             decoder=decoder if decoder is not None else CommonNeighbors(aggregation),
@@ -45,6 +46,9 @@ class CommonNeighborsHlpModule(HlpModule):
 
         # Disable automatic optimization since there is no training
         self.automatic_optimization = False
+
+    def forward(self, hyperedge_index: Tensor) -> Tensor:
+        return self.decoder(hyperedge_index, self.node_to_neighbors)
 
     def on_fit_start(self) -> None:
         """Warn users if they are running unnecessary training epochs."""
@@ -64,7 +68,7 @@ class CommonNeighborsHlpModule(HlpModule):
         return self.__step(batch, stage=Stage.TEST)
 
     def predict_step(self, batch: HData, batch_idx: int) -> Tensor:
-        return self.decoder(batch.hyperedge_index, self.node_to_neighbors)
+        return self.forward(batch.hyperedge_index)
 
     def configure_optimizers(self):
         # No training, so no optimizers needed
@@ -81,7 +85,7 @@ class CommonNeighborsHlpModule(HlpModule):
         Returns:
             The computed loss.
         """
-        scores: Tensor = self.decoder(batch.hyperedge_index, self.node_to_neighbors)
+        scores = self.forward(batch.hyperedge_index)
         labels = batch.y
 
         # We need to use the number of hyperedges as batch size for logging purposes,

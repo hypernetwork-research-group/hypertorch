@@ -1,19 +1,10 @@
 import lightning as L
-from enum import Enum
 
 from torch import Tensor, nn
-from typing import Any, Callable, Dict, Optional, TypeAlias
+from typing import Any, Dict, Optional
 from hyperbench.train import NegativeSampler, NegativeSamplingSchedule, NegativeSamplingScheduler
 from hyperbench.types import HData
-
-
-MetricFn: TypeAlias = Callable[[Tensor, Tensor], Tensor]
-
-
-class Stage(Enum):
-    TRAIN = "train"
-    VAL = "val"
-    TEST = "test"
+from hyperbench.utils import Metrics, Stage
 
 
 class HlpModule(L.LightningModule):
@@ -35,7 +26,7 @@ class HlpModule(L.LightningModule):
         decoder: nn.Module,
         loss_fn: nn.Module,
         encoder: Optional[nn.Module] = None,
-        metrics: Optional[Dict[str, MetricFn]] = None,
+        metrics: Optional[Metrics] = None,
         negative_sampler: Optional[NegativeSampler] = None,
         negative_sampling_schedule: NegativeSamplingSchedule = NegativeSamplingSchedule.EVERY_EPOCH,
         negative_sampling_every_n: int = 1,
