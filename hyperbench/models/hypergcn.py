@@ -13,8 +13,8 @@ class HyperGCN(nn.Module):
 
     Args:
         in_channels: The number of input channels.
-        hid_channels: The number of hidden channels.
-        num_classes: The Number of classes of the classification task.
+        hidden_channels: The number of hidden channels.
+        num_classes: The number of classes of the classification task as HyperGCB is a node classification model.
         use_batch_normalization: If set to ``True``, layers will use batch normalization. Defaults to ``False``.
         drop_rate: Dropout ratio. Defaults to ``0.5``.
         use_mediator: Whether to use mediator to transform the hyperedges to edges in the graph. Defaults to ``False``.
@@ -24,7 +24,7 @@ class HyperGCN(nn.Module):
     def __init__(
         self,
         in_channels: int,
-        hid_channels: int,
+        hidden_channels: int,
         num_classes: int,
         use_batch_normalization: bool = False,
         drop_rate: float = 0.5,
@@ -40,13 +40,13 @@ class HyperGCN(nn.Module):
             [
                 HyperGCNConv(
                     in_channels=in_channels,
-                    out_channels=hid_channels,
+                    out_channels=hidden_channels,
                     use_batch_normalization=use_batch_normalization,
                     drop_rate=drop_rate,
                     use_mediator=use_mediator,
                 ),
                 HyperGCNConv(
-                    in_channels=hid_channels,
+                    in_channels=hidden_channels,
                     out_channels=num_classes,
                     use_batch_normalization=use_batch_normalization,
                     use_mediator=use_mediator,
