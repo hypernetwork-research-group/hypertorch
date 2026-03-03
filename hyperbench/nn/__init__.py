@@ -1,5 +1,11 @@
-from .conv import HyperGCNConv
-from .nn import Aggregation
-from .scorer import Aggregation, CommonNeighborsScorer, NeighborScorer
+from hyperbench.utils import Aggregation
 
-__all__ = ["Aggregation", "CommonNeighborsScorer", "HyperGCNConv", "NeighborScorer"]
+from .conv import HyperGCNConv
+from .scorer import CommonNeighborsScorer, NeighborScorer
+
+__all__ = [
+    "Aggregation",
+    "CommonNeighborsScorer",
+    "HyperGCNConv",
+    "NeighborScorer",
+]

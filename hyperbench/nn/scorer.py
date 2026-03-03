@@ -3,8 +3,8 @@ import torch
 from abc import ABC, abstractmethod
 from torch import Tensor
 from typing import Dict, List, Optional
-from hyperbench.nn import Aggregation
 from hyperbench.types import Neighborhood, Hypergraph, HyperedgeIndex
+from hyperbench.utils import Aggregation
 
 
 class NeighborScorer(ABC):
@@ -28,7 +28,7 @@ class NeighborScorer(ABC):
 class CommonNeighborsScorer(NeighborScorer):
     __DEFAULT_SCORE = 0.0
 
-    def __init__(self, aggregation: Aggregation = Aggregation.MEAN) -> None:
+    def __init__(self, aggregation: Aggregation) -> None:
         self.aggregation = aggregation
 
     def score(
