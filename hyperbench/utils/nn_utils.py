@@ -8,8 +8,9 @@ INPUT_LAYER = 0
 
 
 ActivationFn: TypeAlias = Type[Module]
+NormalizationFn: TypeAlias = Type[Module]
 MetricFn: TypeAlias = Callable[[Tensor, Tensor], Tensor]
-Metrics: TypeAlias = Dict[str, MetricFn]
+NamedMetricFnDict: TypeAlias = Dict[str, MetricFn]
 
 
 class Aggregation(Enum):

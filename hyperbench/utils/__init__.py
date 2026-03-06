@@ -9,9 +9,10 @@ from .hif_utils import validate_hif_json
 from .nn_utils import (
     INPUT_LAYER,
     ActivationFn,
+    NormalizationFn,
     Aggregation,
     MetricFn,
-    Metrics,
+    NamedMetricFnDict,
     Stage,
     is_input_layer,
     is_layer,
@@ -21,9 +22,10 @@ from .sparse_utils import sparse_dropout
 __all__ = [
     "INPUT_LAYER",
     "ActivationFn",
+    "NormalizationFn",
     "Aggregation",
     "MetricFn",
-    "Metrics",
+    "NamedMetricFnDict",
     "Stage",
     "empty_edgeattr",
     "empty_hyperedgeindex",
