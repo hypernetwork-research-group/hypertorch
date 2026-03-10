@@ -2,10 +2,10 @@ import torch
 import logging as log
 
 from torch import Tensor, nn
-from typing import Optional
+from typing import Literal, Optional
 from hyperbench.models import CommonNeighbors
 from hyperbench.types import HData, Hypergraph
-from hyperbench.utils import Aggregation, Metrics, Stage
+from hyperbench.utils import NamedMetricFnDict, Stage
 
 from .hlp import HlpModule
 
@@ -27,10 +27,10 @@ class CommonNeighborsHlpModule(HlpModule):
     def __init__(
         self,
         train_hyperedge_index: Tensor,
-        aggregation: Aggregation = Aggregation.MEAN,
+        aggregation: Literal["mean", "min", "sum"] = "mean",
         decoder: Optional[nn.Module] = None,
         loss_fn: Optional[nn.Module] = None,
-        metrics: Optional[Metrics] = None,
+        metrics: Optional[NamedMetricFnDict] = None,
     ):
         super().__init__(
             decoder=decoder if decoder is not None else CommonNeighbors(aggregation),

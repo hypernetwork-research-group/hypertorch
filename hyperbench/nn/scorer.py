@@ -2,7 +2,7 @@ import torch
 
 from abc import ABC, abstractmethod
 from torch import Tensor
-from typing import Dict, List, Optional
+from typing import Dict, List, Literal, Optional
 from hyperbench.types import Neighborhood, Hypergraph, HyperedgeIndex
 from hyperbench.utils import Aggregation
 
@@ -28,7 +28,7 @@ class NeighborScorer(ABC):
 class CommonNeighborsScorer(NeighborScorer):
     __DEFAULT_SCORE = 0.0
 
-    def __init__(self, aggregation: Aggregation) -> None:
+    def __init__(self, aggregation: Literal["mean", "min", "sum"]) -> None:
         self.aggregation = aggregation
 
     def score(
@@ -92,16 +92,16 @@ class CommonNeighborsScorer(NeighborScorer):
         return torch.tensor(scores, dtype=torch.float32, device=hyperedge_index.device)
 
     def __to_score_by_aggregation(self, pairwise_counts: List[int]) -> float:
-        if not pairwise_counts:
-            return self.__DEFAULT_SCORE
+        score = self.__DEFAULT_SCORE
+        if len(pairwise_counts) < 1:
+            return score
 
         match self.aggregation:
             case Aggregation.MEAN:
-                return sum(pairwise_counts) / len(pairwise_counts)
+                score = sum(pairwise_counts) / len(pairwise_counts)
             case Aggregation.MIN:
-                return float(min(pairwise_counts))
+                score = float(min(pairwise_counts))
             case Aggregation.SUM:
-                return float(sum(pairwise_counts))
+                score = float(sum(pairwise_counts))
 
-        # Fallback, should never reach here due to validation in __init__()
-        return self.__DEFAULT_SCORE
+        return score

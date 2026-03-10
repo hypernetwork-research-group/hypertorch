@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Callable, Dict, Type, TypeAlias
+from typing import Callable, Dict, Literal, Type, TypeAlias
 from torch import Tensor
 from torch.nn import Module
 
@@ -13,10 +13,13 @@ MetricFn: TypeAlias = Callable[[Tensor, Tensor], Tensor]
 NamedMetricFnDict: TypeAlias = Dict[str, MetricFn]
 
 
-class Aggregation(Enum):
-    MEAN = "mean"
-    MIN = "min"
-    SUM = "sum"
+# We can't use StrEnum as we support python 3.10,
+# which doesn't have it. So we use Literal instead.
+class Aggregation:
+    MAX: Literal["max"] = "max"
+    MEAN: Literal["mean"] = "mean"
+    MIN: Literal["min"] = "min"
+    SUM: Literal["sum"] = "sum"
 
 
 class Stage(Enum):
