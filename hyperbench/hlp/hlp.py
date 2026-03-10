@@ -4,7 +4,7 @@ from torch import Tensor, nn
 from typing import Any, Dict, Optional
 from hyperbench.train import NegativeSampler, NegativeSamplingSchedule, NegativeSamplingScheduler
 from hyperbench.types import HData
-from hyperbench.utils import Metrics, Stage
+from hyperbench.utils import NamedMetricFnDict, Stage
 
 
 class HlpModule(L.LightningModule):
@@ -26,7 +26,7 @@ class HlpModule(L.LightningModule):
         decoder: nn.Module,
         loss_fn: nn.Module,
         encoder: Optional[nn.Module] = None,
-        metrics: Optional[Metrics] = None,
+        metrics: Optional[NamedMetricFnDict] = None,
         negative_sampler: Optional[NegativeSampler] = None,
         negative_sampling_schedule: NegativeSamplingSchedule = NegativeSamplingSchedule.EVERY_EPOCH,
         negative_sampling_every_n: int = 1,
