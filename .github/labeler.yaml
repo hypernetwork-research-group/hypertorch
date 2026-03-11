@@ -1,0 +1,35 @@
+data:
+  - changed-files:
+    - any-glob-to-any-file: "hyperbench/data/**"
+
+types:
+  - changed-files:
+    - any-glob-to-any-file: "hyperbench/types/**"
+
+models:
+  - changed-files:
+    - any-glob-to-any-file:
+      - "hyperbench/models/**"
+      - "hyperbench/nn/**"
+
+training:
+  - changed-files:
+    - any-glob-to-any-file: "hyperbench/train/**"
+
+utils:
+  - changed-files:
+    - any-glob-to-any-file: "hyperbench/utils/**"
+
+tests:
+  - changed-files:
+    - any-glob-to-any-file: "hyperbench/tests/**"
+
+documentation:
+  - changed-files:
+    - any-glob-to-any-file:
+      - "docs/**"
+      - "*.md"
+
+ci:
+  - changed-files:
+    - any-glob-to-any-file: ".github/**"
