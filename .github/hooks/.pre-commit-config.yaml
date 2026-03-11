@@ -21,6 +21,7 @@ repos:
           - --autofix
           - --indent=2
       - id: trailing-whitespace
+
   - repo: https://github.com/compilerla/conventional-pre-commit
     rev: v3.4.0
     hooks:
