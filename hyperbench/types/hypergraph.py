@@ -4,7 +4,7 @@ from torch import Tensor
 from typing import Optional, List, Dict, Any, Literal, Set, TypeAlias
 from hyperbench.utils import to_0based_ids
 
-from .graph import Graph
+from hyperbench.types import Graph
 
 
 Neighborhood: TypeAlias = Set[int]
@@ -137,6 +137,79 @@ class Hypergraph:
             node_to_neighbors[node] = self.neighbors_of(node)
 
         return node_to_neighbors
+
+    def get_stats(self) -> Dict[str, Any]:
+        """Return basic statistics about the hypergraph."""
+        node_degree: Dict[int, int] = {}
+        distribution_hyperedge_size: List[int] = []
+        total_incidences = 0
+
+        for hyperedge in self.hyperedges:
+            size = len(hyperedge)
+            distribution_hyperedge_size.append(size)
+            total_incidences += size
+            for node in hyperedge:
+                node_degree[node] = node_degree.get(node, 0) + 1
+
+        num_nodes = len(node_degree)
+        num_hyperedges = len(self.hyperedges)
+        distribution_node_degree: List[int] = sorted(node_degree.values())
+
+        avg_degree_hyperedge = total_incidences / num_hyperedges if num_hyperedges else 0
+        total_incidences_nodes = sum(distribution_node_degree)
+        avg_degree_node = total_incidences_nodes / num_nodes if num_nodes else 0
+
+        hyperedge_degree_max = (
+            max(distribution_hyperedge_size) if distribution_hyperedge_size else 0
+        )
+        node_degree_max = max(distribution_node_degree) if distribution_node_degree else 0
+
+        sorted_hyperedge_sizes = sorted(distribution_hyperedge_size)
+        n_e = len(sorted_hyperedge_sizes)
+        hyperedge_degree_median = (
+            (
+                sorted_hyperedge_sizes[n_e // 2]
+                if n_e % 2
+                else (sorted_hyperedge_sizes[n_e // 2 - 1] + sorted_hyperedge_sizes[n_e // 2]) / 2
+            )
+            if n_e
+            else 0
+        )
+
+        n_n = len(distribution_node_degree)
+        node_degree_median = (
+            (
+                distribution_node_degree[n_n // 2]
+                if n_n % 2
+                else (distribution_node_degree[n_n // 2 - 1] + distribution_node_degree[n_n // 2])
+                / 2
+            )
+            if n_n
+            else 0
+        )
+
+        distribution_hyperedge_size_hist: Dict[int, int] = {}
+        for s in distribution_hyperedge_size:
+            distribution_hyperedge_size_hist[s] = distribution_hyperedge_size_hist.get(s, 0) + 1
+
+        distribution_node_degree_hist: Dict[int, int] = {}
+        for d in distribution_node_degree:
+            distribution_node_degree_hist[d] = distribution_node_degree_hist.get(d, 0) + 1
+
+        return {
+            "num_nodes": num_nodes,
+            "num_hyperedges": num_hyperedges,
+            "avg_degree_node": avg_degree_node,
+            "avg_degree_hyperedge": avg_degree_hyperedge,
+            "node_degree_max": node_degree_max,
+            "hyperedge_degree_max": hyperedge_degree_max,
+            "node_degree_median": node_degree_median,
+            "hyperedge_degree_median": hyperedge_degree_median,
+            "distribution_node_degree": distribution_node_degree,
+            "distribution_hyperedge_size": distribution_hyperedge_size,
+            "distribution_node_degree_hist": distribution_node_degree_hist,
+            "distribution_hyperedge_size_hist": distribution_hyperedge_size_hist,
+        }
 
     @classmethod
     def from_hyperedge_index(cls, hyperedge_index: Tensor) -> "Hypergraph":
@@ -348,3 +421,12 @@ class HyperedgeIndex:
         self.__hyperedge_index[1] = to_0based_ids(self.all_hyperedge_ids, hyperedge_ids_to_rebase)
 
         return self
+
+
+if __name__ == "__main__":
+    # Example usage
+    h = Hypergraph(hyperedges=[[0, 1, 2], [2, 3]])
+
+    s = h.get_stats()
+    for k, v in s.items():
+        print(f"{k}: {v}")

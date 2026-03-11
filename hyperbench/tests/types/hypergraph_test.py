@@ -297,6 +297,72 @@ def test_neighbors_of_all(hyperedges, expected_neighbors_map):
 
 
 @pytest.mark.parametrize(
+    "hyperedges, expected_stats",
+    [
+        pytest.param(
+            [],
+            {
+                "num_nodes": 0,
+                "num_hyperedges": 0,
+                "avg_degree_node": 0.0,
+                "avg_degree_hyperedge": 0.0,
+                "node_degree_max": 0,
+                "hyperedge_degree_max": 0,
+                "node_degree_median": 0.0,
+                "hyperedge_degree_median": 0.0,
+                "distribution_node_degree": [],
+                "distribution_hyperedge_size": [],
+                "distribution_node_degree_hist": {},
+                "distribution_hyperedge_size_hist": {},
+            },
+            id="empty_hypergraph",
+        ),
+        pytest.param(
+            [[0, 1]],
+            {
+                "num_nodes": 2,
+                "num_hyperedges": 1,
+                "avg_degree_node": 1.0,
+                "avg_degree_hyperedge": 2.0,
+                "node_degree_max": 1,
+                "hyperedge_degree_max": 2,
+                "node_degree_median": 1.0,
+                "hyperedge_degree_median": 2.0,
+                "distribution_node_degree": [1, 1],
+                "distribution_hyperedge_size": [2],
+                "distribution_node_degree_hist": {1: 2},
+                "distribution_hyperedge_size_hist": {2: 1},
+            },
+            id="single_hyperedge_two_nodes",
+        ),
+        pytest.param(
+            [[0, 1, 2], [2, 3]],
+            {
+                "num_nodes": 4,
+                "num_hyperedges": 2,
+                "avg_degree_node": 1.25,
+                "avg_degree_hyperedge": 2.5,
+                "node_degree_max": 2,
+                "hyperedge_degree_max": 3,
+                "node_degree_median": 1.0,
+                "hyperedge_degree_median": 2.5,
+                "distribution_node_degree": [1, 1, 1, 2],
+                "distribution_hyperedge_size": [3, 2],
+                "distribution_node_degree_hist": {1: 3, 2: 1},
+                "distribution_hyperedge_size_hist": {3: 1, 2: 1},
+            },
+            id="two_hyperedges_varying_sizes",
+        ),
+    ],
+)
+def test_get_stats(hyperedges, expected_stats):
+    hypergraph = Hypergraph(hyperedges)
+    stats = hypergraph.get_stats()
+
+    assert stats == expected_stats
+
+
+@pytest.mark.parametrize(
     "hyperedge_index_tensor, hyperedge_id, expected_nodes",
     [
         pytest.param(
