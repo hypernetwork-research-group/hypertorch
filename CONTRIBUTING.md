@@ -9,7 +9,11 @@ Run the following command to install the pre-commit hook:
 ```bash
 make setup
 
-pre-commit install --config .github/hooks/.pre-commit-config.yaml --hook-type pre-commit --install-hooks --overwrite
+pre-commit install \
+    --config .github/hooks/.pre-commit-config.yaml \
+    --hook-type pre-commit \
+    --install-hooks \
+    --overwrite
 ```
 
 This will ensure that your code adheres to the project's coding standards before each commit.
