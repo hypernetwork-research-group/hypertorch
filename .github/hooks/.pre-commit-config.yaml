@@ -1,3 +1,6 @@
+default_install_hook_types:
+  - pre-commit
+  - commit-msg
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
@@ -18,6 +21,12 @@ repos:
           - --autofix
           - --indent=2
       - id: trailing-whitespace
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v3.4.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args: [feat, fix, docs, chore, refactor]
 
   - repo: local
     hooks:
