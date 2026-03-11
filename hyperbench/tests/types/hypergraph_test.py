@@ -362,6 +362,10 @@ def test_get_stats(hyperedges, expected_stats):
     assert stats == expected_stats
 
 
+# def test_get_stats_hdata(hyperedges, expected_stats):
+#     hdata = HIFHypergraph(hyperedges, network_type="undirected").hdata
+
+
 @pytest.mark.parametrize(
     "hyperedge_index_tensor, hyperedge_id, expected_nodes",
     [

@@ -69,6 +69,8 @@ class HData:
 
         self.device = self.get_device_if_all_consistent()
 
+        # self stats
+
     def __repr__(self) -> str:
         return (
             f"{self.__class__.__name__}(\n"
@@ -379,3 +381,10 @@ class HData:
     def with_y_zeros(self) -> "HData":
         """Return a copy of this instance with a y attribute of all zeros."""
         return self.with_y_to(0.0)
+
+    def stats(self):
+        # shape x
+        # shape hyperedge_attr
+        # len(hyperedge_index[0].size(1))
+        print(f"num_nodes: {self.num_nodes}")
+        return {}

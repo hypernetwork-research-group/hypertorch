@@ -469,3 +469,12 @@ class Dataset(TorchDataset):
             x = torch.ones((num_nodes, 1), dtype=torch.float)
 
         return x  # shape [num_nodes, num_node_features]
+
+    def stats(self) -> Dict[str, Any]:
+        """
+        Get basic statistics about the dataset.
+
+        Returns:
+            A dictionary containing the number of nodes, number of hyperedges, and average degree.
+        """
+        return self.hdata.stats()
