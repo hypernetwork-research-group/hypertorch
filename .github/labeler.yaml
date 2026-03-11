@@ -33,3 +33,18 @@ documentation:
 ci:
   - changed-files:
     - any-glob-to-any-file: ".github/**"
+
+feat:
+  - head-branch: ['^feat']
+
+fix:
+  - head-branch: ['^fix']
+
+chore:
+  - head-branch: ['^chore']
+
+refactor:
+  - head-branch: ['^refactor']
+
+docs:
+  - head-branch: ['^docs']
