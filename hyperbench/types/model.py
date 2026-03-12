@@ -16,6 +16,7 @@ class ModelConfig:
         version: The version of the model.
         model: a LightningModule instance.
         trainer: a Trainer instance.
+        is_trainable: Whether the model is trainable.
     """
 
     def __init__(
@@ -23,11 +24,13 @@ class ModelConfig:
         name: str,
         model: L.LightningModule,
         version: str = "default",
+        is_trainable: bool = True,
         trainer: Optional[L.Trainer] = None,
     ) -> None:
         self.name = name
         self.version = version
         self.model = model
+        self.is_trainable = is_trainable
         self.trainer = trainer
 
     def full_model_name(self) -> str:
