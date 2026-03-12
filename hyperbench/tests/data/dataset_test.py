@@ -2,8 +2,9 @@ import pytest
 import requests
 import torch
 
-from unittest.mock import patch, mock_open
+from unittest.mock import patch, mock_open, MagicMock
 from hyperbench.data import AlgebraDataset, Dataset, HIFConverter, SamplingStrategy
+from hyperbench.nn import EnrichmentMode, NodeFeatureEnricher
 from hyperbench.types import HData, HIFHypergraph
 
 
@@ -310,6 +311,11 @@ def test_HIFConverter_download_raises_when_network_error():
 
         with pytest.raises(requests.RequestException, match="Network error"):
             HIFConverter.load_from_hif(dataset_name)
+
+
+def test_init_with_prepare_false_and_no_hdata_raises():
+    with pytest.raises(ValueError, match="hdata must be provided when prepare is set to False."):
+        Dataset(hdata=None, prepare=False)
 
 
 def test_dataset_is_not_available():
@@ -834,6 +840,35 @@ def test_from_hdata_process_raises(mock_hdata):
 
     with pytest.raises(ValueError, match="process can only be called for the original dataset."):
         dataset.process()
+
+
+def test_enrich_node_features_replace(mock_hdata):
+    dataset = Dataset.from_hdata(mock_hdata)
+
+    enricher = MagicMock(spec=NodeFeatureEnricher)
+    enriched_x = torch.randn(3, 4)
+    enricher.enrich.return_value = enriched_x
+
+    dataset.enrich_node_features(enricher)
+
+    enricher.enrich.assert_called_once_with(mock_hdata.hyperedge_index)
+    assert torch.equal(dataset.hdata.x, enriched_x)
+
+
+def test_enrich_node_features_concatenate(mock_hdata):
+    dataset = Dataset.from_hdata(mock_hdata)
+    original_x = dataset.hdata.x.clone()
+
+    enricher = MagicMock(spec=NodeFeatureEnricher)
+    enriched_x = torch.randn(3, 4)
+    enricher.enrich.return_value = enriched_x
+
+    dataset.enrich_node_features(enricher, enrichment_mode="concatenate")
+
+    enricher.enrich.assert_called_once_with(mock_hdata.hyperedge_index)
+    expected_x = torch.cat([original_x, enriched_x], dim=1)
+    assert torch.equal(dataset.hdata.x, expected_x)
+    assert dataset.hdata.x.shape == (3, 5)  # 1 original + 4 enriched
 
 
 def test_split_with_equal_ratios(mock_four_node_hypergraph):

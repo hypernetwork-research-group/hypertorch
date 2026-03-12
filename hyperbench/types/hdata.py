@@ -3,6 +3,7 @@ import torch
 from torch import Tensor
 from typing import Optional, Sequence, Dict, Any
 from hyperbench.utils import empty_hyperedgeindex, empty_nodefeatures
+from hyperbench.nn.enricher import EnrichmentMode, NodeFeatureEnricher
 
 from .hypergraph import HyperedgeIndex
 
@@ -245,6 +246,28 @@ class HData:
             num_hyperedges=len(split_unique_hyperedge_ids),
             y=new_y,
         )
+
+    def enrich_node_features(
+        self,
+        enricher: NodeFeatureEnricher,
+        enrichment_mode: Optional[EnrichmentMode] = None,
+    ) -> None:
+        """
+        Enrich node features using the provided node feature enricher.
+
+        Args:
+            enricher: An instance of NodeFeatureEnricher to generate structural node features from hypergraph topology.
+            enrichment_mode: How to combine generated features with existing ``hdata.x``.
+                ``concatenate`` appends new features as additional columns.
+                ``replace`` substitutes ``hdata.x`` entirely.
+        """
+        enriched_features = enricher.enrich(self.hyperedge_index)
+
+        match enrichment_mode:
+            case "concatenate":
+                self.x = torch.cat([self.x, enriched_features], dim=1)
+            case _:
+                self.x = enriched_features
 
     def get_device_if_all_consistent(self) -> torch.device:
         """

@@ -4,6 +4,7 @@ import torch
 
 from torch import Tensor
 from hyperbench import utils
+from hyperbench.nn import NodeFeatureEnricher
 from hyperbench.types import HData
 
 
@@ -491,6 +492,32 @@ def test_with_y_zeros_returns_all_zeros(mock_hdata):
     hdata = mock_hdata.with_y_zeros()
 
     assert torch.equal(hdata.y, torch.zeros(mock_hdata.num_hyperedges, dtype=torch.float))
+
+
+def test_enrich_node_features_replace(mock_hdata):
+    enricher = MagicMock(spec=NodeFeatureEnricher)
+    enriched_x = torch.randn(5, 3)
+    enricher.enrich.return_value = enriched_x
+
+    mock_hdata.enrich_node_features(enricher)
+
+    enricher.enrich.assert_called_once_with(mock_hdata.hyperedge_index)
+    assert torch.equal(mock_hdata.x, enriched_x)
+
+
+def test_enrich_node_features_concatenate(mock_hdata):
+    original_x = mock_hdata.x.clone()
+
+    enricher = MagicMock(spec=NodeFeatureEnricher)
+    enriched_x = torch.randn(5, 3)
+    enricher.enrich.return_value = enriched_x
+
+    mock_hdata.enrich_node_features(enricher, enrichment_mode="concatenate")
+
+    enricher.enrich.assert_called_once_with(mock_hdata.hyperedge_index)
+    expected_x = torch.cat([original_x, enriched_x], dim=1)
+    assert torch.equal(mock_hdata.x, expected_x)
+    assert mock_hdata.x.shape == (5, 7)  # 4 original + 3 enriched
 
 
 def test_get_device_if_all_consistent_returns_device_when_all_consistent():

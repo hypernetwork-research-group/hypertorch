@@ -9,6 +9,7 @@ from enum import Enum
 from typing import Any, Dict, List, Optional
 from torch import Tensor
 from torch.utils.data import Dataset as TorchDataset
+from hyperbench.nn import EnrichmentMode, NodeFeatureEnricher
 from hyperbench.types import HData, HIFHypergraph
 from hyperbench.utils import validate_hif_json
 
@@ -116,14 +117,31 @@ class Dataset(TorchDataset):
         self,
         hdata: Optional[HData] = None,
         sampling_strategy: SamplingStrategy = SamplingStrategy.HYPEREDGE,
-        is_original: Optional[bool] = True,
+        prepare: bool = True,
     ) -> None:
-        self.__is_original = is_original
-        self.__sampler = create_sampler_from_strategy(sampling_strategy)
+        """
+        Initialize the Dataset.
 
+        Args:
+            hdata: Optional HData object to initialize the dataset with.
+                If provided, the dataset will be initialized with this data instead of loading and processing from HIF. Must be provided if prepare is set to ``False``.
+            sampling_strategy: The sampling strategy to use for the dataset. If not provided, defaults to ``SamplingStrategy.HYPEREDGE``.
+            prepare: Whether to load and process the original dataset from HIF format.
+                If set to ``False``, the dataset will be initialized with the provided hdata instead. Defaults to ``True``.
+        """
+        self.__is_prepared = prepare
+        self.__sampler = create_sampler_from_strategy(sampling_strategy)
         self.sampling_strategy = sampling_strategy
-        self.hypergraph = self.download() if hdata is None else HIFHypergraph.empty()
-        self.hdata = self.process() if hdata is None else hdata
+
+        if self.__is_prepared:
+            self.hypergraph = self.download()
+            self.hdata = self.process()
+        else:
+            if hdata is None:
+                raise ValueError("hdata must be provided when prepare is set to False.")
+
+            self.hypergraph = HIFHypergraph.empty()
+            self.hdata = hdata
 
     def __len__(self) -> int:
         return self.__sampler.len(self.hdata)
@@ -163,14 +181,14 @@ class Dataset(TorchDataset):
         Returns:
             The :class:`Dataset` instance with the provided :class:`HData`.
         """
-        return cls(hdata=hdata, sampling_strategy=sampling_strategy, is_original=False)
+        return cls(hdata=hdata, sampling_strategy=sampling_strategy, prepare=False)
 
     def download(self) -> HIFHypergraph:
         """
         Load the hypergraph from HIF format using HIFConverter class.
         """
-        if not self.__is_original:
-            raise ValueError("download can only be called for the original dataset.")
+        if not self.__is_prepared:
+            raise ValueError("download can only be called for the original dataset (prepare=True).")
 
         if hasattr(self, "hypergraph") and self.hypergraph is not None:
             return self.hypergraph
@@ -184,7 +202,7 @@ class Dataset(TorchDataset):
         Returns:
             The processed hypergraph data.
         """
-        if not self.__is_original:
+        if not self.__is_prepared:
             raise ValueError("process can only be called for the original dataset.")
 
         num_nodes = len(self.hypergraph.nodes)
@@ -226,6 +244,22 @@ class Dataset(TorchDataset):
         hyperedge_index = torch.tensor([node_ids, hyperedge_ids], dtype=torch.long)
 
         return HData(x, hyperedge_index, hyperedge_attr, num_nodes, num_hyperedges)
+
+    def enrich_node_features(
+        self,
+        enricher: NodeFeatureEnricher,
+        enrichment_mode: Optional[EnrichmentMode] = None,
+    ) -> None:
+        """
+        Enrich node features using the provided node feature enricher.
+
+        Args:
+            enricher: An instance of NodeFeatureEnricher to generate structural node features from hypergraph topology.
+            enrichment_mode: How to combine generated features with existing ``hdata.x``.
+                ``concatenate`` appends new features as additional columns.
+                ``replace`` substitutes ``hdata.x`` entirely.
+        """
+        self.hdata.enrich_node_features(enricher, enrichment_mode)
 
     def split(
         self,
@@ -304,7 +338,7 @@ class Dataset(TorchDataset):
             split_dataset = self.__class__(
                 hdata=split_hdata,
                 sampling_strategy=self.sampling_strategy,
-                is_original=False,
+                prepare=False,
             )
             split_datasets.append(split_dataset)
 
