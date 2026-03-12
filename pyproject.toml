@@ -10,6 +10,7 @@ dependencies = [
     "numpy>=1.240",
     "requests>=2.32.5",
     "torch>=2.9.1",
+    "torch-geometric>=2.7.0",
     "zstandard>=0.25.0",
 ]
 
@@ -36,6 +37,10 @@ addopts = [
     "--strict-markers",
 ]
 testpaths = ["hyperbench/tests"]
+filterwarnings = [
+    "ignore:Sparse CSR tensor support is in beta state",
+    "ignore:`torch_geometric.distributed` has been deprecated",
+]
 
 [tool.coverage.run]
 source = ["hyperbench"]
