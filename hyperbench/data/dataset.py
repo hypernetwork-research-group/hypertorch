@@ -472,9 +472,7 @@ class Dataset(TorchDataset):
 
     def stats(self) -> Dict[str, Any]:
         """
-        Get basic statistics about the dataset.
-
-        Returns:
-            A dictionary containing the number of nodes, number of hyperedges, and average degree.
+        Compute statistics for the dataset.
+        This method currently delegates to the underlying HData's stats method.
         """
         return self.hdata.stats()

@@ -76,7 +76,24 @@ class HIFHypergraph:
         return len(self.edges)
 
     def stats(self) -> Dict[str, Any]:
-        """Return basic statistics about the hypergraph."""
+        """
+        Compute statistics for the HIFhypergraph.
+        The field returned in the dictionary include:
+        - ``num_nodes``: The number of nodes in the hypergraph.
+        - ``num_hyperedges``: The number of hyperedges in the hypergraph.
+        - ``avg_degree_node``: The average degree of nodes, calculated as the mean number of hyperedges each node belongs to.
+        - ``avg_degree_hyperedge``: The average size of hyperedges, calculated as the mean number of nodes each hyperedge contains.
+        - ``node_degree_max``: The maximum degree of any node in the hypergraph.
+        - ``hyperedge_degree_max``: The maximum size of any hyperedge in the hypergraph.
+        - ``node_degree_median``: The median degree of nodes in the hypergraph.
+        - ``hyperedge_degree_median``: The median size of hyperedges in the hypergraph.
+        - ``distribution_node_degree``: A list where the value at index ``i`` represents the count of nodes with degree ``i``.
+        - ``distribution_hyperedge_size``: A list where the value at index ``i`` represents the count of hyperedges with size ``i``.
+        - ``distribution_node_degree_hist``: A dictionary where the keys are node degrees and the values are the count of nodes with that degree.
+        - ``distribution_hyperedge_size_hist``: A dictionary where the keys are hyperedge sizes and the values are the count of hyperedges with that size.
+        Returns:
+            A dictionary containing various statistics about the hypergraph.
+        """
         node_degree: Dict[Any, int] = {}
         hyperedge_size: Dict[Any, int] = {}
 
