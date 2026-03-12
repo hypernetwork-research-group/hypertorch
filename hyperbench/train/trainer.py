@@ -1,5 +1,5 @@
+import copy
 import lightning as L
-import logging as log
 
 from collections.abc import Iterable
 from lightning.pytorch.accelerators import Accelerator
@@ -148,7 +148,7 @@ class MultiModelTrainer:
                     enable_checkpointing=enable_checkpointing,
                     enable_progress_bar=enable_progress_bar,
                     enable_model_summary=enable_model_summary,
-                    callbacks=callbacks,
+                    callbacks=copy.deepcopy(callbacks),
                     **kwargs,
                 )
 
@@ -174,12 +174,19 @@ class MultiModelTrainer:
             raise ValueError("No models to fit.")
 
         for i, config in enumerate(self.model_configs):
+            if not config.is_trainable:
+                if verbose:
+                    print(
+                        f"Skipping training for model {config.full_model_name()} [{i + 1}/{len(self.model_configs)} models] (is_trainable=False)"
+                    )
+                continue
+
             if config.trainer is None:
                 raise ValueError(f"Trainer not defined for model {config.full_model_name()}.")
 
             if verbose:
-                log.info(
-                    f"Fit model {config.full_model_name()} [{i + 1}/{len(self.model_configs)}]\n"
+                print(
+                    f"Fit model {config.full_model_name()} [{i + 1}/{len(self.model_configs)} models]"
                 )
 
             config.trainer.fit(
@@ -208,8 +215,8 @@ class MultiModelTrainer:
                 raise ValueError(f"Trainer not defined for model {config.full_model_name()}.")
 
             if verbose:
-                log.info(
-                    f"Test model {config.full_model_name()} [{i + 1}/{len(self.model_configs)}]\n"
+                print(
+                    f"Test model {config.full_model_name()} [{i + 1}/{len(self.model_configs)} models]"
                 )
 
             trainer_test_results: List[TestResult] = config.trainer.test(

@@ -20,6 +20,7 @@ def mock_model_configs():
         model_config.version = f"{i}"
         model_config.model = model
         model_config.trainer = None
+        model_config.is_trainable = True
         model_config.full_model_name = lambda self=model_config: f"{self.name}:{self.version}"
 
         model_configs.append(model_config)
@@ -145,17 +146,46 @@ def test_fit_all_raises_when_None_trainer(_, mock_model_configs):
     "hyperbench.train.trainer.L.Trainer",
     side_effect=lambda *args, **kwargs: new_mock_trainer(),
 )
-def test_fit_all_with_verbose_true_prints(_, mock_model_configs, caplog):
+def test_fit_all_with_verbose_true_prints(_, mock_model_configs, capsys):
     multi_model_trainer = MultiModelTrainer(mock_model_configs)
 
-    with caplog.at_level("INFO"):
-        multi_model_trainer.fit_all(verbose=True)
+    multi_model_trainer.fit_all(verbose=True)
 
     for config in mock_model_configs:
         config.trainer.fit.assert_called_once()
 
-    logs = [record.message for record in caplog.records if "Fit model" in record.message]
+    captured_out = capsys.readouterr().out
+    logs = [line for line in captured_out.splitlines() if "Fit model" in line]
     assert len(logs) == len(mock_model_configs)
+
+
+@patch(
+    "hyperbench.train.trainer.L.Trainer",
+    side_effect=lambda *args, **kwargs: new_mock_trainer(),
+)
+def test_fit_all_skips_non_trainable_model(_, mock_model_configs):
+    mock_model_configs[0].is_trainable = False
+    multi_model_trainer = MultiModelTrainer(mock_model_configs)
+
+    multi_model_trainer.fit_all(verbose=False)
+
+    mock_model_configs[0].trainer.fit.assert_not_called()
+    mock_model_configs[1].trainer.fit.assert_called_once()
+
+
+@patch(
+    "hyperbench.train.trainer.L.Trainer",
+    side_effect=lambda *args, **kwargs: new_mock_trainer(),
+)
+def test_fit_all_skips_non_trainable_model_with_verbose_prints(_, mock_model_configs, capsys):
+    mock_model_configs[0].is_trainable = False
+    multi_model_trainer = MultiModelTrainer(mock_model_configs)
+
+    multi_model_trainer.fit_all(verbose=True)
+
+    captured_out = capsys.readouterr().out
+    assert "Skipping training for model" in captured_out
+    assert mock_model_configs[0].full_model_name() in captured_out
 
 
 @patch(
@@ -196,14 +226,14 @@ def test_test_all_raises_when_None_trainer(_, mock_model_configs):
     "hyperbench.train.trainer.L.Trainer",
     side_effect=lambda *args, **kwargs: new_mock_trainer(),
 )
-def test_test_all_with_verbose_true_prints(_, mock_model_configs, caplog):
+def test_test_all_with_verbose_true_prints(_, mock_model_configs, capsys):
     multi_model_trainer = MultiModelTrainer(mock_model_configs)
 
-    with caplog.at_level("INFO"):
-        multi_model_trainer.test_all(verbose=True)
+    multi_model_trainer.test_all(verbose=True)
 
     for config in mock_model_configs:
         config.trainer.test.assert_called_once()
 
-    logs = [record.message for record in caplog.records if "Test model" in record.message]
+    captured_out = capsys.readouterr().out
+    logs = [line for line in captured_out.splitlines() if "Test model" in line]
     assert len(logs) == len(mock_model_configs)
