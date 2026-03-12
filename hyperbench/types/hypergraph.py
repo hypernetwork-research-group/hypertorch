@@ -91,9 +91,11 @@ class HIFHypergraph:
         - ``distribution_hyperedge_size``: A list where the value at index ``i`` represents the count of hyperedges with size ``i``.
         - ``distribution_node_degree_hist``: A dictionary where the keys are node degrees and the values are the count of nodes with that degree.
         - ``distribution_hyperedge_size_hist``: A dictionary where the keys are hyperedge sizes and the values are the count of hyperedges with that size.
+
         Returns:
             A dictionary containing various statistics about the hypergraph.
         """
+
         node_degree: Dict[Any, int] = {}
         hyperedge_size: Dict[Any, int] = {}
 

@@ -69,8 +69,6 @@ class HData:
 
         self.device = self.get_device_if_all_consistent()
 
-        # self stats
-
     def __repr__(self) -> str:
         return (
             f"{self.__class__.__name__}(\n"
@@ -400,9 +398,11 @@ class HData:
         - ``distribution_hyperedge_size``: A list where the value at index ``i`` represents the count of hyperedges with size ``i``.
         - ``distribution_node_degree_hist``: A dictionary where the keys are node degrees and the values are the count of nodes with that degree.
         - ``distribution_hyperedge_size_hist``: A dictionary where the keys are hyperedge sizes and the values are the count of hyperedges with that size.
+
         Returns:
             A dictionary containing various statistics about the hypergraph.
         """
+
         node_ids = self.hyperedge_index[0]
         hyperedge_ids = self.hyperedge_index[1]
 
