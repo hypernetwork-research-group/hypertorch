@@ -11,7 +11,6 @@ make setup
 
 pre-commit install \
     --config .github/hooks/.pre-commit-config.yaml \
-    --hook-type pre-commit \
     --install-hooks \
     --overwrite
 ```
