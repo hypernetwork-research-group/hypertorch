@@ -355,14 +355,14 @@ def test_neighbors_of_all(hyperedges, expected_neighbors_map):
         ),
     ],
 )
-def test_get_stats(hyperedges, expected_stats):
+def test_hypergraph_stats_returns_correct_statistics(hyperedges, expected_stats):
     hypergraph = Hypergraph(hyperedges)
     stats = hypergraph.stats()
 
     assert stats == expected_stats
 
 
-def test_get_stats_hifhypergraph():
+def test_hifhypergraph_stats_returns_correct_statistics():
     expected_stats = {
         "num_nodes": 4,
         "num_hyperedges": 2,

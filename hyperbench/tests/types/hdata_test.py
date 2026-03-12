@@ -672,3 +672,28 @@ def test_stats_returns_correct_statistics(mock_hdata_stats):
     stats = mock_hdata_stats.stats()
 
     assert stats == expected_stats
+
+
+def test_stats_with_empty_hdata():
+    empty_hdata = HData.empty()
+
+    expected_stats = {
+        "shape_x": torch.Size([0, 0]),
+        "shape_hyperedge_attr": None,
+        "num_nodes": 0,
+        "num_hyperedges": 0,
+        "avg_degree_node": 0,
+        "avg_degree_hyperedge": 0,
+        "node_degree_max": 0,
+        "hyperedge_degree_max": 0,
+        "node_degree_median": 0,
+        "hyperedge_degree_median": 0,
+        "distribution_node_degree": [],
+        "distribution_hyperedge_size": [],
+        "distribution_node_degree_hist": {},
+        "distribution_hyperedge_size_hist": {},
+    }
+
+    stats = empty_hdata.stats()
+
+    assert stats == expected_stats

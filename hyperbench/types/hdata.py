@@ -388,19 +388,32 @@ class HData:
 
         # Degree of each node = number of hyperedges it belongs to
         # Size of each hyperedge = number of nodes it contains
-        distribution_node_degree = torch.bincount(node_ids, minlength=self.num_nodes).float()
-        distribution_hyperedge_size = torch.bincount(
-            hyperedge_ids, minlength=self.num_hyperedges
-        ).float()
+        if node_ids.numel() > 0:
+            distribution_node_degree = torch.bincount(node_ids, minlength=self.num_nodes).float()
+            distribution_hyperedge_size = torch.bincount(
+                hyperedge_ids, minlength=self.num_hyperedges
+            ).float()
+        else:
+            distribution_node_degree = torch.zeros(self.num_nodes, dtype=torch.float)
+            distribution_hyperedge_size = torch.zeros(self.num_hyperedges, dtype=torch.float)
 
         num_nodes = self.num_nodes
         num_hyperedges = self.num_hyperedges
-        avg_degree_node = distribution_node_degree.mean().item()
-        avg_degree_hyperedge = distribution_hyperedge_size.mean().item()
-        node_degree_max = int(distribution_node_degree.max().item())
-        hyperedge_degree_max = int(distribution_hyperedge_size.max().item())
-        node_degree_median = int(distribution_node_degree.median().item())
-        hyperedge_degree_median = int(distribution_hyperedge_size.median().item())
+
+        if distribution_node_degree.numel() > 0:
+            avg_degree_node = distribution_node_degree.mean().item()
+            avg_degree_hyperedge = distribution_hyperedge_size.mean().item()
+            node_degree_max = int(distribution_node_degree.max().item())
+            hyperedge_degree_max = int(distribution_hyperedge_size.max().item())
+            node_degree_median = int(distribution_node_degree.median().item())
+            hyperedge_degree_median = int(distribution_hyperedge_size.median().item())
+        else:
+            avg_degree_node = 0
+            avg_degree_hyperedge = 0
+            node_degree_max = 0
+            hyperedge_degree_max = 0
+            node_degree_median = 0
+            hyperedge_degree_median = 0
 
         # Histograms: index i holds count of nodes/hyperedges with degree/size i
         distribution_node_degree_hist = torch.bincount(distribution_node_degree.long())
