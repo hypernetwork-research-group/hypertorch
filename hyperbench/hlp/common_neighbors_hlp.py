@@ -5,7 +5,7 @@ from torch import Tensor, nn
 from typing import Literal, Optional
 from hyperbench.models import CommonNeighbors
 from hyperbench.types import HData, Hypergraph
-from hyperbench.utils import NamedMetricFnDict, Stage
+from hyperbench.utils import Aggregation, NamedMetricFnDict, Stage
 
 from .hlp import HlpModule
 
@@ -21,13 +21,10 @@ class CommonNeighborsHlpModule(HlpModule):
         metrics: An optional dictionary of metric functions.
     """
 
-    # No train/validation, so return default loss
-    __DEFAULT_LOSS = torch.tensor(0.0)
-
     def __init__(
         self,
         train_hyperedge_index: Tensor,
-        aggregation: Literal["mean", "min", "sum"] = "mean",
+        aggregation: Literal["mean", "min", "sum"] = Aggregation.MEAN,
         decoder: Optional[nn.Module] = None,
         loss_fn: Optional[nn.Module] = None,
         metrics: Optional[NamedMetricFnDict] = None,
@@ -59,10 +56,10 @@ class CommonNeighborsHlpModule(HlpModule):
             )
 
     def training_step(self, batch: HData, batch_idx: int) -> Tensor:
-        return self.__DEFAULT_LOSS
+        return torch.tensor(0.0, device=self.device)
 
     def validation_step(self, batch: HData, batch_idx: int) -> Tensor:
-        return self.__DEFAULT_LOSS
+        return torch.tensor(0.0, device=self.device)
 
     def test_step(self, batch: HData, batch_idx: int) -> Tensor:
         return self.__step(batch, stage=Stage.TEST)
