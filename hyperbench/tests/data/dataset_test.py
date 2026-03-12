@@ -1044,31 +1044,24 @@ def mock_hdata_stats():
     return HData(x=x, hyperedge_index=hyperedge_index)
 
 
-@pytest.mark.parametrize(
-    "expected_stats",
-    [
-        pytest.param(
-            {
-                "shape_x": torch.Size([4, 4]),
-                "shape_hyperedge_attr": None,
-                "num_nodes": 4,
-                "num_hyperedges": 2,
-                "avg_degree_node": 1.25,
-                "avg_degree_hyperedge": 2.5,
-                "node_degree_max": 2,
-                "hyperedge_degree_max": 3,
-                "node_degree_median": 1,
-                "hyperedge_degree_median": 2,
-                "distribution_node_degree": [1, 1, 2, 1],
-                "distribution_hyperedge_size": [3, 2],
-                "distribution_node_degree_hist": {1: 3, 2: 1},
-                "distribution_hyperedge_size_hist": {2: 1, 3: 1},
-            },
-            id="basic_stats",
-        )
-    ],
-)
-def test_dataset_stats_computation(mock_hdata_stats, expected_stats):
+def test_dataset_stats_computation(mock_hdata_stats):
+    expected_stats = {
+        "shape_x": torch.Size([4, 4]),
+        "shape_hyperedge_attr": None,
+        "num_nodes": 4,
+        "num_hyperedges": 2,
+        "avg_degree_node": 1.25,
+        "avg_degree_hyperedge": 2.5,
+        "node_degree_max": 2,
+        "hyperedge_degree_max": 3,
+        "node_degree_median": 1,
+        "hyperedge_degree_median": 2,
+        "distribution_node_degree": [1, 1, 2, 1],
+        "distribution_hyperedge_size": [3, 2],
+        "distribution_node_degree_hist": {1: 3, 2: 1},
+        "distribution_hyperedge_size_hist": {2: 1, 3: 1},
+    }
+
     dataset = Dataset.from_hdata(mock_hdata_stats)
 
     stats = dataset.stats()

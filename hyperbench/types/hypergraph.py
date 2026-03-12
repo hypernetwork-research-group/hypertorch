@@ -75,7 +75,7 @@ class HIFHypergraph:
         """Return the number of edges in the hypergraph."""
         return len(self.edges)
 
-    def get_stats(self) -> Dict[str, Any]:
+    def stats(self) -> Dict[str, Any]:
         """Return basic statistics about the hypergraph."""
         node_degree: Dict[Any, int] = {}
         hyperedge_size: Dict[Any, int] = {}
@@ -214,7 +214,7 @@ class Hypergraph:
 
         return node_to_neighbors
 
-    def get_stats(self) -> Dict[str, Any]:
+    def stats(self) -> Dict[str, Any]:
         """Return basic statistics about the hypergraph."""
         node_degree: Dict[int, int] = {}
         distribution_hyperedge_size: List[int] = []
@@ -497,31 +497,3 @@ class HyperedgeIndex:
         self.__hyperedge_index[1] = to_0based_ids(self.all_hyperedge_ids, hyperedge_ids_to_rebase)
 
         return self
-
-
-# if __name__ == "__main__":
-#     # Example usage
-#     h = Hypergraph(hyperedges=[[0, 1, 2], [2, 3]])
-
-#     s = h.get_stats()
-#     for k, v in s.items():
-#         print(f"{k}: {v}")
-
-#     hif = HIFHypergraph.from_hif(
-#         {
-#             "network-type": "undirected",
-#             "metadata": {"name": "example hypergraph"},
-#             "incidences": [
-#                 {"node": 0, "edge": 0},
-#                 {"node": 1, "edge": 0},
-#                 {"node": 2, "edge": 0},
-#                 {"node": 2, "edge": 1},
-#                 {"node": 3, "edge": 1},
-#             ],
-#             "nodes": [{"id": 0}, {"id": 1}, {"id": 2}, {"id": 3}],
-#             "edges": [{"id": 0}, {"id": 1}],
-#         }
-#     )
-#     s = hif.get_stats()
-#     for k, v in s.items():
-#         print(f"{k}: {v}")

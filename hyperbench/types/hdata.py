@@ -1,7 +1,7 @@
 import torch
 
 from torch import Tensor
-from typing import Optional, Sequence
+from typing import Optional, Sequence, Dict, Any
 from hyperbench.utils import empty_hyperedgeindex, empty_nodefeatures
 
 from .hypergraph import HyperedgeIndex
@@ -382,7 +382,7 @@ class HData:
         """Return a copy of this instance with a y attribute of all zeros."""
         return self.with_y_to(0.0)
 
-    def stats(self):
+    def stats(self) -> Dict[str, Any]:
         node_ids = self.hyperedge_index[0]
         hyperedge_ids = self.hyperedge_index[1]
 
