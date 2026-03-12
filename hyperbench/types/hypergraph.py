@@ -499,29 +499,29 @@ class HyperedgeIndex:
         return self
 
 
-if __name__ == "__main__":
-    # Example usage
-    h = Hypergraph(hyperedges=[[0, 1, 2], [2, 3]])
+# if __name__ == "__main__":
+#     # Example usage
+#     h = Hypergraph(hyperedges=[[0, 1, 2], [2, 3]])
 
-    s = h.get_stats()
-    for k, v in s.items():
-        print(f"{k}: {v}")
+#     s = h.get_stats()
+#     for k, v in s.items():
+#         print(f"{k}: {v}")
 
-    hif = HIFHypergraph.from_hif(
-        {
-            "network-type": "undirected",
-            "metadata": {"name": "example hypergraph"},
-            "incidences": [
-                {"node": 0, "edge": 0},
-                {"node": 1, "edge": 0},
-                {"node": 2, "edge": 0},
-                {"node": 2, "edge": 1},
-                {"node": 3, "edge": 1},
-            ],
-            "nodes": [{"id": 0}, {"id": 1}, {"id": 2}, {"id": 3}],
-            "edges": [{"id": 0}, {"id": 1}],
-        }
-    )
-    s = hif.get_stats()
-    for k, v in s.items():
-        print(f"{k}: {v}")
+#     hif = HIFHypergraph.from_hif(
+#         {
+#             "network-type": "undirected",
+#             "metadata": {"name": "example hypergraph"},
+#             "incidences": [
+#                 {"node": 0, "edge": 0},
+#                 {"node": 1, "edge": 0},
+#                 {"node": 2, "edge": 0},
+#                 {"node": 2, "edge": 1},
+#                 {"node": 3, "edge": 1},
+#             ],
+#             "nodes": [{"id": 0}, {"id": 1}, {"id": 2}, {"id": 3}],
+#             "edges": [{"id": 0}, {"id": 1}],
+#         }
+#     )
+#     s = hif.get_stats()
+#     for k, v in s.items():
+#         print(f"{k}: {v}")

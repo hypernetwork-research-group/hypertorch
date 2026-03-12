@@ -1,4 +1,4 @@
-.PHONY: all setup check lint typecheck test docs docs-serve clean help
+.PHONY: all setup check lint typecheck test stest docs docs-serve clean help
 
 UV=uv
 UVX=uvx
@@ -29,6 +29,10 @@ test:
 	@echo '=== Tests ==='
 	$(UV) run $(PYTEST) --cov=hyperbench --cov-report=term-missing
 
+stest:
+	@echo '=== Test for $(FILE) ==='
+	$(UV) run $(PYTEST) hyperbench/tests/$(FILE) -v -s
+
 docs:
 	@echo '=== Building docs ==='
 	$(UV) run mkdocs build -f $(MKDOCS_CONFIG)
@@ -49,6 +53,7 @@ help:
 	@echo "  lint       - Run linter"
 	@echo "  typecheck  - Run type checker"
 	@echo "  test       - Run tests"
+	@echo "  stest      - Run single test"
 	@echo "  check      - Run lint and typecheck"
 	@echo "  docs       - Build documentation"
 	@echo "  docs-serve - Serve docs locally at http://127.0.0.1:8000"

@@ -21,6 +21,26 @@ def mock_hdata():
     return HData(x=x, hyperedge_index=hyperedge_index, hyperedge_attr=hyperedge_attr)
 
 
+@pytest.fixture
+def mock_hdata_stats():
+    x = torch.tensor(
+        [
+            [0.0, 1.0, 2.0, 3.0],
+            [1.0, 2.0, 3.0, 4.0],
+            [2.0, 3.0, 4.0, 5.0],
+            [3.0, 4.0, 5.0, 6.0],
+        ],
+        dtype=torch.float,
+    )
+    hyperedge_index = torch.tensor(
+        [
+            [0, 1, 2, 2, 3],
+            [0, 0, 0, 1, 1],
+        ]
+    )
+    return HData(x=x, hyperedge_index=hyperedge_index)
+
+
 @pytest.mark.parametrize(
     "explicit_num_nodes, expected_num_nodes",
     [
@@ -629,3 +649,32 @@ def test_shuffle_with_no_seed_set(mock_hdata):
     assert shuffled_hdata1.num_nodes == mock_hdata.num_nodes
     assert shuffled_hdata1.num_hyperedges == mock_hdata.num_hyperedges
     assert shuffled_hdata1.hyperedge_index.shape == mock_hdata.hyperedge_index.shape
+
+
+@pytest.mark.parametrize(
+    "expected_stats",
+    [
+        pytest.param(
+            {
+                "shape_x": torch.Size([4, 4]),
+                "shape_hyperedge_attr": None,
+                "num_nodes": 4,
+                "num_hyperedges": 2,
+                "avg_degree_node": 1.25,
+                "avg_degree_hyperedge": 2.5,
+                "node_degree_max": 2,
+                "hyperedge_degree_max": 3,
+                "node_degree_median": 1,
+                "hyperedge_degree_median": 2,
+                "distribution_node_degree": [1, 1, 2, 1],
+                "distribution_hyperedge_size": [3, 2],
+                "distribution_node_degree_hist": {1: 3, 2: 1},
+                "distribution_hyperedge_size_hist": {2: 1, 3: 1},
+            },
+            id="basic_stats",
+        )
+    ],
+)
+def test_stats_returns_correct_statistics(mock_hdata_stats, expected_stats):
+    stats = mock_hdata_stats.stats()
+    assert stats == expected_stats

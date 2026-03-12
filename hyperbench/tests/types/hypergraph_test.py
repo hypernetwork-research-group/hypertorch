@@ -362,6 +362,38 @@ def test_get_stats(hyperedges, expected_stats):
     assert stats == expected_stats
 
 
+@pytest.mark.parametrize(
+    "expected_stats",
+    [
+        pytest.param(
+            {
+                "num_nodes": 4,
+                "num_hyperedges": 2,
+                "avg_degree_node": 1.25,
+                "avg_degree_hyperedge": 2.5,
+                "node_degree_max": 2,
+                "hyperedge_degree_max": 3,
+                "node_degree_median": 1.0,
+                "hyperedge_degree_median": 2.5,
+                "distribution_node_degree": [1, 1, 1, 2],
+                "distribution_hyperedge_size": [2, 3],
+                "distribution_node_degree_hist": {1: 3, 2: 1},
+                "distribution_hyperedge_size_hist": {3: 1, 2: 1},
+            },
+            id="two_hyperedges_varying_sizes",
+        ),
+    ],
+)
+def test_get_stats_hifhypergraph(expected_stats):
+    with open(f"{MOCK_BASE_PATH}/hif_stats.hif.json", "r") as f:
+        hiftext = json.load(f)
+
+    hypergraph = HIFHypergraph.from_hif(hiftext)
+    stats = hypergraph.get_stats()
+
+    assert stats == expected_stats
+
+
 # def test_get_stats_hdata(hyperedges, expected_stats):
 #       TODO - add tests
 #     hdata = HIFHypergraph(hyperedges, network_type="undirected").hdata

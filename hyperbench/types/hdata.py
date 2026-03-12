@@ -383,8 +383,55 @@ class HData:
         return self.with_y_to(0.0)
 
     def stats(self):
-        # shape x
-        # shape hyperedge_attr
-        # len(hyperedge_index[0].size(1))
-        print(f"num_nodes: {self.num_nodes}")
-        return {}
+        node_ids = self.hyperedge_index[0]
+        hyperedge_ids = self.hyperedge_index[1]
+
+        # Degree of each node = number of hyperedges it belongs to
+        # Size of each hyperedge = number of nodes it contains
+        distribution_node_degree = torch.bincount(node_ids, minlength=self.num_nodes).float()
+        distribution_hyperedge_size = torch.bincount(
+            hyperedge_ids, minlength=self.num_hyperedges
+        ).float()
+
+        num_nodes = self.num_nodes
+        num_hyperedges = self.num_hyperedges
+        avg_degree_node = distribution_node_degree.mean().item()
+        avg_degree_hyperedge = distribution_hyperedge_size.mean().item()
+        node_degree_max = int(distribution_node_degree.max().item())
+        hyperedge_degree_max = int(distribution_hyperedge_size.max().item())
+        node_degree_median = int(distribution_node_degree.median().item())
+        hyperedge_degree_median = int(distribution_hyperedge_size.median().item())
+
+        # Histograms: index i holds count of nodes/hyperedges with degree/size i
+        distribution_node_degree_hist = torch.bincount(distribution_node_degree.long())
+        distribution_hyperedge_size_hist = torch.bincount(distribution_hyperedge_size.long())
+
+        distribution_node_degree_hist = {
+            i: int(count.item())
+            for i, count in enumerate(distribution_node_degree_hist)
+            if count.item() > 0
+        }
+        distribution_hyperedge_size_hist = {
+            i: int(count.item())
+            for i, count in enumerate(distribution_hyperedge_size_hist)
+            if count.item() > 0
+        }
+
+        return {
+            "shape_x": self.x.shape,
+            "shape_hyperedge_attr": self.hyperedge_attr.shape
+            if self.hyperedge_attr is not None
+            else None,
+            "num_nodes": num_nodes,
+            "num_hyperedges": num_hyperedges,
+            "avg_degree_node": avg_degree_node,
+            "avg_degree_hyperedge": avg_degree_hyperedge,
+            "node_degree_max": node_degree_max,
+            "hyperedge_degree_max": hyperedge_degree_max,
+            "node_degree_median": node_degree_median,
+            "hyperedge_degree_median": hyperedge_degree_median,
+            "distribution_node_degree": distribution_node_degree.int().tolist(),
+            "distribution_hyperedge_size": distribution_hyperedge_size.int().tolist(),
+            "distribution_node_degree_hist": distribution_node_degree_hist,
+            "distribution_hyperedge_size_hist": distribution_hyperedge_size_hist,
+        }
