@@ -195,6 +195,27 @@ class EdgeIndex:
         adj_matrix = torch.sparse_coo_tensor(adj_indices, adj_values, size=(num_nodes, num_nodes))
         return adj_matrix
 
+    def get_sparse_identity_matrix(self, num_nodes: Optional[int] = None) -> Tensor:
+        device = self.__edge_index.device
+        num_nodes = self.num_nodes if num_nodes is None else num_nodes
+
+        # Example: num_nodes = 3
+        #          -> identity_indices = [[0, 1, 2],
+        #                                 [0, 1, 2]]
+        #             we use repeat(2, 1) as I is a matrix NxN, so we need indices for both rows and columns
+        #          -> values = [1, 1, 1]
+        #                   0  1  2
+        #          -> I = [[1, 0, 0], 0
+        #                  [0, 1, 0], 1
+        #                  [0, 0, 1]] 2
+        identity_indices = torch.arange(num_nodes, device=device).unsqueeze(0).repeat(2, 1)
+        identity_matrix = torch.sparse_coo_tensor(
+            indices=identity_indices,
+            values=torch.ones(num_nodes, device=device),
+            size=(num_nodes, num_nodes),
+        )
+        return identity_matrix
+
     def get_sparse_normalized_degree_matrix(
         self,
         num_nodes: Optional[int] = None,
@@ -251,6 +272,40 @@ class EdgeIndex:
         )
         return degree_matrix
 
+    def get_sparse_normalized_laplacian(
+        self,
+        num_nodes: Optional[int] = None,
+    ) -> Tensor:
+        """
+        Compute the sparse symmetric normalized Laplacian matrix: L = I - D^{-1/2} A D^{-1/2}.
+
+        Unlike :meth:`get_sparse_normalized_gcn_laplacian`, this method does NOT add self-loops
+        and computes the standard Laplacian (not the GCN propagation matrix).
+
+        Args:
+            num_nodes: The number of nodes in the graph. If ``None``,
+                it will be inferred from ``self.num_nodes``.
+
+        Returns:
+            The sparse symmetric normalized Laplacian matrix of shape ``(num_nodes, num_nodes)``.
+        """
+        self.to_undirected(with_selfloops=False)
+
+        num_nodes = self.num_nodes if num_nodes is None else num_nodes
+
+        degree_matrix = self.get_sparse_normalized_degree_matrix(num_nodes)
+        adj_matrix = self.get_sparse_adjacency_matrix(num_nodes)
+
+        # D^{-1/2} A D^{-1/2}
+        normalized_adj_matrix = torch.sparse.mm(
+            degree_matrix,
+            torch.sparse.mm(adj_matrix, degree_matrix),
+        )
+
+        # L = I - D^{-1/2} A D^{-1/2}
+        identity_matrix = self.get_sparse_identity_matrix(num_nodes)
+        return (identity_matrix - normalized_adj_matrix).coalesce()
+
     def get_sparse_normalized_gcn_laplacian(
         self,
         num_nodes: Optional[int] = None,
@@ -274,7 +329,6 @@ class EdgeIndex:
         num_nodes = self.num_nodes if num_nodes is None else num_nodes
 
         degree_matrix = self.get_sparse_normalized_degree_matrix(num_nodes)
-
         adj_matrix = self.get_sparse_adjacency_matrix(num_nodes)
 
         # Compute normalized Laplacian matrix: L = D^-1/2 * A * D^-1/2
@@ -283,6 +337,17 @@ class EdgeIndex:
             torch.sparse.mm(adj_matrix, degree_matrix),
         )
         return normalized_laplacian_matrix.coalesce()
+
+    def remove_selfloops(self) -> "EdgeIndex":
+        """Remove self-loops from the edge index."""
+        # Example: edge_index = [[0, 1, 2, 3],
+        #                        [1, 1, 3, 2]], shape (2, |E| = 4)
+        #          -> keep_mask = [True, False, True, True]
+        #          -> edge_index = [[0, 2, 3],
+        #                           [1, 3, 2]], shape (2, |E'| = 3)
+        keep_mask = self.__edge_index[0] != self.__edge_index[1]
+        self.__edge_index = self.__edge_index[:, keep_mask]
+        return self
 
     def remove_duplicate_edges(self) -> "EdgeIndex":
         """Remove duplicate edges from the edge index. Keeps the tensor contiguous in memory."""

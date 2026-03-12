@@ -1,30 +1,7 @@
 import pytest
 import torch
-import warnings
 
 from hyperbench.types import EdgeIndex, Graph
-
-
-@pytest.fixture(autouse=True)
-def suppress_sparse_csr_warning():
-    """
-    Suppress PyTorch sparse CSR beta warning.
-    It could be avoided by doing sparse @ dense, as it doesn't trigger CSR warning.
-    However, it's inefficient for large graphs.
-
-    Example:
-        ```
-        AD = torch.sparse.mm(A, D.to_dense())
-        L = torch.sparse.mm(D, AD).to_sparse_coo()
-        ```
-    """
-    with warnings.catch_warnings():
-        warnings.filterwarnings(
-            "ignore",
-            message="Sparse CSR tensor support is in beta state",
-            category=UserWarning,
-        )
-        yield
 
 
 @pytest.fixture
@@ -918,6 +895,110 @@ def test_get_sparse_normalized_laplacian_has_0_for_isolated_nodes():
     assert torch.all(dense_gcn_laplacian[:, 2] == 0)
     assert torch.all(dense_gcn_laplacian[3, :] == 0)
     assert torch.all(dense_gcn_laplacian[:, 3] == 0)
+
+
+def test_get_sparse_identity_matrix_is_sparse():
+    edge_index = EdgeIndex(torch.tensor([[0], [1]]))
+    identity_matrix = edge_index.get_sparse_identity_matrix(num_nodes=2)
+
+    assert identity_matrix.is_sparse
+
+
+def test_edge_index_remove_selfloops():
+    edge_index = EdgeIndex(torch.tensor([[0, 1, 2, 3], [1, 1, 3, 2]]))
+    edge_index.remove_selfloops()
+    edges = set(zip(edge_index.item[0].tolist(), edge_index.item[1].tolist()))
+
+    assert (1, 1) not in edges
+    assert (0, 1) in edges
+    assert (2, 3) in edges
+    assert (3, 2) in edges
+    assert edge_index.num_edges == 3
+
+
+def test_edge_index_remove_selfloops_when_all_selfloops():
+    edge_index = EdgeIndex(torch.tensor([[0, 1], [0, 1]]))
+    edge_index.remove_selfloops()
+
+    assert edge_index.num_edges == 0
+
+
+def test_edge_index_remove_selfloops_when_no_selfloops():
+    edge_index = EdgeIndex(torch.tensor([[0, 1], [1, 0]]))
+    edge_index.remove_selfloops()
+
+    assert edge_index.num_edges == 2
+
+
+def test_get_sparse_identity_matrix():
+    edge_index = EdgeIndex(torch.tensor([[0, 1], [1, 0]]))
+    identity = edge_index.get_sparse_identity_matrix(num_nodes=3)
+    dense_identity = identity.to_dense()
+
+    expected = torch.eye(3)
+    assert torch.allclose(dense_identity, expected)
+
+
+def test_get_sparse_identity_matrix_infers_num_nodes():
+    edge_index = EdgeIndex(torch.tensor([[0, 1, 2], [1, 2, 0]]))
+    identity = edge_index.get_sparse_identity_matrix()
+    dense_identity = identity.to_dense()
+
+    expected = torch.eye(3)
+    assert torch.allclose(dense_identity, expected)
+
+
+def test_get_sparse_normalized_laplacian_returns_sparse():
+    edge_index = EdgeIndex(torch.tensor([[0, 1], [1, 0]]))
+    laplacian = edge_index.get_sparse_normalized_laplacian()
+
+    assert laplacian.is_sparse
+
+
+def test_get_sparse_normalized_laplacian_shape():
+    edge_index = EdgeIndex(torch.tensor([[0, 1, 2], [1, 2, 0]]))
+    laplacian = edge_index.get_sparse_normalized_laplacian(num_nodes=3)
+
+    assert laplacian.shape == (3, 3)
+
+
+def test_get_sparse_normalized_laplacian_is_symmetric():
+    edge_index = EdgeIndex(torch.tensor([[0, 1, 2], [1, 2, 0]]))
+    laplacian = edge_index.get_sparse_normalized_laplacian()
+    dense_laplacian = laplacian.to_dense()
+
+    assert torch.allclose(dense_laplacian, dense_laplacian.T, atol=1e-6)
+
+
+def test_get_sparse_normalized_laplacian_diagonal_values():
+    """For a connected graph without self-loops, diagonal of the laplacian should be non-negative."""
+    edge_index = EdgeIndex(torch.tensor([[0, 1], [1, 0]]))
+    laplacian = edge_index.get_sparse_normalized_laplacian(num_nodes=2)
+    dense_laplacian = laplacian.to_dense()
+
+    # L = I - D^{-1/2} A D^{-1/2}, so diagonal should be non-negative
+    for i in range(2):
+        assert dense_laplacian[i, i] >= 0
+
+
+def test_get_sparse_normalized_laplacian_does_not_contain_nan_or_inf():
+    edge_index = EdgeIndex(torch.tensor([[0, 1, 2], [1, 2, 0]]))
+    laplacian = edge_index.get_sparse_normalized_laplacian(num_nodes=4)
+    dense_laplacian = laplacian.to_dense()
+
+    assert not torch.any(torch.isnan(dense_laplacian))
+    assert not torch.any(torch.isinf(dense_laplacian))
+
+
+def test_get_sparse_normalized_laplacian_when_single_edge():
+    edge_index = EdgeIndex(torch.tensor([[0, 1], [1, 0]]))
+    laplacian = edge_index.get_sparse_normalized_laplacian(num_nodes=2)
+    dense_laplacian = laplacian.to_dense()
+
+    # D^{-1/2} = diag(1, 1), A = [[0,1],[1,0]], so D^{-1/2} A D^{-1/2} = A
+    # L = I - A = [[1,-1],[-1,1]]
+    expected = torch.tensor([[1.0, -1.0], [-1.0, 1.0]])
+    assert torch.allclose(dense_laplacian, expected, atol=1e-6)
 
 
 def test_remove_duplicate_edges():

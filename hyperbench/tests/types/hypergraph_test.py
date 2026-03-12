@@ -416,6 +416,67 @@ def test_hyperedge_index_nodes_in(hyperedge_index_tensor, hyperedge_id, expected
 
 
 @pytest.mark.parametrize(
+    "hyperedge_index_tensor, expected_num_edges",
+    [
+        pytest.param(
+            torch.tensor([[0, 1, 2], [0, 0, 0]]),
+            6,  # Clique of 3 nodes: 3 undirected edges = 6 directed
+            id="single_hyperedge_3_nodes",
+        ),
+        pytest.param(
+            torch.tensor([[0, 1], [0, 0]]),
+            2,  # Clique of 2 nodes: 1 undirected edge = 2 directed
+            id="single_hyperedge_2_nodes",
+        ),
+        pytest.param(
+            torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]]),
+            4,  # Two disjoint hyperedges of 2 nodes each: 2 undirected edges = 4 directed
+            id="two_disjoint_hyperedges",
+        ),
+    ],
+)
+def test_clique_expansion_edge_count(hyperedge_index_tensor, expected_num_edges):
+    result = HyperedgeIndex(hyperedge_index_tensor).reduce_to_edge_index_on_clique_expansion()
+
+    assert result.shape[0] == 2
+    assert result.shape[1] == expected_num_edges
+
+
+def test_clique_expansion_removes_selfloops():
+    hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 0]])
+    result = HyperedgeIndex(hyperedge_index).reduce_to_edge_index_on_clique_expansion(
+        remove_selfloops=True
+    )
+
+    # No self-loops should be present (H @ H^T has zero diagonal)
+    assert torch.any(result[0] == result[1]).sum().item() == 0
+
+
+def test_clique_expansion_keeps_selfloops_when_disabled():
+    hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 0]])
+    result = HyperedgeIndex(hyperedge_index).reduce_to_edge_index_on_clique_expansion(
+        remove_selfloops=False
+    )
+
+    # Self-loops should be present (H @ H^T has non-zero diagonal)
+    selfloops = (result[0] == result[1]).sum().item()
+    assert selfloops > 0
+
+
+def test_clique_expansion_overlapping_hyperedges():
+    # Two hyperedges sharing node 1: {0,1} and {1,2}
+    hyperedge_index = torch.tensor([[0, 1, 1, 2], [0, 0, 1, 1]])
+    result = HyperedgeIndex(hyperedge_index).reduce_to_edge_index_on_clique_expansion()
+    edges = set(zip(result[0].tolist(), result[1].tolist()))
+
+    # All pairs connected: 0-1, 1-2, and 0-2 (via node 1 shared in both hyperedges)
+    assert (0, 1) in edges
+    assert (1, 0) in edges
+    assert (1, 2) in edges
+    assert (2, 1) in edges
+
+
+@pytest.mark.parametrize(
     "x, hyperedge_index, with_mediators, expected_num_edges",
     [
         pytest.param(

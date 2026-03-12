@@ -2,9 +2,10 @@ import torch
 
 from torch import Tensor
 from typing import Optional, List, Dict, Any, Literal, Set, TypeAlias
+
 from hyperbench.utils import to_0based_ids
 
-from .graph import Graph
+from .graph import EdgeIndex, Graph
 
 
 Neighborhood: TypeAlias = Set[int]
@@ -379,7 +380,7 @@ class HyperedgeIndex:
     @property
     def num_hyperedges(self) -> int:
         """Return the number of hyperedges in the hypergraph."""
-        if self.__hyperedge_index.size(1) < 1:
+        if self.num_incidences < 1:
             return 0
 
         hyperedges = self.__hyperedge_index[1]
@@ -388,11 +389,16 @@ class HyperedgeIndex:
     @property
     def num_nodes(self) -> int:
         """Return the number of nodes in the hypergraph."""
-        if self.__hyperedge_index.size(1) < 1:
+        if self.num_incidences < 1:
             return 0
 
         nodes = self.__hyperedge_index[0]
         return len(nodes.unique())
+
+    @property
+    def num_incidences(self) -> int:
+        """Return the number of incidences in the hypergraph, which is the number of columns in the hyperedge index."""
+        return self.__hyperedge_index.size(1)
 
     def nodes_in(self, hyperedge_id: int) -> List[int]:
         """Return the list of node IDs that belong to the given hyperedge."""
@@ -409,6 +415,62 @@ class HyperedgeIndex:
             The number of nodes in the hypergraph, which is the maximum of the number of unique nodes in the hyperedge index and the provided ``num_nodes``.
         """
         return max(self.num_nodes, num_nodes)
+
+    def reduce_to_edge_index_on_clique_expansion(
+        self,
+        remove_selfloops: bool = True,
+    ) -> Tensor:
+        """
+        Construct a graph from a hypergraph via clique expansion using ``H @ H^T``, where ``H`` is the incidence matrix of the hypergraph.
+        In clique expansion, each hyperedge is replaced by a clique connecting all its member nodes.
+
+        For each hyperedge, all pairs of member nodes become edges in the resulting graph.
+        This is computed efficiently using the incidence matrix: ``A = H @ H^T``, where ``H`` is
+        the sparse incidence matrix of shape ``[num_nodes, num_hyperedges]`` and ``A`` is the adjacency matrix of the clique-expanded graph.
+
+        Args:
+            remove_selfloops: Whether to remove self-loops from the diagonal of ``H @ H^T``. Defaults to ``True``.
+
+        Returns:
+            The edge index of the clique-expanded graph. Size ``(2, |E'|)``.
+        """
+        # Build sparse incidence matrix of shape [num_nodes, num_hyperedges]
+        values = torch.ones(
+            size=(self.num_incidences,),
+            dtype=torch.float,
+            device=self.__hyperedge_index.device,
+        )
+        incidence_matrix = torch.sparse_coo_tensor(
+            indices=torch.stack([self.all_node_ids, self.all_hyperedge_ids], dim=0),
+            values=values,
+            size=(self.num_nodes, self.num_hyperedges),
+        ).coalesce()
+
+        # A = H @ H^T gives adjacency with self-loops on diagonal
+        # Example: For hyperedge_index = [[0, 1, 2, 0],
+        #                                 [0, 0, 0, 1]]
+        #                         hyperedges 0  1
+        #          -> incidence_matrix H = [[1, 1], node 0
+        #                                   [1, 0], node 1
+        #                                   [1, 0]] node 2
+        #               nodes 0  1  2
+        #          -> H^T = [[1, 1, 1], hyperedge 0
+        #                    [1, 0, 0]] hyperedge 1
+        #                       nodes 0  1  2
+        #          -> A = H @ H^T = [[2, 1, 1], node 0
+        #                            [1, 1, 1], node 1
+        #                            [1, 1, 1]] node 2
+        #                                         nodes 0  1  2
+        #          -> A (after removing self-loops) = [[0, 1, 1], node 0
+        #                                              [1, 0, 1], node 1
+        #                                              [1, 1, 0]] node 2
+        adj_matrix = torch.sparse.mm(incidence_matrix, incidence_matrix.t()).coalesce()
+
+        # Extract edge_index, make undirected, and deduplicate
+        edge_index = EdgeIndex(adj_matrix.indices())
+        if remove_selfloops:
+            edge_index.remove_selfloops()
+        return edge_index.to_undirected().item
 
     def reduce_to_edge_index_on_random_direction(
         self,
@@ -469,7 +531,7 @@ class HyperedgeIndex:
         if remove_selfloops:
             graph.remove_selfloops()
 
-        return graph.to_edge_index()
+        return graph.to_edge_index().to(device)
 
     def remove_duplicate_edges(self) -> "HyperedgeIndex":
         """Remove duplicate edges from the hyperedge index. Keeps the tensor contiguous in memory."""
