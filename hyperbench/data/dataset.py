@@ -508,15 +508,15 @@ class Dataset(TorchDataset):
         """
         Compute statistics for the dataset.
         This method currently delegates to the underlying HData's stats method.
-        The field returned in the dictionary include:
+        The fields returned in the dictionary include:
         - ``shape_x``: The shape of the node feature matrix ``x``.
         - ``shape_hyperedge_attr``: The shape of the hyperedge attribute matrix, or ``None`` if hyperedge attributes are not present.
         - ``num_nodes``: The number of nodes in the hypergraph.
         - ``num_hyperedges``: The number of hyperedges in the hypergraph.
         - ``avg_degree_node_raw``: The average degree of nodes, calculated as the mean number of hyperedges each node belongs to.
-        - ``avg_degree_node``: The average degree of nodes normalized to an integer.
+        - ``avg_degree_node``: The floored node average degree.
         - ``avg_degree_hyperedge_raw``: The average size of hyperedges, calculated as the mean number of nodes each hyperedge contains.
-        - ``avg_degree_hyperedge``: The average size of hyperedges normalized to an integer.
+        - ``avg_degree_hyperedge``: The floored hyperedge average size.
         - ``node_degree_max``: The maximum degree of any node in the hypergraph.
         - ``hyperedge_degree_max``: The maximum size of any hyperedge in the hypergraph.
         - ``node_degree_median``: The median degree of nodes in the hypergraph.
@@ -526,6 +526,8 @@ class Dataset(TorchDataset):
         - ``distribution_node_degree_hist``: A dictionary where the keys are node degrees and the values are the count of nodes with that degree.
         - ``distribution_hyperedge_size_hist``: A dictionary where the keys are hyperedge sizes and the values are the count of hyperedges with that size.
 
+        Returns:
+            A dictionary containing various statistics about the hypergraph.
         """
 
         return self.hdata.stats()

@@ -79,13 +79,13 @@ class HIFHypergraph:
     def stats(self) -> Dict[str, Any]:
         """
         Compute statistics for the HIFhypergraph.
-        The field returned in the dictionary include:
+        The fields returned in the dictionary include:
         - ``num_nodes``: The number of nodes in the hypergraph.
         - ``num_hyperedges``: The number of hyperedges in the hypergraph.
         - ``avg_degree_node_raw``: The average degree of nodes, calculated as the mean number of hyperedges each node belongs to.
-        - ``avg_degree_node``: The average degree of nodes normalized to an integer.
+        - ``avg_degree_node``: The floored node average degree.
         - ``avg_degree_hyperedge_raw``: The average size of hyperedges, calculated as the mean number of nodes each hyperedge contains.
-        - ``avg_degree_hyperedge``: The average size of hyperedges normalized to an integer.
+        - ``avg_degree_hyperedge``: The floored hyperedge average size.
         - ``node_degree_max``: The maximum degree of any node in the hypergraph.
         - ``hyperedge_degree_max``: The maximum size of any hyperedge in the hypergraph.
         - ``node_degree_median``: The median degree of nodes in the hypergraph.
