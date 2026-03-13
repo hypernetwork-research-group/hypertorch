@@ -6,6 +6,10 @@ labels: ''
 assignees: ''
 
 ---
+Issue must include at least two labels:
+One from (feature, fix, chore, refactoring)
+One from (ci, data, docs, models, tests, training, types, utils)
+
 
 **Describe the bug**
 A clear and concise description of what the bug is.
