@@ -8,6 +8,7 @@ on:
 
 jobs:
   label:
+    if: github.event_name == 'pull_request_target'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -20,6 +21,7 @@ jobs:
           sync-labels: true
 
   assignees:
+    if: github.event_name == 'pull_request_target' && (github.event.action == 'opened' || github.event.action == 'reopened')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -54,7 +56,7 @@ jobs:
             if (!hasType) {
               core.setFailed(
                 [
-                  "Issue must include at least two labels:",
+                  "Issue must include at least one label:",
                   `- one of: ${requiredType.join(", ")}`,
                   `Current labels: ${labels.length ? labels.join(", ") : "(none)"}`,
                 ].join("\n")

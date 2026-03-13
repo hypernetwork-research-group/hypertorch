@@ -6,8 +6,7 @@ labels: ''
 assignees: ''
 
 ---
-Issue must include at least two labels:
-One from (bug, chore, docs, feature, refactoring)
+Issue must include at least one label from (bug, chore, docs, feature, refactoring)
 
 ###Is your feature request related to a problem? Please describe.
 A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
