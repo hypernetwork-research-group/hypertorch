@@ -16,6 +16,14 @@ def mock_hdata() -> HData:
 
 
 @pytest.fixture
+def mock_hdata_two() -> HData:
+    x = torch.ones((4, 2), dtype=torch.float)
+    hyperedge_index = torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long)
+    hyperedge_attr = torch.tensor([[1.0, 2.0], [3.0, 4.0]])
+    return HData(x=x, hyperedge_index=hyperedge_index, hyperedge_attr=hyperedge_attr)
+
+
+@pytest.fixture
 def mock_sample_hypergraph():
     return HIFHypergraph(
         network_type="undirected",
