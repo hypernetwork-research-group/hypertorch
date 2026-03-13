@@ -42,7 +42,7 @@ jobs:
     if: github.event_name == 'issues'
     runs-on: ubuntu-latest
     permissions:
-      issues: read
+      issues: write
     steps:
       - uses: actions/github-script@v7
         with:
@@ -54,11 +54,18 @@ jobs:
             const hasType = labels.some((name) => requiredType.includes(name));
 
             if (!hasType) {
-              core.setFailed(
-                [
-                  "Issue must include at least one label:",
-                  `- one of: ${requiredType.join(", ")}`,
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.issue.number,
+                body: [
+                  "This issue is missing a required label.",
+                  "",
+                  "Please add at least one of:",
+                  `- ${requiredType.join("\n- ")}`,
+                  "",
                   `Current labels: ${labels.length ? labels.join(", ") : "(none)"}`,
-                ].join("\n")
-              );
+                ].join("\n"),
+              });
+              core.notice("Missing required issue labels. A comment was posted on the issue.");
             }
