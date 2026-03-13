@@ -82,8 +82,10 @@ class HIFHypergraph:
         The field returned in the dictionary include:
         - ``num_nodes``: The number of nodes in the hypergraph.
         - ``num_hyperedges``: The number of hyperedges in the hypergraph.
-        - ``avg_degree_node``: The average degree of nodes, calculated as the mean number of hyperedges each node belongs to.
-        - ``avg_degree_hyperedge``: The average size of hyperedges, calculated as the mean number of nodes each hyperedge contains.
+        - ``avg_degree_node_raw``: The average degree of nodes, calculated as the mean number of hyperedges each node belongs to.
+        - ``avg_degree_node``: The average degree of nodes normalized to an integer.
+        - ``avg_degree_hyperedge_raw``: The average size of hyperedges, calculated as the mean number of nodes each hyperedge contains.
+        - ``avg_degree_hyperedge``: The average size of hyperedges normalized to an integer.
         - ``node_degree_max``: The maximum degree of any node in the hypergraph.
         - ``hyperedge_degree_max``: The maximum size of any hyperedge in the hypergraph.
         - ``node_degree_median``: The median degree of nodes in the hypergraph.
@@ -113,8 +115,10 @@ class HIFHypergraph:
         distribution_node_degree: List[int] = sorted(node_degree.values())
         distribution_hyperedge_size: List[int] = sorted(hyperedge_size.values())
 
-        avg_degree_node = total_incidences / num_nodes if num_nodes else 0
-        avg_degree_hyperedge = total_incidences / num_hyperedges if num_hyperedges else 0
+        avg_degree_node_raw = total_incidences / num_nodes if num_nodes else 0
+        avg_degree_node = int(avg_degree_node_raw)
+        avg_degree_hyperedge_raw = total_incidences / num_hyperedges if num_hyperedges else 0
+        avg_degree_hyperedge = int(avg_degree_hyperedge_raw)
 
         node_degree_max = max(distribution_node_degree) if distribution_node_degree else 0
         hyperedge_degree_max = (
@@ -159,7 +163,9 @@ class HIFHypergraph:
         return {
             "num_nodes": num_nodes,
             "num_hyperedges": num_hyperedges,
+            "avg_degree_node_raw": avg_degree_node_raw,
             "avg_degree_node": avg_degree_node,
+            "avg_degree_hyperedge_raw": avg_degree_hyperedge_raw,
             "avg_degree_hyperedge": avg_degree_hyperedge,
             "node_degree_max": node_degree_max,
             "hyperedge_degree_max": hyperedge_degree_max,

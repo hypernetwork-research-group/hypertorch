@@ -411,8 +411,10 @@ class HData:
         - ``shape_hyperedge_attr``: The shape of the hyperedge attribute matrix, or ``None`` if hyperedge attributes are not present.
         - ``num_nodes``: The number of nodes in the hypergraph.
         - ``num_hyperedges``: The number of hyperedges in the hypergraph.
-        - ``avg_degree_node``: The average degree of nodes, calculated as the mean number of hyperedges each node belongs to.
-        - ``avg_degree_hyperedge``: The average size of hyperedges, calculated as the mean number of nodes each hyperedge contains.
+        - ``avg_degree_node_raw``: The average degree of nodes, calculated as the mean number of hyperedges each node belongs to.
+        - ``avg_degree_node``: The average degree of nodes normalized to an integer.
+        - ``avg_degree_hyperedge_raw``: The average size of hyperedges, calculated as the mean number of nodes each hyperedge contains.
+        - ``avg_degree_hyperedge``: The average size of hyperedges normalized to an integer.
         - ``node_degree_max``: The maximum degree of any node in the hypergraph.
         - ``hyperedge_degree_max``: The maximum size of any hyperedge in the hypergraph.
         - ``node_degree_median``: The median degree of nodes in the hypergraph.
@@ -444,14 +446,18 @@ class HData:
         num_hyperedges = self.num_hyperedges
 
         if distribution_node_degree.numel() > 0:
-            avg_degree_node = distribution_node_degree.mean().item()
-            avg_degree_hyperedge = distribution_hyperedge_size.mean().item()
+            avg_degree_node_raw = distribution_node_degree.mean().item()
+            avg_degree_node = int(avg_degree_node_raw)
+            avg_degree_hyperedge_raw = distribution_hyperedge_size.mean().item()
+            avg_degree_hyperedge = int(avg_degree_hyperedge_raw)
             node_degree_max = int(distribution_node_degree.max().item())
             hyperedge_degree_max = int(distribution_hyperedge_size.max().item())
             node_degree_median = int(distribution_node_degree.median().item())
             hyperedge_degree_median = int(distribution_hyperedge_size.median().item())
         else:
+            avg_degree_node_raw = 0
             avg_degree_node = 0
+            avg_degree_hyperedge_raw = 0
             avg_degree_hyperedge = 0
             node_degree_max = 0
             hyperedge_degree_max = 0
@@ -480,7 +486,9 @@ class HData:
             else None,
             "num_nodes": num_nodes,
             "num_hyperedges": num_hyperedges,
+            "avg_degree_node_raw": avg_degree_node_raw,
             "avg_degree_node": avg_degree_node,
+            "avg_degree_hyperedge_raw": avg_degree_hyperedge_raw,
             "avg_degree_hyperedge": avg_degree_hyperedge,
             "node_degree_max": node_degree_max,
             "hyperedge_degree_max": hyperedge_degree_max,

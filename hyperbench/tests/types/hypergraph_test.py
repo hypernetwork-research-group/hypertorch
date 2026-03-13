@@ -366,8 +366,10 @@ def test_hifhypergraph_stats_returns_correct_statistics():
     expected_stats = {
         "num_nodes": 4,
         "num_hyperedges": 2,
-        "avg_degree_node": 1.25,
-        "avg_degree_hyperedge": 2.5,
+        "avg_degree_node_raw": 1.25,
+        "avg_degree_node": 1,
+        "avg_degree_hyperedge_raw": 2.5,
+        "avg_degree_hyperedge": 2,
         "node_degree_max": 2,
         "hyperedge_degree_max": 3,
         "node_degree_median": 1.0,
