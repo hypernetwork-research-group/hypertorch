@@ -7,17 +7,16 @@ assignees: ''
 
 ---
 Issue must include at least two labels:
-One from (feature, fix, chore, refactoring)
-One from (ci, data, docs, models, tests, training, types, utils)
+One from (bug, chore, docs, feature, refactoring)
 
-**Is your feature request related to a problem? Please describe.**
+###Is your feature request related to a problem? Please describe.
 A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
 
-**Describe the solution you would like**
+###Describe the solution you would like
 A clear and concise description of what you want to happen.
 
-**Describe alternatives you've considered**
+###Describe alternatives you've considered
 A clear and concise description of any alternative solutions or features you've considered.
 
-**Additional context**
+###Additional context
 Add any other context or screenshots about the feature request here.
