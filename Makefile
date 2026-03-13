@@ -1,4 +1,4 @@
-.PHONY: all setup check lint typecheck test stest docs docs-serve clean help
+.PHONY: all setup check lint typecheck test stest docs docs-build docs-serve loc clean help
 
 UV=uv
 UVX=uvx
@@ -33,13 +33,19 @@ stest:
 	@echo '=== Test for $(FILE) ==='
 	$(UV) run $(PYTEST) hyperbench/tests/$(FILE) -v -s
 
-docs:
+docs: docs-build docs-serve
+
+docs-build:
 	@echo '=== Building docs ==='
 	$(UV) run mkdocs build -f $(MKDOCS_CONFIG)
 
 docs-serve:
 	@echo '=== Serving docs at http://127.0.0.1:8000 ==='
 	$(UV) run mkdocs serve -f $(MKDOCS_CONFIG)
+
+loc:
+	@echo '=== Counting lines of code ==='
+	find . -type f -name "*.py" -not -path "*/.venv/*" -exec cat {} + | wc -l
 
 clean:
 	@echo '=== Cleaning up ==='
@@ -55,6 +61,8 @@ help:
 	@echo "  test       - Run tests"
 	@echo "  stest      - Run single test"
 	@echo "  check      - Run lint and typecheck"
-	@echo "  docs       - Build documentation"
-	@echo "  docs-serve - Serve docs locally at http://127.0.0.1:8000"
+	@echo "  docs       - Build and serve documentation"
+	@echo "  docs-build - Build documentation without serving"
+	@echo "  docs-serve - Serve built documentation locally at http://127.0.0.1:8000"
+	@echo "  loc        - Count lines of code"
 	@echo "  clean      - Remove build/test artifacts"
