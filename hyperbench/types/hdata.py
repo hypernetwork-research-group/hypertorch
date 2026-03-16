@@ -18,17 +18,17 @@ class HData:
         ...                                 [0, 1, 2, 3, 4]]) # hyperedge IDs
         >>> data = HData(x, hyperedge_index=hyperedge_index)
 
-    Attributes:
-        x (Tensor): Node feature matrix of shape ``[num_nodes, num_features]``.
-        hyperedge_index (Tensor): Hyperedge connectivity in COO format of shape ``[2, num_incidences]``,
+    Args:
+        x: Node feature matrix of shape ``[num_nodes, num_features]``.
+        hyperedge_index: Hyperedge connectivity in COO format of shape ``[2, num_incidences]``,
             where ``hyperedge_index[0]`` contains node IDs and ``hyperedge_index[1]`` contains hyperedge IDs.
-        hyperedge_attr (Tensor, optional): Hyperedge feature matrix of shape ``[num_hyperedges, num_hyperedge_features]``.
+        hyperedge_attr: Hyperedge feature matrix of shape ``[num_hyperedges, num_hyperedge_features]``.
             Features associated with each hyperedge (e.g., weights, timestamps, types).
-        num_nodes (int, optional): Number of nodes in the hypergraph.
+        num_nodes: Number of nodes in the hypergraph.
             If ``None``, inferred as ``x.size(0)``.
-        num_hyperedges (int, optional): Number of hyperedges in the hypergraph.
+        num_hyperedges: Number of hyperedges in the hypergraph.
             If ``None``, inferred as the number of unique hyperedge IDs in ``hyperedge_index[1]``.
-        y (Tensor, optional): Labels for hyperedges, of shape ``[num_hyperedges]``.
+        y: Labels for hyperedges, of shape ``[num_hyperedges]``.
             Used for supervised learning tasks. For unsupervised tasks, this can be ignored.
             Default is a tensor of ones, indicating all hyperedges are positive examples.
     """

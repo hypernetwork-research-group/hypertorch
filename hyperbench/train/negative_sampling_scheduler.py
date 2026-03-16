@@ -14,6 +14,18 @@ class NegativeSamplingSchedule(Enum):
 
 
 class NegativeSamplingScheduler:
+    """
+    Manages when to perform negative sampling during training based on a specified schedule.
+    This class allows for flexible scheduling of negative sampling, enabling it to be performed at different frequencies (e.g., every epoch, every N epochs, or only at the first epoch).
+        The scheduler maintains a cache of the most recently sampled negatives, which can be reused across epochs if the schedule does not require resampling. This helps to optimize training
+        by avoiding unnecessary sampling when the schedule dictates that negatives should only be generated at certain intervals.
+
+    Args:
+        negative_sampler: An instance of a ``NegativeSampler`` that defines how to sample negatives.
+        negative_sampling_schedule: An instance of ``NegativeSamplingSchedule`` that specifies the schedule for sampling negatives.
+        negative_sampling_every_n: An integer specifying the interval for sampling negatives when the schedule is set to ``EVERY_N_EPOCHS``. This parameter is ignored for other schedules.
+    """
+
     def __init__(
         self,
         negative_sampler: NegativeSampler,
@@ -28,6 +40,7 @@ class NegativeSamplingScheduler:
 
     @property
     def config(self) -> Dict[str, Any]:
+        """Returns the configuration of the negative sampling scheduler as a dictionary."""
         return {
             "negative_sampler": self.negative_sampler,
             "negative_sampling_schedule": self.negative_sampling_schedule,

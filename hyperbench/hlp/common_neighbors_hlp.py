@@ -46,6 +46,12 @@ class CommonNeighborsHlpModule(HlpModule):
         self.automatic_optimization = False
 
     def forward(self, hyperedge_index: Tensor) -> Tensor:
+        """
+        Compute common neighbor scores for the given hyperedges.
+
+        Args:
+            hyperedge_index: Tensor containing incidence information for the hyperedges to score.
+        """
         return self.decoder(hyperedge_index, self.node_to_neighbors)
 
     def on_fit_start(self) -> None:

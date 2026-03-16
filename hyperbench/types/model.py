@@ -9,14 +9,14 @@ TestResult: TypeAlias = Mapping[str, float]
 
 class ModelConfig:
     """
-    A class representing the configuration of a model for the MultiModelTrainer trainer.
+    A class representing the configuration of a model for training.
 
     Args:
         name: The name of the model.
         version: The version of the model.
         model: a LightningModule instance.
-        trainer: a Trainer instance.
         is_trainable: Whether the model is trainable.
+        trainer: a Trainer instance.
     """
 
     def __init__(

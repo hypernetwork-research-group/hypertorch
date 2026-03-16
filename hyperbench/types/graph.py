@@ -6,7 +6,12 @@ from hyperbench import utils
 
 
 class Graph:
-    """A simple graph data structure using edge list representation."""
+    """
+    A simple graph data structure using edge list representation.
+
+    Args:
+        edges: A list of edges, where each edge is represented as a list of two integers (source_node, destination_node).
+    """
 
     def __init__(self, edges: List[List[int]]):
         self.edges = edges
@@ -90,7 +95,7 @@ class Graph:
 class EdgeIndex:
     """
     A wrapper for edge index representation of a graph.
-    Edge index is a tensor of shape ``(2, |E|)`` where the first row contains source node indices and the second row contains destination node indices for each edge.
+    Edge index is a tensor of shape ``(2, num_edges)`` where the first row contains source node indices and the second row contains destination node indices for each edge.
 
     Examples:
         >>> edge_index = [[0, 1, 2],
@@ -98,6 +103,9 @@ class EdgeIndex:
 
         This represents a graph with edges (0, 1), (1, 0), and (2, 3).
         The number of nodes in this graph is 4 (nodes 0, 1, 2, and 3) and the number of edges is 3.
+
+    Args:
+        edge_index: A tensor of shape ``(2, num_edges)`` representing the edges in the graph.
     """
 
     def __init__(self, edge_index: Tensor):
@@ -167,6 +175,19 @@ class EdgeIndex:
         Compute the sparse adjacency matrix from a graph edge index.
         To get the normalized adjacency matrix, add self-loops to the edge_index.
 
+        Examples:
+            >>> edge_index = [[0, 1, 2],
+            ...               [1, 0, 3]]
+            >>> num_nodes = 4
+            >>> adj_values = [1, 1, 1]
+            >>> adj_indices = [[0, 1, 2],
+            ...                [1, 0, 3]]
+            >>>                0  1  2  3
+            ... adj_matrix = [[0, 1, 0, 0], 0
+            ...               [1, 0, 0, 0], 1
+            ...               [0, 0, 0, 1], 2
+            ...               [0, 0, 1, 0]] 3
+
         Args:
             num_nodes: The number of nodes in the graph.
                 If ``None``, it will be inferred from ``self.num_nodes``.
@@ -196,6 +217,25 @@ class EdgeIndex:
         return adj_matrix
 
     def get_sparse_identity_matrix(self, num_nodes: Optional[int] = None) -> Tensor:
+        """
+        Compute the sparse identity matrix I of shape (num_nodes, num_nodes).
+
+        Examples:
+            >>> num_nodes = 3
+            >>> identity_indices = [[0, 1, 2],
+            ...                     [0, 1, 2]]
+            >>> values = [1, 1, 1]
+            >>> I = [[1, 0, 0],
+            ...      [0, 1, 0],
+            ...      [0, 0, 1]]
+
+        Args:
+            num_nodes: The number of nodes in the graph.
+                If ``None``, it will be inferred from ``self.num_nodes``.
+
+        Returns:
+            The sparse identity matrix I of shape ``(num_nodes, num_nodes)``.
+        """
         device = self.__edge_index.device
         num_nodes = self.num_nodes if num_nodes is None else num_nodes
 
@@ -279,7 +319,7 @@ class EdgeIndex:
         """
         Compute the sparse symmetric normalized Laplacian matrix: L = I - D^{-1/2} A D^{-1/2}.
 
-        Unlike :meth:`get_sparse_normalized_gcn_laplacian`, this method does NOT add self-loops
+        Unlike ``get_sparse_normalized_gcn_laplacian``, this method does not add self-loops
         and computes the standard Laplacian (not the GCN propagation matrix).
 
         Args:

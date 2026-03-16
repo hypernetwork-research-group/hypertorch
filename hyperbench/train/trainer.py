@@ -14,7 +14,7 @@ from hyperbench.types import CkptStrategy, ModelConfig, TestResult
 
 
 class MultiModelTrainer:
-    r"""
+    """
     A trainer class to handle training multiple models with individual trainers.
 
     Args:

@@ -15,6 +15,13 @@ class HIFHypergraph:
     """
     A hypergraph data structure that supports directed/undirected hyperedges
     with incidence-based representation.
+
+    Args:
+        network_type: The type of hypergraph, which can be "asc" (or "directed") for directed hyperedges, or "undirected" for undirected hyperedges.
+        metadata: Optional dictionary of metadata about the hypergraph.
+        incidences: A list of incidences, where each incidence is a dictionary with keys "node" and "edge" representing the relationship between a node and a hyperedge.
+        nodes: A list of node dictionaries, where each dictionary contains information about a node (e.g., id, features).
+        edges: A list of edge dictionaries, where each dictionary contains information about a hyperedge (e.g., id, features).
     """
 
     def __init__(
@@ -181,6 +188,9 @@ class HIFHypergraph:
 class Hypergraph:
     """
     A simple hypergraph data structure using edge list representation.
+
+    Args:
+        hyperedges: A list of hyperedges, where each hyperedge is represented as a list of node IDs.
     """
 
     def __init__(self, hyperedges: List[List[int]]):
@@ -353,6 +363,9 @@ class HyperedgeIndex:
 
         The number of nodes in this hypergraph is 3 (nodes 0, 1, and 2).
         The number of hyperedges is 2 (hyperedges 0 and 1).
+
+    Args:
+        hyperedge_index: A tensor of shape ``(2, |E|)`` representing hyperedges, where each column is (node, hyperedge).
     """
 
     def __init__(self, hyperedge_index: Tensor):
