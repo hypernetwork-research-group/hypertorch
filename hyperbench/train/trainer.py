@@ -1,14 +1,14 @@
 import copy
 import lightning as L
 
+from pathlib import Path
+from typing import Any, Dict, List, Mapping, Optional
 from collections.abc import Iterable
 from lightning.pytorch.accelerators import Accelerator
 from lightning.pytorch.callbacks import Callback
-from lightning.pytorch.loggers import Logger
+from lightning.pytorch.loggers import CSVLogger, Logger
 from lightning.pytorch.profilers import Profiler
 from lightning.pytorch.strategies import Strategy
-from pathlib import Path
-from typing import Any, Dict, List, Mapping, Optional
 from hyperbench.data import DataLoader
 from hyperbench.types import CkptStrategy, ModelConfig, TestResult
 
@@ -18,6 +18,12 @@ class MultiModelTrainer:
     A trainer class to handle training multiple models with individual trainers.
 
     Args:
+        model_configs: A list of ModelConfig objects, each containing a model and its associated trainer (if any).
+
+        experiment_name: Name for this experiment run's log directory. When ``None`` (default),
+            auto-increments as ``experiment_0``, ``experiment_1``, etc. under the log root directory.
+            Only used when ``logger`` is not provided.
+
         accelerator: Supports passing different accelerator types ("cpu", "gpu", "tpu", "hpu", "mps", "auto")
             as well as custom accelerator instances.
 
@@ -96,9 +102,14 @@ class MultiModelTrainer:
             Defaults to ``None``.
     """
 
+    DEFAULT_BASE_LOG_DIR = "hyperbench_logs"
+    EXPERIMENT_NAME_PREFIX = "experiment"
+    VERSION_NAME_PREFIX = "version"
+
     def __init__(
         self,
         model_configs: List[ModelConfig],
+        experiment_name: Optional[str] = None,
         # args to pass to each Trainer
         accelerator: str | Accelerator = "auto",
         devices: list[int] | str | int = "auto",
@@ -124,10 +135,17 @@ class MultiModelTrainer:
         callbacks: Optional[List[Callback] | Callback] = None,
         **kwargs,
     ) -> None:
-        self.model_configs: List[ModelConfig] = model_configs
+        self.model_configs = model_configs
 
         for model_config in model_configs:
             if model_config.trainer is None:
+                model_logger = self.__setup_logger(
+                    model_config=model_config,
+                    logger=logger,
+                    default_root_dir=default_root_dir,
+                    experiment_name=experiment_name,
+                )
+
                 model_config.trainer = L.Trainer(
                     accelerator=accelerator,
                     devices=devices,
@@ -139,7 +157,7 @@ class MultiModelTrainer:
                     max_steps=max_steps,
                     min_steps=min_steps,
                     check_val_every_n_epoch=check_val_every_n_epoch,
-                    logger=logger,
+                    logger=model_logger,
                     default_root_dir=default_root_dir,
                     enable_autolog_hparams=enable_autolog_hparams,
                     log_every_n_steps=log_every_n_steps,
@@ -233,3 +251,52 @@ class MultiModelTrainer:
             )
 
         return test_results
+
+    def __next_experiment_name(self, save_dir: Path) -> Path:
+        if not save_dir.exists():
+            return Path(f"{MultiModelTrainer.EXPERIMENT_NAME_PREFIX}_0")
+
+        existing_experiment_names: List[str] = [
+            dir.name
+            for dir in save_dir.iterdir()
+            if dir.is_dir() and dir.name.startswith(MultiModelTrainer.EXPERIMENT_NAME_PREFIX)
+        ]
+        if len(existing_experiment_names) < 1:
+            return Path(f"{MultiModelTrainer.EXPERIMENT_NAME_PREFIX}_0")
+
+        last_experiment_number = max(
+            int(experiment_name.split("_")[1])
+            for experiment_name in existing_experiment_names
+            if experiment_name.split("_")[1].isdigit()
+        )
+        return Path(f"{MultiModelTrainer.EXPERIMENT_NAME_PREFIX}_{last_experiment_number + 1}")
+
+    def __setup_logger(
+        self,
+        model_config: ModelConfig,
+        logger: Optional[Logger | Iterable[Logger] | bool],
+        default_root_dir: Optional[str | Path] = None,
+        experiment_name: Optional[str] = None,
+    ) -> Optional[Logger | Iterable[Logger] | bool]:
+        if logger is not None:
+            return logger
+
+        base_dir = (
+            Path(MultiModelTrainer.DEFAULT_BASE_LOG_DIR)
+            if default_root_dir is None
+            else Path(default_root_dir)
+        )
+        next_experiment_name = (
+            self.__next_experiment_name(base_dir)
+            if experiment_name is None
+            else Path(experiment_name)
+        )
+
+        save_dir = str(base_dir / next_experiment_name)
+        return [
+            CSVLogger(
+                save_dir=save_dir,
+                name=model_config.name,
+                version=f"{MultiModelTrainer.VERSION_NAME_PREFIX}_{model_config.version}",
+            ),
+        ]

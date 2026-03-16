@@ -124,5 +124,9 @@ cython_debug/
 
 # Custom
 **/datasets/*.zst
-lightning_logs/
 .plans/
+plans/
+
+# Logs
+hyperbench_logs/
+lightning_logs/

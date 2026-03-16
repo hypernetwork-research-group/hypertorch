@@ -1,6 +1,7 @@
 import pytest
 
 from unittest.mock import MagicMock, patch
+from lightning.pytorch.loggers import CSVLogger
 from hyperbench.train import MultiModelTrainer
 from hyperbench.types import ModelConfig
 from hyperbench.tests import new_mock_trainer
@@ -237,3 +238,98 @@ def test_test_all_with_verbose_true_prints(_, mock_model_configs, capsys):
     captured_out = capsys.readouterr().out
     logs = [line for line in captured_out.splitlines() if "Test model" in line]
     assert len(logs) == len(mock_model_configs)
+
+
+@patch("hyperbench.train.trainer.L.Trainer")
+def test_init_auto_increments_experiment_name(mock_trainer_cls, mock_model_configs, tmp_path):
+    (tmp_path / "experiment_0").mkdir()
+    (tmp_path / "experiment_1").mkdir()
+
+    MultiModelTrainer(
+        mock_model_configs,
+        default_root_dir=str(tmp_path),
+    )
+
+    for call_args in mock_trainer_cls.call_args_list:
+        logger_arg = call_args.kwargs["logger"]
+        assert isinstance(logger_arg, list)
+        assert "experiment_2" in logger_arg[0].save_dir
+
+
+@patch("hyperbench.train.trainer.L.Trainer")
+def test_init_defaults_to_experiment_0_when_default_root_dir_does_not_exist(
+    mock_trainer_cls, mock_model_configs, tmp_path
+):
+    MultiModelTrainer(
+        mock_model_configs,
+        default_root_dir=str(tmp_path / "nonexistent_dir"),
+    )
+
+    for call_args in mock_trainer_cls.call_args_list:
+        logger_arg = call_args.kwargs["logger"]
+        assert isinstance(logger_arg, list)
+        assert "experiment_0" in logger_arg[0].save_dir
+
+
+@patch("hyperbench.train.trainer.L.Trainer")
+def test_init_defaults_to_experiment_0_when_no_existing_experiment(
+    mock_trainer_cls, mock_model_configs, tmp_path
+):
+    MultiModelTrainer(
+        mock_model_configs,
+        default_root_dir=str(tmp_path),
+    )
+
+    for call_args in mock_trainer_cls.call_args_list:
+        logger_arg = call_args.kwargs["logger"]
+        assert isinstance(logger_arg, list)
+        assert "experiment_0" in logger_arg[0].save_dir
+
+
+@patch("hyperbench.train.trainer.L.Trainer")
+def test_init_creates_default_logger_per_model(mock_trainer_cls, mock_model_configs, tmp_path):
+    MultiModelTrainer(
+        mock_model_configs,
+        default_root_dir=str(tmp_path),
+        experiment_name="experiment_0",
+    )
+
+    assert mock_trainer_cls.call_count == len(mock_model_configs)
+
+    model_names = [config.name for config in mock_model_configs]
+    model_versions = [f"version_{config.version}" for config in mock_model_configs]
+
+    for call_args in mock_trainer_cls.call_args_list:
+        logger_arg = call_args.kwargs["logger"]
+
+        assert isinstance(logger_arg, list)
+        assert len(logger_arg) == 1
+
+        assert isinstance(logger_arg[0], CSVLogger)
+        assert logger_arg[0].name in model_names
+        assert logger_arg[0].version in model_versions
+
+
+@patch("hyperbench.train.trainer.L.Trainer")
+def test_init_passes_custom_logger_to_all_models(mock_trainer_cls, mock_model_configs):
+    custom_logger = MagicMock()
+    MultiModelTrainer(mock_model_configs, logger=custom_logger)
+
+    for call_args in mock_trainer_cls.call_args_list:
+        assert call_args.kwargs["logger"] is custom_logger
+
+
+@patch("hyperbench.train.trainer.L.Trainer")
+def test_init_each_model_gets_distinct_logger(mock_trainer_cls, mock_model_configs, tmp_path):
+    MultiModelTrainer(
+        mock_model_configs,
+        default_root_dir=str(tmp_path),
+        experiment_name="test_experiment",
+    )
+
+    logger_arg = [call.kwargs["logger"] for call in mock_trainer_cls.call_args_list]
+    logger_names = [logger[0].name for logger in logger_arg]
+
+    for i in range(1, len(logger_names)):
+        assert logger_names[i] != logger_names[i - 1]
+        assert logger_names[i] in mock_model_configs[i].name
