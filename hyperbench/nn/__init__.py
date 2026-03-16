@@ -1,4 +1,4 @@
-from hyperbench.utils import Aggregation, NamedMetricFnDict
+from hyperbench.utils import Aggregation
 
 from .aggregator import HyperedgeAggregator
 from .conv import HyperGCNConv
@@ -11,7 +11,6 @@ __all__ = [
     "EnrichmentMode",
     "HyperedgeAggregator",
     "HyperGCNConv",
-    "NamedMetricFnDict",
     "NeighborScorer",
     "NodeFeatureEnricher",
     "LaplacianPositionalEncodingEnricher",

@@ -1,14 +1,31 @@
 from torch import Tensor, nn, optim
-from typing import Literal, Optional
+from typing import Dict, Literal, Optional
 from hyperbench.models import MLP, SLP
 from hyperbench.nn import HyperedgeAggregator
 from hyperbench.types import HData
-from hyperbench.utils import Aggregation, ActivationFn, NamedMetricFnDict, Stage
+from torchmetrics import MetricCollection
+from hyperbench.utils import Aggregation, ActivationFn, NormalizationFn, Stage
 
 from .hlp import HlpModule
 
 
 class EncoderConfig:
+    """
+    Configuration for the MLP encoder in MLPHlpModule.
+
+    Args:
+        in_channels: Number of input features per node.
+        out_channels: Number of output features (embedding size) per node.
+        num_layers: Number of layers in the MLP encoder.
+        hidden_channels: Optional number of hidden units per layer. If ``None``, no hidden layers are used and the encoder is a simple linear layer.
+        activation_fn: Optional activation function class to use in the MLP encoder. If ``None``, no activation function is applied.
+        activation_fn_kwargs: Optional dictionary of keyword arguments to pass to the activation function constructor.
+        normalization_fn: Optional normalization function class to use in the MLP encoder. If ``None``, no normalization is applied.
+        normalization_fn_kwargs: Optional dictionary of keyword arguments to pass to the normalization function constructor.
+        bias: Whether to include bias terms in the MLP layers. Defaults to ``True``.
+        drop_rate: Dropout rate to apply after each MLP layer (except the last one). Defaults to ``0.0`` (no dropout).
+    """
+
     def __init__(
         self,
         in_channels: int,
@@ -16,6 +33,10 @@ class EncoderConfig:
         num_layers: int = 1,
         hidden_channels: Optional[int] = None,
         activation_fn: Optional[ActivationFn] = None,
+        activation_fn_kwargs: Optional[Dict] = None,
+        normalization_fn: Optional[NormalizationFn] = None,
+        normalization_fn_kwargs: Optional[Dict] = None,
+        bias: bool = True,
         drop_rate: float = 0.0,
     ):
         self.in_channels = in_channels
@@ -23,6 +44,10 @@ class EncoderConfig:
         self.out_channels = out_channels
         self.num_layers = num_layers
         self.activation_fn = activation_fn
+        self.activation_fn_kwargs = activation_fn_kwargs
+        self.normalization_fn = normalization_fn
+        self.normalization_fn_kwargs = normalization_fn_kwargs
+        self.bias = bias
         self.drop_rate = drop_rate
 
 
@@ -34,10 +59,7 @@ class MLPHlpModule(HlpModule):
     via mean pooling, and scores each hyperedge with a linear decoder.
 
     Args:
-        in_channels: Number of input node features.
-        hidden_channels: Number of hidden channels in the MLP encoder.
-        out_channels: Dimensionality of node embeddings produced by the encoder.
-        num_layers: Number of hidden layers in the MLP encoder.
+        encoder_config: Configuration for the MLP encoder.
         aggregation: Method to aggregate node embeddings per hyperedge.
         activation_fn: Activation function class for the MLP encoder. Defaults to ``ReLU``.
         loss_fn: Loss function. Defaults to ``BCEWithLogitsLoss``.
@@ -51,7 +73,7 @@ class MLPHlpModule(HlpModule):
         aggregation: Literal["mean", "max", "min", "sum"] = Aggregation.MEAN,
         loss_fn: Optional[nn.Module] = None,
         lr: float = 0.001,
-        metrics: Optional[NamedMetricFnDict] = None,
+        metrics: Optional[MetricCollection] = None,
     ):
         # The encoder outputs node embeddings of shape (num_nodes, out_channels).
         encoder = MLP(
@@ -60,6 +82,10 @@ class MLPHlpModule(HlpModule):
             out_channels=encoder_config.out_channels,
             num_layers=encoder_config.num_layers,
             activation_fn=encoder_config.activation_fn,
+            activation_fn_kwargs=encoder_config.activation_fn_kwargs,
+            normalization_fn=encoder_config.normalization_fn,
+            normalization_fn_kwargs=encoder_config.normalization_fn_kwargs,
+            bias=encoder_config.bias,
             drop_rate=encoder_config.drop_rate,
         )
 
@@ -145,6 +171,7 @@ class MLPHlpModule(HlpModule):
         batch_size = batch.num_hyperedges
 
         loss = self._compute_loss(scores, labels, batch_size, Stage.TRAIN)
+        self._compute_metrics(scores, labels, batch_size, Stage.TRAIN)
         return loss
 
     def validation_step(self, batch: HData, batch_idx: int) -> Tensor:

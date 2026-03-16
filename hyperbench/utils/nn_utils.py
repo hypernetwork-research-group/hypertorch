@@ -1,6 +1,5 @@
 from enum import Enum
-from typing import Callable, Dict, Literal, Type, TypeAlias
-from torch import Tensor
+from typing import Literal, Type, TypeAlias
 from torch.nn import Module
 
 
@@ -9,8 +8,6 @@ INPUT_LAYER = 0
 
 ActivationFn: TypeAlias = Type[Module]
 NormalizationFn: TypeAlias = Type[Module]
-MetricFn: TypeAlias = Callable[[Tensor, Tensor], Tensor]
-NamedMetricFnDict: TypeAlias = Dict[str, MetricFn]
 
 
 # We can't use StrEnum as we support python 3.10,
