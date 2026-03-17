@@ -1,11 +1,13 @@
-.PHONY: all setup check lint typecheck test stest docs docs-build docs-serve loc clean help
+.PHONY: all setup setup-tensorboard check lint typecheck test stest docs docs-build docs-serve loc clean help
 
+PROJECT_NAME=hyperbench
 UV=uv
 UVX=uvx
 PYTEST=pytest
 LINTER=ruff
 TYPECHECKER=ty
 MKDOCS_CONFIG=.github/mkdocs.yml
+MKDOCS_URL=http://127.0.0.1:8000
 
 all: clean setup check test
 
@@ -14,6 +16,10 @@ setup:
 	$(UV) pip uninstall .
 	$(UV) sync
 	$(UV) pip install -e .
+
+setup-tensorboard:
+	@echo '=== Setup TensorBoard ==='
+	$(UV) pip install -e ".[tensorboard]"
 
 check: lint typecheck
 
@@ -27,11 +33,11 @@ typecheck:
 
 test:
 	@echo '=== Tests ==='
-	$(UV) run $(PYTEST) --cov=hyperbench --cov-report=term-missing
+	$(UV) run $(PYTEST) --cov=$(PROJECT_NAME) --cov-report=term-missing
 
 stest:
 	@echo '=== Test for $(FILE) ==='
-	$(UV) run $(PYTEST) hyperbench/tests/$(FILE) -v -s
+	$(UV) run $(PYTEST) $(PROJECT_NAME)/tests/$(FILE) -v -s
 
 docs: docs-build docs-serve
 
@@ -40,7 +46,7 @@ docs-build:
 	$(UV) run mkdocs build -f $(MKDOCS_CONFIG)
 
 docs-serve:
-	@echo '=== Serving docs at http://127.0.0.1:8000 ==='
+	@echo '=== Serving docs at $(MKDOCS_URL) ==='
 	$(UV) run mkdocs serve -f $(MKDOCS_CONFIG)
 
 loc:
@@ -49,20 +55,22 @@ loc:
 
 clean:
 	@echo '=== Cleaning up ==='
-	rm -rf **/__pycache__ **/*.pyc hyperbench.egg-info .pytest_cache .coverage .github/site
+	$(UV) pip uninstall .
+	rm -rf **/__pycache__ **/*.pyc $(PROJECT_NAME).egg-info .pytest_cache .coverage .github/site
 
 help:
-    @echo "Usage: make [target]"
-    @echo "Targets:"
-	@echo "  all        - Setup, lint, typecheck, test"
-	@echo "  setup      - Install dependencies"
-	@echo "  lint       - Run linter"
-	@echo "  typecheck  - Run type checker"
-	@echo "  test       - Run tests"
-	@echo "  stest      - Run single test"
-	@echo "  check      - Run lint and typecheck"
-	@echo "  docs       - Build and serve documentation"
-	@echo "  docs-build - Build documentation without serving"
-	@echo "  docs-serve - Serve built documentation locally at http://127.0.0.1:8000"
-	@echo "  loc        - Count lines of code"
-	@echo "  clean      - Remove build/test artifacts"
+	@echo "Usage: make [target]"
+	@echo "Targets:"
+	@echo "  all        	    - Setup, lint, typecheck, test"
+	@echo "  setup              - Install dependencies"
+	@echo "  setup-tensorboard  - Install optional TensorBoard dependency"
+	@echo "  lint               - Run linter"
+	@echo "  typecheck          - Run type checker"
+	@echo "  test               - Run tests"
+	@echo "  stest              - Run single test"
+	@echo "  check              - Run lint and typecheck"
+	@echo "  docs               - Build and serve documentation"
+	@echo "  docs-build         - Build documentation without serving"
+	@echo "  docs-serve         - Serve built documentation locally at $(MKDOCS_URL)"
+	@echo "  loc                - Count lines of code"
+	@echo "  clean              - Remove build/test artifacts"
