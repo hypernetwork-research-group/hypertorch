@@ -54,6 +54,38 @@ def test_trainer_initialization_with_initialized_trainer(
 
 @patch("hyperbench.train.trainer.L.Trainer")
 @patch("hyperbench.train.trainer.CSVLogger")
+def test_context_manager_enter_returns_self(
+    mock_csv_logger_cls, mock_trainer_cls, mock_model_configs
+):
+    multi_model_trainer = MultiModelTrainer(mock_model_configs)
+    with multi_model_trainer as trainer:
+        assert trainer is multi_model_trainer
+
+
+@patch("hyperbench.train.trainer.L.Trainer")
+@patch("hyperbench.train.trainer.CSVLogger")
+@patch("hyperbench.train.trainer.MultiModelTrainer.finalize")
+def test_context_manager_exit_calls_finalize(
+    mock_finalize, mock_csv_logger_cls, mock_trainer_cls, mock_model_configs
+):
+    multi_model_trainer = MultiModelTrainer(mock_model_configs)
+    with multi_model_trainer:
+        pass
+
+    mock_finalize.assert_called_once()
+
+
+@patch("hyperbench.train.trainer.L.Trainer")
+@patch("hyperbench.train.trainer.CSVLogger")
+@patch("hyperbench.train.trainer.MultiModelTrainer.finalize", side_effect=Exception("error"))
+def test_del_suppresses_exception_from_finalize(
+    mock_finalize, mock_csv_logger_cls, mock_trainer_cls, mock_model_configs
+):
+    MultiModelTrainer(mock_model_configs).__del__()
+
+
+@patch("hyperbench.train.trainer.L.Trainer")
+@patch("hyperbench.train.trainer.CSVLogger")
 def test_models_property_returns_models(mock_csv_logger_cls, mock_trainer_cls, mock_model_configs):
     multi_model_trainer = MultiModelTrainer(mock_model_configs)
     models = multi_model_trainer.models
@@ -537,6 +569,32 @@ def test_init_does_not_start_tensorboard_when_auto_start_tensorboard_false(
     )
 
     mock_popen.assert_not_called()
+
+
+@patch("hyperbench.train.trainer.L.Trainer")
+@patch(
+    "hyperbench.train.trainer.MultiModelTrainer._MultiModelTrainer__is_tensorboard_available",
+    return_value=True,
+)
+@patch("hyperbench.train.trainer.subprocess.Popen", side_effect=OSError("tensorboard not found"))
+@patch("lightning.pytorch.loggers.TensorBoardLogger", create=True)
+@patch("hyperbench.train.trainer.CSVLogger")
+def test_start_tensorboard_warns_and_returns_none_on_failure(
+    mock_csv_logger_cls,
+    mock_tb_logger_cls,
+    mock_popen,
+    mock_is_tb_available,
+    mock_trainer_cls,
+    mock_model_configs,
+    tmp_path,
+):
+    with pytest.warns(UserWarning, match="Proceeding without starting TensorBoard as it failed"):
+        MultiModelTrainer(
+            mock_model_configs,
+            default_root_dir=str(tmp_path),
+            experiment_name="experiment_0",
+            auto_start_tensorboard=True,
+        )
 
 
 @patch("hyperbench.train.trainer.L.Trainer")

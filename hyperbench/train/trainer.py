@@ -1,4 +1,5 @@
 import copy
+import importlib.util
 import subprocess
 import warnings
 import lightning as L
@@ -105,6 +106,9 @@ class MultiModelTrainer:
 
         auto_start_tensorboard: When ``True`` and tensorboard is installed, automatically starts
             a TensorBoard server pointing at the experiment log directory.
+            Using this option requires that TensorBoard is installed in the environment and moves control
+            of the TensorBoard server lifecycle to the trainer, which will automatically terminate the server
+            when the trainer is finalized (e.g., at the end of a `with` block or when the object is garbage collected).
             Defaults to ``False``.
 
         tensorboard_port: Port for the auto-launched TensorBoard server.
@@ -181,7 +185,20 @@ class MultiModelTrainer:
                     **kwargs,
                 )
 
+        print(f"Initialized trainer(models: {len(model_configs)}, log_dir: {self.log_dir})")
         self.__auto_start_tensorboard_if_enabled()
+
+    def __enter__(self) -> "MultiModelTrainer":
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        self.finalize()
+
+    def __del__(self) -> None:
+        try:
+            self.finalize()
+        except Exception:
+            pass
 
     @property
     def models(self) -> List[L.LightningModule]:
@@ -284,12 +301,7 @@ class MultiModelTrainer:
             self.__tensorboard_process = None
 
     def __is_tensorboard_available(self) -> bool:
-        try:
-            import tensorboard as _  # type: ignore[import]
-
-            return True
-        except ImportError:
-            return False
+        return importlib.util.find_spec("tensorboard") is not None
 
     def __start_tensorboard_process(self) -> Optional[subprocess.Popen]:
         try:
@@ -302,8 +314,12 @@ class MultiModelTrainer:
                 f"TensorBoard started at http://localhost:{self.tensorboard_port} (logdir={self.log_dir})"
             )
             return process
-        except FileNotFoundError:
-            print("TensorBoard binary not found. Skipping auto-launch.")
+        except Exception as e:
+            warnings.warn(
+                f"Proceeding without starting TensorBoard as it failed: {e}",
+                category=UserWarning,
+                stacklevel=2,
+            )
             return None
 
     def __next_experiment_name(self, save_dir: Path) -> Path:
