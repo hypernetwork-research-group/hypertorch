@@ -728,3 +728,41 @@ def test_finalize_does_not_call_wait_when_auto_wait_false(
     trainer.finalize()
 
     mock_builtins_input.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "interrupt",
+    [
+        pytest.param(KeyboardInterrupt, id="KeyboardInterrupt"),
+        pytest.param(EOFError, id="EOFError"),
+    ],
+)
+@patch("hyperbench.train.trainer.L.Trainer")
+@patch(
+    "hyperbench.train.trainer.MultiModelTrainer._MultiModelTrainer__is_tensorboard_available",
+    return_value=True,
+)
+@patch("hyperbench.train.trainer.subprocess.Popen")
+@patch("lightning.pytorch.loggers.TensorBoardLogger", create=True)
+@patch("hyperbench.train.trainer.CSVLogger")
+def test_finalize_handles_input_interrupts(
+    mock_csv_logger_cls,
+    mock_tb_logger_cls,
+    mock_popen,
+    mock_is_tb_available,
+    mock_trainer_cls,
+    mock_model_configs,
+    tmp_path,
+    interrupt,
+):
+    with patch("builtins.input", side_effect=interrupt):
+        trainer = MultiModelTrainer(
+            mock_model_configs,
+            default_root_dir=str(tmp_path),
+            experiment_name="experiment_0",
+            auto_start_tensorboard=True,
+            auto_wait=True,
+        )
+        trainer.finalize()
+
+    mock_popen.return_value.terminate.assert_called_once()

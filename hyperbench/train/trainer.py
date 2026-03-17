@@ -321,7 +321,11 @@ class MultiModelTrainer:
             return
 
         print(f"TensorBoard is running at http://localhost:{self.tensorboard_port}")
-        input("Press Enter to stop...")
+
+        try:
+            input("Press Enter to stop...")
+        except (KeyboardInterrupt, EOFError):
+            pass
 
     def __is_tensorboard_available(self) -> bool:
         return importlib.util.find_spec("tensorboard") is not None
