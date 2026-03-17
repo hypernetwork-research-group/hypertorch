@@ -1,7 +1,6 @@
 import pytest
 
 from unittest.mock import MagicMock, patch
-from lightning.pytorch.loggers import CSVLogger
 from hyperbench.train import MultiModelTrainer
 from hyperbench.types import ModelConfig
 from hyperbench.tests import new_mock_trainer
@@ -30,7 +29,8 @@ def mock_model_configs():
 
 
 @patch("hyperbench.train.trainer.L.Trainer")
-def test_trainer_initialization(_, mock_model_configs):
+@patch("hyperbench.train.trainer.CSVLogger")
+def test_trainer_initialization(mock_csv_logger_cls, mock_trainer_cls, mock_model_configs):
     multi_model_trainer = MultiModelTrainer(mock_model_configs)
 
     assert len(multi_model_trainer.model_configs) == len(mock_model_configs)
@@ -39,8 +39,11 @@ def test_trainer_initialization(_, mock_model_configs):
 
 
 @patch("hyperbench.train.trainer.L.Trainer")
-def test_trainer_initialization_with_initialized_trainer(mock_trainer, mock_model_configs):
-    mock_model_configs[0].trainer = mock_trainer
+@patch("hyperbench.train.trainer.CSVLogger")
+def test_trainer_initialization_with_initialized_trainer(
+    mock_csv_logger_cls, mock_trainer_cls, mock_model_configs
+):
+    mock_model_configs[0].trainer = mock_trainer_cls
 
     multi_model_trainer = MultiModelTrainer(mock_model_configs)
 
@@ -50,7 +53,8 @@ def test_trainer_initialization_with_initialized_trainer(mock_trainer, mock_mode
 
 
 @patch("hyperbench.train.trainer.L.Trainer")
-def test_models_property_returns_models(_, mock_model_configs):
+@patch("hyperbench.train.trainer.CSVLogger")
+def test_models_property_returns_models(mock_csv_logger_cls, mock_trainer_cls, mock_model_configs):
     multi_model_trainer = MultiModelTrainer(mock_model_configs)
     models = multi_model_trainer.models
 
@@ -58,7 +62,7 @@ def test_models_property_returns_models(_, mock_model_configs):
 
 
 @patch("hyperbench.train.trainer.L.Trainer")
-def test_models_property_returns_empty_when_no_models(_):
+def test_models_property_returns_empty_when_no_models(mock_trainer_cls):
     multi_model_trainer = MultiModelTrainer([])
     models = multi_model_trainer.models
 
@@ -66,7 +70,10 @@ def test_models_property_returns_empty_when_no_models(_):
 
 
 @patch("hyperbench.train.trainer.L.Trainer")
-def test_model_returns_model_when_correct_name_and_no_version(_, mock_model_configs):
+@patch("hyperbench.train.trainer.CSVLogger")
+def test_model_returns_model_when_correct_name_and_no_version(
+    mock_csv_logger_cls, mock_trainer_cls, mock_model_configs
+):
     mock_model_configs[0].version = "default"
     mock_model_configs[0].model.version = "default"
 
@@ -79,7 +86,10 @@ def test_model_returns_model_when_correct_name_and_no_version(_, mock_model_conf
 
 
 @patch("hyperbench.train.trainer.L.Trainer")
-def test_model_returns_None_when_incorrect_name_and_no_version(_, mock_model_configs):
+@patch("hyperbench.train.trainer.CSVLogger")
+def test_model_returns_None_when_incorrect_name_and_no_version(
+    mock_csv_logger_cls, mock_trainer_cls, mock_model_configs
+):
     multi_model_trainer = MultiModelTrainer(mock_model_configs)
     found = multi_model_trainer.model(name="nonexistent")
 
@@ -87,7 +97,10 @@ def test_model_returns_None_when_incorrect_name_and_no_version(_, mock_model_con
 
 
 @patch("hyperbench.train.trainer.L.Trainer")
-def test_model_returns_model_when_correct_name_and_version(_, mock_model_configs):
+@patch("hyperbench.train.trainer.CSVLogger")
+def test_model_returns_model_when_correct_name_and_version(
+    mock_csv_logger_cls, mock_trainer_cls, mock_model_configs
+):
     multi_model_trainer = MultiModelTrainer(mock_model_configs)
     found = multi_model_trainer.model(name="model0", version="0")
 
@@ -97,7 +110,10 @@ def test_model_returns_model_when_correct_name_and_version(_, mock_model_configs
 
 
 @patch("hyperbench.train.trainer.L.Trainer")
-def test_model_returns_None_when_incorrect_name_and_version(_, mock_model_configs):
+@patch("hyperbench.train.trainer.CSVLogger")
+def test_model_returns_None_when_incorrect_name_and_version(
+    mock_csv_logger_cls, mock_trainer_cls, mock_model_configs
+):
     multi_model_trainer = MultiModelTrainer(mock_model_configs)
     not_found = multi_model_trainer.model(name="nonexistent", version="100")
 
@@ -105,7 +121,10 @@ def test_model_returns_None_when_incorrect_name_and_version(_, mock_model_config
 
 
 @patch("hyperbench.train.trainer.L.Trainer")
-def test_model_returns_None_when_incorrect_name_and_correct_version(_, mock_model_configs):
+@patch("hyperbench.train.trainer.CSVLogger")
+def test_model_returns_None_when_incorrect_name_and_correct_version(
+    mock_csv_logger_cls, mock_trainer_cls, mock_model_configs
+):
     multi_model_trainer = MultiModelTrainer(mock_model_configs)
     not_found = multi_model_trainer.model(name="nonexistent", version="0")
 
@@ -116,7 +135,8 @@ def test_model_returns_None_when_incorrect_name_and_correct_version(_, mock_mode
     "hyperbench.train.trainer.L.Trainer",
     side_effect=lambda *args, **kwargs: new_mock_trainer(),
 )
-def test_fit_all_calls_fit(_, mock_model_configs):
+@patch("hyperbench.train.trainer.CSVLogger")
+def test_fit_all_calls_fit(mock_csv_logger_cls, mock_trainer_cls, mock_model_configs):
     multi_model_trainer = MultiModelTrainer(mock_model_configs)
 
     multi_model_trainer.fit_all(verbose=False)
@@ -125,7 +145,7 @@ def test_fit_all_calls_fit(_, mock_model_configs):
 
 
 @patch("hyperbench.train.trainer.L.Trainer")
-def test_fit_all_with_no_models(_):
+def test_fit_all_with_no_models(mock_trainer_cls):
     multi_model_trainer = MultiModelTrainer([])
 
     with pytest.raises(ValueError, match="No models to fit."):
@@ -133,7 +153,10 @@ def test_fit_all_with_no_models(_):
 
 
 @patch("hyperbench.train.trainer.L.Trainer", return_value=None)
-def test_fit_all_raises_when_None_trainer(_, mock_model_configs):
+@patch("hyperbench.train.trainer.CSVLogger")
+def test_fit_all_raises_when_None_trainer(
+    mock_csv_logger_cls, mock_trainer_cls, mock_model_configs
+):
     multi_model_trainer = MultiModelTrainer(mock_model_configs)
 
     with pytest.raises(
@@ -147,7 +170,10 @@ def test_fit_all_raises_when_None_trainer(_, mock_model_configs):
     "hyperbench.train.trainer.L.Trainer",
     side_effect=lambda *args, **kwargs: new_mock_trainer(),
 )
-def test_fit_all_with_verbose_true_prints(_, mock_model_configs, capsys):
+@patch("hyperbench.train.trainer.CSVLogger")
+def test_fit_all_with_verbose_true_prints(
+    mock_csv_logger_cls, mock_trainer_cls, mock_model_configs, capsys
+):
     multi_model_trainer = MultiModelTrainer(mock_model_configs)
 
     multi_model_trainer.fit_all(verbose=True)
@@ -164,7 +190,10 @@ def test_fit_all_with_verbose_true_prints(_, mock_model_configs, capsys):
     "hyperbench.train.trainer.L.Trainer",
     side_effect=lambda *args, **kwargs: new_mock_trainer(),
 )
-def test_fit_all_skips_non_trainable_model(_, mock_model_configs):
+@patch("hyperbench.train.trainer.CSVLogger")
+def test_fit_all_skips_non_trainable_model(
+    mock_csv_logger_cls, mock_trainer_cls, mock_model_configs
+):
     mock_model_configs[0].is_trainable = False
     multi_model_trainer = MultiModelTrainer(mock_model_configs)
 
@@ -178,7 +207,10 @@ def test_fit_all_skips_non_trainable_model(_, mock_model_configs):
     "hyperbench.train.trainer.L.Trainer",
     side_effect=lambda *args, **kwargs: new_mock_trainer(),
 )
-def test_fit_all_skips_non_trainable_model_with_verbose_prints(_, mock_model_configs, capsys):
+@patch("hyperbench.train.trainer.CSVLogger")
+def test_fit_all_skips_non_trainable_model_with_verbose_prints(
+    mock_csv_logger_cls, mock_trainer_cls, mock_model_configs, capsys
+):
     mock_model_configs[0].is_trainable = False
     multi_model_trainer = MultiModelTrainer(mock_model_configs)
 
@@ -193,7 +225,10 @@ def test_fit_all_skips_non_trainable_model_with_verbose_prints(_, mock_model_con
     "hyperbench.train.trainer.L.Trainer",
     side_effect=lambda *args, **kwargs: new_mock_trainer(),
 )
-def test_test_all_calls_test_and_returns_results(_, mock_model_configs):
+@patch("hyperbench.train.trainer.CSVLogger")
+def test_test_all_calls_test_and_returns_results(
+    mock_csv_logger_cls, mock_trainer_cls, mock_model_configs
+):
     multi_model_trainer = MultiModelTrainer(mock_model_configs)
 
     results = multi_model_trainer.test_all(verbose=False)
@@ -205,7 +240,7 @@ def test_test_all_calls_test_and_returns_results(_, mock_model_configs):
 
 
 @patch("hyperbench.train.trainer.L.Trainer")
-def test_test_all_with_no_models(_):
+def test_test_all_with_no_models(mock_trainer_cls):
     multi_model_trainer = MultiModelTrainer([])
 
     with pytest.raises(ValueError, match="No models to test."):
@@ -213,7 +248,10 @@ def test_test_all_with_no_models(_):
 
 
 @patch("hyperbench.train.trainer.L.Trainer", return_value=None)
-def test_test_all_raises_when_None_trainer(_, mock_model_configs):
+@patch("hyperbench.train.trainer.CSVLogger")
+def test_test_all_raises_when_None_trainer(
+    mock_csv_logger_cls, mock_trainer_cls, mock_model_configs
+):
     multi_model_trainer = MultiModelTrainer(mock_model_configs)
 
     with pytest.raises(
@@ -227,7 +265,10 @@ def test_test_all_raises_when_None_trainer(_, mock_model_configs):
     "hyperbench.train.trainer.L.Trainer",
     side_effect=lambda *args, **kwargs: new_mock_trainer(),
 )
-def test_test_all_with_verbose_true_prints(_, mock_model_configs, capsys):
+@patch("hyperbench.train.trainer.CSVLogger")
+def test_test_all_with_verbose_true_prints(
+    mock_csv_logger_cls, mock_trainer_cls, mock_model_configs, capsys
+):
     multi_model_trainer = MultiModelTrainer(mock_model_configs)
 
     multi_model_trainer.test_all(verbose=True)
@@ -241,7 +282,10 @@ def test_test_all_with_verbose_true_prints(_, mock_model_configs, capsys):
 
 
 @patch("hyperbench.train.trainer.L.Trainer")
-def test_init_auto_increments_experiment_name(mock_trainer_cls, mock_model_configs, tmp_path):
+@patch("hyperbench.train.trainer.CSVLogger")
+def test_init_auto_increments_experiment_name(
+    mock_csv_logger_cls, mock_trainer_cls, mock_model_configs, tmp_path
+):
     (tmp_path / "experiment_0").mkdir()
     (tmp_path / "experiment_1").mkdir()
 
@@ -250,45 +294,42 @@ def test_init_auto_increments_experiment_name(mock_trainer_cls, mock_model_confi
         default_root_dir=str(tmp_path),
     )
 
-    for call_args in mock_trainer_cls.call_args_list:
-        logger_arg = call_args.kwargs["logger"]
-        assert isinstance(logger_arg, list)
-        assert "experiment_2" in logger_arg[0].save_dir
+    for call in mock_csv_logger_cls.call_args_list:
+        assert "experiment_2" in str(call.kwargs["save_dir"])
 
 
 @patch("hyperbench.train.trainer.L.Trainer")
+@patch("hyperbench.train.trainer.CSVLogger")
 def test_init_defaults_to_experiment_0_when_default_root_dir_does_not_exist(
-    mock_trainer_cls, mock_model_configs, tmp_path
+    mock_csv_logger_cls, mock_trainer_cls, mock_model_configs, tmp_path
 ):
     MultiModelTrainer(
         mock_model_configs,
         default_root_dir=str(tmp_path / "nonexistent_dir"),
     )
 
-    for call_args in mock_trainer_cls.call_args_list:
-        logger_arg = call_args.kwargs["logger"]
-        assert isinstance(logger_arg, list)
-        assert "experiment_0" in logger_arg[0].save_dir
+    for call in mock_csv_logger_cls.call_args_list:
+        assert "experiment_0" in str(call.kwargs["save_dir"])
 
 
 @patch("hyperbench.train.trainer.L.Trainer")
+@patch("hyperbench.train.trainer.CSVLogger")
 def test_init_defaults_to_experiment_0_when_no_existing_experiment(
-    mock_trainer_cls, mock_model_configs, tmp_path
+    mock_csv_logger_cls, mock_trainer_cls, mock_model_configs, tmp_path
 ):
     MultiModelTrainer(
         mock_model_configs,
         default_root_dir=str(tmp_path),
     )
 
-    for call_args in mock_trainer_cls.call_args_list:
-        logger_arg = call_args.kwargs["logger"]
-        assert isinstance(logger_arg, list)
-        assert "experiment_0" in logger_arg[0].save_dir
+    for call in mock_csv_logger_cls.call_args_list:
+        assert "experiment_0" in str(call.kwargs["save_dir"])
 
 
 @patch("hyperbench.train.trainer.L.Trainer")
+@patch("hyperbench.train.trainer.CSVLogger")
 def test_init_always_create_default_csv_logger_per_model(
-    mock_trainer_cls, mock_model_configs, tmp_path
+    mock_csv_logger_cls, mock_trainer_cls, mock_model_configs, tmp_path
 ):
     MultiModelTrainer(
         mock_model_configs,
@@ -296,21 +337,14 @@ def test_init_always_create_default_csv_logger_per_model(
         experiment_name="experiment_0",
     )
 
-    assert mock_trainer_cls.call_count == len(mock_model_configs)
+    assert mock_csv_logger_cls.call_count == len(mock_model_configs)
 
     model_names = [config.name for config in mock_model_configs]
     model_versions = [f"version_{config.version}" for config in mock_model_configs]
 
-    for call_args in mock_trainer_cls.call_args_list:
-        logger_arg = call_args.kwargs["logger"]
-
-        assert isinstance(logger_arg, list)
-
-        csv_loggers = [l for l in logger_arg if isinstance(l, CSVLogger)]
-
-        assert len(csv_loggers) == 1
-        assert csv_loggers[0].name in model_names
-        assert csv_loggers[0].version in model_versions
+    for call in mock_csv_logger_cls.call_args_list:
+        assert call.kwargs["name"] in model_names
+        assert call.kwargs["version"] in model_versions
 
 
 @patch("hyperbench.train.trainer.L.Trainer")
@@ -323,15 +357,17 @@ def test_init_passes_custom_logger_to_all_models(mock_trainer_cls, mock_model_co
 
 
 @patch("hyperbench.train.trainer.L.Trainer")
-def test_init_each_model_gets_distinct_logger(mock_trainer_cls, mock_model_configs, tmp_path):
+@patch("hyperbench.train.trainer.CSVLogger")
+def test_init_each_model_gets_distinct_logger(
+    mock_csv_logger_cls, mock_trainer_cls, mock_model_configs, tmp_path
+):
     MultiModelTrainer(
         mock_model_configs,
         default_root_dir=str(tmp_path),
         experiment_name="test_experiment",
     )
 
-    logger_arg = [call.kwargs["logger"] for call in mock_trainer_cls.call_args_list]
-    logger_names = [logger[0].name for logger in logger_arg]
+    logger_names = [call.kwargs["name"] for call in mock_csv_logger_cls.call_args_list]
 
     for i in range(1, len(logger_names)):
         assert logger_names[i] != logger_names[i - 1]
@@ -344,8 +380,14 @@ def test_init_each_model_gets_distinct_logger(mock_trainer_cls, mock_model_confi
     return_value=True,
 )
 @patch("lightning.pytorch.loggers.TensorBoardLogger", create=True)
+@patch("hyperbench.train.trainer.CSVLogger")
 def test_init_creates_tensorboard_logger_when_available(
-    mock_tb_logger_cls, _, mock_trainer_cls, mock_model_configs, tmp_path
+    mock_csv_logger_cls,
+    mock_tb_logger_cls,
+    mock_is_tb_available,
+    mock_trainer_cls,
+    mock_model_configs,
+    tmp_path,
 ):
     MultiModelTrainer(
         mock_model_configs,
@@ -359,7 +401,7 @@ def test_init_creates_tensorboard_logger_when_available(
         logger_arg = call_args.kwargs["logger"]
         assert isinstance(logger_arg, list)
         assert len(logger_arg) == 2
-        assert isinstance(logger_arg[0], CSVLogger)
+        assert logger_arg[0] is mock_csv_logger_cls.return_value
         assert logger_arg[1] is mock_tb_logger_cls.return_value
 
 
@@ -368,8 +410,9 @@ def test_init_creates_tensorboard_logger_when_available(
     "hyperbench.train.trainer.MultiModelTrainer._MultiModelTrainer__is_tensorboard_available",
     return_value=False,
 )
+@patch("hyperbench.train.trainer.CSVLogger")
 def test_init_does_not_create_tensorboard_logger_when_not_available(
-    _, mock_trainer_cls, mock_model_configs, tmp_path
+    mock_csv_logger_cls, mock_is_tb_available, mock_trainer_cls, mock_model_configs, tmp_path
 ):
     MultiModelTrainer(
         mock_model_configs,
@@ -381,7 +424,36 @@ def test_init_does_not_create_tensorboard_logger_when_not_available(
         logger_arg = call_args.kwargs["logger"]
         assert isinstance(logger_arg, list)
         assert len(logger_arg) == 1
-        assert isinstance(logger_arg[0], CSVLogger)
+        assert logger_arg[0] is mock_csv_logger_cls.return_value
+
+
+@patch("hyperbench.train.trainer.L.Trainer")
+@patch(
+    "hyperbench.train.trainer.MultiModelTrainer._MultiModelTrainer__is_tensorboard_available",
+    return_value=True,
+)
+@patch("lightning.pytorch.loggers.TensorBoardLogger", create=True)
+@patch("hyperbench.train.trainer.CSVLogger")
+def test_tensorboard_logger_matches_csv_logger_organization(
+    mock_csv_logger_cls,
+    mock_tb_logger_cls,
+    mock_is_tb_available,
+    mock_trainer_cls,
+    mock_model_configs,
+    tmp_path,
+):
+    MultiModelTrainer(
+        mock_model_configs,
+        default_root_dir=str(tmp_path),
+        experiment_name="experiment_0",
+    )
+
+    for i in range(len(mock_model_configs)):
+        csv_call_kwargs = mock_csv_logger_cls.call_args_list[i].kwargs
+        tb_call_kwargs = mock_tb_logger_cls.call_args_list[i].kwargs
+        assert tb_call_kwargs["save_dir"] == csv_call_kwargs["save_dir"]
+        assert tb_call_kwargs["name"] == csv_call_kwargs["name"]
+        assert tb_call_kwargs["version"] == csv_call_kwargs["version"]
 
 
 @patch("hyperbench.train.trainer.L.Trainer")
@@ -391,7 +463,9 @@ def test_init_does_not_create_tensorboard_logger_when_not_available(
 )
 @patch("hyperbench.train.trainer.subprocess.Popen")
 @patch("lightning.pytorch.loggers.TensorBoardLogger", create=True)
+@patch("hyperbench.train.trainer.CSVLogger")
 def test_init_starts_tensorboard_when_auto_start_tensorboard_true(
+    mock_csv_logger_cls,
     mock_tb_logger_cls,
     mock_popen,
     mock_is_tb_available,
@@ -418,8 +492,14 @@ def test_init_starts_tensorboard_when_auto_start_tensorboard_true(
     return_value=False,
 )
 @patch("hyperbench.train.trainer.subprocess.Popen")
+@patch("hyperbench.train.trainer.CSVLogger")
 def test_init_does_not_start_tensorboard_when_not_available_and_auto_start_tensorboard_true(
-    mock_popen, mock_is_tb_available, mock_trainer_cls, mock_model_configs, tmp_path
+    mock_csv_logger_cls,
+    mock_popen,
+    mock_is_tb_available,
+    mock_trainer_cls,
+    mock_model_configs,
+    tmp_path,
 ):
     MultiModelTrainer(
         mock_model_configs,
@@ -438,7 +518,9 @@ def test_init_does_not_start_tensorboard_when_not_available_and_auto_start_tenso
 )
 @patch("hyperbench.train.trainer.subprocess.Popen")
 @patch("lightning.pytorch.loggers.TensorBoardLogger", create=True)
+@patch("hyperbench.train.trainer.CSVLogger")
 def test_init_does_not_start_tensorboard_when_auto_start_tensorboard_false(
+    mock_csv_logger_cls,
     mock_tb_logger_cls,
     mock_popen,
     mock_is_tb_available,
@@ -463,7 +545,9 @@ def test_init_does_not_start_tensorboard_when_auto_start_tensorboard_false(
 )
 @patch("hyperbench.train.trainer.subprocess.Popen")
 @patch("lightning.pytorch.loggers.TensorBoardLogger", create=True)
+@patch("hyperbench.train.trainer.CSVLogger")
 def test_finalize_terminates_tensorboard_process(
+    mock_csv_logger_cls,
     mock_tb_logger_cls,
     mock_popen,
     mock_is_tb_available,
