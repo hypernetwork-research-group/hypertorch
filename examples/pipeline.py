@@ -117,7 +117,7 @@ if __name__ == "__main__":
             model=mean_cn_module,
             is_trainable=False,
         ),
-        # ModelConfig(name="mlp", version="mean", model=mean_mlp_module),
+        ModelConfig(name="mlp", version="mean", model=mean_mlp_module),
     ]
 
     early_stopping = EarlyStopping(
