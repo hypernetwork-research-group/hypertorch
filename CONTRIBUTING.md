@@ -17,6 +17,14 @@ pre-commit install \
 
 This will ensure that your code adheres to the project's coding standards before each commit.
 
+## Build and test
+
+To build the project and run tests, use the following command:
+
+```bash
+make
+```
+
 ## Commit message style
 
 Commit messages should follow the [conventional commit specification](https://www.conventionalcommits.org/en/v1.0.0/).

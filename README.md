@@ -24,15 +24,13 @@ See the [Documentation][docs] for more details.
 
 ### Installation
 
-## Build
-To build the project, run:
+### Run examples
+
+Run examples from the [examples](examples) directory to get started. For instance:
+
 ```bash
-make
+uv run examples/pipeline.py
 ```
-
-## Usage
-
-WIP
 
 ## Contributing
 
@@ -45,7 +43,6 @@ WIP
 ## Discussion
 
 Most development discussions take place on GitHub in this repo, via the [GitHub issue tracker][issues].
-
 
 ![Alt](https://repobeats.axiom.co/api/embed/c168082ecb1f9f843c1b170dcfee93542b576f61.svg "Repobeats analytics image")
 
