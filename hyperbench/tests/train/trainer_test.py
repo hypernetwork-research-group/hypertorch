@@ -287,7 +287,9 @@ def test_init_defaults_to_experiment_0_when_no_existing_experiment(
 
 
 @patch("hyperbench.train.trainer.L.Trainer")
-def test_init_creates_default_logger_per_model(mock_trainer_cls, mock_model_configs, tmp_path):
+def test_init_always_create_default_csv_logger_per_model(
+    mock_trainer_cls, mock_model_configs, tmp_path
+):
     MultiModelTrainer(
         mock_model_configs,
         default_root_dir=str(tmp_path),
@@ -303,11 +305,12 @@ def test_init_creates_default_logger_per_model(mock_trainer_cls, mock_model_conf
         logger_arg = call_args.kwargs["logger"]
 
         assert isinstance(logger_arg, list)
-        assert len(logger_arg) == 1
 
-        assert isinstance(logger_arg[0], CSVLogger)
-        assert logger_arg[0].name in model_names
-        assert logger_arg[0].version in model_versions
+        csv_loggers = [l for l in logger_arg if isinstance(l, CSVLogger)]
+
+        assert len(csv_loggers) == 1
+        assert csv_loggers[0].name in model_names
+        assert csv_loggers[0].version in model_versions
 
 
 @patch("hyperbench.train.trainer.L.Trainer")
@@ -333,3 +336,148 @@ def test_init_each_model_gets_distinct_logger(mock_trainer_cls, mock_model_confi
     for i in range(1, len(logger_names)):
         assert logger_names[i] != logger_names[i - 1]
         assert logger_names[i] in mock_model_configs[i].name
+
+
+@patch("hyperbench.train.trainer.L.Trainer")
+@patch(
+    "hyperbench.train.trainer.MultiModelTrainer._MultiModelTrainer__is_tensorboard_available",
+    return_value=True,
+)
+@patch("lightning.pytorch.loggers.TensorBoardLogger", create=True)
+def test_init_creates_tensorboard_logger_when_available(
+    mock_tb_logger_cls, _, mock_trainer_cls, mock_model_configs, tmp_path
+):
+    MultiModelTrainer(
+        mock_model_configs,
+        default_root_dir=str(tmp_path),
+        experiment_name="experiment_0",
+    )
+
+    assert mock_tb_logger_cls.call_count == len(mock_model_configs)
+
+    for call_args in mock_trainer_cls.call_args_list:
+        logger_arg = call_args.kwargs["logger"]
+        assert isinstance(logger_arg, list)
+        assert len(logger_arg) == 2
+        assert isinstance(logger_arg[0], CSVLogger)
+        assert logger_arg[1] is mock_tb_logger_cls.return_value
+
+
+@patch("hyperbench.train.trainer.L.Trainer")
+@patch(
+    "hyperbench.train.trainer.MultiModelTrainer._MultiModelTrainer__is_tensorboard_available",
+    return_value=False,
+)
+def test_init_does_not_create_tensorboard_logger_when_not_available(
+    _, mock_trainer_cls, mock_model_configs, tmp_path
+):
+    MultiModelTrainer(
+        mock_model_configs,
+        default_root_dir=str(tmp_path),
+        experiment_name="experiment_0",
+    )
+
+    for call_args in mock_trainer_cls.call_args_list:
+        logger_arg = call_args.kwargs["logger"]
+        assert isinstance(logger_arg, list)
+        assert len(logger_arg) == 1
+        assert isinstance(logger_arg[0], CSVLogger)
+
+
+@patch("hyperbench.train.trainer.L.Trainer")
+@patch(
+    "hyperbench.train.trainer.MultiModelTrainer._MultiModelTrainer__is_tensorboard_available",
+    return_value=True,
+)
+@patch("hyperbench.train.trainer.subprocess.Popen")
+@patch("lightning.pytorch.loggers.TensorBoardLogger", create=True)
+def test_init_starts_tensorboard_when_auto_start_tensorboard_true(
+    mock_tb_logger_cls,
+    mock_popen,
+    mock_is_tb_available,
+    mock_trainer_cls,
+    mock_model_configs,
+    tmp_path,
+):
+    MultiModelTrainer(
+        mock_model_configs,
+        default_root_dir=str(tmp_path),
+        experiment_name="experiment_0",
+        auto_start_tensorboard=True,
+    )
+
+    mock_popen.assert_called_once()
+    popen_cmd = mock_popen.call_args[0][0]
+    assert "tensorboard" in popen_cmd
+    assert "--logdir" in popen_cmd
+
+
+@patch("hyperbench.train.trainer.L.Trainer")
+@patch(
+    "hyperbench.train.trainer.MultiModelTrainer._MultiModelTrainer__is_tensorboard_available",
+    return_value=False,
+)
+@patch("hyperbench.train.trainer.subprocess.Popen")
+def test_init_does_not_start_tensorboard_when_not_available_and_auto_start_tensorboard_true(
+    mock_popen, mock_is_tb_available, mock_trainer_cls, mock_model_configs, tmp_path
+):
+    MultiModelTrainer(
+        mock_model_configs,
+        default_root_dir=str(tmp_path),
+        experiment_name="experiment_0",
+        auto_start_tensorboard=True,
+    )
+
+    mock_popen.assert_not_called()
+
+
+@patch("hyperbench.train.trainer.L.Trainer")
+@patch(
+    "hyperbench.train.trainer.MultiModelTrainer._MultiModelTrainer__is_tensorboard_available",
+    return_value=True,
+)
+@patch("hyperbench.train.trainer.subprocess.Popen")
+@patch("lightning.pytorch.loggers.TensorBoardLogger", create=True)
+def test_init_does_not_start_tensorboard_when_auto_start_tensorboard_false(
+    mock_tb_logger_cls,
+    mock_popen,
+    mock_is_tb_available,
+    mock_trainer_cls,
+    mock_model_configs,
+    tmp_path,
+):
+    MultiModelTrainer(
+        mock_model_configs,
+        default_root_dir=str(tmp_path),
+        experiment_name="experiment_0",
+        auto_start_tensorboard=False,
+    )
+
+    mock_popen.assert_not_called()
+
+
+@patch("hyperbench.train.trainer.L.Trainer")
+@patch(
+    "hyperbench.train.trainer.MultiModelTrainer._MultiModelTrainer__is_tensorboard_available",
+    return_value=True,
+)
+@patch("hyperbench.train.trainer.subprocess.Popen")
+@patch("lightning.pytorch.loggers.TensorBoardLogger", create=True)
+def test_finalize_terminates_tensorboard_process(
+    mock_tb_logger_cls,
+    mock_popen,
+    mock_is_tb_available,
+    mock_trainer_cls,
+    mock_model_configs,
+    tmp_path,
+):
+    trainer = MultiModelTrainer(
+        mock_model_configs,
+        default_root_dir=str(tmp_path),
+        experiment_name="experiment_0",
+        auto_start_tensorboard=True,
+    )
+
+    trainer.finalize()
+
+    mock_popen.return_value.terminate.assert_called_once()

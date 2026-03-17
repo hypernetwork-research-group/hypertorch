@@ -1,4 +1,5 @@
 import copy
+import subprocess
 import lightning as L
 
 from pathlib import Path
@@ -100,6 +101,13 @@ class MultiModelTrainer:
 
         callbacks: Add a callback or list of callbacks.
             Defaults to ``None``.
+
+        auto_start_tensorboard: When ``True`` and tensorboard is installed, automatically starts
+            a TensorBoard server pointing at the experiment log directory.
+            Defaults to ``False``.
+
+        tensorboard_port: Port for the auto-launched TensorBoard server.
+            Defaults to ``6006``.
     """
 
     DEFAULT_BASE_LOG_DIR = "hyperbench_logs"
@@ -133,18 +141,19 @@ class MultiModelTrainer:
         enable_progress_bar: bool = True,
         enable_model_summary: Optional[bool] = None,
         callbacks: Optional[List[Callback] | Callback] = None,
+        auto_start_tensorboard: bool = False,
+        tensorboard_port: int = 6006,
         **kwargs,
     ) -> None:
         self.model_configs = model_configs
 
+        self.__tensorboard_process: Optional[subprocess.Popen] = None
+        self.tensorboard_port = tensorboard_port
+        self.log_dir = self.__setup_logdir(default_root_dir, experiment_name)
+
         for model_config in model_configs:
             if model_config.trainer is None:
-                model_logger = self.__setup_logger(
-                    model_config=model_config,
-                    logger=logger,
-                    default_root_dir=default_root_dir,
-                    experiment_name=experiment_name,
-                )
+                model_logger = self.__setup_logger(model_config, logger)
 
                 model_config.trainer = L.Trainer(
                     accelerator=accelerator,
@@ -169,6 +178,9 @@ class MultiModelTrainer:
                     callbacks=copy.deepcopy(callbacks),
                     **kwargs,
                 )
+
+        if auto_start_tensorboard and self.__is_tensorboard_available():
+            self.__tensorboard_process = self.__start_tensorboard()
 
     @property
     def models(self) -> List[L.LightningModule]:
@@ -252,6 +264,34 @@ class MultiModelTrainer:
 
         return test_results
 
+    def finalize(self) -> None:
+        if self.__tensorboard_process is not None:
+            self.__tensorboard_process.terminate()
+            self.__tensorboard_process = None
+
+    def __is_tensorboard_available(self) -> bool:
+        try:
+            import tensorboard as _  # type: ignore[import]
+
+            return True
+        except ImportError:
+            return False
+
+    def __start_tensorboard(self) -> Optional[subprocess.Popen]:
+        try:
+            process = subprocess.Popen(
+                ["tensorboard", "--logdir", self.log_dir, "--port", str(self.tensorboard_port)],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            print(
+                f"TensorBoard started at http://localhost:{self.tensorboard_port} (logdir={self.log_dir})"
+            )
+            return process
+        except FileNotFoundError:
+            print("TensorBoard binary not found. Skipping auto-launch.")
+            return None
+
     def __next_experiment_name(self, save_dir: Path) -> Path:
         if not save_dir.exists():
             return Path(f"{MultiModelTrainer.EXPERIMENT_NAME_PREFIX}_0")
@@ -271,16 +311,11 @@ class MultiModelTrainer:
         )
         return Path(f"{MultiModelTrainer.EXPERIMENT_NAME_PREFIX}_{last_experiment_number + 1}")
 
-    def __setup_logger(
+    def __setup_logdir(
         self,
-        model_config: ModelConfig,
-        logger: Optional[Logger | Iterable[Logger] | bool],
-        default_root_dir: Optional[str | Path] = None,
-        experiment_name: Optional[str] = None,
-    ) -> Optional[Logger | Iterable[Logger] | bool]:
-        if logger is not None:
-            return logger
-
+        default_root_dir: Optional[str | Path],
+        experiment_name: Optional[str],
+    ) -> Path:
         base_dir = (
             Path(MultiModelTrainer.DEFAULT_BASE_LOG_DIR)
             if default_root_dir is None
@@ -291,12 +326,33 @@ class MultiModelTrainer:
             if experiment_name is None
             else Path(experiment_name)
         )
+        return base_dir / next_experiment_name
 
-        save_dir = str(base_dir / next_experiment_name)
-        return [
+    def __setup_logger(
+        self,
+        model_config: ModelConfig,
+        logger: Optional[Logger | Iterable[Logger] | bool],
+    ) -> Optional[Logger | Iterable[Logger] | bool]:
+        if logger is not None:
+            return logger
+
+        loggers: List[Logger] = [
             CSVLogger(
-                save_dir=save_dir,
+                save_dir=self.log_dir,
                 name=model_config.name,
                 version=f"{MultiModelTrainer.VERSION_NAME_PREFIX}_{model_config.version}",
             ),
         ]
+
+        if self.__is_tensorboard_available():
+            from lightning.pytorch.loggers import TensorBoardLogger
+
+            loggers.append(
+                TensorBoardLogger(
+                    save_dir=self.log_dir,
+                    name=model_config.name,
+                    version=f"{MultiModelTrainer.VERSION_NAME_PREFIX}_{model_config.version}",
+                ),
+            )
+
+        return loggers
