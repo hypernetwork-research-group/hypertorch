@@ -52,8 +52,8 @@ clean:
 	rm -rf **/__pycache__ **/*.pyc hyperbench.egg-info .pytest_cache .coverage .github/site
 
 help:
-    @echo "Usage: make [target]"
-    @echo "Targets:"
+	@echo "Usage: make [target]"
+	@echo "Targets:"
 	@echo "  all        - Setup, lint, typecheck, test"
 	@echo "  setup      - Install dependencies"
 	@echo "  lint       - Run linter"
