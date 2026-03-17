@@ -624,3 +624,107 @@ def test_finalize_terminates_tensorboard_process(
     trainer.finalize()
 
     mock_popen.return_value.terminate.assert_called_once()
+
+
+@patch("hyperbench.train.trainer.L.Trainer")
+@patch("hyperbench.train.trainer.CSVLogger")
+def test_wait_does_nothing_when_no_tensorboard_process(
+    mock_csv_logger_cls, mock_trainer_cls, mock_model_configs
+):
+    trainer = MultiModelTrainer(mock_model_configs)
+
+    with patch("builtins.input") as mock_input:
+        trainer.wait()
+        mock_input.assert_not_called()
+
+
+@patch("hyperbench.train.trainer.L.Trainer")
+@patch(
+    "hyperbench.train.trainer.MultiModelTrainer._MultiModelTrainer__is_tensorboard_available",
+    return_value=True,
+)
+@patch("hyperbench.train.trainer.subprocess.Popen")
+@patch("lightning.pytorch.loggers.TensorBoardLogger", create=True)
+@patch("hyperbench.train.trainer.CSVLogger")
+@patch("builtins.input", return_value="")  # Simulate user pressing Enter
+def test_wait_prompts_user_when_tensorboard_process_is_running(
+    mock_builtins_input,
+    mock_csv_logger_cls,
+    mock_tb_logger_cls,
+    mock_popen,
+    mock_is_tb_available,
+    mock_trainer_cls,
+    mock_model_configs,
+    tmp_path,
+):
+    trainer = MultiModelTrainer(
+        mock_model_configs,
+        default_root_dir=str(tmp_path),
+        experiment_name="experiment_0",
+        auto_start_tensorboard=True,
+    )
+    trainer.wait()
+
+    mock_builtins_input.assert_called_once()
+
+
+@patch("hyperbench.train.trainer.L.Trainer")
+@patch(
+    "hyperbench.train.trainer.MultiModelTrainer._MultiModelTrainer__is_tensorboard_available",
+    return_value=True,
+)
+@patch("hyperbench.train.trainer.subprocess.Popen")
+@patch("lightning.pytorch.loggers.TensorBoardLogger", create=True)
+@patch("hyperbench.train.trainer.CSVLogger")
+@patch("builtins.input", return_value="")  # Simulate user pressing Enter
+def test_finalize_calls_wait_when_auto_wait_true(
+    mock_builtins_input,
+    mock_csv_logger_cls,
+    mock_tb_logger_cls,
+    mock_popen,
+    mock_is_tb_available,
+    mock_trainer_cls,
+    mock_model_configs,
+    tmp_path,
+):
+    trainer = MultiModelTrainer(
+        mock_model_configs,
+        default_root_dir=str(tmp_path),
+        experiment_name="experiment_0",
+        auto_start_tensorboard=True,
+        auto_wait=True,
+    )
+    trainer.finalize()
+
+    mock_builtins_input.assert_called_once()
+
+
+@patch("hyperbench.train.trainer.L.Trainer")
+@patch(
+    "hyperbench.train.trainer.MultiModelTrainer._MultiModelTrainer__is_tensorboard_available",
+    return_value=True,
+)
+@patch("hyperbench.train.trainer.subprocess.Popen")
+@patch("lightning.pytorch.loggers.TensorBoardLogger", create=True)
+@patch("hyperbench.train.trainer.CSVLogger")
+@patch("builtins.input", return_value="")  # Simulate user pressing Enter
+def test_finalize_does_not_call_wait_when_auto_wait_false(
+    mock_builtins_input,
+    mock_csv_logger_cls,
+    mock_tb_logger_cls,
+    mock_popen,
+    mock_is_tb_available,
+    mock_trainer_cls,
+    mock_model_configs,
+    tmp_path,
+):
+    trainer = MultiModelTrainer(
+        mock_model_configs,
+        default_root_dir=str(tmp_path),
+        experiment_name="experiment_0",
+        auto_start_tensorboard=True,
+        auto_wait=False,
+    )
+    trainer.finalize()
+
+    mock_builtins_input.assert_not_called()

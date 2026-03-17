@@ -109,10 +109,16 @@ class MultiModelTrainer:
             Using this option requires that TensorBoard is installed in the environment and moves control
             of the TensorBoard server lifecycle to the trainer, which will automatically terminate the server
             when the trainer is finalized (e.g., at the end of a `with` block or when the object is garbage collected).
+            Enable `auto_wait` to keep the server alive after training completes so you can inspect results before the trainer is finalized.
             Defaults to ``False``.
 
         tensorboard_port: Port for the auto-launched TensorBoard server.
             Defaults to ``6006``.
+
+        auto_wait: When ``True`` and a TensorBoard server is running, automatically calls
+            :meth:`wait` inside `finalize` before terminating the server, so the user
+            can inspect results before the process is stopped.
+            Defaults to ``False``.
     """
 
     DEFAULT_BASE_LOG_DIR = "hyperbench_logs"
@@ -148,12 +154,14 @@ class MultiModelTrainer:
         callbacks: Optional[List[Callback] | Callback] = None,
         auto_start_tensorboard: bool = False,
         tensorboard_port: int = 6006,
+        auto_wait: bool = False,
         **kwargs,
     ) -> None:
         self.model_configs = model_configs
         self.log_dir = self.__setup_logdir(default_root_dir, experiment_name)
 
         self.auto_start_tensorboard = auto_start_tensorboard
+        self.auto_wait = auto_wait
         self.tensorboard_port = tensorboard_port
         self.__tensorboard_process: Optional[subprocess.Popen] = None
 
@@ -296,9 +304,24 @@ class MultiModelTrainer:
                 )
 
     def finalize(self) -> None:
+        if self.auto_wait:
+            self.wait()
         if self.__tensorboard_process is not None:
             self.__tensorboard_process.terminate()
             self.__tensorboard_process = None
+
+    def wait(self) -> None:
+        """
+        Wait until the user presses Enter, keeping process alive.
+        If no process is running, this method does nothing.
+        """
+        # For now, we only use this for waiting on TensorBoard, but this can be extended
+        # to support waiting for other processes or conditions as needed
+        if self.__tensorboard_process is None:
+            return
+
+        print(f"TensorBoard is running at http://localhost:{self.tensorboard_port}")
+        input("Press Enter to stop...")
 
     def __is_tensorboard_available(self) -> bool:
         return importlib.util.find_spec("tensorboard") is not None
