@@ -1,5 +1,6 @@
 import copy
 import subprocess
+import warnings
 import lightning as L
 
 from pathlib import Path
@@ -146,10 +147,11 @@ class MultiModelTrainer:
         **kwargs,
     ) -> None:
         self.model_configs = model_configs
-
-        self.__tensorboard_process: Optional[subprocess.Popen] = None
-        self.tensorboard_port = tensorboard_port
         self.log_dir = self.__setup_logdir(default_root_dir, experiment_name)
+
+        self.auto_start_tensorboard = auto_start_tensorboard
+        self.tensorboard_port = tensorboard_port
+        self.__tensorboard_process: Optional[subprocess.Popen] = None
 
         for model_config in model_configs:
             if model_config.trainer is None:
@@ -179,8 +181,7 @@ class MultiModelTrainer:
                     **kwargs,
                 )
 
-        if auto_start_tensorboard and self.__is_tensorboard_available():
-            self.__tensorboard_process = self.__start_tensorboard()
+        self.__auto_start_tensorboard_if_enabled()
 
     @property
     def models(self) -> List[L.LightningModule]:
@@ -264,6 +265,19 @@ class MultiModelTrainer:
 
         return test_results
 
+    def __auto_start_tensorboard_if_enabled(self) -> None:
+        if self.auto_start_tensorboard:
+            if self.__is_tensorboard_available():
+                self.__tensorboard_process = self.__start_tensorboard_process()
+            else:
+                warnings.warn(
+                    "TensorBoard is not available."
+                    "Install it with `pip install hyperbench[tensorboard]` or `pip install tensorboard`"
+                    "to enable auto-start.",
+                    category=UserWarning,
+                    stacklevel=2,
+                )
+
     def finalize(self) -> None:
         if self.__tensorboard_process is not None:
             self.__tensorboard_process.terminate()
@@ -277,7 +291,7 @@ class MultiModelTrainer:
         except ImportError:
             return False
 
-    def __start_tensorboard(self) -> Optional[subprocess.Popen]:
+    def __start_tensorboard_process(self) -> Optional[subprocess.Popen]:
         try:
             process = subprocess.Popen(
                 ["tensorboard", "--logdir", self.log_dir, "--port", str(self.tensorboard_port)],

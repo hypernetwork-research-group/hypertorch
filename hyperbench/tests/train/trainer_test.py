@@ -501,12 +501,13 @@ def test_init_does_not_start_tensorboard_when_not_available_and_auto_start_tenso
     mock_model_configs,
     tmp_path,
 ):
-    MultiModelTrainer(
-        mock_model_configs,
-        default_root_dir=str(tmp_path),
-        experiment_name="experiment_0",
-        auto_start_tensorboard=True,
-    )
+    with pytest.warns(UserWarning, match="TensorBoard is not available"):
+        MultiModelTrainer(
+            mock_model_configs,
+            default_root_dir=str(tmp_path),
+            experiment_name="experiment_0",
+            auto_start_tensorboard=True,
+        )
 
     mock_popen.assert_not_called()
 
