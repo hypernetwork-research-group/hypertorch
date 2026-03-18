@@ -1,4 +1,4 @@
-.PHONY: all setup setup-tensorboard check lint typecheck test stest run docs docs-build docs-serve loc clean help
+.PHONY: all build setup setup-tensorboard check lint typecheck test stest run docs docs-build docs-serve loc clean help
 
 PROJECT_NAME=hyperbench
 UV=uv
@@ -11,9 +11,10 @@ MKDOCS_URL=http://127.0.0.1:8000
 
 all: clean setup check test
 
+build: clean setup
+
 setup:
 	@echo '=== Setup ==='
-	$(UV) pip uninstall .
 	$(UV) sync
 	$(UV) pip install -e .
 

@@ -29,7 +29,12 @@ See the [Documentation][docs] for more details.
 Run examples from the [examples](examples) directory to get started. For instance:
 
 ```bash
-uv run examples/pipeline.py
+make build
+
+# Run if you want to enable TensorBoard
+make setup-tensorboard
+
+make run examples/pipeline.py
 ```
 
 ## Contributing

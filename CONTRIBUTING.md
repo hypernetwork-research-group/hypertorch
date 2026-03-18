@@ -7,7 +7,7 @@ The project main language is English.
 Run the following command to install the pre-commit hook:
 
 ```bash
-make setup
+make build
 
 pre-commit install \
     --config .github/hooks/.pre-commit-config.yaml \
