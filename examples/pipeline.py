@@ -10,6 +10,7 @@ from hyperbench.data import AlgebraDataset, DataLoader, SamplingStrategy
 
 if __name__ == "__main__":
     verbose = False
+    num_workers = 8
     sampling_strategy = SamplingStrategy.HYPEREDGE
     metrics = MetricCollection(
         {
@@ -73,22 +74,22 @@ if __name__ == "__main__":
     train_loader = DataLoader(
         train_dataset,
         batch_size=128,  # or 256
-        shuffle=True,
-        num_workers=9,
+        shuffle=False,
+        num_workers=num_workers,
         persistent_workers=True,
     )
     val_loader = DataLoader(
         val_dataset,
         batch_size=val_dataset.stats()["num_hyperedges"],
         shuffle=False,
-        num_workers=9,
+        num_workers=num_workers,
         persistent_workers=True,
     )
     test_loader = DataLoader(
         test_dataset,
         batch_size=test_dataset.stats()["num_hyperedges"],
         shuffle=False,
-        num_workers=9,
+        num_workers=num_workers,
         persistent_workers=True,
     )
 
