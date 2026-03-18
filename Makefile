@@ -85,6 +85,7 @@ help:
 	@echo "Usage: make [target]"
 	@echo "Targets:"
 	@echo "  all        	    - Clean, setup, lint, typecheck, test"
+	@echo "  build              - Clean and setup"
 	@echo "  setup              - Install dependencies"
 	@echo "  setup-tensorboard  - Install optional TensorBoard dependency"
 	@echo "  lint               - Run linter"
