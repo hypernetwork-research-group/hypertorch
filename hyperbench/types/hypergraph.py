@@ -435,10 +435,7 @@ class HyperedgeIndex:
         """
         return max(self.num_nodes, num_nodes)
 
-    def reduce_to_edge_index_on_clique_expansion(
-        self,
-        remove_selfloops: bool = True,
-    ) -> Tensor:
+    def reduce_to_edge_index_on_clique_expansion(self) -> Tensor:
         """
         Construct a graph from a hypergraph via clique expansion using ``H @ H^T``, where ``H`` is the incidence matrix of the hypergraph.
         In clique expansion, each hyperedge is replaced by a clique connecting all its member nodes.
@@ -446,9 +443,6 @@ class HyperedgeIndex:
         For each hyperedge, all pairs of member nodes become edges in the resulting graph.
         This is computed efficiently using the incidence matrix: ``A = H @ H^T``, where ``H`` is
         the sparse incidence matrix of shape ``[num_nodes, num_hyperedges]`` and ``A`` is the adjacency matrix of the clique-expanded graph.
-
-        Args:
-            remove_selfloops: Whether to remove self-loops from the diagonal of ``H @ H^T``. Defaults to ``True``.
 
         Returns:
             The edge index of the clique-expanded graph. Size ``(2, |E'|)``.
@@ -486,10 +480,7 @@ class HyperedgeIndex:
         adj_matrix = torch.sparse.mm(incidence_matrix, incidence_matrix.t()).coalesce()
 
         # Extract edge_index, make undirected, and deduplicate
-        edge_index = EdgeIndex(adj_matrix.indices())
-        if remove_selfloops:
-            edge_index.remove_selfloops()
-        return edge_index.to_undirected().item
+        return EdgeIndex(adj_matrix.indices()).to_undirected().item
 
     def reduce_to_edge_index_on_random_direction(
         self,

@@ -480,6 +480,23 @@ def test_edge_index_num_edges(edge_index_tensor, expected_num_edges):
 
 
 @pytest.mark.parametrize(
+    "edge_index_tensor, expected_max_node_id",
+    [
+        pytest.param(torch.tensor([[0], [1]]), 1, id="single_edge"),
+        pytest.param(torch.tensor([[0, 1, 2], [1, 2, 3]]), 3, id="multiple_edges"),
+        pytest.param(torch.tensor([[], []]), -1, id="empty_edge_index"),
+        pytest.param(torch.tensor([[0, 5], [3, 7]]), 7, id="non_consecutive_indices"),
+        pytest.param(torch.tensor([[0, 1, 1], [0, 1, 2]]), 2, id="with_selfloops"),
+        pytest.param(torch.tensor([[10, 20], [5, 15]]), 20, id="large_sparse_ids"),
+    ],
+)
+def test_edge_index_max_node_id(edge_index_tensor, expected_max_node_id):
+    edge_index = EdgeIndex(edge_index_tensor)
+
+    assert edge_index.max_node_id == expected_max_node_id
+
+
+@pytest.mark.parametrize(
     "edge_index_tensor, expected_num_nodes",
     [
         pytest.param(torch.tensor([[0], [1]]), 2, id="single_edge"),

@@ -117,6 +117,13 @@ class EdgeIndex:
         return self.__edge_index
 
     @property
+    def max_node_id(self) -> int:
+        """Return the maximum node ID in the edge index."""
+        if self.__edge_index.size(1) < 1:
+            return -1
+        return int(self.__edge_index.max())
+
+    @property
     def num_edges(self) -> int:
         """Return the number of edges in the graph."""
         if self.__edge_index.size(1) < 1:
