@@ -49,7 +49,7 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const requiredType = ["feature", "fix", "chore", "refactoring"];
+            const requiredType = ["chore", "docs","feature", "fix", "refactoring"];
 
             const labels = (context.payload.issue.labels || []).map((l) => l.name);
             const hasType = labels.some((name) => requiredType.includes(name));

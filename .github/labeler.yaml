@@ -1,49 +1,50 @@
 ci:
   - changed-files:
-    - any-glob-to-any-file: ".github/**"
+      - any-glob-to-any-file: ".github/**"
 
 data:
   - changed-files:
-    - any-glob-to-any-file: "hyperbench/data/**"
+      - any-glob-to-any-file: "hyperbench/data/**"
 
 docs:
   - changed-files:
-    - any-glob-to-any-file:
-      - "docs/**"
-      - "*.md"
-  - head-branch: ['^docs']
+      - any-glob-to-any-file:
+          - "docs/**"
+          - "examples/**"
+          - "*.md"
+  - head-branch: ["^docs"]
 
 models:
   - changed-files:
-    - any-glob-to-any-file:
-      - "hyperbench/hlp/**"
-      - "hyperbench/models/**"
-      - "hyperbench/nn/**"
+      - any-glob-to-any-file:
+          - "hyperbench/hlp/**"
+          - "hyperbench/models/**"
+          - "hyperbench/nn/**"
 
 tests:
   - changed-files:
-    - any-glob-to-any-file: "hyperbench/tests/**"
+      - any-glob-to-any-file: "hyperbench/tests/**"
 
 training:
   - changed-files:
-    - any-glob-to-any-file: "hyperbench/train/**"
+      - any-glob-to-any-file: "hyperbench/train/**"
 
 types:
   - changed-files:
-    - any-glob-to-any-file: "hyperbench/types/**"
+      - any-glob-to-any-file: "hyperbench/types/**"
 
 utils:
   - changed-files:
-    - any-glob-to-any-file: "hyperbench/utils/**"
+      - any-glob-to-any-file: "hyperbench/utils/**"
 
 feature:
-  - head-branch: ['^feat']
+  - head-branch: ["^feat"]
 
 fix:
-  - head-branch: ['^fix']
+  - head-branch: ["^fix"]
 
 chore:
-  - head-branch: ['^chore']
+  - head-branch: ["^chore"]
 
 refactoring:
-  - head-branch: ['^refactor']
+  - head-branch: ["^refactor"]
