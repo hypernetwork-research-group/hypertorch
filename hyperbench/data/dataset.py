@@ -4,6 +4,7 @@ import tempfile
 import torch
 import zstandard as zstd
 import requests
+from huggingface_hub import hf_hub_download
 
 from enum import Enum
 from typing import Any, Dict, List, Optional
@@ -65,9 +66,32 @@ class HIFConverter:
 
             response = requests.get(github_dataset_repo)
             if response.status_code != 200:
-                raise ValueError(
-                    f"Failed to download dataset '{dataset_name}' from GitHub. Status code: {response.status_code}"
+                # raise ValueError(
+                #     f"Failed to download dataset '{dataset_name}' from GitHub. Status code: {response.status_code}"
+                # )
+                print(
+                    f"Failed to download dataset '{dataset_name}' from GitHub (status code: {response.status_code})"
                 )
+                print(
+                    f"Fallback -- Attempting to download dataset '{dataset_name}' from Hugging Face Hub instead..."
+                )
+
+                REPO_ID = "ddevin96/{dataset_name}"
+                FILENAME = "{dataset_name}.json.zst"
+
+                with tempfile.NamedTemporaryFile(
+                    mode="wb", suffix=".json.zst", delete=False
+                ) as tmp_hf_file:
+                    downloaded_path = hf_hub_download(
+                        repo_id=REPO_ID,
+                        filename=FILENAME,
+                        repo_type="dataset",
+                    )
+                    with open(downloaded_path, "rb") as hf_file:
+                        hf_content = hf_file.read()
+                    tmp_hf_file.write(hf_content)
+
+                response._content = hf_content
 
             if save_on_disk:
                 os.makedirs(os.path.join(current_dir, "datasets"), exist_ok=True)
