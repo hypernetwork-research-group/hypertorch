@@ -1,4 +1,4 @@
-.PHONY: all build setup setup-tensorboard check lint typecheck test stest run docs docs-build docs-serve loc clean help
+.PHONY: all build setup setup-tensorboard check format typecheck test stest run docs docs-build docs-serve loc clean destroy help
 
 PROJECT_NAME=hyperbench
 UV=uv
@@ -22,10 +22,10 @@ setup-tensorboard:
 	@echo '=== Setup TensorBoard ==='
 	$(UV) pip install -e ".[tensorboard]"
 
-check: lint typecheck
+check: format typecheck
 
-lint:
-	@echo '=== Linter ==='
+format:
+	@echo '=== Linter and formatter ==='
 	$(UV) run $(LINTER) format
 
 typecheck:
@@ -74,12 +74,17 @@ docs-serve:
 
 loc:
 	@echo '=== Counting lines of code ==='
-	find . -type f -name "*.py" -not -path "*/.venv/*" -exec cat {} + | wc -l
+	find . -type f -name "*.py" -not -path "*/.venv/*" | xargs wc -l
 
 clean:
 	@echo '=== Cleaning up ==='
-	$(UV) pip uninstall .
-	rm -rf **/__pycache__ **/*.pyc $(PROJECT_NAME).egg-info .pytest_cache .coverage .github/site
+	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+	find . -type f -name "*.pyc" -delete 2>/dev/null || true
+	rm -rf $(PROJECT_NAME).egg-info .pytest_cache .coverage .$(LINTER)_cache .github/site
+
+destroy: clean
+	@echo '=== Destroying environment ==='
+	rm -rf .venv $(UV).lock
 
 help:
 	@echo "Usage: make [target]"
@@ -88,7 +93,7 @@ help:
 	@echo "  build              - Clean and setup"
 	@echo "  setup              - Install dependencies"
 	@echo "  setup-tensorboard  - Install optional TensorBoard dependency"
-	@echo "  lint               - Run linter"
+	@echo "  format             - Run linter and formatter"
 	@echo "  typecheck          - Run type checker"
 	@echo "  test               - Run all tests"
 	@echo "  stest <test_name>  - Run a single test"
@@ -99,3 +104,4 @@ help:
 	@echo "  docs-serve         - Serve built documentation locally at $(MKDOCS_URL)"
 	@echo "  loc                - Count lines of code"
 	@echo "  clean              - Remove build/test artifacts"
+	@echo "  destroy            - Destroy the environment"
