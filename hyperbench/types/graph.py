@@ -216,12 +216,10 @@ class EdgeIndex:
         #                 [1, 0, 0, 0], 0
         #                 [0, 0, 0, 1], 3
         #                 [0, 0, 1, 0]] 2
-        # Note: We don't have duplicate edges in edge_index, but
-        # even if we did, torch.sparse_coo_tensor would sum them up automatically
         adj_values = torch.ones(src.size(0), device=self.__edge_index.device)
         adj_indices = torch.stack([src, dest], dim=0)
         adj_matrix = torch.sparse_coo_tensor(adj_indices, adj_values, size=(num_nodes, num_nodes))
-        return adj_matrix
+        return adj_matrix.coalesce()
 
     def get_sparse_identity_matrix(self, num_nodes: Optional[int] = None) -> Tensor:
         """
@@ -261,7 +259,7 @@ class EdgeIndex:
             values=torch.ones(num_nodes, device=device),
             size=(num_nodes, num_nodes),
         )
-        return identity_matrix
+        return identity_matrix.coalesce()
 
     def get_sparse_normalized_degree_matrix(
         self,
@@ -317,7 +315,7 @@ class EdgeIndex:
             values=degree_inv_sqrt,
             size=(num_nodes, num_nodes),
         )
-        return degree_matrix
+        return degree_matrix.coalesce()
 
     def get_sparse_normalized_laplacian(
         self,
