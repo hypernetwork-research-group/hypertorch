@@ -10,11 +10,12 @@ from enum import Enum
 from typing import Any, Dict, List, Optional
 from torch import Tensor
 from torch.utils.data import Dataset as TorchDataset
+
 from hyperbench.nn import EnrichmentMode, NodeFeatureEnricher
 from hyperbench.types import HData, HIFHypergraph
 from hyperbench.utils import validate_hif_json
 
-from .sampling import SamplingStrategy, create_sampler_from_strategy
+from hyperbench.data.sampling import SamplingStrategy, create_sampler_from_strategy
 
 
 class DatasetNames(Enum):
@@ -62,31 +63,29 @@ class HIFConverter:
         zst_filename = os.path.join(current_dir, "datasets", f"{dataset_name}.json.zst")
 
         if not os.path.exists(zst_filename):
-            github_dataset_repo = f"https://github.com/hypernetwork-research-group/datasets/blob/main/{dataset_name}.json.zst?raw=true"
+            github_dataset_repo = f"https://github.com/hypernetwork-research-group/dataxsets/blob/main/{dataset_name}.json.zst?raw=true"
 
             response = requests.get(github_dataset_repo)
             if response.status_code != 200:
-                # raise ValueError(
-                #     f"Failed to download dataset '{dataset_name}' from GitHub. Status code: {response.status_code}"
-                # )
                 print(
-                    f"Failed to download dataset '{dataset_name}' from GitHub (status code: {response.status_code})"
+                    f"GitHub raw download failed for dataset '{dataset_name}' with status code {response.status_code}"
                 )
-                print(
-                    f"Fallback -- Attempting to download dataset '{dataset_name}' from Hugging Face Hub instead..."
-                )
+                print(f"Falling back to Hugging Face Hub download for dataset '{dataset_name}'")
 
-                REPO_ID = "ddevin96/{dataset_name}"
-                FILENAME = "{dataset_name}.json.zst"
+                REPO_ID = f"HypernetworkRG/{dataset_name}"
+                FILENAME = f"{dataset_name}.json.zst"
 
                 with tempfile.NamedTemporaryFile(
                     mode="wb", suffix=".json.zst", delete=False
                 ) as tmp_hf_file:
-                    downloaded_path = hf_hub_download(
-                        repo_id=REPO_ID,
-                        filename=FILENAME,
-                        repo_type="dataset",
-                    )
+                    try:
+                        downloaded_path = hf_hub_download(
+                            repo_id=REPO_ID,
+                            filename=FILENAME,
+                            repo_type="dataset",
+                        )
+                    except Exception as e:
+                        raise ValueError(f"Failed to download dataset '{dataset_name}'")
                     with open(downloaded_path, "rb") as hf_file:
                         hf_content = hf_file.read()
                     tmp_hf_file.write(hf_content)

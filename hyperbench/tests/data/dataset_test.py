@@ -1,5 +1,6 @@
 import pytest
 import requests
+import tempfile
 import torch
 
 from unittest.mock import patch, mock_open, MagicMock
@@ -282,21 +283,79 @@ def test_HIFConverter_download_failure():
 
     with (
         patch("hyperbench.data.dataset.requests.get") as mock_get,
+        patch("hyperbench.data.dataset.hf_hub_download", side_effect=Exception("HFHub failed")),
         patch("hyperbench.data.dataset.os.path.exists", return_value=False),
     ):
         # Mock failed download
         mock_response = mock_get.return_value
         mock_response.status_code = 404
+        mock_response.content = b""
 
         with pytest.raises(
             ValueError,
-            match=r"Failed to download dataset 'algebra' from GitHub\. Status code: 404",
+            match=r"Failed to download dataset 'algebra'",
         ):
             HIFConverter.load_from_hif(dataset_name)
 
-        mock_get.assert_called_once_with(
-            "https://github.com/hypernetwork-research-group/datasets/blob/main/algebra.json.zst?raw=true"
-        )
+
+def test_HIFConverter_falls_back_to_hf_hub_download_when_github_raw_download_fails(
+    tmp_path, mock_sample_hypergraph
+):
+    dataset_name = "ALGEBRA"
+
+    mock_hypergraph = mock_sample_hypergraph
+
+    mock_hif_json = {
+        "network_type": "undirected",
+        "nodes": [{"node": "0"}, {"node": "1"}],
+        "edges": [{"edge": "0"}],
+        "incidences": [{"node": "0", "edge": "0"}],
+    }
+
+    fallback_file = tmp_path / "algebra.json.zst"
+    fallback_file.write_bytes(b"mock_zst_content")
+
+    created_temp_files = []
+    original_named_tempfile = tempfile.NamedTemporaryFile
+
+    def named_tempfile_side_effect(*args, **kwargs):
+        temp_file = original_named_tempfile(*args, **kwargs)
+        created_temp_files.append(temp_file)
+        return temp_file
+
+    with (
+        patch("hyperbench.data.dataset.requests.get") as mock_get,
+        patch(
+            "hyperbench.data.dataset.hf_hub_download",
+            return_value=str(fallback_file),
+        ) as mock_hf_hub_download,
+        patch("hyperbench.data.dataset.os.path.exists", return_value=False),
+        patch(
+            "hyperbench.data.dataset.tempfile.NamedTemporaryFile",
+            side_effect=named_tempfile_side_effect,
+        ),
+        patch("hyperbench.data.dataset.zstd.ZstdDecompressor") as mock_decomp,
+        patch("hyperbench.data.dataset.json.load", return_value=mock_hif_json),
+        patch("hyperbench.data.dataset.validate_hif_json", return_value=True),
+        patch.object(HIFHypergraph, "from_hif", return_value=mock_hypergraph),
+    ):
+        mock_response = mock_get.return_value
+        mock_response.status_code = 404
+        mock_response.content = b""
+
+        def fake_copy_stream(src, dst):
+            dst.write(b'{"network_type":"undirected","nodes":[],"edges":[],"incidences":[]}')
+            return
+
+        mock_decomp.return_value.copy_stream.side_effect = fake_copy_stream
+
+        hypergraph = HIFConverter.load_from_hif(dataset_name, save_on_disk=False)
+        print(hypergraph)
+        assert hypergraph.network_type == "undirected"
+        mock_get.assert_called_once()
+        mock_hf_hub_download.assert_called_once()
+        assert created_temp_files[0].name is not None
+        assert fallback_file.read_bytes() == b"mock_zst_content"
 
 
 def test_HIFConverter_download_raises_when_network_error():

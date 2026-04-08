@@ -1,4 +1,4 @@
-from .dataset import Dataset
+from hyperbench.data.dataset import Dataset
 
 
 class AlgebraDataset(Dataset):
