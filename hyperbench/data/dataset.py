@@ -5,6 +5,7 @@ import torch
 import zstandard as zstd
 import requests
 from huggingface_hub import hf_hub_download
+import warnings
 
 from enum import Enum
 from typing import Any, Dict, List, Optional
@@ -63,14 +64,16 @@ class HIFConverter:
         zst_filename = os.path.join(current_dir, "datasets", f"{dataset_name}.json.zst")
 
         if not os.path.exists(zst_filename):
-            github_dataset_repo = f"https://github.com/hypernetwork-research-group/dataxsets/blob/main/{dataset_name}.json.zst?raw=true"
+            github_dataset_repo = f"https://github.com/hypernetwork-research-group/datasets/blob/main/{dataset_name}.json.zst?raw=true"
 
             response = requests.get(github_dataset_repo)
             if response.status_code != 200:
-                print(
+                warnings.warn(
                     f"GitHub raw download failed for dataset '{dataset_name}' with status code {response.status_code}"
+                    "Falling back to Hugging Face Hub download for dataset",
+                    category=UserWarning,
+                    stacklevel=2,
                 )
-                print(f"Falling back to Hugging Face Hub download for dataset '{dataset_name}'")
 
                 REPO_ID = f"HypernetworkRG/{dataset_name}"
                 FILENAME = f"{dataset_name}.json.zst"
@@ -85,7 +88,9 @@ class HIFConverter:
                             repo_type="dataset",
                         )
                     except Exception as e:
-                        raise ValueError(f"Failed to download dataset '{dataset_name}'")
+                        raise ValueError(
+                            f"Failed to download dataset '{dataset_name}' from GitHub and Hugging Face Hub. Error details: {str(e)}"
+                        )
                     with open(downloaded_path, "rb") as hf_file:
                         hf_content = hf_file.read()
                     tmp_hf_file.write(hf_content)

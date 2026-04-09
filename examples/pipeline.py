@@ -5,7 +5,7 @@ from hyperbench.hlp import CommonNeighborsHlpModule, MLPHlpModule, EncoderConfig
 from hyperbench.nn import LaplacianPositionalEncodingEnricher
 from hyperbench.train import MultiModelTrainer, RandomNegativeSampler
 from hyperbench.types import HData, ModelConfig
-from hyperbench.data import AlgebraDataset, CoraDataset, DataLoader, SamplingStrategy
+from hyperbench.data import AlgebraDataset, DataLoader, SamplingStrategy
 
 
 if __name__ == "__main__":
@@ -21,7 +21,7 @@ if __name__ == "__main__":
 
     print("Loading and preparing dataset...")
 
-    dataset = CoraDataset(sampling_strategy=sampling_strategy, prepare=True)
+    dataset = AlgebraDataset(sampling_strategy=sampling_strategy, prepare=True)
     dataset.enrich_node_features(
         enricher=LaplacianPositionalEncodingEnricher(num_features=32),
         enrichment_mode="replace",
