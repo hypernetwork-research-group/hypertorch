@@ -232,12 +232,10 @@ class MarkdownTableLogger(Logger):
         if train_results or val_results:
             if train_results:
                 train_table = self.__build_comparison_table(train_results, precision)
-                if train_table:
-                    sections.append(f"## Train Results\n\n{train_table}")
+                sections.append(f"## Train Results\n\n{train_table}")
             if val_results:
                 val_table = self.__build_comparison_table(val_results, precision)
-                if val_table:
-                    sections.append(f"## Val Results\n\n{val_table}")
+                sections.append(f"## Val Results\n\n{val_table}")
 
         content = "\n\n".join(sections) + "\n" if sections else ""
 

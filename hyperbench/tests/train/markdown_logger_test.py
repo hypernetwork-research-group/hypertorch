@@ -1,6 +1,7 @@
 from pathlib import Path
 from unittest.mock import patch
 from griffe import logger
+import pytest
 
 import hyperbench
 from hyperbench import train
@@ -181,23 +182,6 @@ def test_save_comparison_tables_no_train_results(tmp_path):
     assert "## Val Results" in content
 
 
-def test_save_comparison_tables_no_train_results(tmp_path):
-    logger = MarkdownTableLogger(
-        save_dir=str(tmp_path),
-        model_name="model_a",
-        experiment_name="exp_save_no_train",
-        precision=3,
-    )
-
-    # logger.log_metrics({"test_auc": 0.254})
-    logger.finalize("success")
-
-    content = (tmp_path / "comparison" / "results.md").read_text()
-    assert "## Test Results" in content
-    assert "## Train Results" not in content
-    assert "## Val Results" not in content
-
-
 def test_build_comparison_table_correct_trail():
     logger = MarkdownTableLogger(
         save_dir="dummy_dir",
@@ -233,3 +217,95 @@ def test_build_comparison_table_correct_trail():
     )
 
     assert table == expected_table
+
+
+@pytest.mark.parametrize(
+    "metrics, expect_train, expect_val",
+    [
+        ({"test_auc": 0.91}, None, None),  # neither train nor val
+        ({"test_auc": 0.91, "train_loss": 0.25}, True, None),  # train only
+        ({"test_auc": 0.91, "val_f1": 0.88}, None, True),  # val only
+        ({"test_auc": 0.91, "train_loss": 0.25, "val_f1": 0.88}, True, True),  # both
+    ],
+)
+def test_finalize_train_val_section_branches(tmp_path, metrics, expect_train, expect_val):
+    experiment_name = f"exp_branch_{expect_train}_{expect_val}"
+    logger = MarkdownTableLogger(
+        save_dir=str(tmp_path),
+        model_name="model_a",
+        experiment_name=experiment_name,
+        precision=3,
+    )
+
+    logger.log_metrics(metrics)
+    logger.finalize("success")
+
+    content = (tmp_path / "comparison" / "results.md").read_text()
+
+    assert "## Test Results" in content
+
+    if expect_train:
+        assert "## Train Results" in content
+    else:
+        assert "## Train Results" not in content
+
+    if expect_val:
+        assert "## Val Results" in content
+    else:
+        assert "## Val Results" not in content
+
+
+def test_finalize_no_relevant_metrics_writes_no_file(tmp_path):
+    experiment_name = "exp_no_sections"
+    logger = MarkdownTableLogger(
+        save_dir=str(tmp_path),
+        model_name="model_a",
+        experiment_name=experiment_name,
+        precision=3,
+    )
+
+    logger.log_metrics({"epoch": 1})  # ignored by split logic
+    logger.finalize("success")
+
+    assert not (tmp_path / "comparison" / "results.md").exists()
+
+
+def test_finalize_writes_train_and_val_sections_and_file(tmp_path):
+    experiment_name = "exp_cover_train_val_write"
+    logger = MarkdownTableLogger(
+        save_dir=str(tmp_path),
+        model_name="model_a",
+        experiment_name=experiment_name,
+        precision=3,
+    )
+
+    logger.log_metrics({"test_auc": 0.91, "train_loss": 0.25, "val_f1": 0.88})
+    logger.finalize("success")
+
+    result_path = tmp_path / "comparison" / "results.md"
+    assert result_path.exists()
+
+    content = result_path.read_text()
+    assert "## Test Results" in content
+    assert "## Train Results" in content
+    assert "## Val Results" in content
+
+
+def test_finalize_writes_val_section_when_train_missing(tmp_path):
+    experiment_name = "exp_cover_val_only_branch"
+    logger = MarkdownTableLogger(
+        save_dir=str(tmp_path),
+        model_name="model_a",
+        experiment_name=experiment_name,
+        precision=3,
+    )
+
+    logger.log_metrics({"test_auc": 0.91, "val_f1": 0.88})
+    logger.finalize("success")
+
+    result_path = tmp_path / "comparison" / "results.md"
+    assert result_path.exists()
+
+    content = result_path.read_text()
+    assert "## Train Results" not in content
+    assert "## Val Results" in content
