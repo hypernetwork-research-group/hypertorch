@@ -150,6 +150,7 @@ class LaTexTableLogger(Logger):
         self,
         results: Mapping[str, Mapping[str, float]],
         precision: int = 4,
+        title: str | None = None,
     ) -> str:
         if not results:
             return ""
@@ -172,7 +173,9 @@ class LaTexTableLogger(Logger):
             {metric for model_metrics in results.values() for metric in model_metrics}
         )
 
+        num_cols = 1 + len(all_metrics)
         col_spec = "l" + "c" * len(all_metrics)
+
         header_cells = "Model"
         if all_metrics:
             header_cells += " & " + " & ".join(esc(metric) for metric in all_metrics)
@@ -190,15 +193,22 @@ class LaTexTableLogger(Logger):
                     cells.append("-")
             rows.append(" & ".join(cells) + r" \\")
 
-        lines = [
-            rf"\begin{{tabular}}{{{col_spec}}}",
-            r"\hline",
-            header_line,
-            r"\hline",
-            *rows,
-            r"\hline",
-            r"\end{tabular}",
-        ]
+        lines = [rf"\begin{{tabular}}{{{col_spec}}}", r"\hline"]
+
+        if title:
+            title_line = rf"\multicolumn{{{num_cols}}}{{c}}{{\textbf{{{esc(title)}}}}} \\"
+            lines.extend([title_line, r"\hline"])
+
+        lines.extend(
+            [
+                header_line,
+                r"\hline",
+                *rows,
+                r"\hline",
+                r"\end{tabular}",
+            ]
+        )
+
         return "\n".join(lines)
 
     def __save_comparison_tables(
@@ -210,28 +220,87 @@ class LaTexTableLogger(Logger):
         filename: str = "results.tex",
         precision: int = 4,
     ) -> Path:
-        sections = []
+        def esc(value: str) -> str:
+            return (
+                value.replace("\\", "\\textbackslash{}")
+                .replace("&", "\\&")
+                .replace("%", "\\%")
+                .replace("$", "\\$")
+                .replace("#", "\\#")
+                .replace("_", "\\_")
+                .replace("{", "\\{")
+                .replace("}", "\\}")
+                .replace("~", "\\textasciitilde{}")
+                .replace("^", "\\textasciicircum{}")
+            )
 
-        test_table = self.__build_comparison_table(test_results, precision)
-        if test_table:
-            sections.append("\\section*{Test Results}\n" + test_table)
+        def section_lines(
+            title: str,
+            results: Mapping[str, Mapping[str, float]],
+            total_cols: int,
+        ) -> list[str]:
+            if not results:
+                return []
 
-        if train_results or val_results:
-            if train_results:
-                train_table = self.__build_comparison_table(train_results, precision)
-                if train_table:
-                    sections.append("\\section*{Train Results}\n" + train_table)
-            if val_results:
-                val_table = self.__build_comparison_table(val_results, precision)
-                if val_table:
-                    sections.append("\\section*{Val Results}\n" + val_table)
+            metrics = sorted({m for mm in results.values() for m in mm})
+            # Header
+            header_cells = ["Model", *[esc(m) for m in metrics]]
+            while len(header_cells) < total_cols:
+                header_cells.append("")
+            lines = [
+                rf"\multicolumn{{{total_cols}}}{{c}}{{\textbf{{{esc(title)}}}}} \\",
+                " & ".join(header_cells) + r" \\",
+            ]
 
-        content = "\n\n".join(sections) + "\n" if sections else ""
+            # Rows
+            for model_name in sorted(results):
+                model_metrics = results[model_name]
+                row = [esc(model_name)]
+                for metric in metrics:
+                    value = model_metrics.get(metric)
+                    row.append(f"{value:.{precision}f}" if isinstance(value, (int, float)) else "-")
+                while len(row) < total_cols:
+                    row.append("")
+                lines.append(" & ".join(row) + r" \\")
+
+            # Required: each section ends with \midrule
+            lines.append(r"\midrule")
+            return lines
+
+        sections_data: list[tuple[str, Mapping[str, Mapping[str, float]]]] = []
+        if test_results:
+            sections_data.append(("Test Results", test_results))
+        if train_results:
+            sections_data.append(("Train Results", train_results))
+        if val_results:
+            sections_data.append(("Val Results", val_results))
+
+        if not sections_data:
+            content = ""
+        else:
+            # One tabular must have fixed column count; use max needed across sections.
+            max_metrics = max(len({m for mm in rs.values() for m in mm}) for _, rs in sections_data)
+            total_cols = 1 + max_metrics
+            col_spec = "l" + "c" * (total_cols - 1)
+
+            lines: list[str] = [rf"\begin{{tabular}}{{{col_spec}}}", r"\toprule"]
+
+            for title, results in sections_data:
+                lines.extend(section_lines(title, results, total_cols))
+
+            # Replace last section-ending \midrule with \bottomrule
+            if lines[-1] == r"\midrule":
+                lines[-1] = r"\bottomrule"
+            else:
+                lines.append(r"\bottomrule")
+
+            lines.append(r"\end{tabular}")
+            content = "\n".join(lines) + "\n"
 
         save_path = Path(save_dir)
         save_path.mkdir(parents=True, exist_ok=True)
 
         file_path = save_path / filename
+        content = "% Requires: \\usepackage{booktabs}\n" + content
         file_path.write_text(content)
-
         return file_path

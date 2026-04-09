@@ -131,7 +131,7 @@ if __name__ == "__main__":
 
     with MultiModelTrainer(
         model_configs=configs,
-        max_epochs=200,
+        max_epochs=20,
         accelerator="mps",
         log_every_n_steps=10,
         callbacks=[early_stopping],
