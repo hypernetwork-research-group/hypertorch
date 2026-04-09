@@ -9,11 +9,11 @@ from hyperbench.train import negative_sampler
 from hyperbench.train.markdown_logger import MarkdownTableLogger
 
 
-def test_markdown_table_logger_basic_functions():
+def test_markdown_table_logger_basic_functions(tmp_path):
     experiment_name = "exp1"
 
     logger = MarkdownTableLogger(
-        save_dir="dummy_dir",
+        save_dir=str(tmp_path),
         model_name="model_a",
         experiment_name=experiment_name,
         precision=2,
@@ -22,15 +22,15 @@ def test_markdown_table_logger_basic_functions():
 
     assert logger.name == "MarkdownTableLogger"
     assert logger.version == "model_a"
-    assert logger.save_dir == "dummy_dir"
+    assert logger.save_dir == str(tmp_path)
     assert logger.experiment_name == experiment_name
 
 
-def test_log_hyperparams_is_noop():
+def test_log_hyperparams_is_noop(tmp_path):
     experiment_name = "exp_hparams"
 
     logger = MarkdownTableLogger(
-        save_dir="dummy_dir",
+        save_dir=str(tmp_path),
         model_name="model_a",
         experiment_name=experiment_name,
     )
@@ -39,9 +39,9 @@ def test_log_hyperparams_is_noop():
     assert logger.log_hyperparams({"lr": 0.001}) is None
 
 
-def test_markdown_table_logger_log_metrics_accumulates_metrics():
+def test_markdown_table_logger_log_metrics_accumulates_metrics(tmp_path):
     logger = MarkdownTableLogger(
-        save_dir="dummy_dir",
+        save_dir=str(tmp_path),
         model_name="model_a",
         experiment_name="exp2",
     )
@@ -97,11 +97,11 @@ def test_markdown_table_logger_finalize_calls_save_comparison_tables(tmp_path):
     }
 
 
-def test_markdown_table_logger_finalize_does_not_save_when_no_results():
+def test_markdown_table_logger_finalize_does_not_save_when_no_results(tmp_path):
     experiment_name = "exp3"
 
     logger = MarkdownTableLogger(
-        save_dir="dummy_dir",
+        save_dir=str(tmp_path),
         model_name="model_a",
         experiment_name=experiment_name,
     )
@@ -115,9 +115,9 @@ def test_markdown_table_logger_finalize_does_not_save_when_no_results():
     mock_save.assert_not_called()
 
 
-def test_markdown_table_logger_only_val_metrics():
+def test_markdown_table_logger_only_val_metrics(tmp_path):
     logger = MarkdownTableLogger(
-        save_dir="dummy_dir",
+        save_dir=str(tmp_path),
         model_name="model_a",
         experiment_name="exp_val_only",
     )
@@ -131,9 +131,9 @@ def test_markdown_table_logger_only_val_metrics():
     mock_save.assert_called_once()
 
 
-def test_build_comparison_table_none_result():
+def test_build_comparison_table_none_result(tmp_path):
     logger = MarkdownTableLogger(
-        save_dir="dummy_dir",
+        save_dir=str(tmp_path),
         model_name="model_a",
         experiment_name="exp_table_none",
         precision=4,
@@ -182,9 +182,9 @@ def test_save_comparison_tables_no_train_results(tmp_path):
     assert "## Val Results" in content
 
 
-def test_build_comparison_table_correct_trail():
+def test_build_comparison_table_correct_trail(tmp_path):
     logger = MarkdownTableLogger(
-        save_dir="dummy_dir",
+        save_dir=str(tmp_path),
         model_name="model_a",
         experiment_name="exp_table_trail",
         precision=2,
