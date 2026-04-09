@@ -13,6 +13,7 @@ from lightning.pytorch.loggers import CSVLogger, Logger
 from lightning.pytorch.profilers import Profiler
 from lightning.pytorch.strategies import Strategy
 from hyperbench.data import DataLoader
+from hyperbench.train.markdown_logger import MarkdownTableLogger
 from hyperbench.types import CkptStrategy, ModelConfig, TestResult
 
 
@@ -402,11 +403,18 @@ class MultiModelTrainer:
         if logger is not None:
             return logger
 
+        experiment_name = str(self.__next_experiment_name(self.log_dir))
+
         loggers: List[Logger] = [
             CSVLogger(
                 save_dir=self.log_dir,
                 name=model_config.name,
                 version=f"{MultiModelTrainer.VERSION_NAME_PREFIX}_{model_config.version}",
+            ),
+            MarkdownTableLogger(
+                save_dir=self.log_dir,
+                model_name=model_config.full_model_name(),
+                experiment_name=experiment_name,
             ),
         ]
 

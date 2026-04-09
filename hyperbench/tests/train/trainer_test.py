@@ -1,7 +1,7 @@
 import pytest
 
 from unittest.mock import MagicMock, patch
-from hyperbench.train import MultiModelTrainer
+from hyperbench.train import MultiModelTrainer, MarkdownTableLogger
 from hyperbench.types import ModelConfig
 from hyperbench.tests import new_mock_trainer
 
@@ -416,7 +416,9 @@ def test_init_each_model_gets_distinct_logger(
 )
 @patch("lightning.pytorch.loggers.TensorBoardLogger", create=True)
 @patch("hyperbench.train.trainer.CSVLogger")
+@patch("hyperbench.train.trainer.MarkdownTableLogger")
 def test_init_creates_tensorboard_logger_when_available(
+    mock_md_logger_cls,
     mock_csv_logger_cls,
     mock_tb_logger_cls,
     mock_is_tb_available,
@@ -435,9 +437,10 @@ def test_init_creates_tensorboard_logger_when_available(
     for call_args in mock_trainer_cls.call_args_list:
         logger_arg = call_args.kwargs["logger"]
         assert isinstance(logger_arg, list)
-        assert len(logger_arg) == 2
+        assert len(logger_arg) == 3
         assert logger_arg[0] is mock_csv_logger_cls.return_value
-        assert logger_arg[1] is mock_tb_logger_cls.return_value
+        assert logger_arg[1] is mock_md_logger_cls.return_value
+        assert logger_arg[2] is mock_tb_logger_cls.return_value
 
 
 @patch("hyperbench.train.trainer.L.Trainer")
@@ -446,8 +449,14 @@ def test_init_creates_tensorboard_logger_when_available(
     return_value=False,
 )
 @patch("hyperbench.train.trainer.CSVLogger")
+@patch("hyperbench.train.trainer.MarkdownTableLogger")
 def test_init_does_not_create_tensorboard_logger_when_not_available(
-    mock_csv_logger_cls, mock_is_tb_available, mock_trainer_cls, mock_model_configs, tmp_path
+    mock_md_logger_cls,
+    mock_csv_logger_cls,
+    mock_is_tb_available,
+    mock_trainer_cls,
+    mock_model_configs,
+    tmp_path,
 ):
     MultiModelTrainer(
         mock_model_configs,
@@ -458,8 +467,9 @@ def test_init_does_not_create_tensorboard_logger_when_not_available(
     for call_args in mock_trainer_cls.call_args_list:
         logger_arg = call_args.kwargs["logger"]
         assert isinstance(logger_arg, list)
-        assert len(logger_arg) == 1
+        assert len(logger_arg) == 2
         assert logger_arg[0] is mock_csv_logger_cls.return_value
+        assert logger_arg[1] is mock_md_logger_cls.return_value
 
 
 @patch("hyperbench.train.trainer.L.Trainer")
@@ -769,3 +779,23 @@ def test_finalize_handles_input_interrupts(
         trainer.finalize()
 
     mock_popen.return_value.terminate.assert_called_once()
+
+
+@patch("hyperbench.train.trainer.L.Trainer")
+@patch("hyperbench.train.trainer.CSVLogger")
+def test_init_creates_markdown_table_logger_per_model(
+    mock_trainer_cls, mock_model_configs, tmp_path
+):
+    MultiModelTrainer(
+        mock_model_configs,
+        default_root_dir=str(tmp_path),
+        experiment_name="experiment_0",
+    )
+
+    for call_args in mock_trainer_cls.call_args_list:
+        logger_arg = call_args.kwargs["logger"]
+
+        assert isinstance(logger_arg, list)
+        assert len(logger_arg) == 2  # CSVLogger + MarkdownTableLogger
+
+        assert isinstance(logger_arg[1], MarkdownTableLogger)

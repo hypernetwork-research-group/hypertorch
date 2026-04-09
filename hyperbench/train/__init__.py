@@ -6,6 +6,7 @@ logging.getLogger("lightning.pytorch").setLevel(logging.ERROR)
 from .negative_sampler import NegativeSampler, RandomNegativeSampler
 from .negative_sampling_scheduler import NegativeSamplingSchedule, NegativeSamplingScheduler
 from .trainer import MultiModelTrainer
+from .markdown_logger import MarkdownTableLogger
 
 __all__ = [
     "NegativeSampler",
@@ -13,4 +14,5 @@ __all__ = [
     "NegativeSamplingScheduler",
     "RandomNegativeSampler",
     "MultiModelTrainer",
+    "MarkdownTableLogger",
 ]
