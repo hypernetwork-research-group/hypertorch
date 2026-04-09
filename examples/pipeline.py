@@ -15,7 +15,6 @@ if __name__ == "__main__":
     metrics = MetricCollection(
         {
             "auc": BinaryAUROC(),
-            "ap": BinaryAveragePrecision(),
         }
     )
 
