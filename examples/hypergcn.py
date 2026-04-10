@@ -1,7 +1,7 @@
 from torchmetrics import MetricCollection
 from torchmetrics.classification import BinaryAUROC, BinaryAveragePrecision
 from lightning.pytorch.callbacks import EarlyStopping
-from hyperbench.hlp import CommonNeighborsHlpModule, MLPHlpModule, EncoderConfig
+from hyperbench.hlp import HyperGCNHlpModule, HyperGCNEncoderConfig
 from hyperbench.nn import LaplacianPositionalEncodingEnricher
 from hyperbench.train import MultiModelTrainer, RandomNegativeSampler
 from hyperbench.types import HData, ModelConfig
@@ -15,6 +15,7 @@ if __name__ == "__main__":
     metrics = MetricCollection(
         {
             "auc": BinaryAUROC(),
+            "ap": BinaryAveragePrecision(),
         }
     )
 
@@ -70,54 +71,51 @@ if __name__ == "__main__":
 
     print("Creating dataloaders...")
 
-    train_loader = DataLoader(
+    train_loader_full_hypergraph = DataLoader(
         train_dataset,
-        batch_size=128,  # or 256
+        sample_full_hypergraph=True,
         shuffle=False,
         num_workers=num_workers,
         persistent_workers=True,
     )
-    val_loader = DataLoader(
+    val_loader_full_hypergraph = DataLoader(
         val_dataset,
-        batch_size=val_dataset.stats()["num_hyperedges"],
+        sample_full_hypergraph=True,
         shuffle=False,
         num_workers=num_workers,
         persistent_workers=True,
     )
-    test_loader = DataLoader(
+    test_loader_full_hypergraph = DataLoader(
         test_dataset,
-        batch_size=test_dataset.stats()["num_hyperedges"],
+        sample_full_hypergraph=True,
         shuffle=False,
         num_workers=num_workers,
         persistent_workers=True,
     )
 
-    mean_cn_module = CommonNeighborsHlpModule(
-        train_hyperedge_index=train_hyperedge_index,
-        aggregation="mean",
-        metrics=metrics,
-    )
-
-    mean_mlp_module = MLPHlpModule(
-        encoder_config=EncoderConfig(
+    mean_hypergcn_module = HyperGCNHlpModule(
+        encoder_config=HyperGCNEncoderConfig(
             in_channels=dataset.hdata.x.shape[1],
-            out_channels=32,
-            hidden_channels=64,
-            num_layers=3,
-            drop_rate=0.3,
+            hidden_channels=16,
+            out_channels=16,
+            drop_rate=0.5,
+            fast=False,
         ),
         aggregation="mean",
+        lr=0.01,
+        weight_decay=5e-4,
         metrics=metrics,
     )
 
     configs = [
         ModelConfig(
-            name="common_neighbors",
+            name="hypergcn",
             version="mean",
-            model=mean_cn_module,
-            is_trainable=False,
+            model=mean_hypergcn_module,
+            train_dataloader=train_loader_full_hypergraph,
+            val_dataloader=val_loader_full_hypergraph,
+            test_dataloader=test_loader_full_hypergraph,
         ),
-        ModelConfig(name="mlp", version="mean", model=mean_mlp_module),
     ]
 
     early_stopping = EarlyStopping(
@@ -130,16 +128,20 @@ if __name__ == "__main__":
 
     with MultiModelTrainer(
         model_configs=configs,
-        max_epochs=200,
+        max_epochs=10,
         accelerator="mps",
-        log_every_n_steps=10,
+        log_every_n_steps=1,
         callbacks=[early_stopping],
         enable_checkpointing=False,
         auto_start_tensorboard=True,
         auto_wait=True,
     ) as trainer:
-        trainer.fit_all(train_dataloader=train_loader, val_dataloader=val_loader, verbose=True)
-        results = trainer.test_all(dataloader=test_loader, verbose=True)
+        trainer.fit_all(
+            train_dataloader=train_loader_full_hypergraph,
+            val_dataloader=val_loader_full_hypergraph,
+            verbose=True,
+        )
+        results = trainer.test_all(dataloader=test_loader_full_hypergraph, verbose=True)
 
         print("Training and evaluation completed. Preparing results...")
 
