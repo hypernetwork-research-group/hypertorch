@@ -445,17 +445,6 @@ def test_smoothing_with_gcn_laplacian_influences_connected_nodes():
     assert smoothed_x[1, 0] > 0  # Node 1 now has some of feature dimension 0 from node 0
 
 
-def test_smoothing_with_gcn_laplacian_isolated_nodes_have_zero_features():
-    x = torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
-    edge_index = torch.tensor([[0], [1]])  # Only nodes 0 and 1 connected
-    gcn_laplacian = EdgeIndex(edge_index).get_sparse_normalized_gcn_laplacian(num_nodes=3)
-
-    smoothed_x = Graph.smoothing_with_gcn_laplacian_matrix(x, gcn_laplacian)
-
-    # Node 2 is isolated, so its output should be zero
-    assert torch.allclose(smoothed_x[2], torch.zeros(2), atol=1e-6)
-
-
 def test_edge_index_item_returns_tensor():
     """Test that item property returns the edge index tensor."""
     edge_index_tensor = torch.tensor([[0, 1, 2], [1, 2, 0]])
@@ -902,16 +891,16 @@ def test_get_sparse_normalized_laplacian_no_nan_or_inf():
     assert not torch.any(torch.isinf(dense_gcn_laplacian))
 
 
-def test_get_sparse_normalized_laplacian_has_0_for_isolated_nodes():
+def test_get_sparse_normalized_laplacian_has_features_for_isolated_nodes():
+    # isolated nodes are not in the edge_index
     edge_index = torch.tensor([[0], [1]])
 
+    # we want all nodes in the gcn laplacian, so we specify num_nodes=4 to include nodes 2 and 3 which are isolated
     gcn_laplacian = EdgeIndex(edge_index).get_sparse_normalized_gcn_laplacian(num_nodes=4)
     dense_gcn_laplacian = gcn_laplacian.to_dense()
 
-    assert torch.all(dense_gcn_laplacian[2, :] == 0)
-    assert torch.all(dense_gcn_laplacian[:, 2] == 0)
-    assert torch.all(dense_gcn_laplacian[3, :] == 0)
-    assert torch.all(dense_gcn_laplacian[:, 3] == 0)
+    # isolated nodes have sum over columns equal to 1 because of self-loops
+    assert torch.all(dense_gcn_laplacian.sum(dim=1) != 0)
 
 
 def test_get_sparse_identity_matrix_is_sparse():

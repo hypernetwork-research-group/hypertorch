@@ -250,6 +250,20 @@ def test_collate_when_dataset_no_hyperedge_attr_presence():
     assert batched.hyperedge_attr is None
 
 
+def test_collate_sample_full_hypergraph_returns_cached_hdata(mock_dataset_single_sample):
+    loader = DataLoader(mock_dataset_single_sample, sample_full_hypergraph=True)
+
+    batch = [mock_dataset_single_sample[0]]
+    batched = loader.collate(batch)
+
+    expected_hdata: HData = mock_dataset_single_sample.hdata
+    assert torch.equal(batched.x, expected_hdata.x)
+    assert torch.equal(batched.hyperedge_index, expected_hdata.hyperedge_index)
+    assert torch.equal(
+        utils.to_non_empty_edgeattr(batched.hyperedge_attr), expected_hdata.hyperedge_attr
+    )
+
+
 def test_collate_with_explicit_num_nodes_and_edges():
     # num_nodes and num_hyperedges are derived from unique IDs in hyperedge_index
     x = torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])

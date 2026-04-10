@@ -22,6 +22,9 @@ def mock_model_configs():
         model_config.trainer = None
         model_config.is_trainable = True
         model_config.full_model_name = lambda self=model_config: f"{self.name}:{self.version}"
+        model_config.train_dataloader = None
+        model_config.val_dataloader = None
+        model_config.test_dataloader = None
 
         model_configs.append(model_config)
 
