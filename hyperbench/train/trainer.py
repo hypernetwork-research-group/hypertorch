@@ -245,10 +245,16 @@ class MultiModelTrainer:
                     f"Fit model {config.full_model_name()} [{i + 1}/{len(self.model_configs)} models]"
                 )
 
+            train_dataloaders = (
+                config.train_dataloader if config.train_dataloader is not None else train_dataloader
+            )
+            val_dataloaders = (
+                config.val_dataloader if config.val_dataloader is not None else val_dataloader
+            )
             config.trainer.fit(
                 model=config.model,
-                train_dataloaders=train_dataloader,
-                val_dataloaders=val_dataloader,
+                train_dataloaders=train_dataloaders,
+                val_dataloaders=val_dataloaders,
                 datamodule=datamodule,
                 ckpt_path=ckpt_path,
             )
@@ -275,9 +281,12 @@ class MultiModelTrainer:
                     f"Test model {config.full_model_name()} [{i + 1}/{len(self.model_configs)} models]"
                 )
 
+            test_dataloaders = (
+                config.test_dataloader if config.test_dataloader is not None else dataloader
+            )
             trainer_test_results: List[TestResult] = config.trainer.test(
                 model=config.model,
-                dataloaders=dataloader,
+                dataloaders=test_dataloaders,
                 datamodule=datamodule,
                 ckpt_path=ckpt_path,
                 verbose=verbose_loop,

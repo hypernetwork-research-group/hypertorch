@@ -140,7 +140,11 @@ class EdgeIndex:
         unique_nodes = torch.unique(self.__edge_index)
         return len(unique_nodes)
 
-    def add_selfloops(self, with_duplicate_removal: bool = True) -> "EdgeIndex":
+    def add_selfloops(
+        self,
+        num_nodes: Optional[int] = None,
+        with_duplicate_removal: bool = True,
+    ) -> "EdgeIndex":
         """
         Add self-loops to each node in the edge index.
 
@@ -150,7 +154,20 @@ class EdgeIndex:
             >>> edge_index_with_selfloops = [[0, 1, 2, 0, 1, 2, 3],
             ...                              [1, 0, 3, 0, 1, 2, 3]]
 
+            When ``num_nodes`` is higher than the number of nodes in ``edge_index``,
+            self-loops are added for all nodes from ``0`` to ``num_nodes - 1``,
+            including nodes not present in the original edges:
+
+            >>> edge_index = [[0, 1, 2],
+            ...               [1, 0, 3]]
+            >>> num_nodes = 6
+            >>> edge_index_with_selfloops = [[0, 1, 2, 0, 1, 2, 3, 4, 5],
+            ...                              [1, 0, 3, 0, 1, 2, 3, 4, 5]]
+
         Args:
+            num_nodes: Total number of nodes. When provided, self-loops are added for nodes ``0`` to ``num_nodes - 1``. When ``None``, defaults to ``self.num_nodes``.
+                This parameter is important when ``edge_index`` does not contain all nodes (e.g., some nodes are isolated and have no edges or have been removed),
+                as it ensures that the resulting Laplacian matrix has the correct size and includes all nodes. For instance, for self-loops.
             with_duplicate_removal: Whether to remove duplicate edges after adding self-loops. Defaults to ``True``.
 
         Returns:
@@ -166,7 +183,24 @@ class EdgeIndex:
         src, dest = self.__edge_index[0], self.__edge_index[1]
 
         # Add self-loops: A_hat = A + I (works as we assume node indices are in [0, num_nodes-1])
-        selfloop_indices = torch.arange(self.num_nodes, device=device)
+        # Example: edge_index = [[0, 1, 2],
+        #                        [1, 0, 3]], num_nodes = None
+        #          -> num_selfloop_nodes = 4 (self.num_nodes, as num_nodes is None)
+        #          -> selfloop_indices = [0, 1, 2, 3]
+        #          -> src = [0, 1, 2, 0, 1, 2, 3]
+        #          -> dest = [1, 0, 3, 0, 1, 2, 3]
+        #          -> edge_index_with_selfloops = [[0, 1, 2, 0, 1, 2, 3],
+        #                                          [1, 0, 3, 0, 1, 2, 3]]
+        #
+        # Example with num_nodes=6 (higher than 4 nodes in edge_index):
+        #          -> num_selfloop_nodes = 6
+        #          -> selfloop_indices = [0, 1, 2, 3, 4, 5]
+        #          -> src = [0, 1, 2, 0, 1, 2, 3, 4, 5]
+        #          -> dest = [1, 0, 3, 0, 1, 2, 3, 4, 5]
+        #          -> edge_index_with_selfloops = [[0, 1, 2, 0, 1, 2, 3, 4, 5],
+        #                                          [1, 0, 3, 0, 1, 2, 3, 4, 5]]
+        num_selfloop_nodes = self.num_nodes if num_nodes is None else num_nodes
+        selfloop_indices = torch.arange(num_selfloop_nodes, device=device)
         src = torch.cat([src, selfloop_indices])
         dest = torch.cat([dest, selfloop_indices])
         edge_index_with_selfloops = torch.stack([src, dest], dim=0)
@@ -365,11 +399,13 @@ class EdgeIndex:
             num_nodes: The number of nodes in the graph. If ``None``,
                 it will be inferred from ``self.num_nodes``.
                 Note that the node indices in ``edge_index`` are assumed to be in the range [0, num_nodes-1].
+                This parameter is important when ``edge_index`` does not contain all nodes (e.g., some nodes are isolated and have no edges or have been removed),
+                as it ensures that the resulting Laplacian matrix has the correct size and includes all nodes. For instance, for self-loops.
 
         Returns:
             The sparse symmetrically normalized Laplacian matrix of shape ``(num_nodes, num_nodes)``.
         """
-        self.to_undirected(with_selfloops=True)
+        self.to_undirected(with_selfloops=True, num_nodes=num_nodes)
 
         num_nodes = self.num_nodes if num_nodes is None else num_nodes
 
@@ -406,12 +442,19 @@ class EdgeIndex:
         self.__edge_index = torch.unique(self.__edge_index, dim=1).contiguous()
         return self
 
-    def to_undirected(self, with_selfloops: bool = False) -> "EdgeIndex":
+    def to_undirected(
+        self,
+        with_selfloops: bool = False,
+        num_nodes: Optional[int] = None,
+    ) -> "EdgeIndex":
         """
         Convert the edge index to an undirected edge index by adding reverse edges.
 
         Args:
             with_selfloops: Whether to add self-loops to each node. Defaults to ``False``.
+            num_nodes: Total number of nodes. Propagated to ``add_selfloops`` when ``with_selfloops`` is ``True``.
+                This parameter is useful when ``edge_index`` does not contain all nodes (e.g., some nodes are isolated and have no edges or have been removed),
+                as it ensures that the resulting Laplacian matrix has the correct size and includes all nodes. For instance, for self-loops.
 
         Returns:
             This :class:`EdgeIndex` instance converted to undirected.
@@ -436,7 +479,7 @@ class EdgeIndex:
             # Don't remove duplicate edges when adding self-loops, as we need to remove them
             # even if with_selfloops is False, to ensure that the edge index is clean and doesn't contain duplicate edges.
             # In this way, we don't do the duplicate edge removal twice, which would be redundant and inefficient
-            self.add_selfloops(with_duplicate_removal=False)
+            self.add_selfloops(num_nodes=num_nodes, with_duplicate_removal=False)
 
         self.remove_duplicate_edges()
 
