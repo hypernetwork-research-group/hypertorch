@@ -42,10 +42,11 @@ addopts = [
 ]
 testpaths = ["hyperbench/tests"]
 filterwarnings = [
-    "ignore:Sparse CSR tensor support is in beta state",
-    "ignore:`torch_geometric.distributed` has been deprecated",
     "ignore:.*torch.jit.script.*is not supported in Python 3.14.*",
-    "ignore:Sparse invariant checks are implicitly disabled:UserWarning",
+    "ignore:`torch_geometric.distributed` has been deprecated",
+    "ignore:.*isinstance.*LeafSpec.*is deprecated.*",
+    "ignore:Sparse CSR tensor support is in beta state",
+    "ignore:Sparse invariant checks are implicitly disabled",
 ]
 
 [tool.coverage.run]
