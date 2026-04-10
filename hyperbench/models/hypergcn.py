@@ -64,18 +64,27 @@ class HyperGCN(nn.Module):
         The forward function.
 
         Args:
-            x: Input node feature matrix. Size ``(N, in_channels)``.
-            hyperedge_index: The hyperedge indices of the hypergraph. Size ``(2, E)``.
+            x: Input node feature matrix. Size ``(num_nodes, in_channels)``.
+            hyperedge_index: The hyperedge indices of the hypergraph. Size ``(2, num_hyperedges)``.
 
         Returns:
-            The output node feature matrix. Size ``(N, num_classes)``.
+            The output node feature matrix. Size ``(num_nodes, num_classes)``.
         """
         if not self.fast:
             for layer in self.layers:
                 x = layer(x, hyperedge_index)
             return x
 
-        if self.cached_gcn_laplacian_matrix is None:
+        # If the GCN Laplacian is cached, we need to check if the node feature size has changed
+        # with cached_gcn_laplacian_matrix.size(0) != x.size(0), this can happen, for example, due to:
+        # adding new negative samples or having validation/test sets with different node features
+        should_not_use_cached_gcn_laplacian_matrix = (
+            self.cached_gcn_laplacian_matrix is None  # Not cached yet
+            or self.cached_gcn_laplacian_matrix.size(0)
+            != x.size(0)  # Node feature size has changed
+        )
+
+        if should_not_use_cached_gcn_laplacian_matrix:
             edge_index = HyperedgeIndex(hyperedge_index).reduce_to_edge_index_on_random_direction(
                 x,
                 with_mediators=self.use_mediator,
@@ -83,7 +92,7 @@ class HyperGCN(nn.Module):
 
             self.cached_gcn_laplacian_matrix = EdgeIndex(
                 edge_index
-            ).get_sparse_normalized_gcn_laplacian()
+            ).get_sparse_normalized_gcn_laplacian(num_nodes=x.size(0))
 
         for layer in self.layers:
             x = layer(

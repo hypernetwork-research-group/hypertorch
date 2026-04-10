@@ -4,7 +4,7 @@ from hyperbench.models import MLP, SLP
 from hyperbench.nn import HyperedgeAggregator
 from hyperbench.types import HData
 from torchmetrics import MetricCollection
-from hyperbench.utils import Aggregation, ActivationFn, NormalizationFn, Stage
+from hyperbench.utils import ActivationFn, NormalizationFn, Stage
 
 from .hlp import HlpModule
 
@@ -70,7 +70,7 @@ class MLPHlpModule(HlpModule):
     def __init__(
         self,
         encoder_config: EncoderConfig,
-        aggregation: Literal["mean", "max", "min", "sum"] = Aggregation.MEAN,
+        aggregation: Literal["mean", "max", "min", "sum"] = "mean",
         loss_fn: Optional[nn.Module] = None,
         lr: float = 0.001,
         metrics: Optional[MetricCollection] = None,

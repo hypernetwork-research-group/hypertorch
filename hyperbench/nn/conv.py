@@ -69,7 +69,7 @@ class HyperGCNConv(nn.Module):
 
             normalized_gcn_laplacian_matrix = EdgeIndex(
                 edge_index
-            ).get_sparse_normalized_gcn_laplacian()
+            ).get_sparse_normalized_gcn_laplacian(num_nodes=x.size(0))
 
             x = Graph.smoothing_with_gcn_laplacian_matrix(x, normalized_gcn_laplacian_matrix)
 
