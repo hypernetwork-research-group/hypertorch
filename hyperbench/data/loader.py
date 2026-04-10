@@ -12,11 +12,14 @@ class DataLoader(TorchDataLoader):
         dataset: Dataset,
         batch_size: int = 1,
         shuffle: Optional[bool] = False,
+        sample_full_hypergraph: bool = False,
         **kwargs,
     ) -> None:
+        self.__sample_full_hypergraph = sample_full_hypergraph
+
         super().__init__(
             dataset=dataset,
-            batch_size=batch_size,
+            batch_size=len(dataset) if sample_full_hypergraph else batch_size,
             shuffle=shuffle,
             collate_fn=self.collate,
             **kwargs,
@@ -66,6 +69,9 @@ class DataLoader(TorchDataLoader):
         Returns:
             A single :class:`HData` object containing the collated data.
         """
+        if self.__sample_full_hypergraph:
+            return self.__cached_dataset_hdata.to(batch[0].device)
+
         collated_hyperedge_index = torch.cat([data.hyperedge_index for data in batch], dim=1)
         hyperedge_index_wrapper = HyperedgeIndex(collated_hyperedge_index).remove_duplicate_edges()
 
