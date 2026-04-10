@@ -36,18 +36,9 @@ test:
 	@echo '=== Tests ==='
 	$(UV) run $(PYTEST) --cov=$(PROJECT_NAME) --cov-report=term-missing
 
-# If the first argument is stest...
-ifeq ($(firstword $(MAKECMDGOALS)),stest)
-  # use the rest as arguments for stest...
-  STEST_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
-  # ...and turn them into do-nothing targets
-  $(eval .PHONY: $(STEST_ARGS))
-  $(eval $(STEST_ARGS): ;@true)
-endif
-
 stest:
-	@echo '=== Test for $(filter-out $@,$(MAKECMDGOALS)) ==='
-	$(UV) run $(PYTEST) -s $(PROJECT_NAME)/tests/$(filter-out $@,$(MAKECMDGOALS))
+	@echo '=== Test for $(T) ==='
+	$(UV) run $(PYTEST) -s $(PROJECT_NAME)/tests/$(T)
 
 # If the first argument is run...
 ifeq ($(firstword $(MAKECMDGOALS)),run)
@@ -89,19 +80,19 @@ destroy: clean
 help:
 	@echo "Usage: make [target]"
 	@echo "Targets:"
-	@echo "  all        	    - Clean, setup, lint, typecheck, test"
-	@echo "  build              - Clean and setup"
-	@echo "  setup              - Install dependencies"
-	@echo "  setup-tensorboard  - Install optional TensorBoard dependency"
-	@echo "  format             - Run linter and formatter"
-	@echo "  typecheck          - Run type checker"
-	@echo "  test               - Run all tests"
-	@echo "  stest <test_name>  - Run a single test"
-	@echo "  run <file.py>      - Run a single file"
-	@echo "  check              - Run lint and typecheck"
-	@echo "  docs               - Build and serve documentation"
-	@echo "  docs-build         - Build documentation without serving"
-	@echo "  docs-serve         - Serve built documentation locally at $(MKDOCS_URL)"
-	@echo "  loc                - Count lines of code"
-	@echo "  clean              - Remove build/test artifacts"
-	@echo "  destroy            - Destroy the environment"
+	@echo "  all                  - Clean, setup, lint, typecheck, test"
+	@echo "  build                - Clean and setup"
+	@echo "  setup                - Install dependencies"
+	@echo "  setup-tensorboard    - Install optional TensorBoard dependency"
+	@echo "  format               - Run linter and formatter"
+	@echo "  typecheck            - Run type checker"
+	@echo "  test                 - Run all tests"
+	@echo "  stest T=<test_name>  - Run a single test"
+	@echo "  run <file.py>        - Run a single file"
+	@echo "  check                - Run lint and typecheck"
+	@echo "  docs                 - Build and serve documentation"
+	@echo "  docs-build           - Build documentation without serving"
+	@echo "  docs-serve           - Serve built documentation locally at $(MKDOCS_URL)"
+	@echo "  loc                  - Count lines of code"
+	@echo "  clean                - Remove build/test artifacts"
+	@echo "  destroy              - Destroy the environment"
