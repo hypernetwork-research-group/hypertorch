@@ -99,11 +99,11 @@ class HyperGCNHlpModule(HlpModule):
         Encode node features via HyperGCN, aggregate per hyperedge, and score.
 
         Steps:
-            1. **Encode**: HyperGCN builds a GCN Laplacian from ``hyperedge_index``
+            1. Encode: HyperGCN builds a GCN Laplacian from ``hyperedge_index``
                and applies message passing to produce structure-aware node embeddings.
-            2. **Aggregate**: For each hyperedge, aggregate its member nodes' embeddings
+            2. Aggregate: For each hyperedge, aggregate its member nodes' embeddings
                using the configured pooling method (mean/max/min/sum).
-            3. **Decode**: A linear layer scores each hyperedge embedding.
+            3. Decode: A linear layer scores each hyperedge embedding.
 
         Examples:
             Given 5 nodes with 3 features and 2 hyperedges::

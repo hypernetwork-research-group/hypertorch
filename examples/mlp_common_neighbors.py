@@ -130,7 +130,7 @@ if __name__ == "__main__":
 
     with MultiModelTrainer(
         model_configs=configs,
-        max_epochs=10,
+        max_epochs=200,
         accelerator="mps",
         log_every_n_steps=10,
         callbacks=[early_stopping],
