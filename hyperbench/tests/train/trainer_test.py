@@ -393,8 +393,9 @@ def test_init_passes_custom_logger_to_all_models(mock_trainer_cls, mock_model_co
 
 @patch("hyperbench.train.trainer.L.Trainer")
 @patch("hyperbench.train.trainer.CSVLogger")
+@patch("hyperbench.train.trainer.MarkdownTableLogger")
 def test_init_each_model_gets_distinct_logger(
-    mock_csv_logger_cls, mock_trainer_cls, mock_model_configs, tmp_path
+    mock_md_logger_cls, mock_csv_logger_cls, mock_trainer_cls, mock_model_configs, tmp_path
 ):
     MultiModelTrainer(
         mock_model_configs,
@@ -402,11 +403,17 @@ def test_init_each_model_gets_distinct_logger(
         experiment_name="test_experiment",
     )
 
-    logger_names = [call.kwargs["name"] for call in mock_csv_logger_cls.call_args_list]
+    csv_logger_names = [call.kwargs["name"] for call in mock_csv_logger_cls.call_args_list]
 
-    for i in range(1, len(logger_names)):
-        assert logger_names[i] != logger_names[i - 1]
-        assert logger_names[i] in mock_model_configs[i].name
+    for i in range(1, len(csv_logger_names)):
+        assert csv_logger_names[i] != csv_logger_names[i - 1]
+        assert csv_logger_names[i] in mock_model_configs[i].name
+
+    md_logger_names = [call.kwargs["model_name"] for call in mock_md_logger_cls.call_args_list]
+
+    for i in range(1, len(md_logger_names)):
+        assert md_logger_names[i] != md_logger_names[i - 1]
+        assert md_logger_names[i] == mock_model_configs[i].full_model_name()
 
 
 @patch("hyperbench.train.trainer.L.Trainer")
@@ -782,9 +789,9 @@ def test_finalize_handles_input_interrupts(
 
 
 @patch("hyperbench.train.trainer.L.Trainer")
-@patch("hyperbench.train.trainer.CSVLogger")
-def test_init_creates_markdown_table_logger_per_model(
-    mock_trainer_cls, mock_model_configs, tmp_path
+@patch("hyperbench.train.trainer.MarkdownTableLogger")
+def test_init_always_create_default_markdown_logger_per_model(
+    mock_markdown_logger_cls, mock_trainer_cls, mock_model_configs, tmp_path
 ):
     MultiModelTrainer(
         mock_model_configs,
@@ -792,10 +799,10 @@ def test_init_creates_markdown_table_logger_per_model(
         experiment_name="experiment_0",
     )
 
-    for call_args in mock_trainer_cls.call_args_list:
-        logger_arg = call_args.kwargs["logger"]
+    assert mock_markdown_logger_cls.call_count == len(mock_model_configs)
 
-        assert isinstance(logger_arg, list)
-        assert len(logger_arg) == 2  # CSVLogger + MarkdownTableLogger
+    full_model_names = [config.full_model_name() for config in mock_model_configs]
 
-        assert isinstance(logger_arg[1], MarkdownTableLogger)
+    for call in mock_markdown_logger_cls.call_args_list:
+        assert call.kwargs["model_name"] in full_model_names
+        assert call.kwargs["experiment_name"] == "experiment_0"

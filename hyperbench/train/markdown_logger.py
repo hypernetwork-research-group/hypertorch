@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Any, ClassVar, Dict, Optional, Tuple
+import copy
 
 from lightning.pytorch.loggers import Logger
 
@@ -18,7 +19,7 @@ class MarkdownTableLogger(Logger):
     finalize produces the most complete table.
 
     This means the file is progressively updated as models finish training/testing,
-    so you can open it mid-run to see partial results.
+    so partial results are available while running.
 
     Args:
         save_dir: Base directory where the comparison/ subfolder will be created.
@@ -44,7 +45,7 @@ class MarkdownTableLogger(Logger):
         self.__precision = precision
 
         if experiment_name not in MarkdownTableLogger.__shared_stores:
-            MarkdownTableLogger.__shared_stores[experiment_name] = {}
+            self.__shared_stores[experiment_name] = {}
 
     @property
     def name(self) -> str:
@@ -57,7 +58,7 @@ class MarkdownTableLogger(Logger):
     @property
     def store(self) -> Dict[str, Dict[str, float]]:
         """Access the shared store for the current experiment."""
-        return dict(MarkdownTableLogger.__shared_stores.get(self.__experiment_name, {}))
+        return copy.deepcopy(self.__shared_stores.get(self.__experiment_name, {}))
 
     @property
     def save_dir(self) -> Union[str, Path]:
@@ -73,7 +74,7 @@ class MarkdownTableLogger(Logger):
         Keeps only the latest value for each metric name. For example, if
         "val_auc" is logged at step 10 and step 20, only the step 20 value is kept.
         """
-        store = MarkdownTableLogger.__shared_stores[self.__experiment_name]
+        store = self.__shared_stores[self.__experiment_name]
         if self.__model_name not in store:
             store[self.__model_name] = {}
         store[self.__model_name].update(metrics)
@@ -126,11 +127,11 @@ class MarkdownTableLogger(Logger):
             val_metrics: Dict[str, float] = {}
 
             for metric_name, value in metrics.items():
-                if metric_name.startswith("test_"):
+                if metric_name.startswith("test"):
                     test_metrics[metric_name] = value
-                elif metric_name.startswith("train_"):
+                elif metric_name.startswith("train"):
                     train_metrics[metric_name] = value
-                elif metric_name.startswith("val_"):
+                elif metric_name.startswith("val"):
                     val_metrics[metric_name] = value
 
             if test_metrics:
@@ -153,20 +154,33 @@ class MarkdownTableLogger(Logger):
     ) -> str:
         """Build a markdown comparison table from model results.
 
-        Args:
-            results: Dict mapping model names to metric dicts.
-                Example: {"mlp:mean": {"test_auc": 0.85, "test_loss": 0.32},
-                        "gat:default": {"test_auc": 0.82}}
-            precision: Decimal places for metric values.
+        Example:
+            Input:
 
-        Returns:
-            A markdown table string. Empty string if results is empty.
+            ```python
+            {
+            "mlp:mean": {"test_auc": 0.85, "test_loss": 0.32},
+            "gat:default": {"test_auc": 0.82},
+            }
+            ```
 
-        Example output:
+            Output:
+
+            ```md
             | Model | test_auc | test_loss |
             | --- | --- | --- |
             | gat:default | 0.8200 | - |
             | mlp:mean | 0.8500 | 0.3200 |
+            ```
+
+        Args:
+            results: Mapping of model names to metric dictionaries.
+            precision: Number of decimal places for numeric metric values.
+
+        Returns:
+            Markdown table string. Returns an empty string if ``results`` is empty.
+
+
         """
         if not results:
             return ""

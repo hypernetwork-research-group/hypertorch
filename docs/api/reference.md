@@ -22,10 +22,11 @@ Complete API documentation for all Hyperbench modules.
 
 ### Trainer
 
-::: hyperbench.train.trainer
+::: hyperbench.train
     options:
       show_root_heading: true
       show_source: true
+
 
 ### Negative Sampler
 
