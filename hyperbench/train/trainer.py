@@ -5,7 +5,7 @@ import warnings
 import lightning as L
 
 from pathlib import Path
-from typing import Any, Dict, List, Mapping, Optional
+from typing import Any, Dict, List, Mapping, Optional, TypedDict
 from collections.abc import Iterable
 from lightning.pytorch.accelerators import Accelerator
 from lightning.pytorch.callbacks import Callback
@@ -418,9 +418,10 @@ class MultiModelTrainer:
                 save_dir=self.log_dir,
                 model_name=model_config.full_model_name(),
                 experiment_name=experiment_name,
-                default_settings={
+                options={
                     "table_caption": f"Results for Experiments",
                     "sort_by": "asc",
+                    "border": True,
                 },
             ),
             MarkdownTableLogger(

@@ -1,5 +1,6 @@
 from pathlib import Path
-from typing import Any, ClassVar, Dict, Optional, Tuple
+from typing import Any, ClassVar, Dict, Optional, Tuple, TypedDict
+from typing_extensions import NotRequired
 
 from lightning.pytorch.loggers import Logger
 
@@ -11,10 +12,24 @@ from torch_geometric import metrics
 from hyperbench import train
 
 
+class LaTexTableConfig(TypedDict):
+    """
+    Configuration for the LaTex table logger.
+
+    Args:
+        table_caption: Caption for the LaTex table.
+        sort_by: Sorting criterion for the table rows.
+        border: Whether to include borders in the LaTex table.
+    """
+
+    table_caption: NotRequired[str]
+    sort_by: NotRequired[str]
+    border: NotRequired[bool]
+
+
 class LaTexTableLogger(Logger):
     # TODO
     # - settings has to be configurable in Trainer
-    # - option color/border
     # - best results in tests
     # - scala colori
 
@@ -44,18 +59,19 @@ class LaTexTableLogger(Logger):
         model_name: str,
         experiment_name: str,
         precision: int = 4,
-        default_settings: dict[str, Any] | None = None,
+        options: LaTexTableConfig | None = None,
     ) -> None:
         super().__init__()
         self.__save_dir = save_dir
         self.__model_name = model_name
         self.__experiment_name = experiment_name
         self.__precision = precision
-        self.__default_settings = default_settings or {
-            "table_caption": None,
+        d: LaTexTableConfig = {
+            "table_caption": f"Results for Experiments",
             "sort_by": "asc",
+            "border": True,
         }
-
+        self.__options = options if options is not None else d
         if experiment_name not in LaTexTableLogger.__shared_stores:
             LaTexTableLogger.__shared_stores[experiment_name] = {}
 
@@ -113,8 +129,9 @@ class LaTexTableLogger(Logger):
             train_results=train_results if train_results else None,
             val_results=val_results if val_results else None,
             precision=self.__precision,
-            table_caption=self.__default_settings.get("table_caption"),
-            sort_by=self.__default_settings.get("sort_by"),
+            table_caption=self.__options.get("table_caption", "Results for Experiments"),
+            sort_by=self.__options.get("sort_by", "asc"),
+            border=self.__options.get("border", True),
         )
         self.__save_comparison_tables(
             test_results=test_results,
@@ -123,8 +140,9 @@ class LaTexTableLogger(Logger):
             val_results=None,
             precision=self.__precision,
             filename=f"test.tex",
-            table_caption=self.__default_settings.get("table_caption"),
-            sort_by=self.__default_settings.get("sort_by"),
+            table_caption=self.__options.get("table_caption", "Results for Experiments"),
+            sort_by=self.__options.get("sort_by", "asc"),
+            border=self.__options.get("border", True),
         )
 
     def __split_results(
@@ -246,6 +264,7 @@ class LaTexTableLogger(Logger):
         precision: int = 4,
         table_caption: str | None = None,
         sort_by: str | None = "asc",
+        border: bool = True,
     ) -> Path:
         def esc(value: str) -> str:
             return (
@@ -360,7 +379,7 @@ class LaTexTableLogger(Logger):
                     row.append("")
                 lines.append(" & ".join(row) + r" \\")
 
-            lines.append(r"\midrule")
+            lines.append(r"\hline" if border else r"\midrule")
             return lines
 
         sections_data: list[tuple[str, Mapping[str, Mapping[str, float]]]] = []
@@ -377,18 +396,26 @@ class LaTexTableLogger(Logger):
             # One tabular must have fixed column count; use max needed across sections.
             max_metrics = max(len({m for mm in rs.values() for m in mm}) for _, rs in sections_data)
             total_cols = 1 + max_metrics
-            col_spec = "l" + "c" * (total_cols - 1)
+            if border:
+                col_spec = "|" + "|".join(["l", *(["c"] * (total_cols - 1))]) + "|"
+            else:
+                col_spec = "l" + "c" * (total_cols - 1)
 
-            lines: list[str] = [rf"\begin{{tabular}}{{{col_spec}}}", r"\toprule"]
+            lines: list[str] = [
+                rf"\begin{{tabular}}{{{col_spec}}}",
+                r"\hline" if border else r"\toprule",
+            ]
 
             for title, results in sections_data:
                 lines.extend(section_lines(title, results, total_cols))
 
             # Replace last section-ending \midrule with \bottomrule
-            if lines[-1] == r"\midrule":
-                lines[-1] = r"\bottomrule"
+            last_rule = r"\hline" if border else r"\midrule"
+            final_rule = r"\hline" if border else r"\bottomrule"
+            if lines[-1] == last_rule:
+                lines[-1] = final_rule
             else:
-                lines.append(r"\bottomrule")
+                lines.append(final_rule)
 
             lines.append(r"\end{tabular}")
             table_lines: list[str] = [r"\begin{table}[htbp]", r"\centering"]
