@@ -44,7 +44,7 @@ class MarkdownTableLogger(Logger):
         self.__experiment_name = experiment_name
         self.__precision = precision
 
-        if experiment_name not in MarkdownTableLogger.__shared_stores:
+        if experiment_name not in self.__shared_stores:
             self.__shared_stores[experiment_name] = {}
 
     @property
@@ -111,9 +111,9 @@ class MarkdownTableLogger(Logger):
         """Split all accumulated metrics into test vs train/val groups.
 
         Metrics are classified by their name prefix:
-        - "test_*"  --> test_results
-        - "train_*" --> train_results
-        - "val_*" --> val_results
+        - "test*"  --> test_results
+        - "train*" --> train_results
+        - "val*" --> val_results
         - anything else (e.g., "epoch") --> ignored
         """
         store = self.__shared_stores.get(self.__experiment_name, {})
