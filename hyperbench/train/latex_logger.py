@@ -6,10 +6,18 @@ from lightning.pytorch.loggers import Logger
 from pathlib import Path
 from typing import Mapping, Union
 
+from torch_geometric import metrics
+
 from hyperbench import train
 
 
 class LaTexTableLogger(Logger):
+    # TODO
+    # - settings has to be configurable in Trainer
+    # - option color/border
+    # - best results in tests
+    # - scala colori
+
     """A Lightning Logger that accumulates metrics and writes a LaTex comparison table.
 
     Multiple instances (one per model) share a class-level store keyed by experiment_name.
@@ -36,12 +44,17 @@ class LaTexTableLogger(Logger):
         model_name: str,
         experiment_name: str,
         precision: int = 4,
+        default_settings: dict[str, Any] | None = None,
     ) -> None:
         super().__init__()
         self.__save_dir = save_dir
         self.__model_name = model_name
         self.__experiment_name = experiment_name
         self.__precision = precision
+        self.__default_settings = default_settings or {
+            "table_caption": None,
+            "sort_by": "asc",
+        }
 
         if experiment_name not in LaTexTableLogger.__shared_stores:
             LaTexTableLogger.__shared_stores[experiment_name] = {}
@@ -100,6 +113,18 @@ class LaTexTableLogger(Logger):
             train_results=train_results if train_results else None,
             val_results=val_results if val_results else None,
             precision=self.__precision,
+            table_caption=self.__default_settings.get("table_caption"),
+            sort_by=self.__default_settings.get("sort_by"),
+        )
+        self.__save_comparison_tables(
+            test_results=test_results,
+            save_dir=comparison_dir,
+            train_results=None,
+            val_results=None,
+            precision=self.__precision,
+            filename=f"test.tex",
+            table_caption=self.__default_settings.get("table_caption"),
+            sort_by=self.__default_settings.get("sort_by"),
         )
 
     def __split_results(
@@ -217,8 +242,10 @@ class LaTexTableLogger(Logger):
         save_dir: Union[str, Path],
         train_results: Mapping[str, Mapping[str, float]] | None = None,
         val_results: Mapping[str, Mapping[str, float]] | None = None,
-        filename: str = "results.tex",
+        filename: str = "overall.tex",
         precision: int = 4,
+        table_caption: str | None = None,
+        sort_by: str | None = "asc",
     ) -> Path:
         def esc(value: str) -> str:
             return (
@@ -242,28 +269,97 @@ class LaTexTableLogger(Logger):
             if not results:
                 return []
 
+            normalized_sort = sort_by.lower() if sort_by is not None else None
+
+            if normalized_sort not in (None, "asc", "des"):
+                raise ValueError(f"Invalid sort_by value: {sort_by}. Use 'asc', 'des', or None.")
+            if normalized_sort is None:
+                normalized_sort = "asc"
+
             metrics = sorted({m for mm in results.values() for m in mm})
-            # Header
+
+            # Rank map per metric so coloring is column-wise and independent
+            # from raw metric scale.
+            metric_rank: dict[str, dict[float, float]] = {}
+
+            for metric in metrics:
+                vals = [
+                    float(v)
+                    for model_metrics in results.values()
+                    for k, v in model_metrics.items()
+                    if k == metric and isinstance(v, (int, float))
+                ]
+                if vals:
+                    unique_vals = sorted(set(vals))
+                    if len(unique_vals) == 1:
+                        metric_rank[metric] = {unique_vals[0]: 0.5}
+                    else:
+                        denom = len(unique_vals) - 1
+                        metric_rank[metric] = {
+                            value: idx / denom for idx, value in enumerate(unique_vals)
+                        }
+
+            def colorize_value(metric: str, value: float, text: str) -> str:
+                rank_map = metric_rank.get(metric)
+                if rank_map is None:
+                    return text
+
+                t = rank_map.get(value, 0.5)
+                if normalized_sort == "asc":
+                    # Lower value is better: low rank => green, high rank => red.
+                    green = int(round((1.0 - t) * 100))
+                    red = int(round(t * 100))
+                else:
+                    # Higher value is better: high rank => green, low rank => red.
+                    green = int(round(t * 100))
+                    red = int(round((1.0 - t) * 100))
+
+                # Use explicit RGB to avoid backend-dependent color mixing quirks.
+                red_rgb = red / 100.0
+                green_rgb = green / 100.0
+                return rf"\cellcolor[rgb]{{{red_rgb:.3f},{green_rgb:.3f},0.000}}{text}"
+
+            best_by_metric: dict[str, float] = {}
+
+            for metric in metrics:
+                vals = [
+                    v
+                    for model_metrics in results.values()
+                    for k, v in model_metrics.items()
+                    if k == metric and isinstance(v, (int, float))
+                ]
+                if vals:
+                    best_by_metric[metric] = min(vals) if normalized_sort == "asc" else max(vals)
+
             header_cells = ["Model", *[esc(m) for m in metrics]]
             while len(header_cells) < total_cols:
                 header_cells.append("")
+
             lines = [
                 rf"\multicolumn{{{total_cols}}}{{c}}{{\textbf{{{esc(title)}}}}} \\",
                 " & ".join(header_cells) + r" \\",
             ]
 
-            # Rows
             for model_name in sorted(results):
                 model_metrics = results[model_name]
                 row = [esc(model_name)]
+
                 for metric in metrics:
                     value = model_metrics.get(metric)
-                    row.append(f"{value:.{precision}f}" if isinstance(value, (int, float)) else "-")
+                    if isinstance(value, (int, float)):
+                        formatted = f"{value:.{precision}f}"
+                        best = best_by_metric.get(metric)
+                        if best is not None and value == best:
+                            formatted = rf"\underline{{{formatted}}}"
+
+                        row.append(colorize_value(metric, float(value), formatted))
+                    else:
+                        row.append("-")
+
                 while len(row) < total_cols:
                     row.append("")
                 lines.append(" & ".join(row) + r" \\")
 
-            # Required: each section ends with \midrule
             lines.append(r"\midrule")
             return lines
 
@@ -295,12 +391,23 @@ class LaTexTableLogger(Logger):
                 lines.append(r"\bottomrule")
 
             lines.append(r"\end{tabular}")
-            content = "\n".join(lines) + "\n"
+            table_lines: list[str] = [r"\begin{table}[htbp]", r"\centering"]
+
+            if table_caption:
+                table_lines.append(rf"\caption{{{esc(table_caption)}}}")
+
+            table_lines.extend(lines)
+            table_lines.append(r"\end{table}")
+
+            content = "\n".join(table_lines) + "\n"
 
         save_path = Path(save_dir)
         save_path.mkdir(parents=True, exist_ok=True)
 
         file_path = save_path / filename
-        content = "% Requires: \\usepackage{booktabs}\n" + content
+        content = (
+            "% Requires: \\usepackage{booktabs}\n"
+            "% Requires: \\usepackage[table]{xcolor}\n" + content
+        )
         file_path.write_text(content)
         return file_path

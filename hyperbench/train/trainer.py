@@ -418,6 +418,10 @@ class MultiModelTrainer:
                 save_dir=self.log_dir,
                 model_name=model_config.full_model_name(),
                 experiment_name=experiment_name,
+                default_settings={
+                    "table_caption": f"Results for Experiments",
+                    "sort_by": "asc",
+                },
             ),
             MarkdownTableLogger(
                 save_dir=self.log_dir,

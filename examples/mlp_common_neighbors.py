@@ -99,6 +99,12 @@ if __name__ == "__main__":
         metrics=metrics,
     )
 
+    mean_cn2_module = CommonNeighborsHlpModule(
+        train_hyperedge_index=train_hyperedge_index,
+        aggregation="min",
+        metrics=metrics,
+    )
+
     mean_mlp_module = MLPHlpModule(
         encoder_config={
             "in_channels": dataset.hdata.x.shape[1],
@@ -119,6 +125,12 @@ if __name__ == "__main__":
             is_trainable=False,
         ),
         ModelConfig(name="mlp", version="mean", model=mean_mlp_module),
+        ModelConfig(
+            name="common_neighbors",
+            version="min",
+            model=mean_cn2_module,
+            is_trainable=False,
+        ),
     ]
 
     early_stopping = EarlyStopping(
