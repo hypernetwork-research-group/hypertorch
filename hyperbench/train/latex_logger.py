@@ -18,20 +18,18 @@ class LaTexTableConfig(TypedDict):
 
     Args:
         table_caption: Caption for the LaTex table.
-        sort_by: Sorting criterion for the table rows.
+        sort_by: Per-column sorting criteria ("asc" or "des").
         border: Whether to include borders in the LaTex table.
     """
 
     table_caption: NotRequired[str]
-    sort_by: NotRequired[str]
+    sort_by: NotRequired[list[str]]
     border: NotRequired[bool]
 
 
 class LaTexTableLogger(Logger):
     # TODO
     # - settings has to be configurable in Trainer
-    # - best results in tests
-    # - scala colori
 
     """A Lightning Logger that accumulates metrics and writes a LaTex comparison table.
 
@@ -68,7 +66,7 @@ class LaTexTableLogger(Logger):
         self.__precision = precision
         d: LaTexTableConfig = {
             "table_caption": f"Results for Experiments",
-            "sort_by": "asc",
+            "sort_by": ["asc"],
             "border": True,
         }
         self.__options = options if options is not None else d
@@ -123,15 +121,25 @@ class LaTexTableLogger(Logger):
             return
 
         comparison_dir = Path(self.__save_dir) / "comparison"
+        table_caption_opt = self.__options.get("table_caption")
+        sort_by_opt = self.__options.get("sort_by")
+        border_opt = self.__options.get("border")
+
+        table_caption = (
+            table_caption_opt if isinstance(table_caption_opt, str) else "Results for Experiments"
+        )
+        sort_by = sort_by_opt if isinstance(sort_by_opt, list) and sort_by_opt else ["asc"]
+        border = border_opt if isinstance(border_opt, bool) else True
+
         self.__save_comparison_tables(
             test_results=test_results,
             save_dir=comparison_dir,
             train_results=train_results if train_results else None,
             val_results=val_results if val_results else None,
             precision=self.__precision,
-            table_caption=self.__options.get("table_caption", "Results for Experiments"),
-            sort_by=self.__options.get("sort_by", "asc"),
-            border=self.__options.get("border", True),
+            table_caption=table_caption,
+            sort_by=sort_by,
+            border=border,
         )
         self.__save_comparison_tables(
             test_results=test_results,
@@ -140,9 +148,9 @@ class LaTexTableLogger(Logger):
             val_results=None,
             precision=self.__precision,
             filename=f"test.tex",
-            table_caption=self.__options.get("table_caption", "Results for Experiments"),
-            sort_by=self.__options.get("sort_by", "asc"),
-            border=self.__options.get("border", True),
+            table_caption=table_caption,
+            sort_by=sort_by,
+            border=border,
         )
 
     def __split_results(
@@ -263,7 +271,7 @@ class LaTexTableLogger(Logger):
         filename: str = "overall.tex",
         precision: int = 4,
         table_caption: str | None = None,
-        sort_by: str | None = "asc",
+        sort_by: list[str] | None = None,
         border: bool = True,
     ) -> Path:
         def esc(value: str) -> str:
@@ -288,18 +296,25 @@ class LaTexTableLogger(Logger):
             if not results:
                 return []
 
-            normalized_sort = sort_by.lower() if sort_by is not None else None
-
-            if normalized_sort not in (None, "asc", "des"):
-                raise ValueError(f"Invalid sort_by value: {sort_by}. Use 'asc', 'des', or None.")
-            if normalized_sort is None:
-                normalized_sort = "asc"
-
             metrics = sorted({m for mm in results.values() for m in mm})
+            sort_orders = sort_by if sort_by else ["asc"]
 
-            # Rank map per metric so coloring is column-wise and independent
-            # from raw metric scale.
-            metric_rank: dict[str, dict[float, float]] = {}
+            normalized_orders: list[str] = []
+            for order in sort_orders:
+                normalized = order.lower()
+                if normalized not in ("asc", "des"):
+                    raise ValueError(f"Invalid sort_by value: {order}. Use 'asc' or 'des'.")
+                normalized_orders.append(normalized)
+
+            metric_sort: dict[str, str] = {}
+            for idx, metric in enumerate(metrics):
+                metric_sort[metric] = (
+                    normalized_orders[idx]
+                    if idx < len(normalized_orders)
+                    else normalized_orders[-1]
+                )
+
+            metric_bounds: dict[str, tuple[float, float]] = {}
 
             for metric in metrics:
                 vals = [
@@ -309,34 +324,31 @@ class LaTexTableLogger(Logger):
                     if k == metric and isinstance(v, (int, float))
                 ]
                 if vals:
-                    unique_vals = sorted(set(vals))
-                    if len(unique_vals) == 1:
-                        metric_rank[metric] = {unique_vals[0]: 0.5}
-                    else:
-                        denom = len(unique_vals) - 1
-                        metric_rank[metric] = {
-                            value: idx / denom for idx, value in enumerate(unique_vals)
-                        }
+                    metric_bounds[metric] = (min(vals), max(vals))
 
             def colorize_value(metric: str, value: float, text: str) -> str:
-                rank_map = metric_rank.get(metric)
-                if rank_map is None:
+                bounds = metric_bounds.get(metric)
+                if bounds is None:
                     return text
 
-                t = rank_map.get(value, 0.5)
-                if normalized_sort == "asc":
-                    # Lower value is better: low rank => green, high rank => red.
-                    green = int(round((1.0 - t) * 100))
-                    red = int(round(t * 100))
-                else:
-                    # Higher value is better: high rank => green, low rank => red.
-                    green = int(round(t * 100))
-                    red = int(round((1.0 - t) * 100))
+                v_min, v_max = bounds
 
-                # Use explicit RGB to avoid backend-dependent color mixing quirks.
-                red_rgb = red / 100.0
-                green_rgb = green / 100.0
-                return rf"\cellcolor[rgb]{{{red_rgb:.3f},{green_rgb:.3f},0.000}}{text}"
+                if v_max == v_min:
+                    quality = 1.0
+                else:
+                    t = (value - v_min) / (v_max - v_min)  # 0..1, low->high
+                    quality = (1.0 - t) if metric_sort.get(metric, "asc") == "asc" else t
+
+                red = int(round((1.0 - quality) * 100))
+                green = int(round(quality * 100))
+
+                # Blend toward white to keep the gradient readable but less bright.
+                soften = 0.35
+                red_chan = int(round(((red / 100) * (1.0 - soften) + soften) * 255))
+                green_chan = int(round(((green / 100) * (1.0 - soften) + soften) * 255))
+                blue_chan = int(round(soften * 255))
+
+                return rf"\cellcolor[HTML]{{{red_chan:02X}{green_chan:02X}{blue_chan:02X}}}{text}"
 
             best_by_metric: dict[str, float] = {}
 
@@ -348,14 +360,18 @@ class LaTexTableLogger(Logger):
                     if k == metric and isinstance(v, (int, float))
                 ]
                 if vals:
-                    best_by_metric[metric] = min(vals) if normalized_sort == "asc" else max(vals)
+                    best_by_metric[metric] = (
+                        min(vals) if metric_sort.get(metric, "asc") == "asc" else max(vals)
+                    )
 
             header_cells = ["Model", *[esc(m) for m in metrics]]
             while len(header_cells) < total_cols:
                 header_cells.append("")
 
             lines = [
+                r"\addlinespace[3pt]",
                 rf"\multicolumn{{{total_cols}}}{{c}}{{\textbf{{{esc(title)}}}}} \\",
+                r"\midrule",
                 " & ".join(header_cells) + r" \\",
             ]
 
@@ -397,7 +413,7 @@ class LaTexTableLogger(Logger):
             max_metrics = max(len({m for mm in rs.values() for m in mm}) for _, rs in sections_data)
             total_cols = 1 + max_metrics
             if border:
-                col_spec = "|" + "|".join(["l", *(["c"] * (total_cols - 1))]) + "|"
+                col_spec = "|".join(["l", *(["c"] * (total_cols - 1))])
             else:
                 col_spec = "l" + "c" * (total_cols - 1)
 

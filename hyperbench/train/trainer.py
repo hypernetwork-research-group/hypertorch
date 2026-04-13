@@ -420,7 +420,7 @@ class MultiModelTrainer:
                 experiment_name=experiment_name,
                 options={
                     "table_caption": f"Results for Experiments",
-                    "sort_by": "asc",
+                    "sort_by": ["des", "asc"],
                     "border": True,
                 },
             ),
