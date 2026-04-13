@@ -177,11 +177,11 @@ class LaTexTableLogger(Logger):
             val_metrics: Dict[str, float] = {}
 
             for metric_name, value in metrics.items():
-                if metric_name.startswith("test_"):
+                if metric_name.startswith("test"):
                     test_metrics[metric_name] = value
-                elif metric_name.startswith("train_"):
+                elif metric_name.startswith("train"):
                     train_metrics[metric_name] = value
-                elif metric_name.startswith("val_"):
+                elif metric_name.startswith("val"):
                     val_metrics[metric_name] = value
 
             if test_metrics:
@@ -448,9 +448,10 @@ class LaTexTableLogger(Logger):
         save_path.mkdir(parents=True, exist_ok=True)
 
         file_path = save_path / filename
-        content = (
-            "% Requires: \\usepackage{booktabs}\n"
-            "% Requires: \\usepackage[table]{xcolor}\n" + content
-        )
+        if content != "":
+            content = (
+                "% Requires: \\usepackage{booktabs}\n"
+                "% Requires: \\usepackage[table]{xcolor}\n" + content
+            )
         file_path.write_text(content)
         return file_path

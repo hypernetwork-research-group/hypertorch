@@ -423,8 +423,10 @@ def test_init_each_model_gets_distinct_logger(
 )
 @patch("lightning.pytorch.loggers.TensorBoardLogger", create=True)
 @patch("hyperbench.train.trainer.CSVLogger")
+@patch("hyperbench.train.trainer.LaTexTableLogger")
 @patch("hyperbench.train.trainer.MarkdownTableLogger")
 def test_init_creates_tensorboard_logger_when_available(
+    mock_latex_logger_cls,
     mock_md_logger_cls,
     mock_csv_logger_cls,
     mock_tb_logger_cls,
@@ -446,7 +448,8 @@ def test_init_creates_tensorboard_logger_when_available(
         assert isinstance(logger_arg, list)
         assert len(logger_arg) == 3
         assert logger_arg[0] is mock_csv_logger_cls.return_value
-        assert logger_arg[1] is mock_md_logger_cls.return_value
+        assert logger_arg[1] is mock_latex_logger_cls.return_value
+        assert logger_arg[2] is mock_md_logger_cls.return_value
         assert logger_arg[2] is mock_tb_logger_cls.return_value
 
 
