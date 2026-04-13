@@ -174,3 +174,54 @@ def test_finalize_writes_section_spacing_and_midrule_lines(tmp_path, mock_option
     assert content.count(r"\addlinespace[3pt]") == 2
     assert content.count(r"\multicolumn") == 2
     assert content.count(r"\midrule") >= 2
+
+
+def test_build_comparison_table_returns_empty_for_empty_results(tmp_path, mock_option_configs):
+    logger = LaTexTableLogger(
+        save_dir=str(tmp_path),
+        model_name="model_a",
+        experiment_name="exp_build_empty",
+        options=mock_option_configs,
+    )
+
+    results = {}
+    logger.log_metrics(results)
+    logger.finalize("success")
+
+    assert not (tmp_path / "comparison" / "overall.tex").exists()
+
+
+def test_build_comparison_table_formats_table_and_escapes_values(tmp_path, mock_option_configs):
+    logger_a = LaTexTableLogger(
+        save_dir=str(tmp_path),
+        model_name="model_a",
+        experiment_name="exp_build_full",
+        options=mock_option_configs,
+    )
+    logger_b = LaTexTableLogger(
+        save_dir=str(tmp_path),
+        model_name="model_b",
+        experiment_name="exp_build_full",
+        options=mock_option_configs,
+    )
+
+    results = {
+        "model_a": {"test_auc": 0.91},
+        "model_b": {"test_auc": 0.8, "test_loss": 1.23},
+    }
+
+    logger_a.log_metrics(results["model_a"])
+    logger_b.log_metrics(results["model_b"])
+    logger_a.finalize("success")
+    logger_b.finalize("success")
+
+    table = (tmp_path / "comparison" / "overall.tex").read_text()
+    assert r"\begin{tabular}{l|c|c}" in table
+    assert r"\multicolumn{3}{c}{\textbf{Test Results}} \\" in table
+    assert r"Model & test\_auc & test\_loss \\" in table
+    assert r"model\_a & \cellcolor[HTML]{59FF59}\underline{0.9100} & - \\" in table
+    assert (
+        r"model\_b & \cellcolor[HTML]{FF5959}0.8000 & \cellcolor[HTML]{59FF59}\underline{1.2300} \\"
+        in table
+    )
+    assert r"\end{tabular}" in table

@@ -446,11 +446,11 @@ def test_init_creates_tensorboard_logger_when_available(
     for call_args in mock_trainer_cls.call_args_list:
         logger_arg = call_args.kwargs["logger"]
         assert isinstance(logger_arg, list)
-        assert len(logger_arg) == 3
+        assert len(logger_arg) == 4
         assert logger_arg[0] is mock_csv_logger_cls.return_value
-        assert logger_arg[1] is mock_latex_logger_cls.return_value
-        assert logger_arg[2] is mock_md_logger_cls.return_value
-        assert logger_arg[2] is mock_tb_logger_cls.return_value
+        assert logger_arg[1] is mock_md_logger_cls.return_value
+        assert logger_arg[2] is mock_latex_logger_cls.return_value
+        assert logger_arg[3] is mock_tb_logger_cls.return_value
 
 
 @patch("hyperbench.train.trainer.L.Trainer")
@@ -460,7 +460,9 @@ def test_init_creates_tensorboard_logger_when_available(
 )
 @patch("hyperbench.train.trainer.CSVLogger")
 @patch("hyperbench.train.trainer.MarkdownTableLogger")
+@patch("hyperbench.train.trainer.LaTexTableLogger")
 def test_init_does_not_create_tensorboard_logger_when_not_available(
+    mock_latex_logger_cls,
     mock_md_logger_cls,
     mock_csv_logger_cls,
     mock_is_tb_available,
@@ -477,9 +479,10 @@ def test_init_does_not_create_tensorboard_logger_when_not_available(
     for call_args in mock_trainer_cls.call_args_list:
         logger_arg = call_args.kwargs["logger"]
         assert isinstance(logger_arg, list)
-        assert len(logger_arg) == 2
+        assert len(logger_arg) == 3
         assert logger_arg[0] is mock_csv_logger_cls.return_value
-        assert logger_arg[1] is mock_md_logger_cls.return_value
+        assert logger_arg[1] is mock_latex_logger_cls.return_value
+        assert logger_arg[2] is mock_md_logger_cls.return_value
 
 
 @patch("hyperbench.train.trainer.L.Trainer")
