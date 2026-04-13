@@ -69,7 +69,7 @@ class HIFConverter:
             response = requests.get(github_dataset_repo)
             if response.status_code != 200:
                 warnings.warn(
-                    f"GitHub raw download failed for dataset '{dataset_name}' with status code {response.status_code}"
+                    f"GitHub raw download failed for dataset '{dataset_name}' with status code {response.status_code}\n"
                     "Falling back to Hugging Face Hub download for dataset",
                     category=UserWarning,
                     stacklevel=2,

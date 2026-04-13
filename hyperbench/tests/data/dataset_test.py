@@ -291,11 +291,15 @@ def test_HIFConverter_download_failure():
         mock_response.status_code = 404
         mock_response.content = b""
 
-        with pytest.raises(
-            ValueError,
-            match=r"Failed to download dataset 'algebra'",
+        with pytest.warns(
+            UserWarning,
+            match=r"(?s)GitHub raw download failed for dataset 'algebra' with status code 404.*Falling back to Hugging Face Hub download for dataset",
         ):
-            HIFConverter.load_from_hif(dataset_name)
+            with pytest.raises(
+                ValueError,
+                match=r"Failed to download dataset 'algebra'",
+            ):
+                HIFConverter.load_from_hif(dataset_name)
 
 
 def test_HIFConverter_falls_back_to_hf_hub_download_when_github_raw_download_fails(
@@ -349,8 +353,12 @@ def test_HIFConverter_falls_back_to_hf_hub_download_when_github_raw_download_fai
 
         mock_decomp.return_value.copy_stream.side_effect = fake_copy_stream
 
-        hypergraph = HIFConverter.load_from_hif(dataset_name, save_on_disk=False)
-        print(hypergraph)
+        with pytest.warns(
+            UserWarning,
+            match=r"(?s)GitHub raw download failed for dataset 'algebra' with status code 404.*Falling back to Hugging Face Hub download for dataset",
+        ):
+            hypergraph = HIFConverter.load_from_hif(dataset_name, save_on_disk=False)
+
         assert hypergraph.network_type == "undirected"
         mock_get.assert_called_once()
         mock_hf_hub_download.assert_called_once()

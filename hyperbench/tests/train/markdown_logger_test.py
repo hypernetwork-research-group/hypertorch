@@ -1,5 +1,5 @@
 from pathlib import Path
-from unittest.mock import patch
+from textwrap import dedent
 from griffe import logger
 import pytest
 
@@ -54,49 +54,6 @@ def test_markdown_table_logger_log_metrics_accumulates_metrics(tmp_path):
     assert store == {"model_a": {"test_auc": 0.80, "train_loss": 0.50, "val_loss": 0.40}}
 
 
-def test_markdown_table_logger_finalize_calls_save_comparison_tables(tmp_path):
-    experiment_name = "exp_comp"
-
-    logger_a = MarkdownTableLogger(
-        save_dir=str(tmp_path),
-        model_name="mlp:mean",
-        experiment_name="exp_comp",
-        precision=3,
-    )
-    logger_b = MarkdownTableLogger(
-        save_dir=str(tmp_path),
-        model_name="gat:default",
-        experiment_name="exp_comp",
-        precision=3,
-    )
-
-    logger_a.log_metrics({"test_auc": 0.85, "train_loss": 0.42})
-    logger_b.log_metrics({"test_auc": 0.82, "val_loss": 0.38})
-
-    with patch.object(
-        MarkdownTableLogger,
-        "_MarkdownTableLogger__save_comparison_tables",
-    ) as mock_save:
-        logger_a.finalize("success")
-
-    mock_save.assert_called_once()
-
-    _, kwargs = mock_save.call_args
-    assert kwargs["save_dir"] == Path(str(tmp_path)) / "comparison"
-    assert kwargs["precision"] == 3
-
-    assert kwargs["test_results"] == {
-        "gat:default": {"test_auc": 0.82},
-        "mlp:mean": {"test_auc": 0.85},
-    }
-    assert kwargs["train_results"] == {
-        "mlp:mean": {"train_loss": 0.42},
-    }
-    assert kwargs["val_results"] == {
-        "gat:default": {"val_loss": 0.38},
-    }
-
-
 def test_markdown_table_logger_finalize_does_not_save_when_no_results(tmp_path):
     experiment_name = "exp3"
 
@@ -105,45 +62,9 @@ def test_markdown_table_logger_finalize_does_not_save_when_no_results(tmp_path):
         model_name="model_a",
         experiment_name=experiment_name,
     )
+    logger.finalize("success")
 
-    with patch.object(
-        MarkdownTableLogger,
-        "_MarkdownTableLogger__save_comparison_tables",
-    ) as mock_save:
-        logger.finalize("success")
-
-    mock_save.assert_not_called()
-
-
-def test_markdown_table_logger_only_val_metrics(tmp_path):
-    logger = MarkdownTableLogger(
-        save_dir=str(tmp_path),
-        model_name="model_a",
-        experiment_name="exp_val_only",
-    )
-    logger.log_metrics({"val_f1": 0.88, "epoch": 1})
-    with patch.object(
-        MarkdownTableLogger,
-        "_MarkdownTableLogger__save_comparison_tables",
-    ) as mock_save:
-        logger.finalize("success")
-
-    mock_save.assert_called_once()
-
-
-def test_build_comparison_table_none_result(tmp_path):
-    logger = MarkdownTableLogger(
-        save_dir=str(tmp_path),
-        model_name="model_a",
-        experiment_name="exp_table_none",
-        precision=4,
-    )
-
-    with patch.object(
-        MarkdownTableLogger, "_MarkdownTableLogger__build_comparison_table", return_value=""
-    ) as mock_build:
-        mock_build(results={}, precision=4)
-        mock_build.assert_called_once_with(results={}, precision=4)
+    assert not (tmp_path / "comparison" / "results.md").exists()
 
 
 def test_save_comparison_tables_no_test_results(tmp_path):
@@ -183,39 +104,53 @@ def test_save_comparison_tables_no_train_results(tmp_path):
 
 
 def test_build_comparison_table_correct_trail(tmp_path):
-    logger = MarkdownTableLogger(
+    logger_a = MarkdownTableLogger(
         save_dir=str(tmp_path),
         model_name="model_a",
         experiment_name="exp_table_trail",
         precision=2,
     )
+    logger_b = MarkdownTableLogger(
+        save_dir=str(tmp_path),
+        model_name="model_b",
+        experiment_name="exp_table_trail",
+        precision=2,
+    )
 
     results = {
-        "model_a": {"test_auc": 0.9123, "train_loss": 0.254},
+        "model_a": {"test_auc": 0.9123, "test_loss": 0.123, "train_loss": 0.254},
         "model_b": {"test_auc": 0.8821, "val_f1": 0.88},
     }
 
-    real_build = getattr(
-        logger,
-        "_MarkdownTableLogger__build_comparison_table",
-    )  # type: ignore[attr-defined]
+    logger_a.log_metrics(results["model_a"])
+    logger_b.log_metrics(results["model_b"])
 
-    with patch.object(
-        MarkdownTableLogger,
-        "_MarkdownTableLogger__build_comparison_table",
-        wraps=real_build,
-    ) as mock_build:
-        table = mock_build(results, precision=2)
+    logger_a.finalize("success")
+    logger_b.finalize("success")
+    expected_table = dedent(
+        """
+        ## Test Results
 
-    mock_build.assert_called_once_with(results, precision=2)
+        | Model | test_auc | test_loss |
+        | --- | --- | --- |
+        | model_a | 0.91 | 0.12 |
+        | model_b | 0.88 | - |
 
-    expected_table = (
-        "| Model | test_auc | train_loss | val_f1 |\n"
-        "| --- | --- | --- | --- |\n"
-        "| model_a | 0.91 | 0.25 | - |\n"
-        "| model_b | 0.88 | - | 0.88 |"
-    )
+        ## Train Results
 
+        | Model | train_loss |
+        | --- | --- |
+        | model_a | 0.25 |
+
+        ## Val Results
+
+        | Model | val_f1 |
+        | --- | --- |
+        | model_b | 0.88 |
+        """
+    ).lstrip()
+
+    table = (tmp_path / "comparison" / "results.md").read_text()
     assert table == expected_table
 
 
