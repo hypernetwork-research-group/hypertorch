@@ -88,6 +88,9 @@ class MarkdownTableLogger(Logger):
         Called by Lightning after fit() and after test() for each model. Since models
         train/test sequentially, each finalize() overwrites the file with all data
         accumulated up to that point. The file grows more complete over time.
+
+        Args:
+            status: The stage that just completed, e.g., "fit" or "test".
         """
         test_results, train_results, val_results = self.__split_results()
 
@@ -115,6 +118,11 @@ class MarkdownTableLogger(Logger):
         - "train*" --> train_results
         - "val*" --> val_results
         - anything else (e.g., "epoch") --> ignored
+
+        Returns:
+            Tuple of (test_results, train_results, val_results), where each is a dict
+            mapping model names to their respective metric dicts. Models with no metrics
+            in a category are excluded from that category's dict.
         """
         store = self.__shared_stores.get(self.__experiment_name, {})
         test_results: Dict[str, Dict[str, float]] = {}
@@ -144,7 +152,11 @@ class MarkdownTableLogger(Logger):
         return test_results, train_results, val_results
 
     def clear(self, experiment_name: str) -> None:
-        """Remove accumulated data for an experiment."""
+        """Remove accumulated data for an experiment.
+        Args:
+            experiment_name: The experiment name whose data should be cleared.
+
+        """
         self.__shared_stores.pop(experiment_name, None)
 
     def __build_comparison_table(
