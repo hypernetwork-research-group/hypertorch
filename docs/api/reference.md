@@ -4,14 +4,34 @@ Complete API documentation for all Hyperbench modules.
 
 ## Data Module
 
-::: hyperbench.data.dataset
+::: hyperbench.data
     options:
       show_root_heading: true
       show_source: true
       members_order: source
       show_submodules: true
 
-::: hyperbench.data.loader
+## HLP Module
+
+::: hyperbench.hlp
+    options:
+      show_root_heading: true
+      show_source: true
+      members_order: source
+      show_submodules: true
+
+## Models Module
+
+::: hyperbench.models
+    options:
+      show_root_heading: true
+      show_source: true
+      members_order: source
+      show_submodules: true
+
+## NN Module
+
+::: hyperbench.nn
     options:
       show_root_heading: true
       show_source: true
@@ -20,56 +40,27 @@ Complete API documentation for all Hyperbench modules.
 
 ## Train Module
 
-### Trainer
-
 ::: hyperbench.train
     options:
       show_root_heading: true
       show_source: true
-
-
-### Negative Sampler
-
-::: hyperbench.train.negative_sampler
-    options:
-      show_root_heading: true
-      show_source: true
+      members_order: source
+      show_submodules: true
 
 ## Types Module
 
-### HData
-
-::: hyperbench.types.hdata
+::: hyperbench.types
     options:
       show_root_heading: true
       show_source: true
-
-### Hypergraph
-
-::: hyperbench.types.hypergraph
-    options:
-      show_root_heading: true
-      show_source: true
-
-### Model
-
-::: hyperbench.types.model
-    options:
-      show_root_heading: true
-      show_source: true
+      members_order: source
+      show_submodules: true
 
 ## Utils Module
 
-### Data Utils
-
-::: hyperbench.utils.data_utils
+::: hyperbench.utils
     options:
       show_root_heading: true
       show_source: true
-
-### HIF Utils
-
-::: hyperbench.utils.hif_utils
-    options:
-      show_root_heading: true
-      show_source: true
+      members_order: source
+      show_submodules: true

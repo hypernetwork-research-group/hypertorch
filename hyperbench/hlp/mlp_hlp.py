@@ -61,7 +61,6 @@ class MLPHlpModule(HlpModule):
     Args:
         encoder_config: Configuration for the MLP encoder.
         aggregation: Method to aggregate node embeddings per hyperedge.
-        activation_fn: Activation function class for the MLP encoder. Defaults to ``ReLU``.
         loss_fn: Loss function. Defaults to ``BCEWithLogitsLoss``.
         lr: Learning rate for the optimizer. Defaults to ``0.001``.
         metrics: Optional dictionary of metric functions.
