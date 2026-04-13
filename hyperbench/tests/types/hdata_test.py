@@ -499,10 +499,10 @@ def test_enrich_node_features_replace(mock_hdata):
     enriched_x = torch.randn(5, 3)
     enricher.enrich.return_value = enriched_x
 
-    mock_hdata.enrich_node_features(enricher)
+    result = mock_hdata.enrich_node_features(enricher)
 
     enricher.enrich.assert_called_once_with(mock_hdata.hyperedge_index)
-    assert torch.equal(mock_hdata.x, enriched_x)
+    assert torch.equal(result.x, enriched_x)
 
 
 def test_enrich_node_features_concatenate(mock_hdata):
@@ -512,12 +512,12 @@ def test_enrich_node_features_concatenate(mock_hdata):
     enriched_x = torch.randn(5, 3)
     enricher.enrich.return_value = enriched_x
 
-    mock_hdata.enrich_node_features(enricher, enrichment_mode="concatenate")
+    result = mock_hdata.enrich_node_features(enricher, enrichment_mode="concatenate")
 
     enricher.enrich.assert_called_once_with(mock_hdata.hyperedge_index)
     expected_x = torch.cat([original_x, enriched_x], dim=1)
-    assert torch.equal(mock_hdata.x, expected_x)
-    assert mock_hdata.x.shape == (5, 7)  # 4 original + 3 enriched
+    assert torch.equal(result.x, expected_x)
+    assert result.x.shape == (5, 7)  # 4 original + 3 enriched
 
 
 def test_get_device_if_all_consistent_returns_device_when_all_consistent():
@@ -701,6 +701,180 @@ def test_stats_returns_correct_statistics(mock_hdata_stats):
     stats = mock_hdata_stats.stats()
 
     assert stats == expected_stats
+
+
+@pytest.mark.parametrize(
+    "hyperedge_index, k, expected_hyperedge_index",
+    [
+        pytest.param(
+            torch.tensor([[0, 1, 2], [0, 0, 0]]),
+            4,
+            torch.zeros((2, 0), dtype=torch.long),
+            id="single_hyperedge_below_k_removed",
+        ),
+        pytest.param(
+            torch.tensor([[0, 1, 2], [0, 0, 0]]),
+            3,
+            torch.tensor([[0, 1, 2], [0, 0, 0]]),
+            id="single_hyperedge_at_exact_k_kept",
+        ),
+        pytest.param(
+            torch.tensor([[0, 1, 2, 3, 4], [0, 0, 0, 1, 1]]),
+            3,
+            torch.tensor([[0, 1, 2], [0, 0, 0]]),
+            id="two_hyperedges_first_kept_second_removed",
+        ),
+        pytest.param(
+            torch.tensor([[0, 1, 2, 3, 4], [0, 0, 1, 1, 1]]),
+            3,
+            torch.tensor([[0, 1, 2], [0, 0, 0]]),
+            id="two_hyperedges_second_kept_first_removed",
+        ),
+        pytest.param(
+            torch.tensor([[0, 1, 2, 3, 4, 5], [0, 0, 0, 1, 1, 1]]),
+            3,
+            torch.tensor([[0, 1, 2, 3, 4, 5], [0, 0, 0, 1, 1, 1]]),
+            id="two_hyperedges_both_kept",
+        ),
+        pytest.param(
+            torch.tensor([[0, 1, 2, 3, 4, 5], [0, 0, 1, 1, 2, 2]]),
+            3,
+            torch.zeros((2, 0), dtype=torch.long),
+            id="three_hyperedges_all_removed",
+        ),
+    ],
+)
+def test_remove_hyperedges_with_fewer_than_k_nodes(hyperedge_index, k, expected_hyperedge_index):
+    num_nodes = hyperedge_index[0].max().item() + 1
+    num_hyperedges = hyperedge_index[1].unique().shape[0]
+    x = torch.randn(num_nodes, 4)
+    y = torch.randn(num_hyperedges)
+    hyperedge_attr = torch.randn(num_hyperedges, 2)
+    hdata = HData(x=x, hyperedge_index=hyperedge_index, y=y, hyperedge_attr=hyperedge_attr)
+
+    result = hdata.remove_hyperedges_with_fewer_than_k_nodes(k)
+
+    expected_num_nodes = expected_hyperedge_index[0].unique().shape[0]
+    expected_num_hyperedges = expected_hyperedge_index[1].unique().shape[0]
+
+    assert torch.equal(result.hyperedge_index, expected_hyperedge_index)
+    assert result.x.shape[0] == expected_num_nodes
+    assert result.y.shape[0] == expected_num_hyperedges
+    assert utils.to_non_empty_edgeattr(result.hyperedge_attr).shape[0] == expected_num_hyperedges
+
+
+@pytest.mark.parametrize(
+    "hyperedge_index, k, x, expected_x",
+    [
+        pytest.param(
+            torch.tensor([[0, 1, 2, 3, 4], [0, 0, 1, 1, 1]]),
+            3,
+            torch.tensor([[10.0], [20.0], [30.0], [40.0], [50.0]]),
+            torch.tensor([[30.0], [40.0], [50.0]]),
+            id="disjoint_nodes_first_hyperedge_removed",
+        ),
+        pytest.param(
+            # Hyperedge 0: nodes {0, 2} -> 2 nodes (removed), hyperedge 1: nodes {1, 2, 3} -> 3 nodes (kept)
+            # Node 2 is shared, so it survives because hyperedge 1 is kept
+            # Node 0 is the only node removed as it is only in the removed hyperedge 0
+            torch.tensor([[0, 2, 1, 2, 3], [0, 0, 1, 1, 1]]),
+            3,
+            torch.tensor([[10.0], [20.0], [30.0], [40.0]]),
+            torch.tensor([[20.0], [30.0], [40.0]]),
+            id="shared_node_survives_with_kept_hyperedge",
+        ),
+    ],
+)
+def test_remove_hyperedges_with_fewer_than_k_nodes_subsets_x(hyperedge_index, k, x, expected_x):
+    hdata = HData(x=x, hyperedge_index=hyperedge_index)
+    result = hdata.remove_hyperedges_with_fewer_than_k_nodes(k=k)
+
+    assert torch.equal(result.x, expected_x)
+
+
+@pytest.mark.parametrize(
+    "hyperedge_index, k, y, expected_y",
+    [
+        pytest.param(
+            torch.tensor([[0, 1, 2, 3, 4], [0, 0, 1, 1, 1]]),
+            3,
+            torch.tensor([1.0, 0.0]),
+            torch.tensor([0.0]),
+            id="disjoint_nodes_first_hyperedge_removed",
+        ),
+        pytest.param(
+            # Hyperedge 0: nodes {0, 2} -> 2 nodes (removed). hyperedge 1: nodes {1, 2, 3} -> 3 nodes (kept)
+            # Node 2 is shared, so y for hyperedge 1 must survive
+            torch.tensor([[0, 2, 1, 2, 3], [0, 0, 1, 1, 1]]),
+            3,
+            torch.tensor([1.0, 0.0]),
+            torch.tensor([0.0]),
+            id="shared_node_y_of_kept_hyperedge_survives",
+        ),
+    ],
+)
+def test_remove_hyperedges_with_fewer_than_k_nodes_subsets_y(hyperedge_index, k, y, expected_y):
+    num_nodes = hyperedge_index[0].max().item() + 1
+    x = torch.randn(num_nodes, 2)
+    hdata = HData(x=x, hyperedge_index=hyperedge_index, y=y)
+    result = hdata.remove_hyperedges_with_fewer_than_k_nodes(k=k)
+
+    assert torch.equal(result.y, expected_y)
+
+
+@pytest.mark.parametrize(
+    "hyperedge_index, k, hyperedge_attr, expected_attr",
+    [
+        pytest.param(
+            torch.tensor([[0, 1, 2, 3, 4], [0, 0, 1, 1, 1]]),
+            3,
+            torch.tensor([[1.0, 2.0], [3.0, 4.0]]),
+            torch.tensor([[3.0, 4.0]]),
+            id="disjoint_nodes_first_hyperedge_removed",
+        ),
+        pytest.param(
+            # Hyperedge 0: nodes {0, 2} -> 2 nodes (removed), hyperedge 1: nodes {1, 2, 3} -> 3 nodes (kept)
+            # Node 2 is shared, so attr for hyperedge 1 must survive
+            torch.tensor([[0, 2, 1, 2, 3], [0, 0, 1, 1, 1]]),
+            3,
+            torch.tensor([[1.0, 2.0], [3.0, 4.0]]),
+            torch.tensor([[3.0, 4.0]]),
+            id="shared_node_attr_of_kept_hyperedge_survives",
+        ),
+    ],
+)
+def test_remove_hyperedges_with_fewer_than_k_nodes_subsets_hyperedge_attr(
+    hyperedge_index, k, hyperedge_attr, expected_attr
+):
+    num_nodes = hyperedge_index[0].max().item() + 1
+    x = torch.randn(num_nodes, 2)
+    hdata = HData(x=x, hyperedge_index=hyperedge_index, hyperedge_attr=hyperedge_attr)
+    result = hdata.remove_hyperedges_with_fewer_than_k_nodes(k=k)
+
+    assert result.hyperedge_attr is not None
+    assert torch.equal(result.hyperedge_attr, expected_attr)
+
+
+def test_remove_hyperedges_with_fewer_than_k_nodes_keeps_none_hyperedge_attr():
+    x = torch.randn(3, 2)
+    hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 0]])
+    hdata = HData(x=x, hyperedge_index=hyperedge_index, hyperedge_attr=None)
+
+    result = hdata.remove_hyperedges_with_fewer_than_k_nodes(k=1)
+
+    assert result.hyperedge_attr is None
+
+
+def test_remove_hyperedges_with_fewer_than_k_nodes_rebases_hyperedge_index():
+    # Hyperedge 0 (nodes 0,1) removed, while hyperedge 1 (nodes 2,3,4) kept.
+    # After filtering, surviving nodes 2, 3, and 4, and hyperedge 1 must be rebased to 0-based.
+    x = torch.randn(5, 2)
+    hyperedge_index = torch.tensor([[0, 1, 2, 3, 4], [0, 0, 1, 1, 1]])
+    hdata = HData(x=x, hyperedge_index=hyperedge_index)
+
+    result = hdata.remove_hyperedges_with_fewer_than_k_nodes(k=3)
+
+    assert torch.equal(result.hyperedge_index, torch.tensor([[0, 1, 2], [0, 0, 0]]))
 
 
 def test_stats_with_empty_hdata():

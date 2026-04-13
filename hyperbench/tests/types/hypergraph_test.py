@@ -623,3 +623,81 @@ def test_reduce_to_graph_raises_on_single_node_hyperedge():
 
     with pytest.raises(ValueError, match="The number of vertices in an hyperedge must be >= 2."):
         HyperedgeIndex(hyperedge_index).reduce_to_edge_index_on_random_direction(x)
+
+
+@pytest.mark.parametrize(
+    "hyperedge_index_tensor, k, expected_tensor",
+    [
+        pytest.param(
+            torch.zeros((2, 0), dtype=torch.long),
+            1,
+            torch.zeros((2, 0), dtype=torch.long),
+            id="empty_index",
+        ),
+        pytest.param(
+            torch.tensor([[0, 1, 2], [0, 0, 0]]),
+            1,
+            torch.tensor([[0, 1, 2], [0, 0, 0]]),
+            id="single_hyperedge_3_nodes_k1_all_kept",
+        ),
+        pytest.param(
+            torch.tensor([[0, 1, 2], [0, 0, 0]]),
+            3,
+            torch.tensor([[0, 1, 2], [0, 0, 0]]),
+            id="single_hyperedge_3_nodes_k3_exact_boundary_kept",
+        ),
+        pytest.param(
+            torch.tensor([[0, 1, 2], [0, 0, 0]]),
+            4,
+            torch.zeros((2, 0), dtype=torch.long),
+            id="single_hyperedge_3_nodes_k4_removed",
+        ),
+        pytest.param(
+            torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]]),
+            2,
+            torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]]),
+            id="two_hyperedges_2_nodes_each_k2_both_kept",
+        ),
+        pytest.param(
+            torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]]),
+            3,
+            torch.zeros((2, 0), dtype=torch.long),
+            id="two_hyperedges_2_nodes_each_k3_both_removed",
+        ),
+        pytest.param(
+            torch.tensor([[0, 1, 2, 3, 4], [0, 0, 0, 1, 1]]),
+            3,
+            torch.tensor([[0, 1, 2], [0, 0, 0]]),
+            id="two_hyperedges_first_3_nodes_second_2_nodes_k3_only_first_kept",
+        ),
+        pytest.param(
+            torch.tensor([[0, 1, 2, 3, 4], [0, 0, 1, 1, 1]]),
+            3,
+            torch.tensor([[2, 3, 4], [1, 1, 1]]),
+            id="two_hyperedges_first_2_nodes_second_3_nodes_k3_only_second_kept",
+        ),
+        pytest.param(
+            torch.tensor([[0, 1, 2, 3, 4, 5], [0, 0, 1, 1, 1, 2]]),
+            3,
+            torch.tensor([[2, 3, 4], [1, 1, 1]]),
+            id="three_hyperedges_sizes_2_3_1_k3_only_middle_kept",
+        ),
+        pytest.param(
+            torch.tensor([[0, 1, 2, 3, 4, 5], [0, 0, 0, 1, 1, 1]]),
+            2,
+            torch.tensor([[0, 1, 2, 3, 4, 5], [0, 0, 0, 1, 1, 1]]),
+            id="two_hyperedges_3_nodes_each_k2_both_kept",
+        ),
+    ],
+)
+def test_remove_hyperedges_with_fewer_than_k_nodes(hyperedge_index_tensor, k, expected_tensor):
+    result = HyperedgeIndex(hyperedge_index_tensor).remove_hyperedges_with_fewer_than_k_nodes(k)
+
+    assert torch.equal(result.item, expected_tensor)
+
+
+def test_remove_hyperedges_with_fewer_than_k_nodes_returns_self():
+    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1, 2], [0, 0, 0]]))
+    result = hyperedge_index.remove_hyperedges_with_fewer_than_k_nodes(1)
+
+    assert result is hyperedge_index

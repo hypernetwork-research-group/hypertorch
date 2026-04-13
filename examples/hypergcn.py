@@ -15,13 +15,14 @@ if __name__ == "__main__":
     metrics = MetricCollection(
         {
             "auc": BinaryAUROC(),
-            "ap": BinaryAveragePrecision(),
+            "avg_precision": BinaryAveragePrecision(),
         }
     )
 
     print("Loading and preparing dataset...")
 
     dataset = AlgebraDataset(sampling_strategy=sampling_strategy, prepare=True)
+    dataset.remove_hyperedges_with_fewer_than_k_nodes(k=2)
     dataset.enrich_node_features(
         enricher=LaplacianPositionalEncodingEnricher(num_features=32),
         enrichment_mode="replace",
@@ -57,7 +58,7 @@ if __name__ == "__main__":
         neg_hdata = negative_sampler.sample(ds.hdata)
         combined_hdata = HData.cat_same_node_space([ds.hdata, neg_hdata])
         shuffled_hdata = combined_hdata.shuffle(seed=42)
-        ds_with_negatives = AlgebraDataset.from_hdata(shuffled_hdata, sampling_strategy)
+        ds_with_negatives = ds.update_from_hdata(shuffled_hdata)
 
         if name == "Train":
             train_dataset = ds_with_negatives
@@ -128,7 +129,7 @@ if __name__ == "__main__":
 
     with MultiModelTrainer(
         model_configs=configs,
-        max_epochs=10,
+        max_epochs=200,
         accelerator="mps",
         log_every_n_steps=1,
         callbacks=[early_stopping],

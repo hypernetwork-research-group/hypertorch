@@ -15,6 +15,7 @@ if __name__ == "__main__":
     metrics = MetricCollection(
         {
             "auc": BinaryAUROC(),
+            "avg_precision": BinaryAveragePrecision(),
         }
     )
 
@@ -56,7 +57,7 @@ if __name__ == "__main__":
         neg_hdata = negative_sampler.sample(ds.hdata)
         combined_hdata = HData.cat_same_node_space([ds.hdata, neg_hdata])
         shuffled_hdata = combined_hdata.shuffle(seed=42)
-        ds_with_negatives = AlgebraDataset.from_hdata(shuffled_hdata, sampling_strategy)
+        ds_with_negatives = ds.update_from_hdata(shuffled_hdata)
 
         if name == "Train":
             train_dataset = ds_with_negatives
@@ -79,14 +80,14 @@ if __name__ == "__main__":
     )
     val_loader = DataLoader(
         val_dataset,
-        batch_size=val_dataset.stats()["num_hyperedges"],
+        sample_full_hypergraph=True,
         shuffle=False,
         num_workers=num_workers,
         persistent_workers=True,
     )
     test_loader = DataLoader(
         test_dataset,
-        batch_size=test_dataset.stats()["num_hyperedges"],
+        sample_full_hypergraph=True,
         shuffle=False,
         num_workers=num_workers,
         persistent_workers=True,

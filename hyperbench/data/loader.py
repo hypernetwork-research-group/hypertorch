@@ -79,16 +79,16 @@ class DataLoader(TorchDataLoader):
         collated_x = self.__cached_dataset_hdata.x[hyperedge_index_wrapper.node_ids]
         collated_y = self.__cached_dataset_hdata.y[hyperedge_ids]
 
-        collated_hyeredge_attr = None
+        collated_hyperedge_attr = None
         if self.__cached_dataset_hdata.hyperedge_attr is not None:
-            collated_hyeredge_attr = self.__cached_dataset_hdata.hyperedge_attr[hyperedge_ids]
+            collated_hyperedge_attr = self.__cached_dataset_hdata.hyperedge_attr[hyperedge_ids]
 
         collated_hyperedge_index = hyperedge_index_wrapper.to_0based().item
 
         collated_hdata = HData(
             x=collated_x,
             hyperedge_index=collated_hyperedge_index,
-            hyperedge_attr=collated_hyeredge_attr,
+            hyperedge_attr=collated_hyperedge_attr,
             num_nodes=hyperedge_index_wrapper.num_nodes,
             num_hyperedges=hyperedge_index_wrapper.num_hyperedges,
             y=collated_y,

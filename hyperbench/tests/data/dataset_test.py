@@ -938,6 +938,57 @@ def test_enrich_node_features_concatenate(mock_hdata):
     assert dataset.hdata.x.shape == (3, 5)  # 1 original + 4 enriched
 
 
+@pytest.mark.parametrize(
+    "hyperedge_index, k, expected_hyperedge_index",
+    [
+        pytest.param(
+            torch.tensor([[0, 1, 2], [0, 0, 0]]),
+            4,
+            torch.zeros((2, 0), dtype=torch.long),
+            id="single_hyperedge_below_k_removed",
+        ),
+        pytest.param(
+            torch.tensor([[0, 1, 2], [0, 0, 0]]),
+            3,
+            torch.tensor([[0, 1, 2], [0, 0, 0]]),
+            id="single_hyperedge_at_exact_k_kept",
+        ),
+        pytest.param(
+            torch.tensor([[0, 1, 2, 3, 4], [0, 0, 0, 1, 1]]),
+            3,
+            torch.tensor([[0, 1, 2], [0, 0, 0]]),
+            id="two_hyperedges_first_kept_second_removed",
+        ),
+        pytest.param(
+            torch.tensor([[0, 1, 2, 3, 4, 5], [0, 0, 0, 1, 1, 1]]),
+            3,
+            torch.tensor([[0, 1, 2, 3, 4, 5], [0, 0, 0, 1, 1, 1]]),
+            id="two_hyperedges_both_kept",
+        ),
+        pytest.param(
+            torch.tensor([[0, 1, 2, 3, 4, 5], [0, 0, 1, 1, 2, 2]]),
+            3,
+            torch.zeros((2, 0), dtype=torch.long),
+            id="three_hyperedges_all_removed",
+        ),
+    ],
+)
+def test_remove_hyperedges_with_fewer_than_k_nodes(hyperedge_index, k, expected_hyperedge_index):
+    num_nodes = hyperedge_index[0].max().item() + 1 if hyperedge_index.shape[1] > 0 else 0
+    x = torch.ones((num_nodes, 1), dtype=torch.float)
+    hdata = HData(x=x, hyperedge_index=hyperedge_index)
+    dataset = Dataset.from_hdata(hdata)
+
+    dataset.remove_hyperedges_with_fewer_than_k_nodes(k)
+
+    expected_num_nodes = expected_hyperedge_index[0].unique().shape[0]
+    expected_num_hyperedges = expected_hyperedge_index[1].unique().shape[0]
+
+    assert torch.equal(dataset.hdata.hyperedge_index, expected_hyperedge_index)
+    assert dataset.hdata.x.shape[0] == expected_num_nodes
+    assert dataset.hdata.y.shape[0] == expected_num_hyperedges
+
+
 def test_split_with_equal_ratios(mock_four_node_hypergraph):
     with patch.object(HIFConverter, "load_from_hif", return_value=mock_four_node_hypergraph):
         dataset = AlgebraDataset()
@@ -1124,6 +1175,60 @@ def test_from_hdata_with_explicit_strategy(mock_hdata):
 
     assert dataset.sampling_strategy == SamplingStrategy.NODE
     assert len(dataset) == 3  # mock_hdata has 3 nodes
+
+
+def test_update_from_hdata_returns_new_dataset(mock_hdata):
+    dataset = Dataset(hdata=mock_hdata, prepare=False)
+    new_x = torch.ones((2, 1), dtype=torch.float)
+    new_hyperedge_index = torch.tensor([[0, 1], [0, 0]], dtype=torch.long)
+    new_hdata = HData(x=new_x, hyperedge_index=new_hyperedge_index)
+
+    result = dataset.update_from_hdata(new_hdata)
+
+    assert result is not dataset
+    assert result.hdata is new_hdata
+    assert dataset.hdata is mock_hdata
+
+
+def test_update_from_hdata_stores_provided_hdata(mock_hdata):
+    dataset = Dataset(hdata=mock_hdata, prepare=False)
+    new_x = torch.ones((2, 1), dtype=torch.float)
+    new_hyperedge_index = torch.tensor([[0, 1], [0, 0]], dtype=torch.long)
+    new_hdata = HData(x=new_x, hyperedge_index=new_hyperedge_index)
+
+    result = dataset.update_from_hdata(new_hdata)
+
+    assert result.hdata is new_hdata
+
+
+@pytest.mark.parametrize(
+    "strategy, expected_len",
+    [
+        pytest.param(SamplingStrategy.NODE, 4, id="node_strategy"),
+        pytest.param(SamplingStrategy.HYPEREDGE, 3, id="hyperedge_strategy"),
+    ],
+)
+def test_update_from_hdata_inherits_sampling_strategy(mock_hdata, strategy, expected_len):
+    dataset = Dataset(hdata=mock_hdata, sampling_strategy=strategy, prepare=False)
+    new_x = torch.ones((4, 1), dtype=torch.float)
+    new_hyperedge_index = torch.tensor([[0, 1, 2, 3], [0, 0, 1, 2]], dtype=torch.long)
+    new_hdata = HData(x=new_x, hyperedge_index=new_hyperedge_index)
+
+    result = dataset.update_from_hdata(new_hdata)
+
+    assert result.sampling_strategy == strategy
+    assert len(result) == expected_len
+
+
+def test_update_from_hdata_preserves_subclass_type(mock_hdata):
+    dataset = AlgebraDataset(hdata=mock_hdata, prepare=False)
+    new_x = torch.ones((2, 1), dtype=torch.float)
+    new_hyperedge_index = torch.tensor([[0, 1], [0, 0]], dtype=torch.long)
+    new_hdata = HData(x=new_x, hyperedge_index=new_hyperedge_index)
+
+    result = dataset.update_from_hdata(new_hdata)
+
+    assert type(result) is AlgebraDataset
 
 
 @pytest.fixture

@@ -306,7 +306,7 @@ class MultiModelTrainer:
                 self.__tensorboard_process = self.__start_tensorboard_process()
             else:
                 warnings.warn(
-                    "TensorBoard is not available."
+                    "TensorBoard is not available. "
                     "Install it with `pip install hyperbench[tensorboard]` or `pip install tensorboard`"
                     "to enable auto-start.",
                     category=UserWarning,

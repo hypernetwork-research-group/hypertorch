@@ -251,7 +251,7 @@ class HData:
         self,
         enricher: NodeFeatureEnricher,
         enrichment_mode: Optional[EnrichmentMode] = None,
-    ) -> None:
+    ) -> "HData":
         """
         Enrich node features using the provided node feature enricher.
 
@@ -265,9 +265,18 @@ class HData:
 
         match enrichment_mode:
             case "concatenate":
-                self.x = torch.cat([self.x, enriched_features], dim=1)
+                x = torch.cat([self.x, enriched_features], dim=1)
             case _:
-                self.x = enriched_features
+                x = enriched_features
+
+        return self.__class__(
+            x=x,
+            hyperedge_index=self.hyperedge_index,
+            hyperedge_attr=self.hyperedge_attr,
+            num_nodes=self.num_nodes,
+            num_hyperedges=self.num_hyperedges,
+            y=self.y,
+        )
 
     def get_device_if_all_consistent(self) -> torch.device:
         """
@@ -287,6 +296,27 @@ class HData:
             raise ValueError(f"Inconsistent device placement: {devices}")
 
         return devices.pop() if len(devices) == 1 else torch.device("cpu")
+
+    def remove_hyperedges_with_fewer_than_k_nodes(self, k: int) -> "HData":
+        hyperedge_index_wrapper = HyperedgeIndex(
+            self.hyperedge_index
+        ).remove_hyperedges_with_fewer_than_k_nodes(k)
+
+        x = self.x[hyperedge_index_wrapper.node_ids]
+        y = self.y[hyperedge_index_wrapper.hyperedge_ids]
+
+        hyperedge_attr = None
+        if self.hyperedge_attr is not None:
+            hyperedge_attr = self.hyperedge_attr[hyperedge_index_wrapper.hyperedge_ids]
+
+        return self.__class__(
+            x=x,
+            hyperedge_index=hyperedge_index_wrapper.to_0based().item,
+            hyperedge_attr=hyperedge_attr,
+            num_nodes=hyperedge_index_wrapper.num_nodes,
+            num_hyperedges=hyperedge_index_wrapper.num_hyperedges,
+            y=y,
+        )
 
     def shuffle(self, seed: Optional[int] = None) -> "HData":
         """
@@ -346,7 +376,7 @@ class HData:
         #          -> new_y = [y[1], y[2], y[0]] = [1, 0, 1]
         new_y = self.y[permutation]
 
-        return HData(
+        return self.__class__(
             x=self.x,
             hyperedge_index=new_hyperedge_index,
             hyperedge_attr=new_hyperedge_attr,
@@ -386,7 +416,7 @@ class HData:
         Returns:
             A new :class:`HData` instance with the same attributes except for y, which is set to a tensor of the given value.
         """
-        return HData(
+        return self.__class__(
             x=self.x,
             hyperedge_index=self.hyperedge_index,
             hyperedge_attr=self.hyperedge_attr,

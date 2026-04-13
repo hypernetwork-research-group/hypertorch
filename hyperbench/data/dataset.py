@@ -287,7 +287,28 @@ class Dataset(TorchDataset):
                 ``concatenate`` appends new features as additional columns.
                 ``replace`` substitutes ``hdata.x`` entirely.
         """
-        self.hdata.enrich_node_features(enricher, enrichment_mode)
+        self.hdata = self.hdata.enrich_node_features(enricher, enrichment_mode)
+
+    def update_from_hdata(self, hdata: HData) -> "Dataset":
+        """
+        Create a :class:`Dataset` instance from an :class:`HData` object.
+
+        Args:
+            hdata: :class:`HData` object containing the hypergraph data.
+
+        Returns:
+            The :class:`Dataset` instance with the provided :class:`HData`.
+        """
+        return self.__class__(hdata=hdata, sampling_strategy=self.sampling_strategy, prepare=False)
+
+    def remove_hyperedges_with_fewer_than_k_nodes(self, k: int) -> None:
+        """
+        Remove hyperedges that have fewer than k incident nodes.
+
+        Args:
+            k: The minimum number of nodes a hyperedge must have to be retained.
+        """
+        self.hdata = self.hdata.remove_hyperedges_with_fewer_than_k_nodes(k)
 
     def split(
         self,

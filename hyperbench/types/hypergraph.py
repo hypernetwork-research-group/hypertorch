@@ -556,6 +556,43 @@ class HyperedgeIndex:
         self.__hyperedge_index = torch.unique(self.__hyperedge_index, dim=1).contiguous()
         return self
 
+    def remove_hyperedges_with_fewer_than_k_nodes(self, k: int) -> "HyperedgeIndex":
+        """
+        Remove hyperedges that contain fewer than k nodes.
+
+        Example:
+            >>> hyperedge_index = [[0, 1, 2, 3, 5, 4],
+            ...                    [0, 0, 1, 1, 2, 1]], shape (2, |E| = 6)
+
+            >>> k = 3
+            >>> unique_hyperedge_ids: [0, 1, 2]
+            ... # inverse -> idx_to_hyperedge_id, counts -> num_nodes_per_hyperedge
+            ... inverse           = [0, 0, 1, 1, 2, 1]  # (index into unique_hyperedge_ids per column)
+            ... counts            = [2, 3, 1]
+            >>> # counts[inverse] is equivalent to:
+            ... # for i, inv in enumerate(inverse): keep_mask[i] = counts[inv]
+            >>> counts[inverse]   = [2, 2, 3, 3, 1, 3]
+            >>> keep_mask         = [F, F, T, T, F, T]
+
+            >>> # after filtering hyperedges with fewer than k=3 nodes:
+            >>> hyperedge_index = [[2, 3, 4],
+            ...                    [1, 1, 1]], shape (2, |E'| = 3)
+
+        Args:
+            k: The minimum number of nodes a hyperedge must contain to be kept.
+
+        Returns:
+            A new :class:`HyperedgeIndex` instance with hyperedges containing fewer than k nodes.
+        """
+        _, idx_to_hyperedge_id, num_nodes_per_hyperedge = torch.unique(
+            self.all_hyperedge_ids,
+            return_inverse=True,
+            return_counts=True,
+        )
+        keep_mask = num_nodes_per_hyperedge[idx_to_hyperedge_id] >= k
+        self.__hyperedge_index = self.__hyperedge_index[:, keep_mask]
+        return self
+
     def to_0based(
         self,
         node_ids_to_rebase: Optional[Tensor] = None,
