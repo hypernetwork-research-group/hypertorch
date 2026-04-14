@@ -293,9 +293,6 @@ class LaTexTableLogger(Logger):
             results: Mapping[str, Mapping[str, float]],
             total_cols: int,
         ) -> list[str]:
-            if not results:
-                return []
-
             metrics = sorted({m for mm in results.values() for m in mm})
             sort_orders = sort_by if sort_by else ["asc"]
 

@@ -225,3 +225,112 @@ def test_build_comparison_table_formats_table_and_escapes_values(tmp_path, mock_
         in table
     )
     assert r"\end{tabular}" in table
+
+
+def test_finalize_builds_test_table_trail_without_private_call(tmp_path, mock_option_configs):
+    logger_a = LaTexTableLogger(
+        save_dir=str(tmp_path),
+        model_name="model_a",
+        experiment_name="exp_table_trail_public",
+        options=mock_option_configs,
+    )
+    logger_b = LaTexTableLogger(
+        save_dir=str(tmp_path),
+        model_name="model_b",
+        experiment_name="exp_table_trail_public",
+        options=mock_option_configs,
+    )
+
+    logger_a.log_metrics({"test_auc": 0.9123, "test_loss": 0.1234})
+    logger_b.log_metrics({"test_auc": 0.8821})
+
+    logger_a.finalize("success")
+    logger_b.finalize("success")
+
+    content = (tmp_path / "comparison" / "test.tex").read_text()
+
+    # Validate deterministic trail similarly to markdown logger tests.
+    assert r"\multicolumn{3}{c}{\textbf{Test Results}} \\" in content
+    assert r"Model & test\_auc & test\_loss \\" in content
+    assert r"model\_a & " in content
+    assert r"model\_b & " in content
+    assert r" & - \\" in content
+
+
+def test_finalize_applies_per_column_sort_order(tmp_path):
+    options: LaTexTableConfig = {
+        "table_caption": "Per-column sort",
+        "sort_by": ["des", "asc"],
+        "border": True,
+    }
+
+    logger_a = LaTexTableLogger(
+        save_dir=str(tmp_path),
+        model_name="model_a",
+        experiment_name="exp_sort_per_column",
+        options=options,
+    )
+    logger_b = LaTexTableLogger(
+        save_dir=str(tmp_path),
+        model_name="model_b",
+        experiment_name="exp_sort_per_column",
+        options=options,
+    )
+
+    logger_a.log_metrics({"test_auc": 0.90, "test_loss": 0.50})
+    logger_b.log_metrics({"test_auc": 0.80, "test_loss": 0.20})
+    logger_a.finalize("success")
+    logger_b.finalize("success")
+
+    content = (tmp_path / "comparison" / "test.tex").read_text()
+
+    # test_auc uses "des" so higher value is best (model_a).
+    assert r"model\_a & \cellcolor[HTML]{59FF59}\underline{0.9000}" in content
+    # test_loss uses "asc" so lower value is best (model_b).
+    assert (
+        r"model\_b & \cellcolor[HTML]{FF5959}0.8000 & \cellcolor[HTML]{59FF59}\underline{0.2000}"
+        in content
+    )
+
+
+def test_finalize_raises_on_invalid_sort_order(tmp_path):
+    options: LaTexTableConfig = {
+        "table_caption": "Invalid sort",
+        "sort_by": ["invalid"],
+        "border": True,
+    }
+
+    logger = LaTexTableLogger(
+        save_dir=str(tmp_path),
+        model_name="model_a",
+        experiment_name="exp_invalid_sort",
+        options=options,
+    )
+
+    logger.log_metrics({"test_auc": 0.90})
+
+    with pytest.raises(ValueError, match=r"Invalid sort_by value"):
+        logger.finalize("success")
+
+
+def test_finalize_border_false_uses_non_bordered_tabular(tmp_path):
+    options: LaTexTableConfig = {
+        "table_caption": "No border",
+        "sort_by": ["asc"],
+        "border": False,
+    }
+
+    logger = LaTexTableLogger(
+        save_dir=str(tmp_path),
+        model_name="model_a",
+        experiment_name="exp_no_border",
+        options=options,
+    )
+
+    logger.log_metrics({"test_auc": 0.90, "test_loss": 0.40})
+    logger.finalize("success")
+
+    content = (tmp_path / "comparison" / "test.tex").read_text()
+    assert r"\begin{tabular}{lcc}" in content
+    assert r"\hline" not in content
+    assert r"\toprule" in content
