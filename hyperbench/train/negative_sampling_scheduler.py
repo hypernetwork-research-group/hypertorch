@@ -58,16 +58,12 @@ class NegativeSamplingScheduler:
             True if negatives should be resampled for the current epoch, False otherwise.
         """
         match self.negative_sampling_schedule:
-            case NegativeSamplingSchedule.EVERY_EPOCH:
-                return True
             case NegativeSamplingSchedule.EVERY_N_EPOCHS:
                 return epoch % self.negative_sampling_every_n == 0
             case NegativeSamplingSchedule.FIRST_EPOCH:
                 return epoch == 0
-            case _:
-                raise ValueError(
-                    f"Unsupported negative sampling schedule: {self.negative_sampling_schedule}"
-                )
+            case _:  # Defaults to NegativeSamplingSchedule.EVERY_EPOCH
+                return True
 
     def sample(self, batch: HData, epoch: int) -> HData:
         """

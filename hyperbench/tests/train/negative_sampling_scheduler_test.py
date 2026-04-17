@@ -160,13 +160,3 @@ def test_should_sample_first_epoch(mock_sampler, epoch, expected_should_sample):
     )
 
     assert scheduler.should_sample(epoch) == expected_should_sample
-
-
-def test_should_sample_raises_on_unsupported_schedule(mock_sampler):
-    scheduler = NegativeSamplingScheduler(negative_sampler=mock_sampler)
-    scheduler.negative_sampling_schedule = MagicMock(__str__=lambda _: "UNSUPPORTED_SCHEDULE")
-
-    with pytest.raises(
-        ValueError, match="Unsupported negative sampling schedule: UNSUPPORTED_SCHEDULE"
-    ):
-        scheduler.should_sample(epoch=0)
