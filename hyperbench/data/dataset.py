@@ -269,9 +269,13 @@ class Dataset(TorchDataset):
         num_hyperedges = len(hyperedge_id_to_idx)
         hyperedge_attr = self.__process_hyperedge_attr(hyperedge_id_to_idx, num_hyperedges)
 
+        hyperedge_weights = self.__process_hyperedge_weights()
+
         hyperedge_index = torch.tensor([node_ids, hyperedge_ids], dtype=torch.long)
 
-        return HData(x, hyperedge_index, hyperedge_attr, num_nodes, num_hyperedges)
+        return HData(
+            x, hyperedge_index, hyperedge_attr, hyperedge_weights, num_nodes, num_hyperedges
+        )
 
     def enrich_node_features(
         self,
@@ -552,6 +556,30 @@ class Dataset(TorchDataset):
             x = torch.ones((num_nodes, 1), dtype=torch.float)
 
         return x  # shape [num_nodes, num_node_features]
+
+    def __process_hyperedge_weights(self) -> Optional[Tensor]:
+        # Initialize the hyperedge weights tensor
+        hyperedge_weights = None
+
+        # Check if hyperedge weights are available
+        has_hyperedge_weights = self.hypergraph.edges is not None and all(
+            "weight" in edge for edge in self.hypergraph.edges
+        )
+
+        if has_hyperedge_weights:
+            # Collect all hyperedge weights
+            weights = [edge.get("weight", 1.0) for edge in self.hypergraph.edges]
+            hyperedge_weights = torch.tensor(weights, dtype=torch.float)
+        elif (
+            has_hyperedge_weights is False
+            and self.hypergraph.edges is not None
+            and any("weight" in edge for edge in self.hypergraph.edges)
+        ):
+            raise ValueError(
+                "Some hyperedges have weights while others do not. All hyperedges must either have weights or none."
+            )
+
+        return hyperedge_weights
 
     def stats(self) -> Dict[str, Any]:
         """

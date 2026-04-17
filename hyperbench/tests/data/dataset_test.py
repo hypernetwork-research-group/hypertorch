@@ -740,6 +740,64 @@ def test_getitem_hyperedge_attr_are_padded_with_zero_when_no_uniform_edges():
     )  # weight=0.0, abc=3.0
 
 
+def test_process_not_all_hyperedge_weights_():
+    mock_hypergraph = HIFHypergraph(
+        network_type="undirected",
+        nodes=[
+            {"node": "0", "attrs": {}},
+            {"node": "1", "attrs": {}},
+            {"node": "2", "attrs": {}},
+        ],
+        edges=[
+            {"edge": "0", "weight": 1.5},
+            {"edge": "1"},
+            {"edge": "2", "weight": 2.5},
+        ],
+        incidences=[
+            {"node": "0", "edge": "0"},
+            {"node": "1", "edge": "1"},
+            {"node": "2", "edge": "2"},
+        ],
+    )
+
+    with patch.object(HIFConverter, "load_from_hif", return_value=mock_hypergraph):
+        with pytest.raises(
+            ValueError,
+            match="Some hyperedges have weights while others do not. All hyperedges must either have weights or none.",
+        ):
+            dataset = AlgebraDataset()
+
+
+def test_process_extracts_top_level_hyperedge_weights():
+    mock_hypergraph = HIFHypergraph(
+        network_type="undirected",
+        nodes=[
+            {"node": "0", "attrs": {}},
+            {"node": "1", "attrs": {}},
+            {"node": "2", "attrs": {}},
+        ],
+        edges=[
+            {"edge": "0", "weight": 1.5},
+            {"edge": "1", "weight": 3.0},
+            {"edge": "2", "weight": 2.5},
+        ],
+        incidences=[
+            {"node": "0", "edge": "0"},
+            {"node": "1", "edge": "1"},
+            {"node": "2", "edge": "2"},
+        ],
+    )
+
+    with patch.object(HIFConverter, "load_from_hif", return_value=mock_hypergraph):
+        dataset = AlgebraDataset()
+
+    hyperedge_weights = dataset.hdata.hyperedge_weights
+    assert hyperedge_weights is not None
+    assert torch.allclose(hyperedge_weights[0], torch.tensor([1.5]))
+    assert torch.allclose(hyperedge_weights[1], torch.tensor([3.0]))
+    assert torch.allclose(hyperedge_weights[2], torch.tensor([2.5]))
+
+
 def test_transform_attrs_empty_attrs():
     mock_hypergraph = HIFHypergraph(
         network_type="undirected",
@@ -1255,6 +1313,7 @@ def test_dataset_stats_computation(mock_hdata_stats):
     expected_stats = {
         "shape_x": torch.Size([4, 4]),
         "shape_hyperedge_attr": None,
+        "shape_hyperedge_weights": None,
         "num_nodes": 4,
         "num_hyperedges": 2,
         "avg_degree_node_raw": 1.25,

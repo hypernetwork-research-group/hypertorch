@@ -38,6 +38,7 @@ class HData:
         x: Tensor,
         hyperedge_index: Tensor,
         hyperedge_attr: Optional[Tensor] = None,
+        hyperedge_weights: Optional[Tensor] = None,
         num_nodes: Optional[int] = None,
         num_hyperedges: Optional[int] = None,
         y: Optional[Tensor] = None,
@@ -47,6 +48,8 @@ class HData:
         self.hyperedge_index: Tensor = hyperedge_index
 
         self.hyperedge_attr: Optional[Tensor] = hyperedge_attr
+
+        self.hyperedge_weights: Optional[Tensor] = hyperedge_weights
 
         hyperedge_index_wrapper = HyperedgeIndex(hyperedge_index)
 
@@ -78,6 +81,7 @@ class HData:
             f"    x_shape={self.x.shape},\n"
             f"    hyperedge_index_shape={self.hyperedge_index.shape},\n"
             f"    hyperedge_attr_shape={self.hyperedge_attr.shape if self.hyperedge_attr is not None else None},\n"
+            f"    hyperedge_weights_shape={self.hyperedge_weights.shape if self.hyperedge_weights is not None else None},\n"
             f"    y_shape={self.y.shape if self.y is not None else None}\n"
             f"    device={self.device}\n"
             f")"
@@ -129,16 +133,23 @@ class HData:
         new_hyperedge_index = torch.cat([hdata.hyperedge_index for hdata in hdatas], dim=1)
 
         hyperedge_attrs = []
+        hyperedge_weights = []
         have_all_hyperedge_attr = all(hdata.hyperedge_attr is not None for hdata in hdatas)
+        have_all_hyperedge_weights = all(hdata.hyperedge_weights is not None for hdata in hdatas)
         for hdata in hdatas:
             if have_all_hyperedge_attr and hdata.hyperedge_attr is not None:
                 hyperedge_attrs.append(hdata.hyperedge_attr)
+            if have_all_hyperedge_weights and hdata.hyperedge_weights is not None:
+                hyperedge_weights.append(hdata.hyperedge_weights)
         new_hyperedge_attr = torch.cat(hyperedge_attrs, dim=0) if len(hyperedge_attrs) > 0 else None
-
+        new_hyperedge_weights = (
+            torch.cat(hyperedge_weights, dim=0) if len(hyperedge_weights) > 0 else None
+        )
         return cls(
             x=new_x,
             hyperedge_index=new_hyperedge_index,
             hyperedge_attr=new_hyperedge_attr,
+            hyperedge_weights=new_hyperedge_weights,
             num_nodes=new_x.size(0),
             num_hyperedges=new_y.size(0),
             y=new_y,
@@ -150,6 +161,7 @@ class HData:
             x=empty_nodefeatures(),
             hyperedge_index=empty_hyperedgeindex(),
             hyperedge_attr=None,
+            hyperedge_weights=None,
             num_nodes=0,
             num_hyperedges=0,
             y=None,
@@ -238,10 +250,15 @@ class HData:
         if hdata.hyperedge_attr is not None:
             new_hyperedge_attr = hdata.hyperedge_attr[split_unique_hyperedge_ids]
 
+        new_hyperedge_weights = None
+        if hdata.hyperedge_weights is not None:
+            new_hyperedge_weights = hdata.hyperedge_weights[split_unique_hyperedge_ids]
+
         return cls(
             x=new_x,
             hyperedge_index=split_hyperedge_index_wrapper.item,
             hyperedge_attr=new_hyperedge_attr,
+            hyperedge_weights=new_hyperedge_weights,
             num_nodes=len(split_unique_node_ids),
             num_hyperedges=len(split_unique_hyperedge_ids),
             y=new_y,
@@ -273,6 +290,7 @@ class HData:
             x=x,
             hyperedge_index=self.hyperedge_index,
             hyperedge_attr=self.hyperedge_attr,
+            hyperedge_weights=self.hyperedge_weights,
             num_nodes=self.num_nodes,
             num_hyperedges=self.num_hyperedges,
             y=self.y,
@@ -292,6 +310,8 @@ class HData:
         devices = {self.x.device, self.hyperedge_index.device, self.y.device}
         if self.hyperedge_attr is not None:
             devices.add(self.hyperedge_attr.device)
+        if self.hyperedge_weights is not None:
+            devices.add(self.hyperedge_weights.device)
         if len(devices) > 1:
             raise ValueError(f"Inconsistent device placement: {devices}")
 
@@ -309,10 +329,15 @@ class HData:
         if self.hyperedge_attr is not None:
             hyperedge_attr = self.hyperedge_attr[hyperedge_index_wrapper.hyperedge_ids]
 
+        hyperedge_weights = None
+        if self.hyperedge_weights is not None:
+            hyperedge_weights = self.hyperedge_weights[hyperedge_index_wrapper.hyperedge_ids]
+
         return self.__class__(
             x=x,
             hyperedge_index=hyperedge_index_wrapper.to_0based().item,
             hyperedge_attr=hyperedge_attr,
+            hyperedge_weights=hyperedge_weights,
             num_nodes=hyperedge_index_wrapper.num_nodes,
             num_hyperedges=hyperedge_index_wrapper.num_hyperedges,
             y=y,
@@ -372,6 +397,10 @@ class HData:
             self.hyperedge_attr[permutation] if self.hyperedge_attr is not None else None
         )
 
+        new_hyperedge_weights = (
+            self.hyperedge_weights[permutation] if self.hyperedge_weights is not None else None
+        )
+
         # Example: y = [1, 1, 0], permutation = [1, 2, 0]
         #          -> new_y = [y[1], y[2], y[0]] = [1, 0, 1]
         new_y = self.y[permutation]
@@ -380,6 +409,7 @@ class HData:
             x=self.x,
             hyperedge_index=new_hyperedge_index,
             hyperedge_attr=new_hyperedge_attr,
+            hyperedge_weights=new_hyperedge_weights,
             num_nodes=self.num_nodes,
             num_hyperedges=self.num_hyperedges,
             y=new_y,
@@ -403,6 +433,11 @@ class HData:
         if self.hyperedge_attr is not None:
             self.hyperedge_attr = self.hyperedge_attr.to(device=device, non_blocking=non_blocking)
 
+        if self.hyperedge_weights is not None:
+            self.hyperedge_weights = self.hyperedge_weights.to(
+                device=device, non_blocking=non_blocking
+            )
+
         self.device = device if isinstance(device, torch.device) else torch.device(device)
         return self
 
@@ -420,6 +455,7 @@ class HData:
             x=self.x,
             hyperedge_index=self.hyperedge_index,
             hyperedge_attr=self.hyperedge_attr,
+            hyperedge_weights=self.hyperedge_weights,
             num_nodes=self.num_nodes,
             num_hyperedges=self.num_hyperedges,
             y=torch.full((self.num_hyperedges,), value, dtype=torch.float, device=self.device),
@@ -439,6 +475,7 @@ class HData:
         The fields returned in the dictionary include:
         - ``shape_x``: The shape of the node feature matrix ``x``.
         - ``shape_hyperedge_attr``: The shape of the hyperedge attribute matrix, or ``None`` if hyperedge attributes are not present.
+        - ``shape_hyperedge_weights``: The shape of the hyperedge weights tensor, or ``None`` if hyperedge weights are not present.
         - ``num_nodes``: The number of nodes in the hypergraph.
         - ``num_hyperedges``: The number of hyperedges in the hypergraph.
         - ``avg_degree_node_raw``: The average degree of nodes, calculated as the mean number of hyperedges each node belongs to.
@@ -513,6 +550,9 @@ class HData:
             "shape_x": self.x.shape,
             "shape_hyperedge_attr": self.hyperedge_attr.shape
             if self.hyperedge_attr is not None
+            else None,
+            "shape_hyperedge_weights": self.hyperedge_weights.shape
+            if self.hyperedge_weights is not None
             else None,
             "num_nodes": num_nodes,
             "num_hyperedges": num_hyperedges,

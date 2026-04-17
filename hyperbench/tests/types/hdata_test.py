@@ -220,6 +220,24 @@ def test_hdata_to_cpu_handles_none_hyperedge_attr(mock_hdata):
     assert mock_hdata.hyperedge_attr is None
 
 
+def test_hdata_to_cpu_moves_hyperedge_weights():
+    x = torch.randn(3, 2)
+    hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 0]])
+    hyperedge_weights = torch.tensor([0.25])
+    hdata = HData(
+        x=x,
+        hyperedge_index=hyperedge_index,
+        hyperedge_weights=hyperedge_weights,
+    )
+
+    returned = hdata.to("cpu")
+
+    assert returned is hdata
+    assert hdata.hyperedge_weights is not None
+    assert torch.equal(hdata.hyperedge_weights, hyperedge_weights)
+    assert hdata.hyperedge_weights.device.type == "cpu"
+
+
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA not available")
 def test_hdata_to_cuda(mock_hdata):
     returned = mock_hdata.to("cuda")
@@ -362,6 +380,31 @@ def test_cat_same_node_space_concatenates_hyperedge_attr():
     assert torch.equal(result.hyperedge_attr, torch.cat([attr1, attr2], dim=0))
 
 
+def test_cat_same_node_space_concatenates_hyperedge_weights():
+    x = torch.randn(4, 2)
+    weights1 = torch.tensor([0.25])
+    weights2 = torch.tensor([0.75])
+    hdata1 = HData(x=x, hyperedge_index=torch.tensor([[0, 1], [0, 0]]), hyperedge_weights=weights1)
+    hdata2 = HData(x=x, hyperedge_index=torch.tensor([[2, 3], [1, 1]]), hyperedge_weights=weights2)
+
+    result = HData.cat_same_node_space([hdata1, hdata2])
+
+    assert result.hyperedge_weights is not None
+    assert torch.equal(result.hyperedge_weights, torch.cat([weights1, weights2], dim=0))
+
+
+def test_cat_same_node_space_drops_hyperedge_weights_when_partially_missing():
+    x = torch.randn(4, 2)
+    hdata1 = HData(
+        x=x, hyperedge_index=torch.tensor([[0, 1], [0, 0]]), hyperedge_weights=torch.tensor([0.25])
+    )
+    hdata2 = HData(x=x, hyperedge_index=torch.tensor([[2, 3], [1, 1]]), hyperedge_weights=None)
+
+    result = HData.cat_same_node_space([hdata1, hdata2])
+
+    assert result.hyperedge_weights is None
+
+
 def test_cat_same_node_space_drops_hyperedge_attr_when_partially_missing():
     x = torch.randn(4, 2)
     hdata1 = HData(
@@ -453,6 +496,19 @@ def test_split_handles_none_edge_attr():
     result = HData.split(hdata, split_hyperedge_ids=hyperedge_ids)
 
     assert result.hyperedge_attr is None
+
+
+def test_split_subsets_hyperedge_weights():
+    x = torch.randn(4, 2)
+    hyperedge_index = torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]])
+    hyperedge_weights = torch.tensor([0.25, 0.75])
+    hdata = HData(x=x, hyperedge_index=hyperedge_index, hyperedge_weights=hyperedge_weights)
+
+    hyperedge_ids = torch.tensor([1])
+    result = HData.split(hdata, split_hyperedge_ids=hyperedge_ids)
+
+    assert result.hyperedge_weights is not None
+    assert torch.equal(result.hyperedge_weights, torch.tensor([0.75]))
 
 
 @pytest.mark.parametrize(
@@ -682,6 +738,7 @@ def test_stats_returns_correct_statistics(mock_hdata_stats):
     expected_stats = {
         "shape_x": torch.Size([4, 4]),
         "shape_hyperedge_attr": None,
+        "shape_hyperedge_weights": None,
         "num_nodes": 4,
         "num_hyperedges": 2,
         "avg_degree_node_raw": 1.25,
@@ -865,6 +922,18 @@ def test_remove_hyperedges_with_fewer_than_k_nodes_keeps_none_hyperedge_attr():
     assert result.hyperedge_attr is None
 
 
+def test_remove_hyperedges_with_fewer_than_k_nodes_subsets_hyperedge_weights():
+    x = torch.randn(5, 2)
+    hyperedge_index = torch.tensor([[0, 1, 2, 3, 4], [0, 0, 1, 1, 1]])
+    hyperedge_weights = torch.tensor([0.25, 0.75])
+    hdata = HData(x=x, hyperedge_index=hyperedge_index, hyperedge_weights=hyperedge_weights)
+
+    result = hdata.remove_hyperedges_with_fewer_than_k_nodes(k=3)
+
+    assert result.hyperedge_weights is not None
+    assert torch.equal(result.hyperedge_weights, torch.tensor([0.75]))
+
+
 def test_remove_hyperedges_with_fewer_than_k_nodes_rebases_hyperedge_index():
     # Hyperedge 0 (nodes 0,1) removed, while hyperedge 1 (nodes 2,3,4) kept.
     # After filtering, surviving nodes 2, 3, and 4, and hyperedge 1 must be rebased to 0-based.
@@ -883,6 +952,7 @@ def test_stats_with_empty_hdata():
     expected_stats = {
         "shape_x": torch.Size([0, 0]),
         "shape_hyperedge_attr": None,
+        "shape_hyperedge_weights": None,
         "num_nodes": 0,
         "num_hyperedges": 0,
         "avg_degree_node_raw": 0,
