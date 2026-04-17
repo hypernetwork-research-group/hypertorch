@@ -171,7 +171,6 @@ def test_finalize_writes_section_spacing_and_midrule_lines(tmp_path, mock_option
 
     content = (tmp_path / "comparison" / "overall.tex").read_text()
 
-    # Two sections are emitted here: Test Results and Train Results.
     assert content.count(r"\addlinespace[3pt]") == 2
     assert content.count(r"\multicolumn") == 2
     assert content.count(r"\midrule") >= 2
@@ -538,7 +537,6 @@ def test_non_bordered_wraps_with_table_environment(tmp_path):
 
     content = (tmp_path / "comparison" / "test.tex").read_text()
 
-    # Behavior check for 422->427: trailing section rule is replaced, then tabular/table blocks are added.
     assert content.split(r"\end{tabular}")[0].rstrip().endswith(r"\hline")
     assert r"\begin{table}[htbp]" in content
     assert r"\centering" in content
