@@ -1,15 +1,16 @@
 from torch import Tensor, nn, optim
-from typing import Literal, Optional
+from typing import Literal, Optional, TypedDict
+from typing_extensions import NotRequired
 from hyperbench.models import HyperGCN, SLP
 from hyperbench.nn import HyperedgeAggregator
 from hyperbench.types import HData
 from torchmetrics import MetricCollection
 from hyperbench.utils import Stage
 
-from .hlp import HlpModule
+from hyperbench.hlp.hlp import HlpModule
 
 
-class HyperGCNEncoderConfig:
+class HyperGCNEncoderConfig(TypedDict):
     """
     Configuration for the HyperGCN encoder in HyperGCNHlpModule.
 
@@ -24,25 +25,14 @@ class HyperGCNEncoderConfig:
         fast: Whether to cache the graph structure after first computation. Defaults to ``True``.
     """
 
-    def __init__(
-        self,
-        in_channels: int,
-        hidden_channels: int,
-        out_channels: int,
-        bias: bool = True,
-        use_batch_normalization: bool = False,
-        drop_rate: float = 0.5,
-        use_mediator: bool = False,
-        fast: bool = True,
-    ):
-        self.in_channels = in_channels
-        self.hidden_channels = hidden_channels
-        self.out_channels = out_channels
-        self.bias = bias
-        self.use_batch_normalization = use_batch_normalization
-        self.drop_rate = drop_rate
-        self.use_mediator = use_mediator
-        self.fast = fast
+    in_channels: int
+    hidden_channels: int
+    out_channels: int
+    bias: NotRequired[bool]
+    use_batch_normalization: NotRequired[bool]
+    drop_rate: NotRequired[float]
+    use_mediator: NotRequired[bool]
+    fast: NotRequired[bool]
 
 
 class HyperGCNHlpModule(HlpModule):
@@ -72,16 +62,16 @@ class HyperGCNHlpModule(HlpModule):
         metrics: Optional[MetricCollection] = None,
     ):
         encoder = HyperGCN(
-            in_channels=encoder_config.in_channels,
-            hidden_channels=encoder_config.hidden_channels,
-            num_classes=encoder_config.out_channels,
-            bias=encoder_config.bias,
-            use_batch_normalization=encoder_config.use_batch_normalization,
-            drop_rate=encoder_config.drop_rate,
-            use_mediator=encoder_config.use_mediator,
-            fast=encoder_config.fast,
+            in_channels=encoder_config["in_channels"],
+            hidden_channels=encoder_config["hidden_channels"],
+            num_classes=encoder_config["out_channels"],
+            bias=encoder_config.get("bias", True),
+            use_batch_normalization=encoder_config.get("use_batch_normalization", False),
+            drop_rate=encoder_config.get("drop_rate", 0.5),
+            use_mediator=encoder_config.get("use_mediator", False),
+            fast=encoder_config.get("fast", True),
         )
-        decoder = SLP(in_channels=encoder_config.out_channels, out_channels=1)
+        decoder = SLP(in_channels=encoder_config["out_channels"], out_channels=1)
 
         super().__init__(
             encoder=encoder,

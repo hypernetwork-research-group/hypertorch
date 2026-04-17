@@ -1,15 +1,16 @@
 from torch import Tensor, nn, optim
-from typing import Dict, Literal, Optional
+from typing import Dict, Literal, Optional, TypedDict
+from typing_extensions import NotRequired
 from hyperbench.models import MLP, SLP
 from hyperbench.nn import HyperedgeAggregator
 from hyperbench.types import HData
 from torchmetrics import MetricCollection
 from hyperbench.utils import ActivationFn, NormalizationFn, Stage
 
-from .hlp import HlpModule
+from hyperbench.hlp.hlp import HlpModule
 
 
-class EncoderConfig:
+class MlpEncoderConfig(TypedDict):
     """
     Configuration for the MLP encoder in MLPHlpModule.
 
@@ -26,29 +27,16 @@ class EncoderConfig:
         drop_rate: Dropout rate to apply after each MLP layer (except the last one). Defaults to ``0.0`` (no dropout).
     """
 
-    def __init__(
-        self,
-        in_channels: int,
-        out_channels: int = 1,
-        num_layers: int = 1,
-        hidden_channels: Optional[int] = None,
-        activation_fn: Optional[ActivationFn] = None,
-        activation_fn_kwargs: Optional[Dict] = None,
-        normalization_fn: Optional[NormalizationFn] = None,
-        normalization_fn_kwargs: Optional[Dict] = None,
-        bias: bool = True,
-        drop_rate: float = 0.0,
-    ):
-        self.in_channels = in_channels
-        self.hidden_channels = hidden_channels
-        self.out_channels = out_channels
-        self.num_layers = num_layers
-        self.activation_fn = activation_fn
-        self.activation_fn_kwargs = activation_fn_kwargs
-        self.normalization_fn = normalization_fn
-        self.normalization_fn_kwargs = normalization_fn_kwargs
-        self.bias = bias
-        self.drop_rate = drop_rate
+    in_channels: int
+    out_channels: NotRequired[int]
+    num_layers: NotRequired[int]
+    hidden_channels: NotRequired[Optional[int]]
+    activation_fn: NotRequired[Optional[ActivationFn]]
+    activation_fn_kwargs: NotRequired[Optional[Dict]]
+    normalization_fn: NotRequired[Optional[NormalizationFn]]
+    normalization_fn_kwargs: NotRequired[Optional[Dict]]
+    bias: NotRequired[bool]
+    drop_rate: NotRequired[float]
 
 
 class MLPHlpModule(HlpModule):
@@ -68,7 +56,7 @@ class MLPHlpModule(HlpModule):
 
     def __init__(
         self,
-        encoder_config: EncoderConfig,
+        encoder_config: MlpEncoderConfig,
         aggregation: Literal["mean", "max", "min", "sum"] = "mean",
         loss_fn: Optional[nn.Module] = None,
         lr: float = 0.001,
@@ -76,21 +64,21 @@ class MLPHlpModule(HlpModule):
     ):
         # The encoder outputs node embeddings of shape (num_nodes, out_channels).
         encoder = MLP(
-            in_channels=encoder_config.in_channels,
-            hidden_channels=encoder_config.hidden_channels,
-            out_channels=encoder_config.out_channels,
-            num_layers=encoder_config.num_layers,
-            activation_fn=encoder_config.activation_fn,
-            activation_fn_kwargs=encoder_config.activation_fn_kwargs,
-            normalization_fn=encoder_config.normalization_fn,
-            normalization_fn_kwargs=encoder_config.normalization_fn_kwargs,
-            bias=encoder_config.bias,
-            drop_rate=encoder_config.drop_rate,
+            in_channels=encoder_config["in_channels"],
+            hidden_channels=encoder_config.get("hidden_channels"),
+            out_channels=encoder_config.get("out_channels", 1),
+            num_layers=encoder_config.get("num_layers", 1),
+            activation_fn=encoder_config.get("activation_fn"),
+            activation_fn_kwargs=encoder_config.get("activation_fn_kwargs"),
+            normalization_fn=encoder_config.get("normalization_fn"),
+            normalization_fn_kwargs=encoder_config.get("normalization_fn_kwargs"),
+            bias=encoder_config.get("bias", True),
+            drop_rate=encoder_config.get("drop_rate", 0.0),
         )
 
         # The decoder takes in the aggregated hyperedge embeddings of shape (num_hyperedges, encoder_config.out_channels)
         # and produces a score for each hyperedge of shape (num_hyperedges, 1).
-        decoder = SLP(in_channels=encoder_config.out_channels, out_channels=1)
+        decoder = SLP(in_channels=encoder_config.get("out_channels", 1), out_channels=1)
 
         super().__init__(
             encoder=encoder,

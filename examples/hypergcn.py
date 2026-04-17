@@ -1,7 +1,7 @@
 from torchmetrics import MetricCollection
 from torchmetrics.classification import BinaryAUROC, BinaryAveragePrecision
 from lightning.pytorch.callbacks import EarlyStopping
-from hyperbench.hlp import HyperGCNHlpModule, HyperGCNEncoderConfig
+from hyperbench.hlp import HyperGCNHlpModule
 from hyperbench.nn import LaplacianPositionalEncodingEnricher
 from hyperbench.train import MultiModelTrainer, RandomNegativeSampler
 from hyperbench.types import HData, ModelConfig
@@ -94,13 +94,16 @@ if __name__ == "__main__":
     )
 
     mean_hypergcn_module = HyperGCNHlpModule(
-        encoder_config=HyperGCNEncoderConfig(
-            in_channels=dataset.hdata.x.shape[1],
-            hidden_channels=16,
-            out_channels=16,
-            drop_rate=0.5,
-            fast=False,
-        ),
+        encoder_config={
+            "in_channels": dataset.hdata.x.shape[1],
+            "hidden_channels": 16,
+            "out_channels": 16,
+            "bias": True,
+            "use_batch_normalization": False,
+            "drop_rate": 0.5,
+            "use_mediator": False,
+            "fast": False,
+        },
         aggregation="mean",
         lr=0.01,
         weight_decay=5e-4,
@@ -141,24 +144,6 @@ if __name__ == "__main__":
             val_dataloader=val_loader_full_hypergraph,
             verbose=True,
         )
-        results = trainer.test_all(dataloader=test_loader_full_hypergraph, verbose=True)
-
-        print("Training and evaluation completed. Preparing results...")
-
-        models = list(results.keys())
-        metrics = list(next(iter(results.values())).keys()) if results else []
-        model_w = max(len("Model"), max((len(m) for m in models), default=5))
-        metric_ws = {
-            m: max(len(m), max(len(f"{results[mdl][m]:.4f}") for mdl in models)) for m in metrics
-        }
-        header = f"{'Model':<{model_w}}  " + "  ".join(f"{m:>{metric_ws[m]}}" for m in metrics)
-
-        print(header)
-        print("-" * len(header))
-        for model, model_results in results.items():
-            row = f"{model:<{model_w}}  " + "  ".join(
-                f"{v:>{metric_ws[m]}.4f}" for m, v in model_results.items()
-            )
-            print(row)
+        trainer.test_all(dataloader=test_loader_full_hypergraph, verbose=True)
 
     print("Complete!")

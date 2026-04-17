@@ -8,7 +8,7 @@ from hyperbench.models import CommonNeighbors
 from hyperbench.types import HData, Hypergraph
 from hyperbench.utils import Aggregation, Stage
 
-from .hlp import HlpModule
+from hyperbench.hlp.hlp import HlpModule
 
 
 class CommonNeighborsHlpModule(HlpModule):
