@@ -49,7 +49,7 @@ class LaTexTableLogger(Logger):
     """
 
     # Class-level shared store: {experiment_name: {model_name: {metric_name: value}}}
-    __shared_stores: ClassVar[Dict[str, Dict[str, Dict[str, float]]]] = {}
+    __shared_stores: ClassVar[Dict[str, Dict[str, Dict[str, Any]]]] = {}
 
     def __init__(
         self,
@@ -64,11 +64,7 @@ class LaTexTableLogger(Logger):
         self.__model_name = model_name
         self.__experiment_name = experiment_name
         self.__precision = precision
-        d: LaTexTableConfig = {
-            "table_caption": f"Results for Experiments",
-            "sort_by": ["asc"],
-            "border": True,
-        }
+        d: LaTexTableConfig = {}
         self.__options = options if options is not None else d
         if experiment_name not in LaTexTableLogger.__shared_stores:
             LaTexTableLogger.__shared_stores[experiment_name] = {}
@@ -82,7 +78,7 @@ class LaTexTableLogger(Logger):
         return self.__model_name
 
     @property
-    def store(self) -> Dict[str, Dict[str, float]]:
+    def store(self) -> Dict[str, Dict[str, Any]]:
         """Access the shared store for the current experiment."""
         return dict(LaTexTableLogger.__shared_stores.get(self.__experiment_name, {}))
 
@@ -94,7 +90,7 @@ class LaTexTableLogger(Logger):
     def experiment_name(self) -> Union[str, Path]:
         return self.__experiment_name
 
-    def log_metrics(self, metrics: Dict[str, float], step: Optional[int] = None) -> None:
+    def log_metrics(self, metrics: Dict[str, Any], step: Optional[int] = None) -> None:
         """Accumulate metrics for this model. Called by Lightning on every log step.
 
         Keeps only the latest value for each metric name. For example, if
@@ -125,9 +121,7 @@ class LaTexTableLogger(Logger):
         sort_by_opt = self.__options.get("sort_by")
         border_opt = self.__options.get("border")
 
-        table_caption = (
-            table_caption_opt if isinstance(table_caption_opt, str) else "Results for Experiments"
-        )
+        table_caption = table_caption_opt if isinstance(table_caption_opt, str) else None
         sort_by = sort_by_opt if isinstance(sort_by_opt, list) and sort_by_opt else ["asc"]
         border = border_opt if isinstance(border_opt, bool) else True
 
@@ -155,9 +149,7 @@ class LaTexTableLogger(Logger):
 
     def __split_results(
         self,
-    ) -> Tuple[
-        Dict[str, Dict[str, float]], Dict[str, Dict[str, float]], Dict[str, Dict[str, float]]
-    ]:
+    ) -> Tuple[Dict[str, Dict[str, Any]], Dict[str, Dict[str, Any]], Dict[str, Dict[str, Any]]]:
         """Split all accumulated metrics into test vs train/val groups.
 
         Metrics are classified by their name prefix:
@@ -167,14 +159,14 @@ class LaTexTableLogger(Logger):
         - anything else (e.g., "epoch") --> ignored
         """
         store = self.__shared_stores.get(self.__experiment_name, {})
-        test_results: Dict[str, Dict[str, float]] = {}
-        train_results: Dict[str, Dict[str, float]] = {}
-        val_results: Dict[str, Dict[str, float]] = {}
+        test_results: Dict[str, Dict[str, Any]] = {}
+        train_results: Dict[str, Dict[str, Any]] = {}
+        val_results: Dict[str, Dict[str, Any]] = {}
 
         for model_name, metrics in store.items():
-            test_metrics: Dict[str, float] = {}
-            train_metrics: Dict[str, float] = {}
-            val_metrics: Dict[str, float] = {}
+            test_metrics: Dict[str, Any] = {}
+            train_metrics: Dict[str, Any] = {}
+            val_metrics: Dict[str, Any] = {}
 
             for metric_name, value in metrics.items():
                 if metric_name.startswith("test"):
@@ -199,11 +191,13 @@ class LaTexTableLogger(Logger):
 
     def __build_comparison_table(
         self,
-        results: Mapping[str, Mapping[str, float]],
+        sections_data: list[tuple[str, Mapping[str, Mapping[str, Any]]]],
         precision: int = 4,
-        title: str | None = None,
+        table_caption: str | None = None,
+        sort_by: list[str] | None = None,
+        border: bool = True,
     ) -> str:
-        if not results:
+        if not sections_data:
             return ""
 
         def esc(value: str) -> str:
@@ -220,77 +214,9 @@ class LaTexTableLogger(Logger):
                 .replace("^", "\\textasciicircum{}")
             )
 
-        all_metrics = sorted(
-            {metric for model_metrics in results.values() for metric in model_metrics}
-        )
-
-        num_cols = 1 + len(all_metrics)
-        col_spec = "l" + "c" * len(all_metrics)
-
-        header_cells = "Model"
-        if all_metrics:
-            header_cells += " & " + " & ".join(esc(metric) for metric in all_metrics)
-        header_line = header_cells + r" \\"
-
-        rows = []
-        for model_name in sorted(results):
-            model_metrics = results[model_name]
-            cells = [esc(model_name)]
-            for metric in all_metrics:
-                value = model_metrics.get(metric)
-                if isinstance(value, (int, float)):
-                    cells.append(f"{value:.{precision}f}")
-                else:
-                    cells.append("-")
-            rows.append(" & ".join(cells) + r" \\")
-
-        lines = [rf"\begin{{tabular}}{{{col_spec}}}", r"\hline"]
-
-        if title:
-            title_line = rf"\multicolumn{{{num_cols}}}{{c}}{{\textbf{{{esc(title)}}}}} \\"
-            lines.extend([title_line, r"\hline"])
-
-        lines.extend(
-            [
-                header_line,
-                r"\hline",
-                *rows,
-                r"\hline",
-                r"\end{tabular}",
-            ]
-        )
-
-        return "\n".join(lines)
-
-    def __save_comparison_tables(
-        self,
-        test_results: Mapping[str, Mapping[str, float]],
-        save_dir: Union[str, Path],
-        train_results: Mapping[str, Mapping[str, float]] | None = None,
-        val_results: Mapping[str, Mapping[str, float]] | None = None,
-        filename: str = "overall.tex",
-        precision: int = 4,
-        table_caption: str | None = None,
-        sort_by: list[str] | None = None,
-        border: bool = True,
-    ) -> Path:
-        def esc(value: str) -> str:
-            return (
-                value.replace("\\", "\\textbackslash{}")
-                .replace("&", "\\&")
-                .replace("%", "\\%")
-                .replace("$", "\\$")
-                .replace("#", "\\#")
-                .replace("_", "\\_")
-                .replace("{", "\\{")
-                .replace("}", "\\}")
-                .replace("~", "\\textasciitilde{}")
-                .replace("^", "\\textasciicircum{}")
-            )
-
         def section_lines(
             title: str,
-            results: Mapping[str, Mapping[str, float]],
+            results: Mapping[str, Mapping[str, Any]],
             total_cols: int,
         ) -> list[str]:
             metrics = sorted({m for mm in results.values() for m in mm})
@@ -327,7 +253,6 @@ class LaTexTableLogger(Logger):
                 bounds = metric_bounds.get(metric)
                 if bounds is None:
                     return text
-
                 v_min, v_max = bounds
 
                 if v_max == v_min:
@@ -395,6 +320,50 @@ class LaTexTableLogger(Logger):
             lines.append(r"\hline" if border else r"\midrule")
             return lines
 
+        # One tabular must have fixed column count; use max needed across sections.
+        max_metrics = max(len({m for mm in rs.values() for m in mm}) for _, rs in sections_data)
+        total_cols = 1 + max_metrics
+        if border:
+            col_spec = "|".join(["l", *(["c"] * (total_cols - 1))])
+        else:
+            col_spec = "l" + "c" * (total_cols - 1)
+
+        lines: list[str] = [
+            rf"\begin{{tabular}}{{{col_spec}}}",
+            r"\hline" if border else r"\toprule",
+        ]
+
+        for title, results in sections_data:
+            lines.extend(section_lines(title, results, total_cols))
+
+        # Replace the last section-ending rule with a final closing \hline.
+        last_rule = r"\hline" if border else r"\midrule"
+        final_rule = r"\hline"
+        lines and lines[-1] == last_rule and lines.pop()
+        lines and lines[-1] == final_rule or lines.append(final_rule)
+
+        lines.append(r"\end{tabular}")
+        table_lines: list[str] = [r"\begin{table}[htbp]", r"\centering"]
+
+        if table_caption:
+            table_lines.append(rf"\caption{{{esc(table_caption)}}}")
+
+        table_lines.extend(lines)
+        table_lines.append(r"\end{table}")
+        return "\n".join(table_lines) + "\n"
+
+    def __save_comparison_tables(
+        self,
+        test_results: Mapping[str, Mapping[str, Any]],
+        save_dir: Union[str, Path],
+        train_results: Mapping[str, Mapping[str, Any]] | None = None,
+        val_results: Mapping[str, Mapping[str, Any]] | None = None,
+        filename: str = "overall.tex",
+        precision: int = 4,
+        table_caption: str | None = None,
+        sort_by: list[str] | None = None,
+        border: bool = True,
+    ) -> Path:
         sections_data: list[tuple[str, Mapping[str, Mapping[str, float]]]] = []
         if test_results:
             sections_data.append(("Test Results", test_results))
@@ -403,43 +372,13 @@ class LaTexTableLogger(Logger):
         if val_results:
             sections_data.append(("Val Results", val_results))
 
-        if not sections_data:
-            content = ""
-        else:
-            # One tabular must have fixed column count; use max needed across sections.
-            max_metrics = max(len({m for mm in rs.values() for m in mm}) for _, rs in sections_data)
-            total_cols = 1 + max_metrics
-            if border:
-                col_spec = "|".join(["l", *(["c"] * (total_cols - 1))])
-            else:
-                col_spec = "l" + "c" * (total_cols - 1)
-
-            lines: list[str] = [
-                rf"\begin{{tabular}}{{{col_spec}}}",
-                r"\hline" if border else r"\toprule",
-            ]
-
-            for title, results in sections_data:
-                lines.extend(section_lines(title, results, total_cols))
-
-            # Replace last section-ending \midrule with \bottomrule
-            last_rule = r"\hline" if border else r"\midrule"
-            final_rule = r"\hline" if border else r"\bottomrule"
-            if lines[-1] == last_rule:
-                lines[-1] = final_rule
-            else:
-                lines.append(final_rule)
-
-            lines.append(r"\end{tabular}")
-            table_lines: list[str] = [r"\begin{table}[htbp]", r"\centering"]
-
-            if table_caption:
-                table_lines.append(rf"\caption{{{esc(table_caption)}}}")
-
-            table_lines.extend(lines)
-            table_lines.append(r"\end{table}")
-
-            content = "\n".join(table_lines) + "\n"
+        content = self.__build_comparison_table(
+            sections_data=sections_data,
+            precision=precision,
+            border=border,
+            table_caption=table_caption,
+            sort_by=sort_by,
+        )
 
         save_path = Path(save_dir)
         save_path.mkdir(parents=True, exist_ok=True)

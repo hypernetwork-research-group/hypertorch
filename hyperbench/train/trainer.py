@@ -421,7 +421,7 @@ class MultiModelTrainer:
                 options={
                     "table_caption": f"Results for Experiments",
                     "sort_by": ["des", "asc"],
-                    "border": True,
+                    "border": False,
                 },
             ),
             MarkdownTableLogger(
