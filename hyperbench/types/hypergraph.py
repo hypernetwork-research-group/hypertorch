@@ -2,10 +2,9 @@ import torch
 
 from torch import Tensor
 from typing import Optional, List, Dict, Any, Literal, Set, TypeAlias
-
 from hyperbench.utils import to_0based_ids
 
-from .graph import EdgeIndex, Graph
+from hyperbench.types.graph import EdgeIndex, Graph
 
 
 Neighborhood: TypeAlias = Set[int]

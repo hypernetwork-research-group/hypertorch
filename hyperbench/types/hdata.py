@@ -5,7 +5,7 @@ from typing import Optional, Sequence, Dict, Any
 from hyperbench.utils import empty_hyperedgeindex, empty_nodefeatures
 from hyperbench.nn.enricher import EnrichmentMode, NodeFeatureEnricher
 
-from .hypergraph import HyperedgeIndex
+from hyperbench.types.hypergraph import HyperedgeIndex
 
 
 class HData:
