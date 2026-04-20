@@ -5,18 +5,19 @@ description = ""
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "fastjsonschema>=2.21.2",
-    "huggingface-hub>=1.7.1",
-    "lightning>=2.5.5",
-    "numpy>=1.240",
-    "requests>=2.32.5",
-    "torch>=2.9.1",
-    "torch-geometric>=2.7.0",
-    "zstandard>=0.25.0",
+    "fastjsonschema==2.21.2",
+    "huggingface-hub==1.10.2",
+    "lightning==2.6.1",
+    "numpy==2.2.6 ; python_full_version < '3.11'",
+    "numpy==2.4.4 ; python_full_version >= '3.11'",
+    "requests==2.33.1",
+    "torch==2.11.0",
+    "torch-geometric==2.7.0",
+    "zstandard==0.25.0",
 ]
 
 [project.optional-dependencies]
-tensorboard = ["tensorboard>=2.14"]
+tensorboard = ["tensorboard==2.20.0"]
 
 [tool.setuptools.packages.find]
 where = ["."]
@@ -24,13 +25,13 @@ include = ["hyperbench"]
 
 [dependency-groups]
 dev = [
-    "mkdocs>=1.6.1",
-    "mkdocs-material>=9.5.0",
-    "mkdocstrings[python]>=0.24.0",
-    "pre-commit>=4.5.1",
-    "pytest>=8.4.2",
-    "pytest-cov>=7.0.0",
-    "ruff>=0.14.13",
+    "mkdocs==1.6.1",
+    "mkdocs-material==9.7.6",
+    "mkdocstrings[python]==1.0.3",
+    "pre-commit==4.5.1",
+    "pytest==9.0.3",
+    "pytest-cov==7.1.0",
+    "ruff==0.15.10",
 ]
 
 [tool.pytest.ini_options]
