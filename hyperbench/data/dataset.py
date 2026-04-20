@@ -274,7 +274,7 @@ class Dataset(TorchDataset):
         hyperedge_index = torch.tensor([node_ids, hyperedge_ids], dtype=torch.long)
 
         return HData(
-            x, hyperedge_index, hyperedge_attr, hyperedge_weights, num_nodes, num_hyperedges
+            x, hyperedge_index, hyperedge_weights, hyperedge_attr, num_nodes, num_hyperedges
         )
 
     def enrich_node_features(

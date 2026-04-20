@@ -25,6 +25,29 @@ def mock_dataset_single_sample():
 
 
 @pytest.fixture
+def mock_dataset_single_sample_with_weights():
+    # Full dataset: 3 nodes (0,1,2), 2 hyperedges (0,1)
+    x = torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
+    hyperedge_index = torch.tensor([[0, 1, 1, 2], [0, 0, 1, 1]])
+    hyperedge_attr = torch.tensor([[0.5], [0.7]])
+    hyperedge_weights = torch.tensor([[0.8], [0.9]])
+    hdata = HData(
+        x=x,
+        hyperedge_index=hyperedge_index,
+        hyperedge_weights=hyperedge_weights,
+        hyperedge_attr=hyperedge_attr,
+    )
+
+    dataset = MagicMock(spec=Dataset)
+    dataset.hdata = hdata
+    dataset.__len__.return_value = 3
+    # __getitem__ returns HData with global IDs and no features
+    dataset.__getitem__.return_value = HData.from_hyperedge_index(hyperedge_index)
+
+    return dataset
+
+
+@pytest.fixture
 def mock_dataset_multiple_samples():
     # Full dataset: 5 nodes (0-4), 3 hyperedges (0-2)
     x = torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0], [7.0, 8.0], [9.0, 10.0]])
@@ -81,6 +104,32 @@ def test_collate_single_sample(mock_dataset_single_sample):
     )
     assert batched.num_nodes == 3
     assert batched.num_hyperedges == 2
+
+
+def test_collate_single_sample_with_weights(mock_dataset_single_sample_with_weights):
+    loader = DataLoader(mock_dataset_single_sample_with_weights, batch_size=1)
+
+    sample = mock_dataset_single_sample_with_weights[0]
+    batched = loader.collate([sample])
+
+    # Features come from cached dataset.hdata indexed by global node/hyperedge IDs
+    expected_x = torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
+    expected_hyperedge_attr = torch.tensor([[0.5], [0.7]])
+    expected_hyeredge_index = torch.tensor([[0, 1, 1, 2], [0, 0, 1, 1]])
+    expected_hyperedge_weights = torch.tensor([[0.8], [0.9]])
+
+    assert torch.equal(batched.x, expected_x)
+    assert batched.hyperedge_index.shape == (2, 4)
+    assert torch.equal(batched.hyperedge_index, expected_hyeredge_index)
+    assert torch.equal(
+        utils.to_non_empty_edgeattr(batched.hyperedge_attr),
+        expected_hyperedge_attr,
+    )
+    assert batched.num_nodes == 3
+    assert batched.num_hyperedges == 2
+    assert torch.equal(
+        utils.to_non_empty_edgeattr(batched.hyperedge_weights), expected_hyperedge_weights
+    )
 
 
 def test_collate_single_sample_rebases_to_0based():
