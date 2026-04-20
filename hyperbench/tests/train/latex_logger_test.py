@@ -6,7 +6,11 @@ from hyperbench.train import MultiModelTrainer
 from hyperbench.types import ModelConfig
 from hyperbench.tests import new_mock_trainer
 
-from hyperbench.train.latex_logger import LaTexTableConfig, LaTexTableLogger
+from hyperbench.train.latex_logger import (
+    LaTexTableConfig,
+    LaTexTableLogger,
+    colorize_metric_value,
+)
 
 
 @pytest.fixture
@@ -67,12 +71,10 @@ def test_latex_logger_log_metrics_accumulates_metrics(tmp_path, mock_option_conf
 def test_markdown_table_logger_finalize_does_not_save_when_no_results(
     tmp_path, mock_option_configs
 ):
-    experiment_name = "exp3"
-
     logger = LaTexTableLogger(
         save_dir=str(tmp_path),
         model_name="model_a",
-        experiment_name=experiment_name,
+        experiment_name="exp3",
         options=mock_option_configs,
     )
     logger.finalize("success")
@@ -108,6 +110,16 @@ def test_save_comparison_tables_no_val_results(tmp_path, mock_option_configs):
     )
 
     logger.log_metrics({"test_auc": 0.80, "train_loss": 0.50})
+    assert (
+        colorize_metric_value(
+            metric="test_auc",
+            value=0.80,
+            text="0.8000",
+            metric_bounds=None,
+            sort_order="asc",
+        )
+        == "0.8000"
+    )
     logger.finalize("success")
 
     assert (tmp_path / "comparison" / "overall.tex").exists()
@@ -431,46 +443,6 @@ def test_best_value_underline_only_numeric(tmp_path):
     assert r"test\_note" in content
     assert r"\underline{0.9100}" in content
     assert r" & - \\" in content
-
-
-def test_missing_metric_bounds_render_plain_text(tmp_path):
-    class DualViewResults(dict[str, dict[str, object]]):
-        def __init__(self, bounds_view, row_view):
-            super().__init__(row_view)
-            self._bounds_view = bounds_view
-
-        def values(self):
-            return self._bounds_view.values()
-
-    options: LaTexTableConfig = {
-        "table_caption": "Missing Metric Bounds",
-        "sort_by": ["des"],
-        "border": True,
-    }
-
-    logger = LaTexTableLogger(
-        save_dir=str(tmp_path),
-        model_name="model_a",
-        experiment_name="exp_missing_metric_bounds",
-        options=options,
-    )
-
-    results = DualViewResults(
-        {"model_a": {"test_auc": "n/a"}},
-        {"model_a": {"test_auc": 0.91}},
-    )
-
-    with patch.object(
-        LaTexTableLogger,
-        "_LaTexTableLogger__split_results",
-        return_value=(results, {}, {}),
-    ):
-        logger.finalize("success")
-
-    content = (tmp_path / "comparison" / "test.tex").read_text()
-    assert r"0.9100" in content
-    assert r"\cellcolor" not in content
-    assert r"\underline{0.9100}" not in content
 
 
 def test_final_rule_converts_section_rule_for_non_bordered(tmp_path):

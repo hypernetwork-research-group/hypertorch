@@ -1,15 +1,61 @@
 from pathlib import Path
-from typing import Any, ClassVar, Dict, Optional, Tuple, TypedDict
+from typing import Any, ClassVar, Dict, Optional, Tuple, TypedDict, Mapping, Union
 from typing_extensions import NotRequired
 
 from lightning.pytorch.loggers import Logger
-
-from pathlib import Path
-from typing import Mapping, Union
-
 from torch_geometric import metrics
 
 from hyperbench import train
+
+
+def collect_metric_bounds(
+    results: Mapping[str, Mapping[str, Any]],
+    metric_names: list[str],
+) -> dict[str, tuple[float, float]]:
+    metric_bounds: dict[str, tuple[float, float]] = {}
+
+    for metric in metric_names:
+        values = [
+            float(value)
+            for model_metrics in results.values()
+            for key, value in model_metrics.items()
+            if key == metric and isinstance(value, (int, float))
+        ]
+        if values:
+            metric_bounds[metric] = (min(values), max(values))
+
+    return metric_bounds
+
+
+def colorize_metric_value(
+    metric: str,
+    value: float,
+    text: str,
+    metric_bounds: Mapping[str, tuple[float, float]] | None,
+    sort_order: str,
+) -> str:
+    bounds = None if metric_bounds is None else metric_bounds.get(metric)
+    if bounds is None:
+        return text
+
+    v_min, v_max = bounds
+
+    if v_max == v_min:
+        quality = 1.0
+    else:
+        t = (value - v_min) / (v_max - v_min)  # 0..1, low->high
+        quality = (1.0 - t) if sort_order.lower() == "asc" else t
+
+    red = int(round((1.0 - quality) * 100))
+    green = int(round(quality * 100))
+
+    # Blend toward white to keep the gradient readable but less bright.
+    soften = 0.35
+    red_chan = int(round(((red / 100) * (1.0 - soften) + soften) * 255))
+    green_chan = int(round(((green / 100) * (1.0 - soften) + soften) * 255))
+    blue_chan = int(round(soften * 255))
+
+    return rf"\cellcolor[HTML]{{{red_chan:02X}{green_chan:02X}{blue_chan:02X}}}{text}"
 
 
 class LaTexTableConfig(TypedDict):
@@ -237,40 +283,7 @@ class LaTexTableLogger(Logger):
                     else normalized_orders[-1]
                 )
 
-            metric_bounds: dict[str, tuple[float, float]] = {}
-
-            for metric in metrics:
-                vals = [
-                    float(v)
-                    for model_metrics in results.values()
-                    for k, v in model_metrics.items()
-                    if k == metric and isinstance(v, (int, float))
-                ]
-                if vals:
-                    metric_bounds[metric] = (min(vals), max(vals))
-
-            def colorize_value(metric: str, value: float, text: str) -> str:
-                bounds = metric_bounds.get(metric)
-                if bounds is None:
-                    return text
-                v_min, v_max = bounds
-
-                if v_max == v_min:
-                    quality = 1.0
-                else:
-                    t = (value - v_min) / (v_max - v_min)  # 0..1, low->high
-                    quality = (1.0 - t) if metric_sort.get(metric, "asc") == "asc" else t
-
-                red = int(round((1.0 - quality) * 100))
-                green = int(round(quality * 100))
-
-                # Blend toward white to keep the gradient readable but less bright.
-                soften = 0.35
-                red_chan = int(round(((red / 100) * (1.0 - soften) + soften) * 255))
-                green_chan = int(round(((green / 100) * (1.0 - soften) + soften) * 255))
-                blue_chan = int(round(soften * 255))
-
-                return rf"\cellcolor[HTML]{{{red_chan:02X}{green_chan:02X}{blue_chan:02X}}}{text}"
+            metric_bounds = collect_metric_bounds(results, metrics)
 
             best_by_metric: dict[str, float] = {}
 
@@ -309,7 +322,15 @@ class LaTexTableLogger(Logger):
                         if best is not None and value == best:
                             formatted = rf"\underline{{{formatted}}}"
 
-                        row.append(colorize_value(metric, float(value), formatted))
+                        row.append(
+                            colorize_metric_value(
+                                metric=metric,
+                                value=float(value),
+                                text=formatted,
+                                metric_bounds=metric_bounds,
+                                sort_order=metric_sort.get(metric, "asc"),
+                            )
+                        )
                     else:
                         row.append("-")
 
@@ -364,7 +385,7 @@ class LaTexTableLogger(Logger):
         sort_by: list[str] | None = None,
         border: bool = True,
     ) -> Path:
-        sections_data: list[tuple[str, Mapping[str, Mapping[str, float]]]] = []
+        sections_data: list[tuple[str, Mapping[str, Mapping[str, Any]]]] = []
         if test_results:
             sections_data.append(("Test Results", test_results))
         if train_results:

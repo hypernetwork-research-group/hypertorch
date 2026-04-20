@@ -406,8 +406,6 @@ class MultiModelTrainer:
 
         experiment_name = str(self.__next_experiment_name(self.log_dir))
 
-        experiment_name = str(self.__next_experiment_name(self.log_dir))
-
         loggers: List[Logger] = [
             CSVLogger(
                 save_dir=self.log_dir,
