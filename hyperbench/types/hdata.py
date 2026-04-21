@@ -297,6 +297,76 @@ class HData:
             y=self.y,
         )
 
+    def enrich_hyperedge_weights(
+        self,
+        enricher: Enricher,
+        enrichment_mode: Optional[EnrichmentMode] = None,
+    ) -> "HData":
+        """Enrich hyperedge weights using the provided hyperedge weight enricher.
+        Args:
+            enricher: An instance of Enricher to generate hyperedge weights from hypergraph topology.
+            enrichment_mode: How to combine generated weights with existing ``hdata.hyperedge_weights``.
+                ``concatenate`` appends new weights to the existing 1D tensor.
+                ``replace`` substitutes ``hdata.hyperedge_weights`` entirely.
+        """
+        enriched_weights = enricher.enrich(self.hyperedge_index)
+
+        match enrichment_mode:
+            case "concatenate":
+                hyperedge_weights = (
+                    torch.cat([self.hyperedge_weights, enriched_weights], dim=0)
+                    if self.hyperedge_weights is not None
+                    else enriched_weights
+                )
+            case _:
+                hyperedge_weights = enriched_weights
+
+        return self.__class__(
+            x=self.x,
+            hyperedge_index=self.hyperedge_index,
+            hyperedge_weights=hyperedge_weights,
+            hyperedge_attr=self.hyperedge_attr,
+            num_nodes=self.num_nodes,
+            num_hyperedges=self.num_hyperedges,
+            y=self.y,
+        )
+
+    def enrich_hyperedge_attr(
+        self,
+        enricher: Enricher,
+        enrichment_mode: Optional[EnrichmentMode] = None,
+    ) -> "HData":
+        """
+        Enrich hyperedge features using the provided hyperedge feature enricher.
+
+        Args:
+            enricher: An instance of Enricher to generate structural hyperedge features from hypergraph topology.
+            enrichment_mode: How to combine generated features with existing ``hdata.hyperedge_attr``.
+                ``concatenate`` appends new features as additional columns.
+                ``replace`` substitutes ``hdata.hyperedge_attr`` entirely.
+        """
+        enriched_features = enricher.enrich(self.hyperedge_index)
+
+        match enrichment_mode:
+            case "concatenate":
+                hyperedge_attr = (
+                    torch.cat([self.hyperedge_attr, enriched_features], dim=1)
+                    if self.hyperedge_attr is not None
+                    else enriched_features
+                )
+            case _:
+                hyperedge_attr = enriched_features
+
+        return self.__class__(
+            x=self.x,
+            hyperedge_index=self.hyperedge_index,
+            hyperedge_weights=self.hyperedge_weights,
+            hyperedge_attr=hyperedge_attr,
+            num_nodes=self.num_nodes,
+            num_hyperedges=self.num_hyperedges,
+            y=self.y,
+        )
+
     def get_device_if_all_consistent(self) -> torch.device:
         """
         Check that all tensors are on the same device and return that device.

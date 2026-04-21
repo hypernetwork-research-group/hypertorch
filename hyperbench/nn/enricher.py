@@ -30,7 +30,34 @@ class Enricher(ABC):
         raise NotImplementedError("Subclasses must implement the enrich method.")
 
 
-class HyperedgeWeightsEnricher(Enricher):
+class NodeEnricher(Enricher, ABC):
+    pass
+
+
+class HyperedgeEnricher(Enricher, ABC):
+    pass
+
+
+class HyperedgeAttrsEnricher(HyperedgeEnricher):
+    """
+    Base class for enrichers that generate hyperedge attributes (features).
+    """
+
+    def __init__(
+        self,
+        cache_dir: Optional[str] = None,
+    ):
+        super().__init__(cache_dir=cache_dir)
+
+    def enrich(self, hyperedge_index: Tensor) -> Tensor:
+
+        # add a feature of 1.0 for each hyperedge, which can be used as a baseline or for methods that require hyperedge features.
+        hyperedge_attrs = torch.ones(size=(hyperedge_index.size(1),), device=hyperedge_index.device)
+
+        return hyperedge_attrs
+
+
+class HyperedgeWeightsEnricher(HyperedgeEnricher):
     """
     Generates hyperedge weights based on the number of nodes in each hyperedge.
     """
@@ -58,7 +85,7 @@ class HyperedgeWeightsEnricher(Enricher):
         return weights
 
 
-class LaplacianPositionalEncodingEnricher(Enricher):
+class LaplacianPositionalEncodingEnricher(NodeEnricher):
     def __init__(
         self,
         num_features: int,
