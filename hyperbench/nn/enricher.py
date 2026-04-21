@@ -11,8 +11,6 @@ EnrichmentMode: TypeAlias = Literal["concatenate", "replace"]
 
 class Enricher(ABC):
     """
-
-
     Attributes:
         cache_dir: Directory for saving/loading cached features. If ``None``, caching is disabled.
     """
