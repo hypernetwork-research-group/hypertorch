@@ -112,8 +112,8 @@ class LaTexTableLogger(Logger):
         self.__precision = precision
         d: LaTexTableConfig = {}
         self.__options = options if options is not None else d
-        if experiment_name not in LaTexTableLogger.__shared_stores:
-            LaTexTableLogger.__shared_stores[experiment_name] = {}
+        if experiment_name not in self.__shared_stores:
+            self.__shared_stores[experiment_name] = {}
 
     @property
     def name(self) -> str:
@@ -126,7 +126,7 @@ class LaTexTableLogger(Logger):
     @property
     def store(self) -> Dict[str, Dict[str, Any]]:
         """Access the shared store for the current experiment."""
-        return dict(LaTexTableLogger.__shared_stores.get(self.__experiment_name, {}))
+        return dict(self.__shared_stores.get(self.__experiment_name, {}))
 
     @property
     def save_dir(self) -> Union[str, Path]:
@@ -142,7 +142,7 @@ class LaTexTableLogger(Logger):
         Keeps only the latest value for each metric name. For example, if
         "val_auc" is logged at step 10 and step 20, only the step 20 value is kept.
         """
-        store = LaTexTableLogger.__shared_stores[self.__experiment_name]
+        store = self.__shared_stores[self.__experiment_name]
         if self.__model_name not in store:
             store[self.__model_name] = {}
         store[self.__model_name].update(metrics)
