@@ -1,5 +1,10 @@
 from torchmetrics import MetricCollection
-from torchmetrics.classification import BinaryAUROC, BinaryAveragePrecision
+from torchmetrics.classification import (
+    BinaryAUROC,
+    BinaryAveragePrecision,
+    BinaryPrecision,
+    BinaryRecall,
+)
 from lightning.pytorch.callbacks import EarlyStopping
 from hyperbench.hlp import HyperGCNHlpModule
 from hyperbench.nn import LaplacianPositionalEncodingEnricher
@@ -16,6 +21,8 @@ if __name__ == "__main__":
         {
             "auc": BinaryAUROC(),
             "avg_precision": BinaryAveragePrecision(),
+            "precision": BinaryPrecision(),
+            "recall": BinaryRecall(),
         }
     )
 
@@ -23,10 +30,6 @@ if __name__ == "__main__":
 
     dataset = AlgebraDataset(sampling_strategy=sampling_strategy, prepare=True)
     dataset.remove_hyperedges_with_fewer_than_k_nodes(k=2)
-    dataset.enrich_node_features(
-        enricher=LaplacianPositionalEncodingEnricher(num_features=32),
-        enrichment_mode="replace",
-    )
     if verbose:
         print(f"Dataset:\n {dataset.hdata}\n")
 
@@ -70,6 +73,15 @@ if __name__ == "__main__":
         if verbose:
             print(f"{name} dataset after adding negative samples: {shuffled_hdata}\n")
 
+    print("Enriching node features...")
+
+    train_dataset.enrich_node_features(
+        enricher=LaplacianPositionalEncodingEnricher(num_features=32),
+        enrichment_mode="replace",
+    )
+    val_dataset.hdata.x = train_dataset.hdata.x[: val_dataset.hdata.num_nodes]
+    test_dataset.hdata.x = train_dataset.hdata.x[:, : test_dataset.hdata.num_nodes]
+
     print("Creating dataloaders...")
 
     train_loader_full_hypergraph = DataLoader(
@@ -96,7 +108,7 @@ if __name__ == "__main__":
 
     mean_hypergcn_module = HyperGCNHlpModule(
         encoder_config={
-            "in_channels": dataset.hdata.x.shape[1],
+            "in_channels": 32,
             "hidden_channels": 16,
             "out_channels": 16,
             "bias": True,
