@@ -1,9 +1,8 @@
-from unittest.mock import patch
-
 import pytest
 import json
 import torch
 
+from unittest.mock import patch
 from hyperbench.types import HIFHypergraph, Hypergraph, HyperedgeIndex
 from hyperbench.tests import MOCK_BASE_PATH
 
@@ -161,6 +160,94 @@ def test_hyperedge_index_item_returns_tensor(hyperedge_index_tensor):
     hyperedge_index = HyperedgeIndex(hyperedge_index_tensor)
 
     assert torch.equal(hyperedge_index.item, hyperedge_index_tensor)
+
+
+def test_hyperedge_index_all_ids_properties_return_original_rows():
+    hyperedge_index_tensor = torch.tensor([[3, 1, 3, 2], [9, 7, 9, 8]], dtype=torch.long)
+
+    hyperedge_index = HyperedgeIndex(hyperedge_index_tensor)
+
+    assert torch.equal(hyperedge_index.all_node_ids, hyperedge_index_tensor[0])
+    assert torch.equal(hyperedge_index.all_hyperedge_ids, hyperedge_index_tensor[1])
+
+
+def test_hyperedge_index_unique_ids_properties_are_sorted():
+    hyperedge_index_tensor = torch.tensor([[3, 1, 3, 2], [9, 7, 9, 8]], dtype=torch.long)
+
+    hyperedge_index = HyperedgeIndex(hyperedge_index_tensor)
+
+    assert torch.equal(hyperedge_index.node_ids, torch.tensor([1, 2, 3], dtype=torch.long))
+    assert torch.equal(hyperedge_index.hyperedge_ids, torch.tensor([7, 8, 9], dtype=torch.long))
+
+
+@pytest.mark.parametrize(
+    "hyperedge_index_tensor, expected_num_incidences",
+    [
+        pytest.param(torch.zeros((2, 0), dtype=torch.long), 0, id="empty_hypergraph"),
+        pytest.param(
+            torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long),
+            4,
+            id="four_incidences",
+        ),
+    ],
+)
+def test_hyperedge_index_num_incidences(hyperedge_index_tensor, expected_num_incidences):
+    hyperedge_index = HyperedgeIndex(hyperedge_index_tensor)
+
+    assert hyperedge_index.num_incidences == expected_num_incidences
+
+
+def test_remove_duplicate_edges_removes_duplicates_and_returns_self():
+    hyperedge_index_tensor = torch.tensor(
+        [[0, 1, 0, 2, 0], [0, 0, 0, 1, 0]],
+        dtype=torch.long,
+    )
+
+    hyperedge_index = HyperedgeIndex(hyperedge_index_tensor)
+    result = hyperedge_index.remove_duplicate_edges()
+
+    expected_hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 1]], dtype=torch.long)
+
+    assert result is hyperedge_index
+    assert torch.equal(result.item, expected_hyperedge_index)
+
+
+def test_remove_duplicate_edges_preserves_device_dtype_and_contiguity():
+    hyperedge_index_tensor = torch.tensor([[0, 0, 1, 1], [0, 0, 1, 1]], dtype=torch.long)
+
+    hyperedge_index = HyperedgeIndex(hyperedge_index_tensor)
+    hyperedge_index.remove_duplicate_edges()
+
+    assert hyperedge_index.item.device == hyperedge_index_tensor.device
+    assert hyperedge_index.item.dtype == hyperedge_index_tensor.dtype
+    assert hyperedge_index.item.is_contiguous()
+
+
+def test_to_0based_without_explicit_ids_rebases_nodes_and_hyperedges():
+    hyperedge_index_tensor = torch.tensor([[5, 3, 5, 8], [9, 10, 9, 11]], dtype=torch.long)
+
+    hyperedge_index = HyperedgeIndex(hyperedge_index_tensor)
+    result = hyperedge_index.to_0based()
+
+    expected_hyperedge_index = torch.tensor([[1, 0, 1, 2], [0, 1, 0, 2]], dtype=torch.long)
+
+    assert result is hyperedge_index
+    assert torch.equal(result.item, expected_hyperedge_index)
+
+
+def test_to_0based_with_explicit_ids_rebases_using_provided_spaces():
+    hyperedge_index_tensor = torch.tensor([[10, 20, 20, 30], [5, 5, 7, 7]], dtype=torch.long)
+
+    hyperedge_index = HyperedgeIndex(hyperedge_index_tensor)
+    result = hyperedge_index.to_0based(
+        node_ids_to_rebase=torch.tensor([10, 20, 30], dtype=torch.long),
+        hyperedge_ids_to_rebase=torch.tensor([5, 7], dtype=torch.long),
+    )
+
+    expected_hyperedge_index = torch.tensor([[0, 1, 1, 2], [0, 0, 1, 1]], dtype=torch.long)
+
+    assert result is hyperedge_index
+    assert torch.equal(result.item, expected_hyperedge_index)
 
 
 @pytest.mark.parametrize(
@@ -627,6 +714,33 @@ def test_reduce_to_graph_raises_on_single_node_hyperedge():
         HyperedgeIndex(hyperedge_index).reduce_to_edge_index_on_random_direction(x)
 
 
+def test_reduce_to_graph_returns_empty_edge_index_for_empty_hyperedge_index():
+    x = torch.empty((0, 2))
+    hyperedge_index = torch.empty((2, 0), dtype=torch.long)
+
+    result = HyperedgeIndex(hyperedge_index).reduce_to_edge_index_on_random_direction(x)
+
+    assert result.shape == (2, 0)  # Empty edge index
+
+
+def test_reduce_to_graph_keeps_duplicate_edges_from_different_hyperedges():
+    x = torch.tensor([[0.0, 0.0], [1.0, 1.0]])
+    # Two identical hyperedges {0,1} and both reduce to the same graph edge
+    hyperedge_index = torch.tensor([[0, 1, 0, 1], [0, 0, 1, 1]])
+
+    result = HyperedgeIndex(hyperedge_index).reduce_to_edge_index_on_random_direction(
+        x,
+        with_mediators=False,
+        remove_selfloops=False,
+    )
+
+    assert result.shape == (2, 2)
+
+    # hyperedges [[0,1],[0,1]] both project to graph edge [0,1],
+    # so we expect two identical edges in the output
+    assert torch.equal(result, torch.tensor([[0, 0], [1, 1]]))
+
+
 @pytest.mark.parametrize(
     "hyperedge_index_tensor, k, expected_tensor",
     [
@@ -868,6 +982,23 @@ def test_get_sparse_incidence_matrix_with_explicit_sizes_adds_isolated_nodes_and
         ]
     )
     assert incidence_matrix.shape == (3, 2)
+    assert torch.allclose(incidence_matrix.to_dense(), expected_incidence_matrix, atol=1e-6)
+
+
+def test_get_sparse_incidence_matrix_sums_duplicate_incidences_when_coalesced():
+    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 0, 1], [0, 0, 1]], dtype=torch.long))
+
+    incidence_matrix = hyperedge_index.get_sparse_incidence_matrix()
+
+    expected_incidence_matrix = torch.tensor(
+        [
+            [2.0, 0.0],
+            [0.0, 1.0],
+        ]
+    )
+
+    assert incidence_matrix.is_sparse
+    assert incidence_matrix.shape == (2, 2)
     assert torch.allclose(incidence_matrix.to_dense(), expected_incidence_matrix, atol=1e-6)
 
 
