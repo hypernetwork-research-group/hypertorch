@@ -95,9 +95,5 @@ class HyperGCN(nn.Module):
             ).get_sparse_normalized_gcn_laplacian(num_nodes=x.size(0))
 
         for layer in self.layers:
-            x = layer(
-                x,
-                hyperedge_index,
-                gcn_laplacian_matrix=self.cached_gcn_laplacian_matrix,
-            )
+            x = layer(x, hyperedge_index, gcn_laplacian_matrix=self.cached_gcn_laplacian_matrix)
         return x
