@@ -239,6 +239,44 @@ def test_hdata_to_cpu_moves_hyperedge_weights():
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA not available")
+def test_hdata_to_cuda_moves_hyperedge_weights():
+    x = torch.randn(3, 2)
+    hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 0]])
+    hyperedge_weights = torch.tensor([0.25])
+    hdata = HData(
+        x=x,
+        hyperedge_index=hyperedge_index,
+        hyperedge_weights=hyperedge_weights,
+    )
+
+    returned = hdata.to("cuda")
+
+    assert returned is hdata
+    assert hdata.hyperedge_weights is not None
+    assert torch.equal(hdata.hyperedge_weights.cpu(), hyperedge_weights)
+    assert hdata.hyperedge_weights.device.type == "cuda"
+
+
+@pytest.mark.skipif(not torch.mps.is_available(), reason="MPS not available")
+def test_hdata_to_mps_moves_hyperedge_weights():
+    x = torch.randn(3, 2)
+    hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 0]])
+    hyperedge_weights = torch.tensor([0.25])
+    hdata = HData(
+        x=x,
+        hyperedge_index=hyperedge_index,
+        hyperedge_weights=hyperedge_weights,
+    )
+
+    returned = hdata.to("mps")
+
+    assert returned is hdata
+    assert hdata.hyperedge_weights is not None
+    assert torch.equal(hdata.hyperedge_weights.cpu(), hyperedge_weights)
+    assert hdata.hyperedge_weights.device.type == "mps"
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA not available")
 def test_hdata_to_cuda(mock_hdata):
     returned = mock_hdata.to("cuda")
 
@@ -251,7 +289,7 @@ def test_hdata_to_cuda(mock_hdata):
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA not available")
 def test_hdata_to_cuda_handles_none_hyperedge_attr(mock_hdata):
-    mock_hdata.edge_attr = None
+    mock_hdata.hyperedge_attr = None
     returned = mock_hdata.to("cuda")
 
     assert returned is mock_hdata
