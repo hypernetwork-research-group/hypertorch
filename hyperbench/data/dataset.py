@@ -322,9 +322,9 @@ class Dataset(TorchDataset):
 
         Args:
             enricher: An instance of HyperedgeEnricher to generate structural hyperedge features from hypergraph topology.
-            enrichment_mode: How to combine generated features with existing ``hdata.hyperedge_attr``.
+            enrichment_mode: How to combine generated features with existing ``hdata.hyperedge_weights``.
                 ``concatenate`` appends new features as additional columns.
-                ``replace`` substitutes ``hdata.hyperedge_attr`` entirely.
+                ``replace`` substitutes ``hdata.hyperedge_weights`` entirely.
         """
         self.hdata = self.hdata.enrich_hyperedge_weights(enricher, enrichment_mode)
 
@@ -542,14 +542,16 @@ class Dataset(TorchDataset):
     ) -> Optional[Tensor]:
         # hyperedge-attr: shape [num_hyperedges, num_hyperedge_attributes]
         hyperedge_attr = None
-        has_hyperedges = self.hypergraph.edges is not None and len(self.hypergraph.edges) > 0
+        has_hyperedges = (
+            self.hypergraph.hyperedges is not None and len(self.hypergraph.hyperedges) > 0
+        )
         has_any_hyperedge_attrs = has_hyperedges and any(
-            "attrs" in edge for edge in self.hypergraph.edges
+            "attrs" in edge for edge in self.hypergraph.hyperedges
         )
 
         if has_any_hyperedge_attrs:
             hyperedge_id_to_attrs: Dict[Any, Dict[str, Any]] = {
-                e.get("edge"): e.get("attrs", {}) for e in self.hypergraph.edges
+                e.get("edge"): e.get("attrs", {}) for e in self.hypergraph.hyperedges
             }
 
             hyperedge_attr_keys = self.__collect_attr_keys(list(hyperedge_id_to_attrs.values()))
@@ -596,19 +598,17 @@ class Dataset(TorchDataset):
         # Initialize the hyperedge weights tensor
         hyperedge_weights = None
 
-        # Check if hyperedge weights are available
-        has_hyperedge_weights = self.hypergraph.edges is not None and all(
-            "weight" in edge for edge in self.hypergraph.edges
+        has_hyperedge_weights = self.hypergraph.hyperedges is not None and all(
+            "weight" in edge for edge in self.hypergraph.hyperedges
         )
 
         if has_hyperedge_weights:
-            # Collect all hyperedge weights
-            weights = [edge.get("weight", 1.0) for edge in self.hypergraph.edges]
+            weights = [edge.get("weight", 1.0) for edge in self.hypergraph.hyperedges]
             hyperedge_weights = torch.tensor(weights, dtype=torch.float)
         elif (
             has_hyperedge_weights is False
-            and self.hypergraph.edges is not None
-            and any("weight" in edge for edge in self.hypergraph.edges)
+            and self.hypergraph.hyperedges is not None
+            and any("weight" in edge for edge in self.hypergraph.hyperedges)
         ):
             raise ValueError(
                 "Some hyperedges have weights while others do not. All hyperedges must either have weights or none."

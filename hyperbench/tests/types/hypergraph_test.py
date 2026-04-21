@@ -27,7 +27,7 @@ def test_empty_hifhypergraph_returns_empty_hifhypergraph():
 
     assert hifhypergraph.network_type == "undirected"
     assert hifhypergraph.nodes == []
-    assert hifhypergraph.edges == []
+    assert hifhypergraph.hyperedges == []
     assert hifhypergraph.incidences == []
     assert hifhypergraph.metadata == {}
 

@@ -20,7 +20,7 @@ class HIFHypergraph:
         metadata: Optional dictionary of metadata about the hypergraph.
         incidences: A list of incidences, where each incidence is a dictionary with keys "node" and "edge" representing the relationship between a node and a hyperedge.
         nodes: A list of node dictionaries, where each dictionary contains information about a node (e.g., id, features).
-        edges: A list of edge dictionaries, where each dictionary contains information about a hyperedge (e.g., id, features).
+        hyperedges: A list of edge dictionaries, where each dictionary contains information about a hyperedge (e.g., id, features).
     """
 
     def __init__(
@@ -29,20 +29,20 @@ class HIFHypergraph:
         metadata: Optional[Dict[str, Any]] = None,
         incidences: Optional[List[Dict[str, Any]]] = None,
         nodes: Optional[List[Dict[str, Any]]] = None,
-        edges: Optional[List[Dict[str, Any]]] = None,
+        hyperedges: Optional[List[Dict[str, Any]]] = None,
     ):
         self.network_type = network_type
         self.metadata = metadata if metadata is not None else {}
         self.incidences = incidences if incidences is not None else []
         self.nodes = nodes if nodes is not None else []
-        self.edges = edges if edges is not None else []
+        self.hyperedges = hyperedges if hyperedges is not None else []
 
     @classmethod
     def empty(cls) -> "HIFHypergraph":
         return cls(
             network_type="undirected",
             nodes=[],
-            edges=[],
+            hyperedges=[],
             incidences=[],
             metadata=None,
         )
@@ -53,7 +53,7 @@ class HIFHypergraph:
         Create a Hypergraph from a HIF (Hypergraph Interchange Format).
 
         Args:
-            data: Dictionary with keys: network-type, metadata, incidences, nodes, edges
+            data: Dictionary with keys: network-type, metadata, incidences, nodes, hyperedges
 
         Returns:
             Hypergraph instance
@@ -62,14 +62,14 @@ class HIFHypergraph:
         metadata = data.get("metadata", {})
         incidences = data.get("incidences", [])
         nodes = data.get("nodes", [])
-        edges = data.get("edges", [])
+        hyperedges = data.get("edges", [])
 
         return cls(
             network_type=network_type,
             metadata=metadata,
             incidences=incidences,
             nodes=nodes,
-            edges=edges,
+            hyperedges=hyperedges,
         )
 
     @property
@@ -78,9 +78,9 @@ class HIFHypergraph:
         return len(self.nodes)
 
     @property
-    def num_edges(self) -> int:
-        """Return the number of edges in the hypergraph."""
-        return len(self.edges)
+    def num_hyperedges(self) -> int:
+        """Return the number of hyperedges in the hypergraph."""
+        return len(self.hyperedges)
 
     def stats(self) -> Dict[str, Any]:
         """
@@ -115,7 +115,7 @@ class HIFHypergraph:
             hyperedge_size[edge_id] = hyperedge_size.get(edge_id, 0) + 1
 
         num_nodes = len(self.nodes)
-        num_hyperedges = len(self.edges)
+        num_hyperedges = len(self.hyperedges)
         total_incidences = len(self.incidences)
 
         distribution_node_degree: List[int] = sorted(node_degree.values())
