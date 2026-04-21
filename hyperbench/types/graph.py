@@ -70,19 +70,18 @@ class Graph:
         return edge_index
 
     @staticmethod
-    def smoothing_with_gcn_laplacian_matrix(
+    def smoothing_with_laplacian_matrix(
         x: Tensor,
         laplacian_matrix: Tensor,
         drop_rate: float = 0.0,
     ) -> Tensor:
         r"""
-        Return the feature matrix smoothed with GCN Laplacian matrix.
-        Reference implementation: `source <https://deephypergraph.readthedocs.io/en/latest/_modules/dhg/structure/graphs/graph.html#Graph.smoothing_with_GCN>`_.
+        Return the feature matrix smoothed with a Laplacian matrix.
 
         Args:
             x: Node feature matrix. Size ``(|V|, C)``.
-            laplacian_matrix: The GCN Laplacian matrix. Size ``(|V|, |V|)``.
-            drop_rate: Randomly dropout the connections in adjacency matrix with probability ``drop_rate``. Defaults to ``0.0``.
+            laplacian_matrix: The Laplacian matrix. Size ``(|V|, |V|)``.
+            drop_rate: Randomly dropout the connections in the Laplacian with probability ``drop_rate``. Defaults to ``0.0``.
 
         Returns:
             The smoothed feature matrix. Size ``(|V|, C)``.
