@@ -11,10 +11,7 @@ EnrichmentMode: TypeAlias = Literal["concatenate", "replace"]
 
 class Enricher(ABC):
     """
-    Generates structural node features from hypergraph topology.
 
-    For methods that require a regular graph (node2vec, eigenvector_centrality),
-    the hypergraph is converted via clique expansion using sparse H @ H^T.
 
     Attributes:
         cache_dir: Directory for saving/loading cached features. If ``None``, caching is disabled.
@@ -31,10 +28,21 @@ class Enricher(ABC):
 
 
 class NodeEnricher(Enricher, ABC):
+    """
+    Generates structural node features from hypergraph topology.
+
+    For methods that require a regular graph (node2vec, eigenvector_centrality),
+    the hypergraph is converted via clique expansion using sparse H @ H^T.
+    """
+
     pass
 
 
 class HyperedgeEnricher(Enricher, ABC):
+    """
+    Generates hyperedge features from hypergraph topology.
+    """
+
     pass
 
 
