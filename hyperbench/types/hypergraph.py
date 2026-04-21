@@ -2,7 +2,7 @@ import torch
 
 from torch import Tensor
 from typing import Optional, List, Dict, Any, Literal, Set, TypeAlias
-from hyperbench.utils import to_0based_ids
+from hyperbench.utils import sparse_dropout, to_0based_ids
 
 from hyperbench.types.graph import EdgeIndex, Graph
 
@@ -344,6 +344,30 @@ class Hypergraph:
 
         return cls(hyperedges=hyperedges)
 
+    @staticmethod
+    def smoothing_with_laplacian_matrix(
+        x: Tensor,
+        laplacian_matrix: Tensor,
+        drop_rate: float = 0.0,
+    ) -> Tensor:
+        """
+        Return the feature matrix smoothed with a Laplacian matrix.
+
+        Computes ``L @ X`` where ``L`` is the Laplacian matrix (e.g., the HGNN
+        hypergraph Laplacian ``D_n^{-1/2} H D_e^{-1} H^T D_n^{-1/2}``).
+
+        Args:
+            x: Node feature matrix. Size ``(|V|, C)``.
+            laplacian_matrix: The Laplacian matrix. Size ``(|V|, |V|)``.
+            drop_rate: Randomly dropout the connections in the Laplacian with probability ``drop_rate``. Defaults to ``0.0``.
+
+        Returns:
+            The smoothed feature matrix. Size ``(|V|, C)``.
+        """
+        if drop_rate > 0.0:
+            laplacian_matrix = sparse_dropout(laplacian_matrix, drop_rate)
+        return laplacian_matrix.matmul(x)
+
 
 class HyperedgeIndex:
     """
@@ -434,6 +458,183 @@ class HyperedgeIndex:
         """
         return max(self.num_nodes, num_nodes)
 
+    def get_sparse_incidence_matrix(
+        self,
+        num_nodes: Optional[int] = None,
+        num_hyperedges: Optional[int] = None,
+    ) -> Tensor:
+        """
+        Compute the sparse incidence matrix H of shape ``(num_nodes, num_hyperedges)``.
+        Each entry ``H[v, e] = 1`` if node ``v`` belongs to hyperedge ``e``, and 0 otherwise.
+
+        Args:
+            num_nodes: Total number of nodes. If ``None``, inferred from hyperedge index.
+            num_hyperedges: Total number of hyperedges. If ``None``, inferred from hyperedge index.
+
+        Returns:
+            The sparse incidence matrix H of shape ``(num_nodes, num_hyperedges)``.
+        """
+        device = self.__hyperedge_index.device
+        num_nodes = num_nodes if num_nodes is not None else self.num_nodes
+        num_hyperedges = num_hyperedges if num_hyperedges is not None else self.num_hyperedges
+
+        incidence_values = torch.ones(self.num_incidences, dtype=torch.float, device=device)
+        incidence_indices = torch.stack([self.all_node_ids, self.all_hyperedge_ids], dim=0)
+        incidence_matrix = torch.sparse_coo_tensor(
+            indices=incidence_indices,
+            values=incidence_values,
+            size=(num_nodes, num_hyperedges),
+        )
+        return incidence_matrix.coalesce()
+
+    def get_sparse_normalized_node_degree_matrix(
+        self,
+        incidence_matrix: Tensor,
+        num_nodes: Optional[int] = None,
+    ) -> Tensor:
+        """
+        Compute the sparse normalized node degree matrix D_n^-1/2.
+        The node degree ``d_n[i]`` is the number of hyperedges containing node ``i``
+        (i.e., the row-sum of the incidence matrix H).
+
+        Args:
+            incidence_matrix: The sparse incidence matrix H of shape ``(num_nodes, num_hyperedges)``.
+            num_nodes: Total number of nodes. If ``None``, inferred from hyperedge index.
+
+        Returns:
+            The sparse diagonal matrix D_n^-1/2 of shape ``(num_nodes, num_nodes)``.
+        """
+        device = self.__hyperedge_index.device
+        num_nodes = num_nodes if num_nodes is not None else self.num_nodes
+
+        # Example: hyperedge_index = [[0, 1, 2, 0],
+        #                             [0, 0, 0, 1]]
+        #                         hyperedges 0  1
+        #          -> incidence_matrix H = [[1, 1], node 0
+        #                                   [1, 0], node 1
+        #                                   [1, 0]] node 2
+        #                                          nodes 0  1  2
+        #          -> row-sum gives node degrees: d_n = [2, 1, 1], shape (num_nodes,)
+        degrees = torch.sparse.sum(incidence_matrix, dim=1).to_dense()
+
+        # Example: d_n = [2, 1, 1]
+        #          -> degree_inv_sqrt = [1/sqrt(2), 1, 1]
+        degree_inv_sqrt = degrees.pow(-0.5)
+        degree_inv_sqrt[degree_inv_sqrt == float("inf")] = 0
+
+        # Construct the sparse diagonal matrix D_n^{-1/2}
+        # Example: degree_inv_sqrt = [1/sqrt(2), 1, 1] as the diagonal values,
+        #          diagonal_indices = [[0, 0],
+        #                              [1, 1],
+        #                              [2, 2]]
+        #                      nodes 0  1   2
+        #          -> D_n^{-1/2} = [[1/sqrt(2), 0, 0], node 0
+        #                           [0, 1, 0],         node 1
+        #                           [0, 0, 1]]         node 2
+        diagonal_indices = torch.arange(num_nodes, device=device).unsqueeze(0).repeat(2, 1)
+        degree_matrix = torch.sparse_coo_tensor(
+            indices=diagonal_indices,
+            values=degree_inv_sqrt,
+            size=(num_nodes, num_nodes),
+        )
+        return degree_matrix.coalesce()
+
+    def get_sparse_normalized_hyperedge_degree_matrix(
+        self,
+        incidence_matrix: Tensor,
+        num_hyperedges: Optional[int] = None,
+    ) -> Tensor:
+        """
+        Compute the sparse normalized hyperedge degree matrix D_e^-1.
+
+        The hyperedge degree ``d_e[j]`` is the number of nodes in hyperedge ``j``
+        (i.e., the column-sum of the incidence matrix H).
+
+        Args:
+            incidence_matrix: The sparse incidence matrix H of shape ``(num_nodes, num_hyperedges)``.
+            num_hyperedges: Total number of hyperedges. If ``None``, inferred from hyperedge index.
+
+        Returns:
+            The sparse diagonal matrix D_e^-1 of shape ``(num_hyperedges, num_hyperedges)``.
+        """
+        device = self.__hyperedge_index.device
+        num_hyperedges = num_hyperedges if num_hyperedges is not None else self.num_hyperedges
+
+        # Example: hyperedge_index = [[0, 1, 2, 0],
+        #                             [0, 0, 0, 1]]
+        #                         hyperedges 0  1
+        #          -> incidence_matrix H = [[1, 1], node 0
+        #                                   [1, 0], node 1
+        #                                   [1, 0]] node 2
+        #          -> column-sum gives hyperedge degrees: d_e = [3, 1], shape (num_hyperedges,)
+        degrees = torch.sparse.sum(incidence_matrix, dim=0).to_dense()
+
+        # Example: d_e = [3, 1]
+        #          -> degree_inv = [1/3, 1]
+        degree_inv = degrees.pow(-1)
+        degree_inv[degree_inv == float("inf")] = 0
+
+        # Construct the sparse diagonal matrix D_e^{-1}
+        # Example: degree_inv = [1/3, 1] as the diagonal values,
+        #          diagonal_indices = [[0, 0],
+        #                              [1, 1]]
+        #               hyperedges 0  1
+        #          -> D_e^{-1} = [[1/3, 0], hyperedge 0
+        #                         [0, 1]]   hyperedge 1
+        diagonal_indices = torch.arange(num_hyperedges, device=device).unsqueeze(0).repeat(2, 1)
+        degree_matrix = torch.sparse_coo_tensor(
+            indices=diagonal_indices,
+            values=degree_inv,
+            size=(num_hyperedges, num_hyperedges),
+        )
+        return degree_matrix.coalesce()
+
+    def get_sparse_hgnn_laplacian(
+        self,
+        num_nodes: Optional[int] = None,
+        num_hyperedges: Optional[int] = None,
+    ) -> Tensor:
+        """
+        Compute the sparse HGNN Laplacian matrix for hypergraph spectral convolution.
+
+        Implements: ``L_HGNN = D_n^{-1/2} H D_e^{-1} H^T D_n^{-1/2}``
+
+        where:
+            - H is the incidence matrix of shape ``(num_nodes, num_hyperedges)``
+            - D_n^-1/2 is the normalized node degree matrix
+            - D_e^-1 is the inverse hyperedge degree matrix (with W = I)
+
+        Args:
+            num_nodes: Total number of nodes. If ``None``, inferred from hyperedge index.
+            num_hyperedges: Total number of hyperedges. If ``None``, inferred from hyperedge index.
+
+        Returns:
+            The sparse HGNN Laplacian matrix of shape ``(num_nodes, num_nodes)``.
+        """
+        num_nodes = num_nodes if num_nodes is not None else self.num_nodes
+        num_hyperedges = num_hyperedges if num_hyperedges is not None else self.num_hyperedges
+
+        incidence_matrix = self.get_sparse_incidence_matrix(num_nodes, num_hyperedges)
+        node_degree_matrix = self.get_sparse_normalized_node_degree_matrix(
+            incidence_matrix,
+            num_nodes,
+        )
+        hyperedge_degree_matrix = self.get_sparse_normalized_hyperedge_degree_matrix(
+            incidence_matrix, num_hyperedges
+        )
+
+        normalized_laplacian_matrix = torch.sparse.mm(
+            node_degree_matrix,
+            torch.sparse.mm(
+                incidence_matrix,
+                torch.sparse.mm(
+                    hyperedge_degree_matrix,
+                    torch.sparse.mm(incidence_matrix.t(), node_degree_matrix),
+                ),
+            ),
+        )
+        return normalized_laplacian_matrix.coalesce()
+
     def reduce_to_edge_index_on_clique_expansion(self) -> Tensor:
         """
         Construct a graph from a hypergraph via clique expansion using ``H @ H^T``, where ``H`` is the incidence matrix of the hypergraph.
@@ -446,17 +647,7 @@ class HyperedgeIndex:
         Returns:
             The edge index of the clique-expanded graph. Size ``(2, |E'|)``.
         """
-        # Build sparse incidence matrix of shape [num_nodes, num_hyperedges]
-        values = torch.ones(
-            size=(self.num_incidences,),
-            dtype=torch.float,
-            device=self.__hyperedge_index.device,
-        )
-        incidence_matrix = torch.sparse_coo_tensor(
-            indices=torch.stack([self.all_node_ids, self.all_hyperedge_ids], dim=0),
-            values=values,
-            size=(self.num_nodes, self.num_hyperedges),
-        ).coalesce()
+        incidence_matrix = self.get_sparse_incidence_matrix()
 
         # A = H @ H^T gives adjacency with self-loops on diagonal
         # Example: For hyperedge_index = [[0, 1, 2, 0],

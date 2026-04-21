@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import pytest
 import json
 import torch
@@ -701,3 +703,225 @@ def test_remove_hyperedges_with_fewer_than_k_nodes_returns_self():
     result = hyperedge_index.remove_hyperedges_with_fewer_than_k_nodes(1)
 
     assert result is hyperedge_index
+
+
+@pytest.mark.parametrize(
+    "dropout",
+    [
+        pytest.param(None, id="no_dropout"),
+        pytest.param(0.0, id="with_dropout"),
+    ],
+)
+def test_hypergraph_smoothing_with_laplacian_does_not_apply_dropout_when_not_provided(dropout):
+    x = torch.tensor([[1.0], [2.0]])
+    laplacian = torch.tensor([[1.0, 0.0], [0.0, 1.0]]).to_sparse()
+
+    with patch(
+        "hyperbench.types.hypergraph.sparse_dropout",
+        return_value=torch.zeros_like(laplacian),
+    ) as mock_sparse_dropout:
+        if dropout is not None:
+            smoothed_laplacian = Hypergraph.smoothing_with_laplacian_matrix(
+                x, laplacian, drop_rate=dropout
+            )
+        else:
+            smoothed_laplacian = Hypergraph.smoothing_with_laplacian_matrix(x, laplacian)
+
+    mock_sparse_dropout.assert_not_called()
+
+    # It is equal to x as the laplacian is identity and no dropout is applied
+    assert smoothed_laplacian.shape == x.shape
+    assert torch.equal(smoothed_laplacian, x)
+
+
+def test_hypergraph_smoothing_with_laplacian_applies_dropout_when_enabled():
+    x = torch.tensor([[1.0], [2.0]])
+    laplacian = torch.tensor([[1.0, 0.0], [0.0, 1.0]]).to_sparse()
+
+    with patch(
+        "hyperbench.types.hypergraph.sparse_dropout",
+        return_value=torch.zeros_like(laplacian),
+    ) as mock_sparse_dropout:
+        smoothed_laplacian = Hypergraph.smoothing_with_laplacian_matrix(x, laplacian, drop_rate=0.7)
+
+    mock_sparse_dropout.assert_called_once()
+
+    called_matrix, called_drop_rate = mock_sparse_dropout.call_args.args
+
+    assert called_matrix is laplacian
+    assert called_drop_rate == 0.7
+    assert smoothed_laplacian.shape == x.shape
+    assert torch.equal(smoothed_laplacian, torch.zeros_like(x))
+
+
+def test_hyperedge_index_sparse_normalized_node_degree_handles_isolated_nodes():
+    # Node 2 is isolated by setting num_nodes=3 while incidences involve only nodes 0 and 1
+    num_nodes = 3
+    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 0, 1], [0, 1, 1]]))
+    incidence_matrix = hyperedge_index.get_sparse_incidence_matrix(
+        num_nodes=num_nodes, num_hyperedges=2
+    )
+
+    node_degree_matrix = hyperedge_index.get_sparse_normalized_node_degree_matrix(
+        incidence_matrix, num_nodes=num_nodes
+    )
+
+    expected_node_degree_matrix = torch.diag(
+        torch.tensor([1 / torch.sqrt(torch.tensor(2.0)), 1.0, 0.0])
+    )
+    assert torch.allclose(node_degree_matrix.to_dense(), expected_node_degree_matrix, atol=1e-6)
+
+
+def test_hyperedge_index_sparse_normalized_hyperedge_degree_handles_empty_hyperedge_slot():
+    # Hyperedge 1 is isolated by setting num_hyperedges=2 while incidences involve only hyperedge 0
+    num_hyperedges = 2
+    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1], [0, 0]]))
+    incidence_matrix = hyperedge_index.get_sparse_incidence_matrix(
+        num_nodes=2, num_hyperedges=num_hyperedges
+    )
+
+    hyperedge_degree_matrix = hyperedge_index.get_sparse_normalized_hyperedge_degree_matrix(
+        incidence_matrix, num_hyperedges=num_hyperedges
+    )
+
+    expected_hyperedge_degree_matrix = torch.diag(torch.tensor([0.5, 0.0]))
+    assert torch.allclose(
+        hyperedge_degree_matrix.to_dense(), expected_hyperedge_degree_matrix, atol=1e-6
+    )
+
+
+def test_hyperedge_index_sparse_hgnn_laplacian_matches_formula():
+    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 0, 1], [0, 1, 1]]))
+
+    laplacian = hyperedge_index.get_sparse_hgnn_laplacian(num_nodes=3, num_hyperedges=2)
+
+    incidence_matrix = torch.tensor(
+        [
+            [1.0, 1.0],
+            [0.0, 1.0],
+            [0.0, 0.0],
+        ]
+    )
+    node_degree_inv_sqrt = torch.diag(torch.tensor([1 / torch.sqrt(torch.tensor(2.0)), 1.0, 0.0]))
+    hyperedge_degree_inv = torch.diag(torch.tensor([1.0, 0.5]))
+
+    expected_laplacian = torch.mm(
+        node_degree_inv_sqrt,
+        torch.mm(
+            incidence_matrix,
+            torch.mm(
+                hyperedge_degree_inv,
+                torch.mm(incidence_matrix.t(), node_degree_inv_sqrt),
+            ),
+        ),
+    )
+
+    assert laplacian.is_sparse
+    assert torch.allclose(laplacian.to_dense(), expected_laplacian, atol=1e-6)
+
+
+def test_get_sparse_hgnn_laplacian_inferred_equals_explicit():
+    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1, 0, 2], [0, 0, 1, 1]]))
+
+    laplacian_inferred = hyperedge_index.get_sparse_hgnn_laplacian()
+    laplacian_explicit = hyperedge_index.get_sparse_hgnn_laplacian(
+        num_nodes=3,
+        num_hyperedges=2,
+    )
+
+    assert laplacian_inferred.is_sparse
+    assert laplacian_explicit.is_sparse
+    assert torch.allclose(
+        laplacian_inferred.to_dense(),
+        laplacian_explicit.to_dense(),
+        atol=1e-6,
+    )
+
+
+def test_get_sparse_incidence_matrix_infers_shape_and_values():
+    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1, 0, 2], [0, 0, 1, 1]]))
+
+    incidence_matrix = hyperedge_index.get_sparse_incidence_matrix()
+
+    expected_incidence_matrix = torch.tensor(
+        [
+            [1.0, 1.0],
+            [1.0, 0.0],
+            [0.0, 1.0],
+        ]
+    )
+    assert incidence_matrix.is_sparse
+    assert incidence_matrix.shape == (3, 2)
+    assert torch.allclose(incidence_matrix.to_dense(), expected_incidence_matrix, atol=1e-6)
+
+
+def test_get_sparse_incidence_matrix_with_explicit_sizes_adds_isolated_nodes_and_hyperedges():
+    hyperedge_index = HyperedgeIndex(torch.tensor([[0], [0]]))
+
+    incidence_matrix = hyperedge_index.get_sparse_incidence_matrix(num_nodes=3, num_hyperedges=2)
+
+    expected_incidence_matrix = torch.tensor(
+        [
+            [1.0, 0.0],
+            [0.0, 0.0],
+            [0.0, 0.0],
+        ]
+    )
+    assert incidence_matrix.shape == (3, 2)
+    assert torch.allclose(incidence_matrix.to_dense(), expected_incidence_matrix, atol=1e-6)
+
+
+def test_get_sparse_normalized_node_degree_matrix_is_expected_diagonal():
+    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1, 0, 2], [0, 0, 1, 1]]))
+    incidence_matrix = hyperedge_index.get_sparse_incidence_matrix()  # shape (3,2)
+
+    node_degree_matrix = hyperedge_index.get_sparse_normalized_node_degree_matrix(
+        incidence_matrix,
+        num_nodes=3,
+    )
+
+    # Example: node degrees: [2,1,1]
+    #          -> inv sqrt: [1/sqrt(2),1,1]
+    expected_diagonal = torch.tensor([1 / torch.sqrt(torch.tensor(2.0)), 1.0, 1.0])
+
+    assert node_degree_matrix.is_sparse
+    assert node_degree_matrix.shape == (3, 3)
+    assert torch.allclose(node_degree_matrix.to_dense(), torch.diag(expected_diagonal), atol=1e-6)
+
+
+def test_get_sparse_normalized_node_degree_matrix_infers_num_nodes():
+    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1, 0, 2], [0, 0, 1, 1]]))
+    incidence_matrix = hyperedge_index.get_sparse_incidence_matrix()  # shape (3,2)
+
+    node_degree_matrix = hyperedge_index.get_sparse_normalized_node_degree_matrix(incidence_matrix)
+
+    assert node_degree_matrix.to_dense().shape == (3, 3)
+
+
+def test_get_sparse_normalized_hyperedge_degree_matrix_is_expected_diagonal():
+    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1, 0, 2], [0, 0, 1, 1]]))
+    incidence_matrix = hyperedge_index.get_sparse_incidence_matrix()  # shape (3,2)
+
+    hyperedge_degree_matrix = hyperedge_index.get_sparse_normalized_hyperedge_degree_matrix(
+        incidence_matrix,
+        num_hyperedges=2,
+    )
+
+    # Example: hyperedge degrees: [2, 2]
+    #          -> inv: [0.5, 0.5]
+    expected_diagonal = torch.diag(torch.tensor([0.5, 0.5]))
+
+    assert hyperedge_degree_matrix.is_sparse
+    assert hyperedge_degree_matrix.shape == (2, 2)
+    assert torch.allclose(hyperedge_degree_matrix.to_dense(), expected_diagonal, atol=1e-6)
+
+
+def test_get_sparse_normalized_hyperedge_degree_matrix_infers_num_hyperedges():
+    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1, 0, 2], [0, 0, 1, 1]]))
+    incidence_matrix = hyperedge_index.get_sparse_incidence_matrix()  # shape (3,2)
+
+    hyperedge_degree_matrix = hyperedge_index.get_sparse_normalized_hyperedge_degree_matrix(
+        incidence_matrix
+    )
+
+    assert hyperedge_degree_matrix.shape == (2, 2)
