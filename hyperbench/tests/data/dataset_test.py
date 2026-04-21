@@ -5,7 +5,7 @@ import torch
 
 from unittest.mock import patch, mock_open, MagicMock
 from hyperbench.data import AlgebraDataset, Dataset, HIFConverter, SamplingStrategy
-from hyperbench.nn import EnrichmentMode, NodeFeatureEnricher
+from hyperbench.nn import EnrichmentMode, Enricher
 from hyperbench.types import HData, HIFHypergraph
 
 
@@ -970,7 +970,7 @@ def test_from_hdata_process_raises(mock_hdata):
 def test_enrich_node_features_replace(mock_hdata):
     dataset = Dataset.from_hdata(mock_hdata)
 
-    enricher = MagicMock(spec=NodeFeatureEnricher)
+    enricher = MagicMock(spec=Enricher)
     enriched_x = torch.randn(3, 4)
     enricher.enrich.return_value = enriched_x
 
@@ -984,7 +984,7 @@ def test_enrich_node_features_concatenate(mock_hdata):
     dataset = Dataset.from_hdata(mock_hdata)
     original_x = dataset.hdata.x.clone()
 
-    enricher = MagicMock(spec=NodeFeatureEnricher)
+    enricher = MagicMock(spec=Enricher)
     enriched_x = torch.randn(3, 4)
     enricher.enrich.return_value = enriched_x
 

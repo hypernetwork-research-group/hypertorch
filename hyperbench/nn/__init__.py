@@ -13,6 +13,7 @@ __all__ = [
     "HyperedgeAggregator",
     "HyperGCNConv",
     "NeighborScorer",
-    "NodeFeatureEnricher",
+    "Enricher",
+    "HyperedgeWeightsEnricher",
     "LaplacianPositionalEncodingEnricher",
 ]

@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional
 from torch import Tensor
 from torch.utils.data import Dataset as TorchDataset
 
-from hyperbench.nn import EnrichmentMode, NodeFeatureEnricher
+from hyperbench.nn import EnrichmentMode, Enricher
 from hyperbench.types import HData, HIFHypergraph
 from hyperbench.utils import validate_hif_json
 
@@ -279,14 +279,14 @@ class Dataset(TorchDataset):
 
     def enrich_node_features(
         self,
-        enricher: NodeFeatureEnricher,
+        enricher: Enricher,
         enrichment_mode: Optional[EnrichmentMode] = None,
     ) -> None:
         """
         Enrich node features using the provided node feature enricher.
 
         Args:
-            enricher: An instance of NodeFeatureEnricher to generate structural node features from hypergraph topology.
+            enricher: An instance of Enricher to generate structural node features from hypergraph topology.
             enrichment_mode: How to combine generated features with existing ``hdata.x``.
                 ``concatenate`` appends new features as additional columns.
                 ``replace`` substitutes ``hdata.x`` entirely.

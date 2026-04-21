@@ -9,7 +9,7 @@ from hyperbench.types import EdgeIndex, HyperedgeIndex
 EnrichmentMode: TypeAlias = Literal["concatenate", "replace"]
 
 
-class NodeFeatureEnricher(ABC):
+class Enricher(ABC):
     """
     Generates structural node features from hypergraph topology.
 
@@ -30,7 +30,35 @@ class NodeFeatureEnricher(ABC):
         raise NotImplementedError("Subclasses must implement the enrich method.")
 
 
-class LaplacianPositionalEncodingEnricher(NodeFeatureEnricher):
+class HyperedgeWeightsEnricher(Enricher):
+    """
+    Generates hyperedge weights based on the number of nodes in each hyperedge.
+    """
+
+    def __init__(
+        self,
+        cache_dir: Optional[str] = None,
+    ):
+        super().__init__(cache_dir=cache_dir)
+
+    def enrich(self, hyperedge_index: Tensor) -> Tensor:
+        """
+        Compute edge weights as the number of nodes in each hyperedge.
+
+        Args:
+            hyperedge_index: Hyperedge index tensor of shape ``(2, num_hyperedges)``.
+
+        Returns:
+            Tensor of shape ``(num_hyperedges,)`` containing the weight of each hyperedge.
+        """
+        # Count the number of nodes in each hyperedge by counting occurrences of each hyperedge index.
+        # Example: if hyperedge_index[1] = [0, 0, 1, 1, 1], then we have 2 nodes in hyperedge 0 and 3 nodes in hyperedge 1.
+        num_hyperedges = int(hyperedge_index[1].max().item()) + 1
+        weights = torch.bincount(hyperedge_index[1], minlength=num_hyperedges).float()
+        return weights
+
+
+class LaplacianPositionalEncodingEnricher(Enricher):
     def __init__(
         self,
         num_features: int,
