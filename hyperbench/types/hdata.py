@@ -3,7 +3,7 @@ import torch
 from torch import Tensor
 from typing import Optional, Sequence, Dict, Any
 from hyperbench.utils import empty_hyperedgeindex, empty_nodefeatures
-from hyperbench.nn.enricher import EnrichmentMode, Enricher
+from hyperbench.nn.enricher import EnrichmentMode, NodeEnricher, HyperedgeEnricher
 
 from hyperbench.types.hypergraph import HyperedgeIndex
 
@@ -16,12 +16,13 @@ class HData:
         >>> x = torch.randn(10, 16)  # 10 nodes with 16 features each
         >>> hyperedge_index = torch.tensor([[0, 0, 1, 1, 1],  # node IDs
         ...                                 [0, 1, 2, 3, 4]]) # hyperedge IDs
-        >>> data = HData(x, hyperedge_index=hyperedge_index)
+        >>> data = HData(x=x, hyperedge_index=hyperedge_index)
 
     Args:
         x: Node feature matrix of shape ``[num_nodes, num_features]``.
         hyperedge_index: Hyperedge connectivity in COO format of shape ``[2, num_incidences]``,
             where ``hyperedge_index[0]`` contains node IDs and ``hyperedge_index[1]`` contains hyperedge IDs.
+        hyperedge_weights: Optional tensor of shape ``[num_hyperedges]`` containing weights for each hyperedge.
         hyperedge_attr: Hyperedge feature matrix of shape ``[num_hyperedges, num_hyperedge_features]``.
             Features associated with each hyperedge (e.g., weights, timestamps, types).
         num_nodes: Number of nodes in the hypergraph.
@@ -96,13 +97,14 @@ class HData:
         Notes:
             - ``x`` is derived from the instance with the largest number of nodes, if not provided explicitly. If there are conflicting features for the same node ID across instances, the features from the instance with the largest number of nodes will be used.
             - ``hyperedge_index`` is the concatenation of all input hyperedge indices.
+            - ``hyperedge_weights`` is the concatenation of all input hyperedge weights, if present. If some instances have hyperedge weights and others do not, the resulting ``hyperedge_weights`` will be set to ``None``.
             - ``hyperedge_attr`` is the concatenation of all input hyperedge attributes, if present. If some instances have hyperedge attributes and others do not, the resulting ``hyperedge_attr`` will be set to ``None``.
             - ``y`` is the concatenation of all input labels.
 
         Examples:
             >>> x = torch.randn(5, 8)
-            >>> pos = HData(x, torch.tensor([[0, 1, 2, 3, 4], [0, 0, 1, 2, 2]]))
-            >>> neg = HData(x, torch.tensor([[0, 2], [3, 3]]))
+            >>> pos = HData(x=x, hyperedge_index=torch.tensor([[0, 1, 2, 3, 4], [0, 0, 1, 2, 2]]))
+            >>> neg = HData(x=x, hyperedge_index=torch.tensor([[0, 2], [3, 3]]))
             >>> new = HData.cat_same_node_space([pos, neg])
             >>> new.num_nodes  # 5 — nodes [0, 1, 2, 3, 4]
             >>> new.num_hyperedges  # 4 — hyperedges [0, 1, 2, 3]
@@ -174,6 +176,7 @@ class HData:
 
         - Node features are initialized as an empty tensor of shape ``[0, 0]``.
         - Hyperedge attributes are set to ``None``.
+        - Hyperedge weights are set to ``None``.
         - The number of nodes and hyperedges are inferred from the hyperedge index.
 
         Examples:
@@ -183,6 +186,7 @@ class HData:
             >>> num_hyperedges = 3
             >>> x = []  # Empty node features with shape [0, 0]
             >>> hyperedge_attr = None
+            >>> hyperedge_weights = None
 
         Args:
             hyperedge_index: Tensor of shape ``[2, num_incidences]`` representing the hypergraph connectivity.
@@ -211,6 +215,7 @@ class HData:
             ...                        [0, 0, 0, 1, 1]]  # hyperedges 0 -> 0, 2 -> 1 (remapped to 0-based)
             >>> new_x = [x[0], x[1], x[3], x[4]]
             >>> new_hyperedge_attr = [hyperedge_attr[0], hyperedge_attr[2]]
+            >>> new_hyperedge_weights = [hyperedge_weights[0], hyperedge_weights[2]]
 
         Args:
             hdata: The original :class:`HData` containing the full hypergraph.
@@ -267,14 +272,14 @@ class HData:
 
     def enrich_node_features(
         self,
-        enricher: Enricher,
+        enricher: NodeEnricher,
         enrichment_mode: Optional[EnrichmentMode] = None,
     ) -> "HData":
         """
         Enrich node features using the provided node feature enricher.
 
         Args:
-            enricher: An instance of Enricher to generate structural node features from hypergraph topology.
+            enricher: An instance of NodeEnricher to generate structural node features from hypergraph topology.
             enrichment_mode: How to combine generated features with existing ``hdata.x``.
                 ``concatenate`` appends new features as additional columns.
                 ``replace`` substitutes ``hdata.x`` entirely.
@@ -299,12 +304,12 @@ class HData:
 
     def enrich_hyperedge_weights(
         self,
-        enricher: Enricher,
+        enricher: HyperedgeEnricher,
         enrichment_mode: Optional[EnrichmentMode] = None,
     ) -> "HData":
         """Enrich hyperedge weights using the provided hyperedge weight enricher.
         Args:
-            enricher: An instance of Enricher to generate hyperedge weights from hypergraph topology.
+            enricher: An instance of HyperedgeEnricher to generate hyperedge weights from hypergraph topology.
             enrichment_mode: How to combine generated weights with existing ``hdata.hyperedge_weights``.
                 ``concatenate`` appends new weights to the existing 1D tensor.
                 ``replace`` substitutes ``hdata.hyperedge_weights`` entirely.
@@ -333,14 +338,14 @@ class HData:
 
     def enrich_hyperedge_attr(
         self,
-        enricher: Enricher,
+        enricher: HyperedgeEnricher,
         enrichment_mode: Optional[EnrichmentMode] = None,
     ) -> "HData":
         """
         Enrich hyperedge features using the provided hyperedge feature enricher.
 
         Args:
-            enricher: An instance of Enricher to generate structural hyperedge features from hypergraph topology.
+            enricher: An instance of HyperedgeEnricher to generate structural hyperedge features from hypergraph topology.
             enrichment_mode: How to combine generated features with existing ``hdata.hyperedge_attr``.
                 ``concatenate`` appends new features as additional columns.
                 ``replace`` substitutes ``hdata.hyperedge_attr`` entirely.
@@ -425,7 +430,7 @@ class HData:
         Examples:
             >>> hyperedge_index = torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]])
             >>> y  = torch.tensor([1, 0])
-            >>> hdata = HData(x, hyperedge_index=hyperedge_index, y=y)
+            >>> hdata = HData(x=x, hyperedge_index=hyperedge_index, y=y)
             >>> shuffled_hdata = hdata.shuffle(seed=42)
             >>> shuffled_hdata.hyperedge_index  # hyperedges may be reassigned
             ... # e.g.,

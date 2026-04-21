@@ -5,7 +5,7 @@ import torch
 
 from unittest.mock import patch, mock_open, MagicMock
 from hyperbench.data import AlgebraDataset, Dataset, HIFConverter, SamplingStrategy
-from hyperbench.nn import EnrichmentMode, Enricher
+from hyperbench.nn import EnrichmentMode, NodeEnricher, HyperedgeEnricher
 from hyperbench.types import HData, HIFHypergraph
 
 
@@ -986,7 +986,7 @@ def test_from_hdata_process_raises(mock_hdata):
 def test_enrich_node_features_replace(mock_hdata):
     dataset = Dataset.from_hdata(mock_hdata)
 
-    enricher = MagicMock(spec=Enricher)
+    enricher = MagicMock(spec=NodeEnricher)
     enriched_x = torch.randn(3, 4)
     enricher.enrich.return_value = enriched_x
 
@@ -1000,7 +1000,7 @@ def test_enrich_node_features_concatenate(mock_hdata):
     dataset = Dataset.from_hdata(mock_hdata)
     original_x = dataset.hdata.x.clone()
 
-    enricher = MagicMock(spec=Enricher)
+    enricher = MagicMock(spec=NodeEnricher)
     enriched_x = torch.randn(3, 4)
     enricher.enrich.return_value = enriched_x
 
@@ -1015,7 +1015,7 @@ def test_enrich_node_features_concatenate(mock_hdata):
 def test_enrich_hyperedge_attr_replace(mock_hdata):
     dataset = Dataset.from_hdata(mock_hdata)
 
-    enricher = MagicMock(spec=Enricher)
+    enricher = MagicMock(spec=HyperedgeEnricher)
     enriched_x = torch.randn(3, 4)
     enricher.enrich.return_value = enriched_x
 
@@ -1033,7 +1033,7 @@ def test_enrich_hyperedge_attr_concatenate(mock_hdata_with_hyperedge_attr):
     assert original_hyperedge_attr is not None
     original_hyperedge_attr = original_hyperedge_attr.clone()
 
-    enricher = MagicMock(spec=Enricher)
+    enricher = MagicMock(spec=HyperedgeEnricher)
     enriched_x = torch.randn(3, 4)
     enricher.enrich.return_value = enriched_x
 
@@ -1050,7 +1050,7 @@ def test_enrich_hyperedge_attr_concatenate(mock_hdata_with_hyperedge_attr):
 def test_enrich_hyperedge_weights_replace(mock_hdata):
     dataset = Dataset.from_hdata(mock_hdata)
 
-    enricher = MagicMock(spec=Enricher)
+    enricher = MagicMock(spec=HyperedgeEnricher)
     enriched_weights = torch.randn(3)
     enricher.enrich.return_value = enriched_weights
 
@@ -1068,7 +1068,7 @@ def test_enrich_hyperedge_weights_concatenate(mock_hdata_with_hyperedge_weights)
     assert original_weights is not None
     original_weights = original_weights.clone()
 
-    enricher = MagicMock(spec=Enricher)
+    enricher = MagicMock(spec=HyperedgeEnricher)
     enriched_weights = torch.randn(3)
     enricher.enrich.return_value = enriched_weights
 

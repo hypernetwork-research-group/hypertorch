@@ -4,7 +4,7 @@ import torch
 
 from torch import Tensor
 from hyperbench import utils
-from hyperbench.nn import Enricher
+from hyperbench.nn import NodeEnricher, HyperedgeEnricher
 from hyperbench.types import HData
 
 
@@ -551,7 +551,7 @@ def test_with_y_zeros_returns_all_zeros(mock_hdata):
 
 
 def test_enrich_node_features_replace(mock_hdata):
-    enricher = MagicMock(spec=Enricher)
+    enricher = MagicMock(spec=NodeEnricher)
     enriched_x = torch.randn(5, 3)
     enricher.enrich.return_value = enriched_x
 
@@ -564,7 +564,7 @@ def test_enrich_node_features_replace(mock_hdata):
 def test_enrich_node_features_concatenate(mock_hdata):
     original_x = mock_hdata.x.clone()
 
-    enricher = MagicMock(spec=Enricher)
+    enricher = MagicMock(spec=NodeEnricher)
     enriched_x = torch.randn(5, 3)
     enricher.enrich.return_value = enriched_x
 

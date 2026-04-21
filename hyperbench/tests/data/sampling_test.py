@@ -15,14 +15,14 @@ from hyperbench.types import HData
 def mock_four_node_two_hyperedge_hdata():
     x = torch.ones((4, 1), dtype=torch.float)
     hyperedge_index = torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long)
-    return HData(x, hyperedge_index, num_nodes=4, num_hyperedges=2)
+    return HData(x=x, hyperedge_index=hyperedge_index, num_nodes=4, num_hyperedges=2)
 
 
 @pytest.fixture
 def mock_single_node_single_hyperedge_hdata():
     x = torch.ones((1, 1), dtype=torch.float)
     hyperedge_index = torch.tensor([[0], [0]], dtype=torch.long)
-    return HData(x, hyperedge_index, num_nodes=1, num_hyperedges=1)
+    return HData(x=x, hyperedge_index=hyperedge_index, num_nodes=1, num_hyperedges=1)
 
 
 @pytest.fixture
