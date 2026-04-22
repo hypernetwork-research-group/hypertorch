@@ -307,7 +307,7 @@ class HIFLoader:
             hyperedge_id_to_idx=hyperedge_id_to_idx,
             num_hyperedges=num_hyperedges,
         )
-    
+
         hyperedge_index = torch.tensor([node_ids, hyperedge_ids], dtype=torch.long)
 
         return HData(x, hyperedge_index, hyperedge_attr)
