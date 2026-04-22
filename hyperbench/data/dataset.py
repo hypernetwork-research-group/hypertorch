@@ -281,9 +281,6 @@ class Dataset(TorchDataset):
             hyperedge_attr=hyperedge_attr,
             num_nodes=num_nodes,
             num_hyperedges=num_hyperedges,
-            hyperedge_attr=hyperedge_attr,
-            num_nodes=num_nodes,
-            num_hyperedges=num_hyperedges,
             global_node_ids=HyperedgeIndex(hyperedge_index).node_ids,
         )
 

@@ -33,6 +33,7 @@ class NodeEnricher(Enricher, ABC):
     """
     Base class for node enrichers.
     """
+
     pass
 
 
@@ -40,6 +41,7 @@ class HyperedgeEnricher(Enricher, ABC):
     """
     Base class for hyperedge enrichers.
     """
+
     pass
 
 
