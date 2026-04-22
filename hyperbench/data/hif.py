@@ -197,14 +197,14 @@ class HIFLoader:
     ) -> Optional[Tensor]:
         # hyperedge-attr: shape [num_hyperedges, num_hyperedge_attributes]
         hyperedge_attr = None
-        has_hyperedges = hypergraph.edges is not None and len(hypergraph.edges) > 0
+        has_hyperedges = hypergraph.hyperedges is not None and len(hypergraph.hyperedges) > 0
         has_any_hyperedge_attrs = has_hyperedges and any(
-            "attrs" in edge for edge in hypergraph.edges
+            "attrs" in edge for edge in hypergraph.hyperedges
         )
 
         if has_any_hyperedge_attrs:
             hyperedge_id_to_attrs: Dict[Any, Dict[str, Any]] = {
-                e.get("edge"): e.get("attrs", {}) for e in hypergraph.edges
+                e.get("edge"): e.get("attrs", {}) for e in hypergraph.hyperedges
             }
 
             hyperedge_attr_keys = HIFLoader.__collect_attr_keys(
@@ -307,10 +307,10 @@ class HIFLoader:
             hyperedge_id_to_idx=hyperedge_id_to_idx,
             num_hyperedges=num_hyperedges,
         )
-
+    
         hyperedge_index = torch.tensor([node_ids, hyperedge_ids], dtype=torch.long)
 
-        return HData(x, hyperedge_index, hyperedge_attr, num_nodes, num_hyperedges)
+        return HData(x, hyperedge_index, hyperedge_attr)
 
     @staticmethod
     def __collect_attr_keys(attr_keys: List[Dict[str, Any]]) -> List[str]:
