@@ -5,7 +5,7 @@ import warnings
 import lightning as L
 
 from pathlib import Path
-from typing import Any, Dict, List, Mapping, Optional, TypedDict
+from typing import Any, Dict, List, Mapping, Optional
 from collections.abc import Iterable
 from lightning.pytorch.accelerators import Accelerator
 from lightning.pytorch.callbacks import Callback
