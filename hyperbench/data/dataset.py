@@ -13,7 +13,8 @@ from torch import Tensor
 from torch.utils.data import Dataset as TorchDataset
 
 from hyperbench.nn import EnrichmentMode, NodeEnricher, HyperedgeEnricher
-from hyperbench.types import HData, HIFHypergraph
+from hyperbench.types import HData, HIFHypergraph, HyperedgeIndex
+from hyperbench.nn import EnrichmentMode
 from hyperbench.utils import validate_hif_json
 
 from hyperbench.data.sampling import SamplingStrategy, create_sampler_from_strategy
@@ -280,6 +281,10 @@ class Dataset(TorchDataset):
             hyperedge_attr=hyperedge_attr,
             num_nodes=num_nodes,
             num_hyperedges=num_hyperedges,
+            hyperedge_attr=hyperedge_attr,
+            num_nodes=num_nodes,
+            num_hyperedges=num_hyperedges,
+            global_node_ids=HyperedgeIndex(hyperedge_index).node_ids,
         )
 
     def enrich_node_features(
@@ -317,8 +322,6 @@ class Dataset(TorchDataset):
         self,
         enricher: HyperedgeEnricher,
         enrichment_mode: Optional[EnrichmentMode] = None,
-        alpha: float = 1.0,
-        beta: Optional[float] = None,
     ) -> None:
         """Enrich hyperedge weights using the provided hyperedge weight enricher.
 

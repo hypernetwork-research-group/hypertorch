@@ -66,6 +66,25 @@ class NegativeSampler(ABC):
 
         return negative_hyperedge_index_wrapper.item
 
+    def _new_global_node_ids(
+        self,
+        global_node_ids: Optional[Tensor],
+        negative_node_ids: Tensor,
+    ) -> Optional[Tensor]:
+        """
+        Get the global node IDs for the negative samples.
+
+        Args:
+            global_node_ids: The original global node IDs from the input data.
+            negative_node_ids: Tensor of negative node IDs.
+
+        Returns:
+            The global node IDs for the negative samples, or ``None`` if the input global node IDs are ``None``.
+        """
+        if global_node_ids is None:
+            return None
+        return global_node_ids[negative_node_ids]
+
     def _new_hyperedge_attr(
         self,
         sampled_hyperedge_attrs: List[Tensor],
@@ -222,7 +241,7 @@ class RandomNegativeSampler(NegativeSampler):
                 random_hyperedge_attr = torch.randn_like(data.hyperedge_attr[0], device=device)
                 sampled_hyperedge_attrs.append(random_hyperedge_attr)
 
-        negative_node_ids_tensor = torch.tensor(list(negative_node_ids), device=device)
+        negative_node_ids_tensor = torch.tensor(sorted(negative_node_ids), device=device)
         new_x, num_negative_nodes = self._new_x(data.x, negative_node_ids_tensor)
 
         # Example: new_hyperedge_id_offset = 3 (if data.num_edges was 3)
@@ -247,4 +266,7 @@ class RandomNegativeSampler(NegativeSampler):
             hyperedge_attr=self._new_hyperedge_attr(sampled_hyperedge_attrs, data.hyperedge_attr),
             num_nodes=num_negative_nodes,
             num_hyperedges=self.num_negative_samples,
+            global_node_ids=self._new_global_node_ids(
+                data.global_node_ids, negative_node_ids_tensor
+            ),
         ).with_y_zeros()

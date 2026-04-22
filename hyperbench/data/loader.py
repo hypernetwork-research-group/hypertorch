@@ -77,7 +77,14 @@ class DataLoader(TorchDataLoader):
         hyperedge_index_wrapper = HyperedgeIndex(collated_hyperedge_index).remove_duplicate_edges()
 
         hyperedge_ids = hyperedge_index_wrapper.hyperedge_ids
-        collated_x = self.__cached_dataset_hdata.x[hyperedge_index_wrapper.node_ids]
+        node_ids = hyperedge_index_wrapper.node_ids
+
+        collated_x = self.__cached_dataset_hdata.x[node_ids]
+
+        collated_global_node_ids = None
+        if self.__cached_dataset_hdata.global_node_ids is not None:
+            collated_global_node_ids = self.__cached_dataset_hdata.global_node_ids[node_ids]
+
         collated_y = self.__cached_dataset_hdata.y[hyperedge_ids]
 
         collated_hyperedge_attr = None
@@ -96,6 +103,7 @@ class DataLoader(TorchDataLoader):
             x=collated_x,
             hyperedge_index=collated_hyperedge_index,
             hyperedge_weights=collated_hyperedge_weights,
+            global_node_ids=collated_global_node_ids,
             hyperedge_attr=collated_hyperedge_attr,
             num_nodes=hyperedge_index_wrapper.num_nodes,
             num_hyperedges=hyperedge_index_wrapper.num_hyperedges,

@@ -32,6 +32,8 @@ class HData:
         y: Labels for hyperedges, of shape ``[num_hyperedges]``.
             Used for supervised learning tasks. For unsupervised tasks, this can be ignored.
             Default is a tensor of ones, indicating all hyperedges are positive examples.
+        global_node_ids: Optional stable node IDs of shape ``[num_nodes]`` matching the row order of ``x``.
+            Use this to preserve access to the canonical node space when ``hyperedge_index`` is rebased locally.
     """
 
     def __init__(
@@ -43,6 +45,7 @@ class HData:
         num_nodes: Optional[int] = None,
         num_hyperedges: Optional[int] = None,
         y: Optional[Tensor] = None,
+        global_node_ids: Optional[Tensor] = None,
     ):
         self.x: Tensor = x
 
@@ -66,6 +69,11 @@ class HData:
             num_hyperedges if num_hyperedges is not None else hyperedge_index_wrapper.num_hyperedges
         )
 
+        self.global_node_ids: Optional[Tensor] = (
+            # torch.arange is to handle isolated nodes
+            global_node_ids if global_node_ids is not None else torch.arange(self.num_nodes)
+        )
+
         self.y = (
             y
             if y is not None
@@ -80,6 +88,7 @@ class HData:
             f"    num_nodes={self.num_nodes},\n"
             f"    num_hyperedges={self.num_hyperedges},\n"
             f"    x_shape={self.x.shape},\n"
+            f"    global_node_ids_shape={self.global_node_ids.shape if self.global_node_ids is not None else None},\n"
             f"    hyperedge_index_shape={self.hyperedge_index.shape},\n"
             f"    hyperedge_weights_shape={self.hyperedge_weights.shape if self.hyperedge_weights is not None else None},\n"
             f"    hyperedge_attr_shape={self.hyperedge_attr.shape if self.hyperedge_attr is not None else None},\n"
@@ -154,6 +163,7 @@ class HData:
             hyperedge_attr=new_hyperedge_attr,
             num_nodes=new_x.size(0),
             num_hyperedges=new_y.size(0),
+            global_node_ids=max(hdatas, key=lambda hdata: hdata.num_nodes).global_node_ids,
             y=new_y,
         )
 
@@ -166,6 +176,7 @@ class HData:
             hyperedge_attr=None,
             num_nodes=0,
             num_hyperedges=0,
+            global_node_ids=torch.empty(size=(0, 0), dtype=torch.long),
             y=None,
         )
 
@@ -199,6 +210,7 @@ class HData:
             hyperedge_index=hyperedge_index,
             hyperedge_weights=None,
             hyperedge_attr=None,
+            global_node_ids=None,
             y=None,
         )
 
@@ -249,6 +261,9 @@ class HData:
         )
 
         new_x = hdata.x[split_unique_node_ids]
+        new_global_node_ids = None
+        if hdata.global_node_ids is not None:
+            new_global_node_ids = hdata.global_node_ids[split_unique_node_ids]
         new_y = hdata.y[split_unique_hyperedge_ids]
 
         # Subset hyperedge_attr if present
@@ -267,6 +282,7 @@ class HData:
             hyperedge_attr=new_hyperedge_attr,
             num_nodes=len(split_unique_node_ids),
             num_hyperedges=len(split_unique_hyperedge_ids),
+            global_node_ids=new_global_node_ids,
             y=new_y,
         )
 
@@ -333,6 +349,7 @@ class HData:
             hyperedge_attr=self.hyperedge_attr,
             num_nodes=self.num_nodes,
             num_hyperedges=self.num_hyperedges,
+            global_node_ids=self.global_node_ids,
             y=self.y,
         )
 
@@ -384,6 +401,8 @@ class HData:
             ValueError: If tensors are on different devices.
         """
         devices = {self.x.device, self.hyperedge_index.device, self.y.device}
+        if self.global_node_ids is not None:
+            devices.add(self.global_node_ids.device)
         if self.hyperedge_attr is not None:
             devices.add(self.hyperedge_attr.device)
         if self.hyperedge_weights is not None:
@@ -399,6 +418,9 @@ class HData:
         ).remove_hyperedges_with_fewer_than_k_nodes(k)
 
         x = self.x[hyperedge_index_wrapper.node_ids]
+        global_node_ids = None
+        if self.global_node_ids is not None:
+            global_node_ids = self.global_node_ids[hyperedge_index_wrapper.node_ids]
         y = self.y[hyperedge_index_wrapper.hyperedge_ids]
 
         hyperedge_attr = None
@@ -416,6 +438,7 @@ class HData:
             hyperedge_attr=hyperedge_attr,
             num_nodes=hyperedge_index_wrapper.num_nodes,
             num_hyperedges=hyperedge_index_wrapper.num_hyperedges,
+            global_node_ids=global_node_ids,
             y=y,
         )
 
@@ -488,6 +511,7 @@ class HData:
             hyperedge_attr=new_hyperedge_attr,
             num_nodes=self.num_nodes,
             num_hyperedges=self.num_hyperedges,
+            global_node_ids=self.global_node_ids,
             y=new_y,
         )
 
@@ -505,6 +529,9 @@ class HData:
         self.x = self.x.to(device=device, non_blocking=non_blocking)
         self.hyperedge_index = self.hyperedge_index.to(device=device, non_blocking=non_blocking)
         self.y = self.y.to(device=device, non_blocking=non_blocking)
+
+        if self.global_node_ids is not None:
+            self.global_node_ids = self.global_node_ids.to(device=device, non_blocking=non_blocking)
 
         if self.hyperedge_attr is not None:
             self.hyperedge_attr = self.hyperedge_attr.to(device=device, non_blocking=non_blocking)
@@ -534,6 +561,7 @@ class HData:
             hyperedge_attr=self.hyperedge_attr,
             num_nodes=self.num_nodes,
             num_hyperedges=self.num_hyperedges,
+            global_node_ids=self.global_node_ids,
             y=torch.full((self.num_hyperedges,), value, dtype=torch.float, device=self.device),
         )
 
