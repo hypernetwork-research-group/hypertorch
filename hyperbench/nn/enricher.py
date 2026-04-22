@@ -11,7 +11,7 @@ EnrichmentMode: TypeAlias = Literal["concatenate", "replace"]
 
 class Enricher(ABC):
     """
-    Attributes:
+    Args:
         cache_dir: Directory for saving/loading cached features. If ``None``, caching is disabled.
     """
 
@@ -27,10 +27,7 @@ class Enricher(ABC):
 
 class NodeEnricher(Enricher, ABC):
     """
-    Generates structural node features from hypergraph topology.
-
-    For methods that require a regular graph (node2vec, eigenvector_centrality),
-    the hypergraph is converted via clique expansion using sparse H @ H^T.
+    Base class for node enrichers.
     """
 
     pass
@@ -38,7 +35,7 @@ class NodeEnricher(Enricher, ABC):
 
 class HyperedgeEnricher(Enricher, ABC):
     """
-    Generates hyperedge features from hypergraph topology.
+    Base class for hyperedge enrichers.
     """
 
     pass
@@ -47,6 +44,8 @@ class HyperedgeEnricher(Enricher, ABC):
 class HyperedgeAttrsEnricher(HyperedgeEnricher):
     """
     Base class for enrichers that generate hyperedge attributes (features).
+    Args:
+    - cache_dir: Directory for saving/loading cached features. If ``None``, caching is disabled.
     """
 
     def __init__(
@@ -66,6 +65,10 @@ class HyperedgeAttrsEnricher(HyperedgeEnricher):
 class HyperedgeWeightsEnricher(HyperedgeEnricher):
     """
     Generates hyperedge weights based on the number of nodes in each hyperedge.
+    Args:
+    - cache_dir: Directory for saving/loading cached features. If ``None``, caching is disabled.
+    - alpha: Scaling factor for the random component added to weights. Must be between 0.0 and 1.0.
+    - beta: If provided, the random component is alpha * beta. If None, no random component is added.
     """
 
     def __init__(
@@ -87,9 +90,8 @@ class HyperedgeWeightsEnricher(HyperedgeEnricher):
 
         Args:
             hyperedge_index: Hyperedge index tensor of shape ``(2, num_hyperedges)``.
-            alpha (float): Scaling factor for the random component added to weights.
-            beta (Optional[float]): If provided, the random component is alpha * beta.
-            If None, no random component is added.
+            alpha: Scaling factor for the random component added to weights.
+            beta: If provided, the random component is alpha * beta.
         Returns:
             Tensor of shape ``(num_hyperedges,)`` containing the weight of each hyperedge.
         """
