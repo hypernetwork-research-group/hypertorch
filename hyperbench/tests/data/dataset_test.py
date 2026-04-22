@@ -9,6 +9,7 @@ from hyperbench.nn import EnrichmentMode, NodeEnricher, HyperedgeEnricher
 from hyperbench.types import HData, HIFHypergraph
 from hyperbench.data.supported_datasets import PreloadedDataset
 
+
 @pytest.fixture
 def mock_hdata() -> HData:
     x = torch.ones((3, 1), dtype=torch.float)
@@ -148,12 +149,14 @@ def mock_multiple_edges_attr_hypergraph():
         ],
     )
 
+
 def test_Preloaded_dataset_init():
     mock_hdata = MagicMock(spec=HData)
     dataset = PreloadedDataset(hdata=mock_hdata)
 
     assert dataset.hdata == mock_hdata
     assert dataset.sampling_strategy is SamplingStrategy.HYPEREDGE
+
 
 def test_Preloaded_dataset_loads_hdata_when_hdata_is_none():
     mock_hdata = MagicMock(spec=HData)
@@ -162,6 +165,7 @@ def test_Preloaded_dataset_loads_hdata_when_hdata_is_none():
 
     assert dataset.hdata == mock_hdata
     mock_load.assert_called_once_with("algebra", save_on_disk=True)
+
 
 # def test_HIFLoader_num_nodes_and_edges():
 #     dataset_name = "ALGEBRA"
@@ -239,7 +243,7 @@ def test_Preloaded_dataset_loads_hdata_when_hdata_is_none():
 #         patch("hyperbench.data.dataset.validate_hif_json", return_value=True),
 #         patch.object(HIFHypergraph, "from_hif", return_value=mock_hypergraph),
 #     ):
-#         # Mock successful download 
+#         # Mock successful download
 #         mock_response = mock_get.return_value
 #         mock_response.status_code = 200
 #         mock_response.content = b"mock_zst_content"
