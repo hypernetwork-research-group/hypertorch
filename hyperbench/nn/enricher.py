@@ -4,7 +4,7 @@ from abc import ABC
 from torch import Tensor
 from typing import Literal, Optional, TypeAlias
 from hyperbench.types import EdgeIndex, HyperedgeIndex
-
+import random
 
 EnrichmentMode: TypeAlias = Literal["concatenate", "replace"]
 
@@ -75,6 +75,9 @@ class HyperedgeWeightsEnricher(HyperedgeEnricher):
         beta: Optional[float] = None,
     ):
         super().__init__(cache_dir=cache_dir)
+        if alpha < 0.0 or alpha > 1.0:
+            raise ValueError("Alpha must be between 0.0 and 1.0.")
+
         self.alpha = alpha
         self.beta = beta
 
@@ -84,8 +87,9 @@ class HyperedgeWeightsEnricher(HyperedgeEnricher):
 
         Args:
             hyperedge_index: Hyperedge index tensor of shape ``(2, num_hyperedges)``.
-            alpha: Percentage to scale the weights by. Default is 1.0 (no scaling).
-            beta: Optional constant to add to all weights after scaling. Default is None (no additional constant).
+            alpha (float): Scaling factor for the random component added to weights.
+            beta (Optional[float]): If provided, the random component is alpha * beta.
+            If None, no random component is added.
         Returns:
             Tensor of shape ``(num_hyperedges,)`` containing the weight of each hyperedge.
         """
@@ -93,9 +97,10 @@ class HyperedgeWeightsEnricher(HyperedgeEnricher):
         # Example: if hyperedge_index[1] = [0, 0, 1, 1, 1], then we have 2 nodes in hyperedge 0 and 3 nodes in hyperedge 1.
         num_hyperedges = int(hyperedge_index[1].max().item()) + 1
         weights = torch.bincount(hyperedge_index[1], minlength=num_hyperedges).float()
-        weights *= self.alpha
+
+        random_alpha = random.uniform(0, self.alpha)
         if self.beta is not None:
-            weights += self.beta
+            weights += random_alpha * self.beta
         return weights
 
 
