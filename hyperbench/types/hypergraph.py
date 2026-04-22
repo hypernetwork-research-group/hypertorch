@@ -635,6 +635,21 @@ class HyperedgeIndex:
         )
         return normalized_laplacian_matrix.coalesce()
 
+    def reduce(self, strategy: Literal["clique_expansion"], **kwargs) -> Tensor:
+        """
+        Reduce the hypergraph to a graph represented by edge index using the specified strategy.
+
+        Args:
+            strategy: The reduction strategy to use. Defaults to ``clique_expansion``.
+            **kwargs: Additional keyword arguments for specific strategies.
+
+        Returns:
+            The edge index of the reduced graph. Size ``(2, num_edges)``.
+        """
+        match strategy:
+            case _:
+                return self.reduce_to_edge_index_on_clique_expansion()
+
     def reduce_to_edge_index_on_clique_expansion(self) -> Tensor:
         """
         Construct a graph from a hypergraph via clique expansion using ``H @ H^T``, where ``H`` is the incidence matrix of the hypergraph.
