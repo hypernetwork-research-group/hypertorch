@@ -6,9 +6,7 @@ import requests
 import warnings
 import zstandard as zstd
 
-from enum import Enum
-from huggingface_hub import hf_hub_download
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, TypeAlias, Literal
 from torch import Tensor
 from torch.utils.data import Dataset as TorchDataset
 from hyperbench.nn.enricher import EnrichmentMode, NodeEnricher, HyperedgeEnricher
@@ -23,114 +21,7 @@ from hyperbench.utils import (
 )
 
 from hyperbench.data.sampling import SamplingStrategy, create_sampler_from_strategy
-
-
-class DatasetNames(Enum):
-    """
-    Enumeration of available datasets.
-    """
-
-    ALGEBRA = "algebra"
-    AMAZON = "amazon"
-    CONTACT_HIGH_SCHOOL = "contact-high-school"
-    CONTACT_PRIMARY_SCHOOL = "contact-primary-school"
-    CORA = "cora"
-    COURSERA = "coursera"
-    DBLP = "dblp"
-    EMAIL_ENRON = "email-Enron"
-    EMAIL_W3C = "email-W3C"
-    GEOMETRY = "geometry"
-    GOT = "got"
-    IMDB = "imdb"
-    MUSIC_BLUES_REVIEWS = "music-blues-reviews"
-    NBA = "nba"
-    NDC_CLASSES = "NDC-classes"
-    NDC_SUBSTANCES = "NDC-substances"
-    PATENT = "patent"
-    PUBMED = "pubmed"
-    RESTAURANT_REVIEWS = "restaurant-reviews"
-    THREADS_ASK_UBUNTU = "threads-ask-ubuntu"
-    THREADS_MATH_SX = "threads-math-sx"
-    TWITTER = "twitter"
-    VEGAS_BARS_REVIEWS = "vegas-bars-reviews"
-
-
-class HIFConverter:
-    """A utility class to load hypergraphs from HIF format."""
-
-    @staticmethod
-    def load_from_hif(dataset_name: Optional[str], save_on_disk: bool = False) -> HIFHypergraph:
-        if dataset_name is None:
-            raise ValueError(f"Dataset name (provided: {dataset_name}) must be provided.")
-        if dataset_name not in DatasetNames.__members__:
-            raise ValueError(f"Dataset '{dataset_name}' not found.")
-
-        dataset_name = DatasetNames[dataset_name].value
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        zst_filename = os.path.join(current_dir, "datasets", f"{dataset_name}.json.zst")
-
-        if not os.path.exists(zst_filename):
-            github_dataset_repo = f"https://github.com/hypernetwork-research-group/datasets/blob/main/{dataset_name}.json.zst?raw=true"
-
-            response = requests.get(github_dataset_repo)
-            if response.status_code != 200:
-                warnings.warn(
-                    f"GitHub raw download failed for dataset '{dataset_name}' with status code {response.status_code}\n"
-                    "Falling back to Hugging Face Hub download for dataset",
-                    category=UserWarning,
-                    stacklevel=2,
-                )
-
-                REPO_ID = f"HypernetworkRG/{dataset_name}"
-                FILENAME = f"{dataset_name}.json.zst"
-
-                with tempfile.NamedTemporaryFile(
-                    mode="wb", suffix=".json.zst", delete=False
-                ) as tmp_hf_file:
-                    try:
-                        downloaded_path = hf_hub_download(
-                            repo_id=REPO_ID,
-                            filename=FILENAME,
-                            repo_type="dataset",
-                        )
-                    except Exception as e:
-                        raise ValueError(
-                            f"Failed to download dataset '{dataset_name}' from GitHub and Hugging Face Hub. GitHub error: {response.status_code} | Hugging Face error: {str(e)}"
-                        )
-                    with open(downloaded_path, "rb") as hf_file:
-                        hf_content = hf_file.read()
-                    tmp_hf_file.write(hf_content)
-
-                response._content = hf_content
-
-            if save_on_disk:
-                os.makedirs(os.path.join(current_dir, "datasets"), exist_ok=True)
-                with open(zst_filename, "wb") as f:
-                    f.write(response.content)
-            else:
-                # Create temporary file for downloaded zst content
-                with tempfile.NamedTemporaryFile(
-                    mode="wb", suffix=".json.zst", delete=False
-                ) as tmp_zst_file:
-                    tmp_zst_file.write(response.content)
-                    zst_filename = tmp_zst_file.name
-
-        # Decompress the downloaded zst file
-        dctx = zstd.ZstdDecompressor()
-        with (
-            open(zst_filename, "rb") as input_f,
-            tempfile.NamedTemporaryFile(mode="wb", suffix=".json", delete=False) as tmp_file,
-        ):
-            dctx.copy_stream(input_f, tmp_file)
-            output = tmp_file.name
-
-        with open(output, "r") as f:
-            hiftext = json.load(f)
-        if not validate_hif_json(output):
-            raise ValueError(f"Dataset '{dataset_name}' is not HIF-compliant.")
-
-        hypergraph = HIFHypergraph.from_hif(hiftext)
-        return hypergraph
+from hyperbench.data.hif import HIFLoader
 
 
 class Dataset(TorchDataset):
@@ -145,13 +36,10 @@ class Dataset(TorchDataset):
             If not provided, defaults to ``SamplingStrategy.HYPEREDGE``.
     """
 
-    DATASET_NAME = None
-
     def __init__(
         self,
         hdata: Optional[HData] = None,
         sampling_strategy: SamplingStrategy = SamplingStrategy.HYPEREDGE,
-        prepare: bool = True,
     ) -> None:
         """
         Initialize the Dataset.
@@ -163,19 +51,10 @@ class Dataset(TorchDataset):
             prepare: Whether to load and process the original dataset from HIF format.
                 If set to ``False``, the dataset will be initialized with the provided hdata instead. Defaults to ``True``.
         """
-        self.__is_prepared = prepare
+
         self.__sampler = create_sampler_from_strategy(sampling_strategy)
         self.sampling_strategy = sampling_strategy
-
-        if self.__is_prepared:
-            self.hypergraph = self.download()
-            self.hdata = self.process()
-        else:
-            if hdata is None:
-                raise ValueError("hdata must be provided when prepare is set to False.")
-
-            self.hypergraph = HIFHypergraph.empty()
-            self.hdata = hdata
+        self.hdata = hdata if hdata is not None else HData.empty()
 
     def __len__(self) -> int:
         return self.__sampler.len(self.hdata)
@@ -215,79 +94,69 @@ class Dataset(TorchDataset):
         Returns:
             The :class:`Dataset` instance with the provided :class:`HData`.
         """
-        return cls(hdata=hdata, sampling_strategy=sampling_strategy, prepare=False)
+        return cls(hdata=hdata, sampling_strategy=sampling_strategy)
 
-    def download(self) -> HIFHypergraph:
+    @classmethod
+    def from_url(
+        cls,
+        url: str,
+        sampling_strategy: SamplingStrategy = SamplingStrategy.HYPEREDGE,
+        save_on_disk: bool = False,
+    ) -> "Dataset":
         """
-        Load the hypergraph from HIF format using HIFConverter class.
-        """
-        if not self.__is_prepared:
-            raise ValueError("download can only be called for the original dataset (prepare=True).")
+        Create a :class:`Dataset` instance by loading a hypergraph from a URL pointing to a .json or .json.zst file in HIF format.
 
-        if hasattr(self, "hypergraph") and self.hypergraph is not None:
-            return self.hypergraph
-
-        return HIFConverter.load_from_hif(self.DATASET_NAME, save_on_disk=True)
-
-    def process(self) -> HData:
-        """
-        Process the loaded hypergraph into :class:`HData` format, mapping HIF structure to tensors.
+        Args:
+            url: The URL to the .json or .json.zst file containing the HIF hypergraph data.
+            sampling_strategy: The sampling strategy to use for the dataset. If not provided, defaults to ``SamplingStrategy.HYPEREDGE``.
+            save_on_disk: Whether to save the downloaded file on disk.
 
         Returns:
-            The processed hypergraph data.
+            The :class:`Dataset` instance with the loaded hypergraph data.
         """
-        if not self.__is_prepared:
-            raise ValueError("process can only be called for the original dataset.")
+        hdata = HIFLoader.load_from_url(url=url, save_on_disk=save_on_disk)
+        dataset = cls.from_hdata(hdata=hdata, sampling_strategy=sampling_strategy)
+        return dataset
 
-        num_nodes = len(self.hypergraph.nodes)
-        x = self.__process_x(num_nodes)
+    @classmethod
+    def from_path(
+        cls,
+        filepath: str,
+        sampling_strategy: SamplingStrategy = SamplingStrategy.HYPEREDGE,
+    ) -> "Dataset":
+        """
+        Create a :class:`Dataset` instance by loading a hypergraph from a local file path pointing to a .json or .json.zst file in HIF format.
 
-        # Remap node IDs to 0-based contiguous IDs (using indices) matching the x tensor order
-        node_id_to_idx = {node.get("node"): idx for idx, node in enumerate(self.hypergraph.nodes)}
-        # Initialize edge_set only with edges that have incidences, so that
-        # we avoid inflating edge count due to isolated nodes/missing incidences
-        hyperedge_id_to_idx: Dict[Any, int] = {}
+        Args:
+            filepath: The local file path to the .json or .json.zst file containing the HIF hypergraph data.
+            sampling_strategy: The sampling strategy to use for the dataset. If not provided, defaults to ``SamplingStrategy.HYPEREDGE``.
 
-        node_ids = []
-        hyperedge_ids = []
-        nodes_with_incidences = set()
-        for incidence in self.hypergraph.incidences:
-            node_id = incidence.get("node", 0)
-            hyperedge_id = incidence.get("edge", 0)
+        Returns:
+            The :class:`Dataset` instance with the loaded hypergraph data.
+        """
+        hypergraph = HIFLoader.load_from_path(filepath=filepath)
+        dataset = cls.from_hdata(hdata=hypergraph, sampling_strategy=sampling_strategy)
+        return dataset
 
-            if hyperedge_id not in hyperedge_id_to_idx:
-                # Hyperedges start from 0 and are assigned IDs in the order they are first encountered in incidences
-                hyperedge_id_to_idx[hyperedge_id] = len(hyperedge_id_to_idx)
+    @classmethod
+    def from_default(
+        cls,
+        sampling_strategy: SamplingStrategy = SamplingStrategy.HYPEREDGE,
+        save_on_disk: bool = False,
+    ) -> "Dataset":
+        """
+        Create a :class:`Dataset` instance by loading a hypergraph from a URL pointing to a .json or .json.zst file in HIF format.
 
-            node_ids.append(node_id_to_idx[node_id])
-            hyperedge_ids.append(hyperedge_id_to_idx[hyperedge_id])
-            nodes_with_incidences.add(node_id_to_idx[node_id])
+        Args:
+            sampling_strategy: The sampling strategy to use for the dataset. If not provided, defaults to ``SamplingStrategy.HYPEREDGE``.
+            save_on_disk: Whether to save the downloaded file on disk.
 
-        # Handle isolated nodes by assigning them to a new unique hyperedge (self-loop)
-        for node_idx in range(num_nodes):
-            if node_idx not in nodes_with_incidences:
-                new_hyperedge_id = len(hyperedge_id_to_idx)
-                # Unique dummy key to reserve the index in hyperedge_set
-                hyperedge_id_to_idx[f"__self_loop_{node_idx}__"] = new_hyperedge_id
-                node_ids.append(node_idx)
-                hyperedge_ids.append(new_hyperedge_id)
-
-        num_hyperedges = len(hyperedge_id_to_idx)
-        hyperedge_attr = self.__process_hyperedge_attr(hyperedge_id_to_idx, num_hyperedges)
-
-        hyperedge_weights = self.__process_hyperedge_weights()
-
-        hyperedge_index = torch.tensor([node_ids, hyperedge_ids], dtype=torch.long)
-
-        return HData(
-            x=x,
-            hyperedge_index=hyperedge_index,
-            hyperedge_weights=hyperedge_weights,
-            hyperedge_attr=hyperedge_attr,
-            num_nodes=num_nodes,
-            num_hyperedges=num_hyperedges,
-            global_node_ids=HyperedgeIndex(hyperedge_index).node_ids,
-        )
+        Returns:
+            The :class:`Dataset` instance with the loaded hypergraph data.
+        """
+        hdata = HIFLoader.load(dataset_name="", save_on_disk=save_on_disk)
+        dataset = cls.from_hdata(hdata=hdata, sampling_strategy=sampling_strategy)
+        return dataset
 
     def enrich_node_features(
         self,
@@ -381,7 +250,7 @@ class Dataset(TorchDataset):
         Returns:
             The :class:`Dataset` instance with the provided :class:`HData`.
         """
-        return self.__class__(hdata=hdata, sampling_strategy=self.sampling_strategy, prepare=False)
+        return self.__class__(hdata=hdata, sampling_strategy=self.sampling_strategy)
 
     def remove_hyperedges_with_fewer_than_k_nodes(self, k: int) -> None:
         """
@@ -503,7 +372,6 @@ class Dataset(TorchDataset):
             split_dataset = self.__class__(
                 hdata=split_hdata,
                 sampling_strategy=self.sampling_strategy,
-                prepare=False,
             )
             split_datasets.append(split_dataset)
 
@@ -523,70 +391,6 @@ class Dataset(TorchDataset):
         """
         self.hdata = self.hdata.to(device)
         return self
-
-    def transform_node_attrs(
-        self,
-        attrs: Dict[str, Any],
-        attr_keys: Optional[List[str]] = None,
-    ) -> Tensor:
-        return self.transform_attrs(attrs, attr_keys)
-
-    def transform_hyperedge_attrs(
-        self,
-        attrs: Dict[str, Any],
-        attr_keys: Optional[List[str]] = None,
-    ) -> Tensor:
-        return self.transform_attrs(attrs, attr_keys)
-
-    def transform_attrs(
-        self,
-        attrs: Dict[str, Any],
-        attr_keys: Optional[List[str]] = None,
-    ) -> Tensor:
-        """
-        Extract and encode numeric attributes to tensor.
-        Non-numeric attributes are discarded. Missing attributes are filled with ``0.0``.
-
-        Args:
-            attrs: Dictionary of attributes
-            attr_keys: Optional list of attribute keys to encode. If provided, ensures consistent ordering and fill missing with ``0.0``.
-
-        Returns:
-            Tensor of numeric attribute values
-        """
-        numeric_attrs = {
-            key: value
-            for key, value in attrs.items()
-            if isinstance(value, (int, float)) and not isinstance(value, bool)
-        }
-
-        if attr_keys is not None:
-            values = [float(numeric_attrs.get(key, 0.0)) for key in attr_keys]
-            return torch.tensor(values, dtype=torch.float)
-
-        if not numeric_attrs:
-            return torch.tensor([], dtype=torch.float)
-
-        values = [float(value) for value in numeric_attrs.values()]
-        return torch.tensor(values, dtype=torch.float)
-
-    def __collect_attr_keys(self, attr_keys: List[Dict[str, Any]]) -> List[str]:
-        """
-        Collect unique numeric attribute keys from a list of attribute dictionaries.
-
-        Args:
-            attr_keys: List of attribute dictionaries.
-
-        Returns:
-            List of unique numeric attribute keys.
-        """
-        unique_keys = []
-        for attrs in attr_keys:
-            for key, value in attrs.items():
-                if key not in unique_keys and isinstance(value, (int, float)):
-                    unique_keys.append(key)
-
-        return unique_keys
 
     def __get_hyperedge_ids_permutation(
         self,
@@ -612,86 +416,27 @@ class Dataset(TorchDataset):
         ranged_hyperedge_ids_permutation = torch.arange(num_hyperedges, device=device)
         return ranged_hyperedge_ids_permutation
 
-    def __process_hyperedge_attr(
-        self,
-        hyperedge_id_to_idx: Dict[Any, int],
-        num_hyperedges: int,
-    ) -> Optional[Tensor]:
-        # hyperedge-attr: shape [num_hyperedges, num_hyperedge_attributes]
-        hyperedge_attr = None
-        has_hyperedges = (
-            self.hypergraph.hyperedges is not None and len(self.hypergraph.hyperedges) > 0
-        )
-        has_any_hyperedge_attrs = has_hyperedges and any(
-            "attrs" in edge for edge in self.hypergraph.hyperedges
-        )
+    # def __process_hyperedge_weights(self) -> Optional[Tensor]:
+    #     # Initialize the hyperedge weights tensor
+    #     hyperedge_weights = None
 
-        if has_any_hyperedge_attrs:
-            hyperedge_id_to_attrs: Dict[Any, Dict[str, Any]] = {
-                e.get("edge"): e.get("attrs", {}) for e in self.hypergraph.hyperedges
-            }
+    #     has_hyperedge_weights = self.hypergraph.hyperedges is not None and all(
+    #         "weight" in edge for edge in self.hypergraph.hyperedges
+    #     )
 
-            hyperedge_attr_keys = self.__collect_attr_keys(list(hyperedge_id_to_attrs.values()))
+    #     if has_hyperedge_weights:
+    #         weights = [edge.get("weight", 1.0) for edge in self.hypergraph.hyperedges]
+    #         hyperedge_weights = torch.tensor(weights, dtype=torch.float)
+    #     elif (
+    #         has_hyperedge_weights is False
+    #         and self.hypergraph.hyperedges is not None
+    #         and any("weight" in edge for edge in self.hypergraph.hyperedges)
+    #     ):
+    #         raise ValueError(
+    #             "Some hyperedges have weights while others do not. All hyperedges must either have weights or none."
+    #         )
 
-            # Build attributes in exact order of hyperedge_set indices (0 to num_hyperedges - 1)
-            hyperedge_idx_to_id = {idx: id for id, idx in hyperedge_id_to_idx.items()}
-
-            attrs = []
-            for hyperedge_idx in range(num_hyperedges):
-                hyperedge_id = hyperedge_idx_to_id[hyperedge_idx]
-
-                transformed_attrs = self.transform_hyperedge_attrs(
-                    # If it's a real hyperedge, get its attrs; if self-loop, get empty dict
-                    attrs=hyperedge_id_to_attrs.get(hyperedge_id, {}),
-                    attr_keys=hyperedge_attr_keys,
-                )
-                attrs.append(transformed_attrs)
-
-            hyperedge_attr = torch.stack(attrs)
-
-        return hyperedge_attr
-
-    def __process_x(self, num_nodes: int) -> Tensor:
-        # Collect all attribute keys to have tensors of same size
-        node_attr_keys = self.__collect_attr_keys(
-            [node.get("attrs", {}) for node in self.hypergraph.nodes]
-        )
-
-        if node_attr_keys:
-            x = torch.stack(
-                [
-                    self.transform_node_attrs(node.get("attrs", {}), attr_keys=node_attr_keys)
-                    for node in self.hypergraph.nodes
-                ]
-            )
-        else:
-            # Fallback to ones if no node features, 1 is better as it can help during
-            # training (e.g., avoid zero multiplication), especially in first epochs
-            x = torch.ones((num_nodes, 1), dtype=torch.float)
-
-        return x  # shape [num_nodes, num_node_features]
-
-    def __process_hyperedge_weights(self) -> Optional[Tensor]:
-        # Initialize the hyperedge weights tensor
-        hyperedge_weights = None
-
-        has_hyperedge_weights = self.hypergraph.hyperedges is not None and all(
-            "weight" in edge for edge in self.hypergraph.hyperedges
-        )
-
-        if has_hyperedge_weights:
-            weights = [edge.get("weight", 1.0) for edge in self.hypergraph.hyperedges]
-            hyperedge_weights = torch.tensor(weights, dtype=torch.float)
-        elif (
-            has_hyperedge_weights is False
-            and self.hypergraph.hyperedges is not None
-            and any("weight" in edge for edge in self.hypergraph.hyperedges)
-        ):
-            raise ValueError(
-                "Some hyperedges have weights while others do not. All hyperedges must either have weights or none."
-            )
-
-        return hyperedge_weights
+    #     return hyperedge_weights
 
     def stats(self) -> Dict[str, Any]:
         """

@@ -1,93 +1,139 @@
+from hyperbench.data import HIFLoader
 from hyperbench.data.dataset import Dataset
+from hyperbench.data.sampling import SamplingStrategy
 
 
-class AlgebraDataset(Dataset):
-    DATASET_NAME = "ALGEBRA"
+class PreloadedDataset(Dataset):
+    DATASET_NAME = ""
+
+    def __init__(
+        self,
+        hdata=None,
+        sampling_strategy: SamplingStrategy = SamplingStrategy.HYPEREDGE,
+    ) -> None:
+        super().__init__(hdata=hdata, sampling_strategy=sampling_strategy)
+        if hdata is None:
+            self.hdata = HIFLoader.load(self.DATASET_NAME, save_on_disk=True)
 
 
-class AmazonDataset(Dataset):
-    DATASET_NAME = "AMAZON"
+class AlgebraDataset(PreloadedDataset):
+    DATASET_NAME = "algebra"
 
 
-class ContactHighSchoolDataset(Dataset):
-    DATASET_NAME = "CONTACT_HIGH_SCHOOL"
+class AmazonDataset(PreloadedDataset):
+    DATASET_NAME = "amazon"
 
 
-class ContactPrimarySchoolDataset(Dataset):
-    DATASET_NAME = "CONTACT_PRIMARY_SCHOOL"
+class ContactHighSchoolDataset(PreloadedDataset):
+    DATASET_NAME = "contact-high-school"
 
 
-class CoraDataset(Dataset):
-    DATASET_NAME = "CORA"
+class ContactPrimarySchoolDataset(PreloadedDataset):
+    DATASET_NAME = "contact-primary-school"
 
 
-class CourseraDataset(Dataset):
-    DATASET_NAME = "COURSERA"
+class CoraDataset(PreloadedDataset):
+    DATASET_NAME = "cora"
 
 
-class DBLPDataset(Dataset):
-    DATASET_NAME = "DBLP"
+class CourseraDataset(PreloadedDataset):
+    DATASET_NAME = "coursera"
 
 
-class EmailEnronDataset(Dataset):
-    DATASET_NAME = "EMAIL_ENRON"
+class DBLPDataset(PreloadedDataset):
+    DATASET_NAME = "dblp"
 
 
-class EmailW3CDataset(Dataset):
-    DATASET_NAME = "EMAIL_W3C"
+class EmailEnronDataset(PreloadedDataset):
+    DATASET_NAME = "email-Enron"
 
 
-class GeometryDataset(Dataset):
-    DATASET_NAME = "GEOMETRY"
+class EmailW3CDataset(PreloadedDataset):
+    DATASET_NAME = "email-W3C"
 
 
-class GOTDataset(Dataset):
-    DATASET_NAME = "GOT"
+class GeometryDataset(PreloadedDataset):
+    DATASET_NAME = "geometry"
 
 
-class IMDBDataset(Dataset):
-    DATASET_NAME = "IMDB"
+class GOTDataset(PreloadedDataset):
+    DATASET_NAME = "got"
 
 
-class MusicBluesReviewsDataset(Dataset):
-    DATASET_NAME = "MUSIC_BLUES_REVIEWS"
+class IMDBDataset(PreloadedDataset):
+    DATASET_NAME = "imdb"
 
 
-class NBADataset(Dataset):
-    DATASET_NAME = "NBA"
+class MusicBluesReviewsDataset(PreloadedDataset):
+    DATASET_NAME = "music-blues-reviews"
 
 
-class NDCClassesDataset(Dataset):
-    DATASET_NAME = "NDC_CLASSES"
+class NBADataset(PreloadedDataset):
+    DATASET_NAME = "nba"
 
 
-class NDCSubstancesDataset(Dataset):
-    DATASET_NAME = "NDC_SUBSTANCES"
+class NDCClassesDataset(PreloadedDataset):
+    DATASET_NAME = "NDC-classes"
 
 
-class PatentDataset(Dataset):
-    DATASET_NAME = "PATENT"
+class NDCSubstancesDataset(PreloadedDataset):
+    DATASET_NAME = "NDC-substances"
 
 
-class PubmedDataset(Dataset):
-    DATASET_NAME = "PUBMED"
+class PatentDataset(PreloadedDataset):
+    DATASET_NAME = "patent"
 
 
-class RestaurantReviewsDataset(Dataset):
-    DATASET_NAME = "RESTAURANT_REVIEWS"
+class PubmedDataset(PreloadedDataset):
+    DATASET_NAME = "pubmed"
 
 
-class ThreadsAskUbuntuDataset(Dataset):
-    DATASET_NAME = "THREADS_ASK_UBUNTU"
+class RestaurantReviewsDataset(PreloadedDataset):
+    DATASET_NAME = "restaurant-reviews"
 
 
-class ThreadsMathsxDataset(Dataset):
-    DATASET_NAME = "THREADS_MATH_SX"
+class ThreadsAskUbuntuDataset(PreloadedDataset):
+    DATASET_NAME = "threads-ask-ubuntu"
 
 
-class TwitterDataset(Dataset):
-    DATASET_NAME = "TWITTER"
+class ThreadsMathsxDataset(PreloadedDataset):
+    DATASET_NAME = "threads-math-sx"
 
 
-class VegasBarsReviewsDataset(Dataset):
-    DATASET_NAME = "VEGAS_BARS_REVIEWS"
+class TwitterDataset(PreloadedDataset):
+    DATASET_NAME = "twitter"
+
+
+class VegasBarsReviewsDataset(PreloadedDataset):
+    DATASET_NAME = "vegas-bars-reviews"
+
+
+if __name__ == "__main__":
+    # test loading each dataset
+    for dataset_cls in [
+        AlgebraDataset,
+        AmazonDataset,
+        ContactHighSchoolDataset,
+        # ContactPrimarySchoolDataset,
+        # CoraDataset,
+        # CourseraDataset,
+        # DBLPDataset,
+        # EmailEnronDataset,
+        # EmailW3CDataset,
+        # GeometryDataset,
+        # GOTDataset,
+        # IMDBDataset,
+        # MusicBluesReviewsDataset,
+        # NBADataset,
+        # NDCClassesDataset,
+        # NDCSubstancesDataset,
+        # PatentDataset,
+        # PubmedDataset,
+        # RestaurantReviewsDataset,
+        # ThreadsAskUbuntuDataset,
+        # ThreadsMathsxDataset,
+        # TwitterDataset,
+        # VegasBarsReviewsDataset,
+    ]:
+        dataset = dataset_cls()
+        print(dataset.hdata.num_nodes, dataset.hdata.num_hyperedges)
