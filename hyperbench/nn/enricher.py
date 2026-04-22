@@ -5,8 +5,8 @@ import torch
 from abc import ABC
 from torch import Tensor, optim
 from typing import Literal, Optional, TypeAlias
-from torch_geometric.nn import Node2Vec as PyGNode2Vec
 from hyperbench.types import EdgeIndex, HyperedgeIndex
+from torch_geometric.nn import Node2Vec as PyGNode2Vec
 
 EnrichmentMode: TypeAlias = Literal["concatenate", "replace"]
 
