@@ -71,8 +71,12 @@ class HyperedgeWeightsEnricher(HyperedgeEnricher):
     def __init__(
         self,
         cache_dir: Optional[str] = None,
+        alpha: float = 1.0,
+        beta: Optional[float] = None,
     ):
         super().__init__(cache_dir=cache_dir)
+        self.alpha = alpha
+        self.beta = beta
 
     def enrich(self, hyperedge_index: Tensor) -> Tensor:
         """
@@ -80,7 +84,8 @@ class HyperedgeWeightsEnricher(HyperedgeEnricher):
 
         Args:
             hyperedge_index: Hyperedge index tensor of shape ``(2, num_hyperedges)``.
-
+            alpha: Percentage to scale the weights by. Default is 1.0 (no scaling).
+            beta: Optional constant to add to all weights after scaling. Default is None (no additional constant).
         Returns:
             Tensor of shape ``(num_hyperedges,)`` containing the weight of each hyperedge.
         """
@@ -88,6 +93,9 @@ class HyperedgeWeightsEnricher(HyperedgeEnricher):
         # Example: if hyperedge_index[1] = [0, 0, 1, 1, 1], then we have 2 nodes in hyperedge 0 and 3 nodes in hyperedge 1.
         num_hyperedges = int(hyperedge_index[1].max().item()) + 1
         weights = torch.bincount(hyperedge_index[1], minlength=num_hyperedges).float()
+        weights *= self.alpha
+        if self.beta is not None:
+            weights += self.beta
         return weights
 
 

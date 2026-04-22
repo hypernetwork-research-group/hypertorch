@@ -317,6 +317,8 @@ class Dataset(TorchDataset):
         self,
         enricher: HyperedgeEnricher,
         enrichment_mode: Optional[EnrichmentMode] = None,
+        alpha: float = 1.0,
+        beta: Optional[float] = None,
     ) -> None:
         """Enrich hyperedge weights using the provided hyperedge weight enricher.
 
