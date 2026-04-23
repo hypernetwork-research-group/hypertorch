@@ -48,6 +48,12 @@ def test_graph_stores_edge_weights():
     assert torch.allclose(graph.edge_weights_tensor, torch.tensor([0.25, 0.75]))
 
 
+def test_graph_without_edge_weights_returns_empty_edge_weights_tensor():
+    graph = Graph([[0, 1], [1, 2]])
+
+    assert torch.equal(graph.edge_weights_tensor, torch.empty(0, dtype=torch.float))
+
+
 def test_graph_raises_for_misaligned_edge_weights():
     with pytest.raises(
         ValueError,
@@ -505,6 +511,17 @@ def test_edge_index_raises_for_misaligned_edge_weights():
     with pytest.raises(
         ValueError,
         match="edge_weights must have the same number of entries as edge_index columns.",
+    ):
+        EdgeIndex(edge_index_tensor, edge_weights=edge_weights)
+
+
+def test_edge_index_raises_for_edge_weights_on_different_device():
+    edge_index_tensor = torch.tensor([[0, 1], [1, 0]], device="cpu")
+    edge_weights = torch.tensor([0.25, 0.75], device="mps")
+
+    with pytest.raises(
+        ValueError,
+        match="edge_weights must be on the same device as edge_index.",
     ):
         EdgeIndex(edge_index_tensor, edge_weights=edge_weights)
 
@@ -1298,6 +1315,21 @@ def test_remove_duplicate_edges_preserves_dtype():
     edge_index.remove_duplicate_edges()
 
     assert edge_index.item.dtype == torch.long
+
+
+def test_remove_duplicate_edges_with_empty_weighted_edge_index_keeps_empty_contiguous_tensors():
+    edge_index = EdgeIndex(
+        torch.empty((2, 0), dtype=torch.long),
+        edge_weights=torch.empty(0, dtype=torch.float),
+    )
+
+    edge_index.remove_duplicate_edges()
+
+    assert edge_index.item.shape == (2, 0)
+    assert edge_index.item.is_contiguous()
+    assert edge_index.edge_weights is not None
+    assert edge_index.edge_weights.shape == (0,)
+    assert edge_index.edge_weights.is_contiguous()
 
 
 def test_to_undirected_edge_index_single_directed_edge():
