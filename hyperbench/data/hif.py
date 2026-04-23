@@ -105,9 +105,22 @@ class HIFProcessor:
             num_hyperedges=num_hyperedges,
         )
 
+        hyperedge_weights = HIFProcessor._process_hyperedge_weights(
+            hypergraph=hypergraph,
+            hyperedge_id_to_idx=hyperedge_id_to_idx,
+            num_hyperedges=num_hyperedges,
+        )
+
         hyperedge_index = torch.tensor([node_ids, hyperedge_ids], dtype=torch.long)
 
-        return HData(x, hyperedge_index, hyperedge_attr)
+        return HData(
+            x=x,
+            hyperedge_index=hyperedge_index,
+            hyperedge_weights=hyperedge_weights,
+            hyperedge_attr=hyperedge_attr,
+            num_nodes=num_nodes,
+            num_hyperedges=num_hyperedges,
+        )
 
     @staticmethod
     def _collect_attr_keys(attr_keys: List[Dict[str, Any]]) -> List[str]:
@@ -190,27 +203,34 @@ class HIFProcessor:
         return x  # shape [num_nodes, num_node_features]
 
     @staticmethod
-    def _process_hyperedge_weights(hypergraph: HIFHypergraph) -> Optional[Tensor]:
-        # Initialize the hyperedge weights tensor
-        hyperedge_weights = None
-
-        has_hyperedge_weights = hypergraph.hyperedges is not None and all(
-            "weight" in edge for edge in hypergraph.hyperedges
+    def _process_hyperedge_weights(
+        hypergraph: HIFHypergraph,
+        hyperedge_id_to_idx: Dict[Any, int],
+        num_hyperedges: int,
+    ) -> Optional[Tensor]:
+        has_hyperedges = hypergraph.hyperedges is not None and len(hypergraph.hyperedges) > 0
+        has_any_hyperedge_attrs = has_hyperedges and any(
+            "attrs" in edge for edge in hypergraph.hyperedges
         )
 
-        if has_hyperedge_weights:
-            weights = [edge.get("weight", 1.0) for edge in hypergraph.hyperedges]
-            hyperedge_weights = torch.tensor(weights, dtype=torch.float)
-        elif (
-            has_hyperedge_weights is False
-            and hypergraph.hyperedges is not None
-            and any("weight" in edge for edge in hypergraph.hyperedges)
-        ):
-            raise ValueError(
-                "Some hyperedges have weights while others do not. All hyperedges must either have weights or none."
-            )
+        # Keep old behavior for fixtures where edges have no attrs at all.
+        if not has_any_hyperedge_attrs:
+            return None
 
-        return hyperedge_weights
+        # Map real edge id -> attrs (self-loops are absent and will default to 1.0)
+        hyperedge_id_to_attrs: Dict[Any, Dict[str, Any]] = {
+            e.get("edge"): e.get("attrs", {}) for e in hypergraph.hyperedges
+        }
+
+        # Build in exact hyperedge index order, defaulting missing weights to 1.0.
+        hyperedge_idx_to_id = {idx: edge_id for edge_id, idx in hyperedge_id_to_idx.items()}
+        weights = []
+        for hyperedge_idx in range(num_hyperedges):
+            edge_id = hyperedge_idx_to_id[hyperedge_idx]
+            edge_attrs = hyperedge_id_to_attrs.get(edge_id, {})
+            weights.append(float(edge_attrs.get("weight", 1.0)))
+
+        return torch.tensor(weights, dtype=torch.float)
 
 
 class HIFLoader:

@@ -20,6 +20,8 @@ def test_build_HIFHypergraph_instance():
     hypergraph = HIFHypergraph.from_hif(hiftext)
 
     assert isinstance(hypergraph, HIFHypergraph)
+    assert hypergraph.num_nodes == 423
+    assert hypergraph.num_hyperedges == 1268
 
 
 def test_empty_hifhypergraph_returns_empty_hifhypergraph():
