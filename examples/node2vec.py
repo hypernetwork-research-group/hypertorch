@@ -44,8 +44,6 @@ if __name__ == "__main__":
         print(f"Val dataset:\n {val_dataset.hdata}\n")
         print(f"Test dataset:\n {test_dataset.hdata}\n")
 
-    train_hyperedge_index = train_dataset.hdata.hyperedge_index
-
     print("Adding negative samples...")
 
     for name, ds in [("Train", train_dataset), ("Val", val_dataset), ("Test", test_dataset)]:
@@ -88,7 +86,6 @@ if __name__ == "__main__":
         sparse=False,
         verbose=verbose,
     )
-
     train_dataset.enrich_node_features(
         enricher=node2vec_enricher,
         enrichment_mode="replace",
@@ -131,6 +128,7 @@ if __name__ == "__main__":
         metrics=metrics,
     )
 
+    train_hyperedge_index = train_dataset.hdata.hyperedge_index
     joint_node2vec_module = Node2VecHlpModule(
         encoder_config={
             "mode": "joint",

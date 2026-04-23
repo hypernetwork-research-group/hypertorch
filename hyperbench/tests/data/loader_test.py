@@ -299,6 +299,25 @@ def test_collate_when_dataset_no_hyperedge_attr_presence():
     assert batched.hyperedge_attr is None
 
 
+def test_collate_when_dataset_has_no_global_node_ids():
+    x = torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
+    hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 1]])
+    hdata = HData(x=x, hyperedge_index=hyperedge_index)
+    hdata.global_node_ids = None
+
+    sample0 = HData.from_hyperedge_index(torch.tensor([[0, 1], [0, 0]]))
+    sample1 = HData.from_hyperedge_index(torch.tensor([[2], [1]]))
+
+    dataset = MagicMock(spec=Dataset)
+    dataset.hdata = hdata
+
+    loader = DataLoader(dataset, batch_size=2)
+    batched = loader.collate([sample0, sample1])
+
+    assert batched.global_node_ids is not None
+    assert torch.equal(batched.global_node_ids, torch.arange(batched.num_nodes))
+
+
 def test_collate_sample_full_hypergraph_returns_cached_hdata(mock_dataset_single_sample):
     loader = DataLoader(mock_dataset_single_sample, sample_full_hypergraph=True)
 

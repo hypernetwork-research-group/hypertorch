@@ -75,6 +75,17 @@ def test_random_negative_sampler_sample_no_edge_attr(mock_hdata_no_attr):
     assert result.hyperedge_attr is None
 
 
+def test_random_negative_sampler_handles_missing_global_node_ids(mock_hdata_no_attr):
+    mock_hdata_no_attr.global_node_ids = None
+
+    sampler = RandomNegativeSampler(num_negative_samples=1, num_nodes_per_sample=2)
+    result = sampler.sample(mock_hdata_no_attr)
+
+    assert result.num_hyperedges == 1
+    assert result.global_node_ids is not None
+    assert torch.equal(result.global_node_ids, torch.arange(result.num_nodes))
+
+
 def test_random_negative_sampler_sample_unique_nodes(mock_hdata_no_attr):
     sampler = RandomNegativeSampler(num_negative_samples=3, num_nodes_per_sample=2)
     result = sampler.sample(mock_hdata_no_attr)

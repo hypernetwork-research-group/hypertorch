@@ -34,6 +34,7 @@ class HData:
             Default is a tensor of ones, indicating all hyperedges are positive examples.
         global_node_ids: Optional stable node IDs of shape ``[num_nodes]`` matching the row order of ``x``.
             Use this to preserve access to the canonical node space when ``hyperedge_index`` is rebased locally.
+            If ``None``, defaults to ``torch.arange(num_nodes)``, assuming that these are the global node IDs in the same order as the rows of ``x``.
     """
 
     def __init__(
