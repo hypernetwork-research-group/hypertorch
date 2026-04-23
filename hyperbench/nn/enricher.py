@@ -203,6 +203,9 @@ class Node2VecEnricher(NodeEnricher):
         """
         device = hyperedge_index.device
 
+        if self.verbose:
+            print(f"Reducing hypergraph to graph via {self.graph_reduction_strategy}...")
+
         hyperedge_index_wrapper = HyperedgeIndex(hyperedge_index)
         num_nodes = hyperedge_index_wrapper.num_nodes_if_isolated_exist(self.num_nodes)
         if num_nodes == 0:
@@ -244,6 +247,9 @@ class Node2VecEnricher(NodeEnricher):
             else optim.Adam(model.parameters(), lr=self.learning_rate)
         )
 
+        if self.verbose:
+            print(f"Training Node2Vec model for {self.num_epochs} epochs...")
+
         model.train()
         for epoch in range(self.num_epochs):
             if self.verbose:
@@ -258,6 +264,9 @@ class Node2VecEnricher(NodeEnricher):
                 loss = model.loss(positive_random_walk, negative_random_walk)
                 loss.backward()
                 optimizer.step()
+
+        if self.verbose:
+            print("Training complete. Generating node embeddings...")
 
         model.eval()
         with torch.no_grad():

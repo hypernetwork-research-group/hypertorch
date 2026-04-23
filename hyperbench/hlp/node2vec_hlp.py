@@ -146,7 +146,7 @@ class Node2VecHlpModule(HlpModule):
         # Encode: get node embeddings from precomputation or joint encoder
         if self.mode == self.JOINT_MODE:
             encoder = self.__node2vec_encoder()
-            self.__validate_global_node_ids(encoder.num_nodes, global_node_ids)
+            self.__validate_global_node_ids(encoder.num_embeddings, global_node_ids)
             node_embeddings = encoder(batch=global_node_ids)
         else:
             if x.size(1) != self.embedding_dim:
@@ -253,14 +253,14 @@ class Node2VecHlpModule(HlpModule):
             )
         return self.encoder
 
-    def __validate_global_node_ids(self, num_nodes: int, global_node_ids: Optional[Tensor]):
+    def __validate_global_node_ids(self, num_embeddings: int, global_node_ids: Optional[Tensor]):
         if global_node_ids is None or len(global_node_ids) < 1:
             raise ValueError(f"Node2Vec in mode {self.mode} requires batch.global_node_ids.")
 
         min_global_node_id = int(global_node_ids.min().item())
         max_global_node_id = int(global_node_ids.max().item())
 
-        max_acceptable_node_id = num_nodes - 1
+        max_acceptable_node_id = num_embeddings - 1
         if min_global_node_id < 0 or max_global_node_id > max_acceptable_node_id:
             raise ValueError(
                 f"Node2Vec in mode {self.mode} cannot index the provided batch.global_node_ids. "

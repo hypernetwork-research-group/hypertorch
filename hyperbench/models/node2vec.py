@@ -62,7 +62,7 @@ class Node2Vec(nn.Module):
         return self.model(batch)
 
     @property
-    def num_nodes(self) -> int:
+    def num_embeddings(self) -> int:
         return int(self.model.embedding.num_embeddings)
 
     def loss(self, pos_rw: Tensor, neg_rw: Tensor) -> Tensor:
