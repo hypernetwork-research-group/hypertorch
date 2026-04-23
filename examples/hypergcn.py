@@ -114,7 +114,7 @@ if __name__ == "__main__":
         persistent_workers=True,
     )
 
-    mean_hypergcn_module = HyperGCNHlpModule(
+    mean_hypergcn_no_mediator_module = HyperGCNHlpModule(
         encoder_config={
             "in_channels": 32,
             "hidden_channels": 16,
@@ -131,11 +131,36 @@ if __name__ == "__main__":
         metrics=metrics,
     )
 
+    mean_hypergcn_with_mediator_module = HyperGCNHlpModule(
+        encoder_config={
+            "in_channels": 32,
+            "hidden_channels": 16,
+            "out_channels": 16,
+            "bias": True,
+            "use_batch_normalization": False,
+            "drop_rate": 0.5,
+            "use_mediator": True,
+            "fast": False,
+        },
+        aggregation="mean",
+        lr=0.01,
+        weight_decay=5e-4,
+        metrics=metrics,
+    )
+
     configs = [
         ModelConfig(
             name="hypergcn",
-            version="mean",
-            model=mean_hypergcn_module,
+            version="mean-no-mediator",
+            model=mean_hypergcn_no_mediator_module,
+            train_dataloader=train_loader_full_hypergraph,
+            val_dataloader=val_loader_full_hypergraph,
+            test_dataloader=test_loader_full_hypergraph,
+        ),
+        ModelConfig(
+            name="hypergcn",
+            version="mean-with-mediator",
+            model=mean_hypergcn_with_mediator_module,
             train_dataloader=train_loader_full_hypergraph,
             val_dataloader=val_loader_full_hypergraph,
             test_dataloader=test_loader_full_hypergraph,
