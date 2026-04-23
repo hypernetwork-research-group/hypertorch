@@ -21,7 +21,7 @@ from hyperbench.utils import (
 )
 
 from hyperbench.data.sampling import SamplingStrategy, create_sampler_from_strategy
-from hyperbench.data.hif import HIFLoader
+from hyperbench.data.hif import HIFLoader, HIFProcessor
 
 
 class Dataset(TorchDataset):
@@ -48,8 +48,6 @@ class Dataset(TorchDataset):
             hdata: Optional HData object to initialize the dataset with.
                 If provided, the dataset will be initialized with this data instead of loading and processing from HIF. Must be provided if prepare is set to ``False``.
             sampling_strategy: The sampling strategy to use for the dataset. If not provided, defaults to ``SamplingStrategy.HYPEREDGE``.
-            prepare: Whether to load and process the original dataset from HIF format.
-                If set to ``False``, the dataset will be initialized with the provided hdata instead. Defaults to ``True``.
         """
 
         self.__sampler = create_sampler_from_strategy(sampling_strategy)
@@ -137,26 +135,6 @@ class Dataset(TorchDataset):
         hypergraph = HIFLoader.load_from_path(filepath=filepath)
         dataset = cls.from_hdata(hdata=hypergraph, sampling_strategy=sampling_strategy)
         return dataset
-
-    # @classmethod
-    # def from_default(
-    #     cls,
-    #     sampling_strategy: SamplingStrategy = SamplingStrategy.HYPEREDGE,
-    #     save_on_disk: bool = False,
-    # ) -> "Dataset":
-    #     """
-    #     Create a :class:`Dataset` instance by loading a hypergraph from a URL pointing to a .json or .json.zst file in HIF format.
-
-    #     Args:
-    #         sampling_strategy: The sampling strategy to use for the dataset. If not provided, defaults to ``SamplingStrategy.HYPEREDGE``.
-    #         save_on_disk: Whether to save the downloaded file on disk.
-
-    #     Returns:
-    #         The :class:`Dataset` instance with the loaded hypergraph data.
-    #     """
-    #     hdata = HIFLoader.load(dataset_name="", save_on_disk=save_on_disk)
-    #     dataset = cls.from_hdata(hdata=hdata, sampling_strategy=sampling_strategy)
-    #     return dataset
 
     def enrich_node_features(
         self,
@@ -416,27 +394,19 @@ class Dataset(TorchDataset):
         ranged_hyperedge_ids_permutation = torch.arange(num_hyperedges, device=device)
         return ranged_hyperedge_ids_permutation
 
-    # def __process_hyperedge_weights(self) -> Optional[Tensor]:
-    #     # Initialize the hyperedge weights tensor
-    #     hyperedge_weights = None
+    @staticmethod
+    def transform_node_attrs(
+        attrs: Dict[str, Any],
+        attr_keys: Optional[List[str]] = None,
+    ) -> Tensor:
+        return HIFProcessor.transform_attrs(attrs, attr_keys)
 
-    #     has_hyperedge_weights = self.hypergraph.hyperedges is not None and all(
-    #         "weight" in edge for edge in self.hypergraph.hyperedges
-    #     )
-
-    #     if has_hyperedge_weights:
-    #         weights = [edge.get("weight", 1.0) for edge in self.hypergraph.hyperedges]
-    #         hyperedge_weights = torch.tensor(weights, dtype=torch.float)
-    #     elif (
-    #         has_hyperedge_weights is False
-    #         and self.hypergraph.hyperedges is not None
-    #         and any("weight" in edge for edge in self.hypergraph.hyperedges)
-    #     ):
-    #         raise ValueError(
-    #             "Some hyperedges have weights while others do not. All hyperedges must either have weights or none."
-    #         )
-
-    #     return hyperedge_weights
+    @staticmethod
+    def transform_hyperedge_attrs(
+        attrs: Dict[str, Any],
+        attr_keys: Optional[List[str]] = None,
+    ) -> Tensor:
+        return HIFProcessor.transform_attrs(attrs, attr_keys)
 
     def stats(self) -> Dict[str, Any]:
         """

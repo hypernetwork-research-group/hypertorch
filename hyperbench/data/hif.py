@@ -7,18 +7,210 @@ import tempfile
 import warnings
 from huggingface_hub import hf_hub_download
 from typing import Optional, Dict, Any, List
-from urllib.parse import urlparse
 from torch import Tensor
 
 from hyperbench.types import HData, HIFHypergraph
-from hyperbench.utils import validate_hif_json, decompress_zst, compress_to_zst
+from hyperbench.utils import (
+    validate_hif_json,
+    decompress_zst,
+    compress_to_zst,
+    validate_http_url,
+)
+from hyperbench.utils import save_on_disk as save
 
 
-def _validate_http_url(value: str) -> str:
-    parsed = urlparse(value)
-    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
-        raise ValueError(f"Invalid URL: {value}")
-    return value
+class HIFProcessor:
+    """A utility class to process HIF hypergraph data into :class:`HData` format."""
+
+    @staticmethod
+    def transform_attrs(
+        attrs: Dict[str, Any],
+        attr_keys: Optional[List[str]] = None,
+    ) -> Tensor:
+        """
+        Extract and encode numeric attributes to tensor.
+        Non-numeric attributes are discarded. Missing attributes are filled with ``0.0``.
+
+        Args:
+            attrs: Dictionary of attributes
+            attr_keys: Optional list of attribute keys to encode. If provided, ensures consistent ordering and fill missing with ``0.0``.
+
+        Returns:
+            Tensor of numeric attribute values
+        """
+        numeric_attrs = {
+            key: value
+            for key, value in attrs.items()
+            if isinstance(value, (int, float)) and not isinstance(value, bool)
+        }
+
+        if attr_keys is not None:
+            values = [float(numeric_attrs.get(key, 0.0)) for key in attr_keys]
+            return torch.tensor(values, dtype=torch.float)
+
+        if not numeric_attrs:
+            return torch.tensor([], dtype=torch.float)
+
+        values = [float(value) for value in numeric_attrs.values()]
+        return torch.tensor(values, dtype=torch.float)
+
+    @staticmethod
+    def _process_hypergraph(hypergraph: HIFHypergraph) -> HData:
+        """
+        Process the loaded hypergraph into :class:`HData` format, mapping HIF structure to tensors.
+
+        Returns:
+            The processed hypergraph data.
+        """
+        # if not self.__is_prepared:
+        #     raise ValueError("process can only be called for the original dataset.")
+
+        num_nodes = len(hypergraph.nodes)
+        x = HIFProcessor._process_x(hypergraph, num_nodes)
+
+        # Remap node IDs to 0-based contiguous IDs (using indices) matching the x tensor order
+        node_id_to_idx = {node.get("node"): idx for idx, node in enumerate(hypergraph.nodes)}
+        # Initialize edge_set only with edges that have incidences, so that
+        # we avoid inflating edge count due to isolated nodes/missing incidences
+        hyperedge_id_to_idx: Dict[Any, int] = {}
+
+        node_ids = []
+        hyperedge_ids = []
+        nodes_with_incidences = set()
+        for incidence in hypergraph.incidences:
+            node_id = incidence.get("node", 0)
+            hyperedge_id = incidence.get("edge", 0)
+
+            if hyperedge_id not in hyperedge_id_to_idx:
+                # Hyperedges start from 0 and are assigned IDs in the order they are first encountered in incidences
+                hyperedge_id_to_idx[hyperedge_id] = len(hyperedge_id_to_idx)
+
+            node_ids.append(node_id_to_idx[node_id])
+            hyperedge_ids.append(hyperedge_id_to_idx[hyperedge_id])
+            nodes_with_incidences.add(node_id_to_idx[node_id])
+
+        # Handle isolated nodes by assigning them to a new unique hyperedge (self-loop)
+        for node_idx in range(num_nodes):
+            if node_idx not in nodes_with_incidences:
+                new_hyperedge_id = len(hyperedge_id_to_idx)
+                # Unique dummy key to reserve the index in hyperedge_set
+                hyperedge_id_to_idx[f"__self_loop_{node_idx}__"] = new_hyperedge_id
+                node_ids.append(node_idx)
+                hyperedge_ids.append(new_hyperedge_id)
+
+        num_hyperedges = len(hyperedge_id_to_idx)
+        hyperedge_attr = HIFProcessor._process_hyperedge_attr(
+            hypergraph=hypergraph,
+            hyperedge_id_to_idx=hyperedge_id_to_idx,
+            num_hyperedges=num_hyperedges,
+        )
+
+        hyperedge_index = torch.tensor([node_ids, hyperedge_ids], dtype=torch.long)
+
+        return HData(x, hyperedge_index, hyperedge_attr)
+
+    @staticmethod
+    def _collect_attr_keys(attr_keys: List[Dict[str, Any]]) -> List[str]:
+        """
+        Collect unique numeric attribute keys from a list of attribute dictionaries.
+
+        Args:
+            attr_keys: List of attribute dictionaries.
+
+        Returns:
+            List of unique numeric attribute keys.
+        """
+        unique_keys = []
+        for attrs in attr_keys:
+            for key, value in attrs.items():
+                if key not in unique_keys and isinstance(value, (int, float)):
+                    unique_keys.append(key)
+
+        return unique_keys
+
+    @staticmethod
+    def _process_hyperedge_attr(
+        hypergraph: HIFHypergraph,
+        hyperedge_id_to_idx: Dict[Any, int],
+        num_hyperedges: int,
+    ) -> Optional[Tensor]:
+        # hyperedge-attr: shape [num_hyperedges, num_hyperedge_attributes]
+        hyperedge_attr = None
+        has_hyperedges = hypergraph.hyperedges is not None and len(hypergraph.hyperedges) > 0
+        has_any_hyperedge_attrs = has_hyperedges and any(
+            "attrs" in edge for edge in hypergraph.hyperedges
+        )
+
+        if has_any_hyperedge_attrs:
+            hyperedge_id_to_attrs: Dict[Any, Dict[str, Any]] = {
+                e.get("edge"): e.get("attrs", {}) for e in hypergraph.hyperedges
+            }
+
+            hyperedge_attr_keys = HIFProcessor._collect_attr_keys(
+                list(hyperedge_id_to_attrs.values())
+            )
+
+            # Build attributes in exact order of hyperedge_set indices (0 to num_hyperedges - 1)
+            hyperedge_idx_to_id = {idx: id for id, idx in hyperedge_id_to_idx.items()}
+
+            attrs = []
+            for hyperedge_idx in range(num_hyperedges):
+                hyperedge_id = hyperedge_idx_to_id[hyperedge_idx]
+
+                transformed_attrs = HIFProcessor.transform_attrs(
+                    # If it's a real hyperedge, get its attrs; if self-loop, get empty dict
+                    attrs=hyperedge_id_to_attrs.get(hyperedge_id, {}),
+                    attr_keys=hyperedge_attr_keys,
+                )
+                attrs.append(transformed_attrs)
+
+            hyperedge_attr = torch.stack(attrs)
+
+        return hyperedge_attr
+
+    @staticmethod
+    def _process_x(hypergraph: HIFHypergraph, num_nodes: int) -> Tensor:
+        # Collect all attribute keys to have tensors of same size
+        node_attr_keys = HIFProcessor._collect_attr_keys(
+            [node.get("attrs", {}) for node in hypergraph.nodes]
+        )
+
+        if node_attr_keys:
+            x = torch.stack(
+                [
+                    HIFProcessor.transform_attrs(node.get("attrs", {}), attr_keys=node_attr_keys)
+                    for node in hypergraph.nodes
+                ]
+            )
+        else:
+            # Fallback to ones if no node features, 1 is better as it can help during
+            # training (e.g., avoid zero multiplication), especially in first epochs
+            x = torch.ones((num_nodes, 1), dtype=torch.float)
+
+        return x  # shape [num_nodes, num_node_features]
+
+    @staticmethod
+    def _process_hyperedge_weights(hypergraph: HIFHypergraph) -> Optional[Tensor]:
+        # Initialize the hyperedge weights tensor
+        hyperedge_weights = None
+
+        has_hyperedge_weights = hypergraph.hyperedges is not None and all(
+            "weight" in edge for edge in hypergraph.hyperedges
+        )
+
+        if has_hyperedge_weights:
+            weights = [edge.get("weight", 1.0) for edge in hypergraph.hyperedges]
+            hyperedge_weights = torch.tensor(weights, dtype=torch.float)
+        elif (
+            has_hyperedge_weights is False
+            and hypergraph.hyperedges is not None
+            and any("weight" in edge for edge in hypergraph.hyperedges)
+        ):
+            raise ValueError(
+                "Some hyperedges have weights while others do not. All hyperedges must either have weights or none."
+            )
+
+        return hyperedge_weights
 
 
 class HIFLoader:
@@ -34,7 +226,7 @@ class HIFLoader:
         Returns:
             HData: The loaded hypergraph object.
         """
-        url = _validate_http_url(url)
+        url = validate_http_url(url)
 
         response = requests.get(url, timeout=20)
         if response.status_code != 200:
@@ -50,12 +242,12 @@ class HIFLoader:
 
         if zst_filename.endswith(".zst"):
             if save_on_disk:
-                HIFLoader.__save_on_disk(os.path.basename(url), response.content)
+                save(os.path.basename(url), response.content)
             output = decompress_zst(zst_filename)
         elif zst_filename.endswith(".json"):
             if save_on_disk:
                 compressed = compress_to_zst(zst_filename)
-                HIFLoader.__save_on_disk(os.path.basename(url), compressed)
+                save(os.path.basename(url), compressed)
             output = zst_filename
         else:
             raise ValueError(
@@ -63,7 +255,7 @@ class HIFLoader:
             )
 
         hypergraph = HIFLoader.__extract_hif(output)
-        hdata = HIFLoader.__process(hypergraph)
+        hdata = HIFProcessor._process_hypergraph(hypergraph)
         return hdata
 
     @staticmethod
@@ -89,11 +281,11 @@ class HIFLoader:
             )
 
         hypergraph = HIFLoader.__extract_hif(output)
-        hdata = HIFLoader.__process(hypergraph)
+        hdata = HIFProcessor._process_hypergraph(hypergraph)
         return hdata
 
     @staticmethod
-    def load(dataset_name: str, save_on_disk: bool = False) -> HData:
+    def load_from_name(dataset_name: str, save_on_disk: bool = False) -> HData:
         print(f"Loading dataset '{dataset_name}' from disk or remote sources...")
         current_dir = os.path.dirname(os.path.abspath(__file__))
         zst_filename = os.path.join(current_dir, "datasets", f"{dataset_name}.json.zst")
@@ -147,7 +339,7 @@ class HIFLoader:
 
         output = decompress_zst(zst_filename)
         hypergraph = HIFLoader.__extract_hif(output)
-        hdata = HIFLoader.__process(hypergraph)
+        hdata = HIFProcessor._process_hypergraph(hypergraph)
         return hdata
 
     @staticmethod
@@ -158,193 +350,3 @@ class HIFLoader:
             raise ValueError(f"Dataset from file '{json_file}' is not HIF-compliant.")
         hypergraph = HIFHypergraph.from_hif(hiftext)
         return hypergraph
-
-    @staticmethod
-    def __save_on_disk(dataset_name: str, content: bytes) -> None:
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        zst_filename = os.path.join(current_dir, "datasets", f"{dataset_name}.json.zst")
-        os.makedirs(os.path.join(current_dir, "datasets"), exist_ok=True)
-
-        with open(zst_filename, "wb") as f:
-            f.write(content)
-
-    @staticmethod
-    def __process_hyperedge_attr(
-        hypergraph: HIFHypergraph,
-        hyperedge_id_to_idx: Dict[Any, int],
-        num_hyperedges: int,
-    ) -> Optional[Tensor]:
-        # hyperedge-attr: shape [num_hyperedges, num_hyperedge_attributes]
-        hyperedge_attr = None
-        has_hyperedges = hypergraph.hyperedges is not None and len(hypergraph.hyperedges) > 0
-        has_any_hyperedge_attrs = has_hyperedges and any(
-            "attrs" in edge for edge in hypergraph.hyperedges
-        )
-
-        if has_any_hyperedge_attrs:
-            hyperedge_id_to_attrs: Dict[Any, Dict[str, Any]] = {
-                e.get("edge"): e.get("attrs", {}) for e in hypergraph.hyperedges
-            }
-
-            hyperedge_attr_keys = HIFLoader.__collect_attr_keys(
-                list(hyperedge_id_to_attrs.values())
-            )
-
-            # Build attributes in exact order of hyperedge_set indices (0 to num_hyperedges - 1)
-            hyperedge_idx_to_id = {idx: id for id, idx in hyperedge_id_to_idx.items()}
-
-            attrs = []
-            for hyperedge_idx in range(num_hyperedges):
-                hyperedge_id = hyperedge_idx_to_id[hyperedge_idx]
-
-                transformed_attrs = HIFLoader.transform_hyperedge_attrs(
-                    # If it's a real hyperedge, get its attrs; if self-loop, get empty dict
-                    attrs=hyperedge_id_to_attrs.get(hyperedge_id, {}),
-                    attr_keys=hyperedge_attr_keys,
-                )
-                attrs.append(transformed_attrs)
-
-            hyperedge_attr = torch.stack(attrs)
-
-        return hyperedge_attr
-
-    @staticmethod
-    def transform_node_attrs(
-        attrs: Dict[str, Any],
-        attr_keys: Optional[List[str]] = None,
-    ) -> Tensor:
-        return HIFLoader.transform_attrs(attrs, attr_keys)
-
-    @staticmethod
-    def __process_x(hypergraph: HIFHypergraph, num_nodes: int) -> Tensor:
-        # Collect all attribute keys to have tensors of same size
-        node_attr_keys = HIFLoader.__collect_attr_keys(
-            [node.get("attrs", {}) for node in hypergraph.nodes]
-        )
-
-        if node_attr_keys:
-            x = torch.stack(
-                [
-                    HIFLoader.transform_node_attrs(node.get("attrs", {}), attr_keys=node_attr_keys)
-                    for node in hypergraph.nodes
-                ]
-            )
-        else:
-            # Fallback to ones if no node features, 1 is better as it can help during
-            # training (e.g., avoid zero multiplication), especially in first epochs
-            x = torch.ones((num_nodes, 1), dtype=torch.float)
-
-        return x  # shape [num_nodes, num_node_features]
-
-    @staticmethod
-    def __process(hypergraph: HIFHypergraph) -> HData:
-        """
-        Process the loaded hypergraph into :class:`HData` format, mapping HIF structure to tensors.
-
-        Returns:
-            The processed hypergraph data.
-        """
-        # if not self.__is_prepared:
-        #     raise ValueError("process can only be called for the original dataset.")
-
-        num_nodes = len(hypergraph.nodes)
-        x = HIFLoader.__process_x(hypergraph, num_nodes)
-
-        # Remap node IDs to 0-based contiguous IDs (using indices) matching the x tensor order
-        node_id_to_idx = {node.get("node"): idx for idx, node in enumerate(hypergraph.nodes)}
-        # Initialize edge_set only with edges that have incidences, so that
-        # we avoid inflating edge count due to isolated nodes/missing incidences
-        hyperedge_id_to_idx: Dict[Any, int] = {}
-
-        node_ids = []
-        hyperedge_ids = []
-        nodes_with_incidences = set()
-        for incidence in hypergraph.incidences:
-            node_id = incidence.get("node", 0)
-            hyperedge_id = incidence.get("edge", 0)
-
-            if hyperedge_id not in hyperedge_id_to_idx:
-                # Hyperedges start from 0 and are assigned IDs in the order they are first encountered in incidences
-                hyperedge_id_to_idx[hyperedge_id] = len(hyperedge_id_to_idx)
-
-            node_ids.append(node_id_to_idx[node_id])
-            hyperedge_ids.append(hyperedge_id_to_idx[hyperedge_id])
-            nodes_with_incidences.add(node_id_to_idx[node_id])
-
-        # Handle isolated nodes by assigning them to a new unique hyperedge (self-loop)
-        for node_idx in range(num_nodes):
-            if node_idx not in nodes_with_incidences:
-                new_hyperedge_id = len(hyperedge_id_to_idx)
-                # Unique dummy key to reserve the index in hyperedge_set
-                hyperedge_id_to_idx[f"__self_loop_{node_idx}__"] = new_hyperedge_id
-                node_ids.append(node_idx)
-                hyperedge_ids.append(new_hyperedge_id)
-
-        num_hyperedges = len(hyperedge_id_to_idx)
-        hyperedge_attr = HIFLoader.__process_hyperedge_attr(
-            hypergraph=hypergraph,
-            hyperedge_id_to_idx=hyperedge_id_to_idx,
-            num_hyperedges=num_hyperedges,
-        )
-
-        hyperedge_index = torch.tensor([node_ids, hyperedge_ids], dtype=torch.long)
-
-        return HData(x, hyperedge_index, hyperedge_attr)
-
-    @staticmethod
-    def __collect_attr_keys(attr_keys: List[Dict[str, Any]]) -> List[str]:
-        """
-        Collect unique numeric attribute keys from a list of attribute dictionaries.
-
-        Args:
-            attr_keys: List of attribute dictionaries.
-
-        Returns:
-            List of unique numeric attribute keys.
-        """
-        unique_keys = []
-        for attrs in attr_keys:
-            for key, value in attrs.items():
-                if key not in unique_keys and isinstance(value, (int, float)):
-                    unique_keys.append(key)
-
-        return unique_keys
-
-    @staticmethod
-    def transform_hyperedge_attrs(
-        attrs: Dict[str, Any],
-        attr_keys: Optional[List[str]] = None,
-    ) -> Tensor:
-        return HIFLoader.transform_attrs(attrs, attr_keys)
-
-    @staticmethod
-    def transform_attrs(
-        attrs: Dict[str, Any],
-        attr_keys: Optional[List[str]] = None,
-    ) -> Tensor:
-        """
-        Extract and encode numeric attributes to tensor.
-        Non-numeric attributes are discarded. Missing attributes are filled with ``0.0``.
-
-        Args:
-            attrs: Dictionary of attributes
-            attr_keys: Optional list of attribute keys to encode. If provided, ensures consistent ordering and fill missing with ``0.0``.
-
-        Returns:
-            Tensor of numeric attribute values
-        """
-        numeric_attrs = {
-            key: value
-            for key, value in attrs.items()
-            if isinstance(value, (int, float)) and not isinstance(value, bool)
-        }
-
-        if attr_keys is not None:
-            values = [float(numeric_attrs.get(key, 0.0)) for key in attr_keys]
-            return torch.tensor(values, dtype=torch.float)
-
-        if not numeric_attrs:
-            return torch.tensor([], dtype=torch.float)
-
-        values = [float(value) for value in numeric_attrs.values()]
-        return torch.tensor(values, dtype=torch.float)

@@ -5,7 +5,7 @@ from .data_utils import (
     to_non_empty_edgeattr,
     to_0based_ids,
 )
-from .hif_utils import validate_hif_json, decompress_zst, compress_to_zst
+from .hif_utils import validate_hif_json
 from .nn_utils import (
     INPUT_LAYER,
     ActivationFn,
@@ -25,6 +25,8 @@ from .node_utils import (
     is_transductive_split,
 )
 from .sparse_utils import sparse_dropout
+from .url_utils import validate_http_url
+from .file_utils import decompress_zst, compress_to_zst, save_on_disk
 
 __all__ = [
     "INPUT_LAYER",
@@ -50,4 +52,6 @@ __all__ = [
     "validate_hif_json",
     "decompress_zst",
     "compress_to_zst",
+    "validate_http_url",
+    "save_on_disk",
 ]

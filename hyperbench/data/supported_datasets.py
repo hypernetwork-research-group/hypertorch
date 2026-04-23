@@ -4,6 +4,11 @@ from hyperbench.data.sampling import SamplingStrategy
 
 
 class PreloadedDataset(Dataset):
+    """
+    Base class for datasets that use default loading. Subclasses should specify the DATASET_NAME class variable.
+    The dataset will be saved on disk after the first load.
+    """
+
     DATASET_NAME = ""
 
     def __init__(
@@ -13,7 +18,7 @@ class PreloadedDataset(Dataset):
     ) -> None:
         super().__init__(hdata=hdata, sampling_strategy=sampling_strategy)
         if hdata is None:
-            self.hdata = HIFLoader.load(self.DATASET_NAME, save_on_disk=True)
+            self.hdata = HIFLoader.load_from_name(self.DATASET_NAME, save_on_disk=True)
 
 
 class AlgebraDataset(PreloadedDataset):
