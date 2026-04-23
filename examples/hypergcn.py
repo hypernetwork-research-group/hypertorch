@@ -7,7 +7,7 @@ from torchmetrics.classification import (
 )
 from lightning.pytorch.callbacks import EarlyStopping
 from hyperbench.hlp import HyperGCNHlpModule
-from hyperbench.nn import LaplacianPositionalEncodingEnricher
+from hyperbench.nn import HyperedgeWeightsEnricher, LaplacianPositionalEncodingEnricher
 from hyperbench.train import MultiModelTrainer, RandomNegativeSampler
 from hyperbench.types import HData, ModelConfig
 from hyperbench.data import AlgebraDataset, DataLoader, SamplingStrategy
@@ -72,6 +72,14 @@ if __name__ == "__main__":
 
         if verbose:
             print(f"{name} dataset after adding negative samples: {shuffled_hdata}\n")
+
+    print("Enriching hyperedge weights...")
+
+    for ds in [train_dataset, val_dataset, test_dataset]:
+        ds.enrich_hyperedge_weights(
+            enricher=HyperedgeWeightsEnricher(alpha=1.0, beta=None),
+            enrichment_mode="replace",
+        )
 
     print("Enriching node features...")
 
