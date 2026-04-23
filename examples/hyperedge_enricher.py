@@ -9,6 +9,7 @@ if __name__ == "__main__":
 
     print("Enriching hyperedge weights...")
 
+    dataset = AlgebraDataset(sampling_strategy=sampling_strategy)
     # HyperedgeWeightsEnricher enriches hyperedges with their degree (number of nodes in each hyperedge) as weights.
     # It optionally applies scaling and adds a constant to the weights.
     dataset.enrich_hyperedge_weights(
@@ -25,8 +26,8 @@ if __name__ == "__main__":
 
     print("Enriching hyperedge attributes...")
 
-    # HyperedgeAttrsEnricher adds a feature of 1.0 for each hyperedge,
-    # which can be used as a baseline or for methods that require hyperedge features.
+    dataset = AlgebraDataset(sampling_strategy=sampling_strategy)
+    # HyperedgeAttrsEnricher adds a feature of 1.0 for each hyperedge, which can be used as a baseline or for methods that require hyperedge features.
     dataset.enrich_hyperedge_attr(
         enricher=HyperedgeAttrsEnricher(),
         enrichment_mode="replace",

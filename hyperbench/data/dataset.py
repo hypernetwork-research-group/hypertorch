@@ -138,25 +138,25 @@ class Dataset(TorchDataset):
         dataset = cls.from_hdata(hdata=hypergraph, sampling_strategy=sampling_strategy)
         return dataset
 
-    @classmethod
-    def from_default(
-        cls,
-        sampling_strategy: SamplingStrategy = SamplingStrategy.HYPEREDGE,
-        save_on_disk: bool = False,
-    ) -> "Dataset":
-        """
-        Create a :class:`Dataset` instance by loading a hypergraph from a URL pointing to a .json or .json.zst file in HIF format.
+    # @classmethod
+    # def from_default(
+    #     cls,
+    #     sampling_strategy: SamplingStrategy = SamplingStrategy.HYPEREDGE,
+    #     save_on_disk: bool = False,
+    # ) -> "Dataset":
+    #     """
+    #     Create a :class:`Dataset` instance by loading a hypergraph from a URL pointing to a .json or .json.zst file in HIF format.
 
-        Args:
-            sampling_strategy: The sampling strategy to use for the dataset. If not provided, defaults to ``SamplingStrategy.HYPEREDGE``.
-            save_on_disk: Whether to save the downloaded file on disk.
+    #     Args:
+    #         sampling_strategy: The sampling strategy to use for the dataset. If not provided, defaults to ``SamplingStrategy.HYPEREDGE``.
+    #         save_on_disk: Whether to save the downloaded file on disk.
 
-        Returns:
-            The :class:`Dataset` instance with the loaded hypergraph data.
-        """
-        hdata = HIFLoader.load(dataset_name="", save_on_disk=save_on_disk)
-        dataset = cls.from_hdata(hdata=hdata, sampling_strategy=sampling_strategy)
-        return dataset
+    #     Returns:
+    #         The :class:`Dataset` instance with the loaded hypergraph data.
+    #     """
+    #     hdata = HIFLoader.load(dataset_name="", save_on_disk=save_on_disk)
+    #     dataset = cls.from_hdata(hdata=hdata, sampling_strategy=sampling_strategy)
+    #     return dataset
 
     def enrich_node_features(
         self,
