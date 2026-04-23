@@ -41,6 +41,21 @@ def test_init_edges(graph, expected_edges):
     assert graph.edges == expected_edges
 
 
+def test_graph_stores_edge_weights():
+    graph = Graph([[0, 1], [1, 2]], edge_weights=[0.25, 0.75])
+
+    assert graph.edge_weights == [0.25, 0.75]
+    assert torch.allclose(graph.edge_weights_tensor, torch.tensor([0.25, 0.75]))
+
+
+def test_graph_raises_for_misaligned_edge_weights():
+    with pytest.raises(
+        ValueError,
+        match="edge_weights must have the same number of entries as edges.",
+    ):
+        Graph([[0, 1], [1, 2]], edge_weights=[0.25])
+
+
 @pytest.mark.parametrize(
     "graph, expected_num_nodes",
     [
@@ -127,6 +142,17 @@ def test_remove_selfloops_preserves_order():
     graph = Graph([[0, 1], [1, 1], [2, 3], [3, 3], [4, 5]])
     graph.remove_selfloops()
     assert graph.edges == [[0, 1], [2, 3], [4, 5]]
+
+
+def test_remove_selfloops_keeps_edge_weights_aligned():
+    graph = Graph(
+        [[0, 1], [1, 1], [2, 3], [3, 3]],
+        edge_weights=[0.25, 0.5, 0.75, 1.0],
+    )
+
+    graph.remove_selfloops()
+
+    assert graph.edge_weights == [0.25, 0.75]
 
 
 @pytest.mark.parametrize(
@@ -451,6 +477,38 @@ def test_edge_index_item_returns_tensor():
     assert torch.equal(edge_index.item, edge_index_tensor)
 
 
+def test_edge_index_stores_edge_weights():
+    edge_index_tensor = torch.tensor([[0, 1], [1, 0]])
+    edge_weights = torch.tensor([0.25, 0.75])
+
+    edge_index = EdgeIndex(edge_index_tensor, edge_weights=edge_weights)
+
+    assert edge_index.edge_weights is not None
+    assert torch.equal(edge_index.edge_weights, edge_weights)
+
+
+def test_edge_index_raises_for_wrong_edge_weights_shape():
+    edge_index_tensor = torch.tensor([[0, 1], [1, 0]])
+    edge_weights = torch.tensor([0.25, 0.75]).unsqueeze(0)  # Shape (1, 2) instead of (2,)
+
+    with pytest.raises(
+        ValueError,
+        match="edge_weights must be a 1D tensor.",
+    ):
+        EdgeIndex(edge_index_tensor, edge_weights=edge_weights)
+
+
+def test_edge_index_raises_for_misaligned_edge_weights():
+    edge_index_tensor = torch.tensor([[0, 1], [1, 0]])
+    edge_weights = torch.tensor([0.25])
+
+    with pytest.raises(
+        ValueError,
+        match="edge_weights must have the same number of entries as edge_index columns.",
+    ):
+        EdgeIndex(edge_index_tensor, edge_weights=edge_weights)
+
+
 @pytest.mark.parametrize(
     "edge_index_tensor, expected_num_edges",
     [
@@ -513,6 +571,29 @@ def test_add_selfloops_returns_correct_edges():
     assert (0, 0) in edges
     assert (1, 1) in edges
     assert (2, 2) in edges
+
+
+def test_add_selfloops_adds_unit_edge_weights():
+    edge_index = EdgeIndex(
+        torch.tensor([[0, 1], [1, 2]]),
+        edge_weights=torch.tensor([0.25, 0.75]),
+    )
+    edge_index.add_selfloops()
+
+    assert edge_index.edge_weights is not None
+
+    weighted_edges = {
+        tuple(edge): weight
+        for edge, weight in zip(edge_index.item.t().tolist(), edge_index.edge_weights.tolist())
+    }
+    expected_weighted_edges = {
+        (0, 1): 0.25,
+        (1, 2): 0.75,
+        (0, 0): 1.0,
+        (1, 1): 1.0,
+        (2, 2): 1.0,
+    }
+    assert weighted_edges == expected_weighted_edges
 
 
 def test_add_selfloops_raises_on_empty_edge_index():
@@ -662,6 +743,36 @@ def test_get_sparse_adjacency_matrix_preserves_device():
     assert adj_matrix.device == edge_index.device
 
 
+def test_get_sparse_adjacency_matrix_uses_edge_weights_and_sums_duplicates():
+    edge_index = torch.tensor([[0, 0], [1, 1]])
+    edge_weights = torch.tensor([0.25, 0.75])
+
+    adj_matrix = EdgeIndex(
+        edge_index=edge_index,
+        edge_weights=edge_weights,
+    ).get_sparse_adjacency_matrix(
+        num_nodes=2,
+        use_edge_weights=True,
+    )
+
+    expected_adj_matrix = torch.tensor([[0.0, 1.0], [0.0, 0.0]])
+
+    assert torch.allclose(adj_matrix.to_dense(), expected_adj_matrix)
+
+
+def test_get_sparse_adjacency_matrix_ignores_stored_edge_weights_by_default():
+    edge_index = EdgeIndex(
+        torch.tensor([[0, 0], [1, 1]]),
+        edge_weights=torch.tensor([0.25, 0.75]),
+    )
+
+    adj_matrix = edge_index.get_sparse_adjacency_matrix(num_nodes=2)
+
+    expected_adj_matrix = torch.tensor([[0.0, 2.0], [0.0, 0.0]])
+
+    assert torch.allclose(adj_matrix.to_dense(), expected_adj_matrix)
+
+
 @pytest.mark.parametrize(
     "edge_index, num_nodes, isolated_nodes",
     [
@@ -794,6 +905,35 @@ def test_get_sparse_normalized_degree_matrix_preserves_device():
     assert degree_matrix.device == edge_index.device
 
 
+def test_get_sparse_normalized_degree_matrix_uses_edge_weights():
+    edge_index = torch.tensor([[0], [1]])
+    edge_weights = torch.tensor([4.0])
+
+    degree_matrix = EdgeIndex(
+        edge_index=edge_index,
+        edge_weights=edge_weights,
+    ).get_sparse_normalized_degree_matrix(
+        num_nodes=2,
+        use_edge_weights=True,
+    )
+
+    expected_degree_matrix = torch.tensor([[0.5, 0.0], [0.0, 0.0]])
+
+    assert torch.allclose(degree_matrix.to_dense(), expected_degree_matrix)
+
+
+def test_get_sparse_normalized_degree_matrix_ignores_stored_edge_weights_by_default():
+    edge_index = EdgeIndex(
+        edge_index=torch.tensor([[0], [1]]),
+        edge_weights=torch.tensor([4.0]),
+    )
+
+    degree_matrix = edge_index.get_sparse_normalized_degree_matrix(num_nodes=2)
+
+    expected_degree_matrix = torch.tensor([[1.0, 0.0], [0.0, 0.0]])
+    assert torch.allclose(degree_matrix.to_dense(), expected_degree_matrix)
+
+
 def test_get_sparse_normalized_laplacian_returns_sparse_tensor():
     edge_index = torch.tensor([[0, 1], [1, 0]])
 
@@ -901,6 +1041,68 @@ def test_get_sparse_normalized_laplacian_has_features_for_isolated_nodes():
     assert torch.all(dense_gcn_laplacian.sum(dim=1) != 0)
 
 
+def test_get_sparse_normalized_laplacian_uses_edge_weights():
+    edge_index = torch.tensor([[0], [1]])
+    edge_weights = torch.tensor([2.0])
+
+    gcn_laplacian = EdgeIndex(
+        edge_index=edge_index,
+        edge_weights=edge_weights,
+    ).get_sparse_normalized_gcn_laplacian(
+        num_nodes=2,
+        use_edge_weights=True,
+    )
+
+    expected_gcn_laplacian = torch.tensor(
+        [
+            [1 / 3, 2 / 3],
+            [2 / 3, 1 / 3],
+        ],
+        dtype=torch.float,
+    )
+    assert torch.allclose(gcn_laplacian.to_dense(), expected_gcn_laplacian, atol=1e-6)
+
+
+def test_get_sparse_normalized_laplacian_ignores_stored_edge_weights_by_default():
+    edge_index = EdgeIndex(
+        torch.tensor([[0], [1]]),
+        edge_weights=torch.tensor([2.0]),
+    )
+
+    gcn_laplacian = edge_index.get_sparse_normalized_gcn_laplacian(num_nodes=2)
+
+    expected_gcn_laplacian = torch.tensor(
+        [
+            [1 / 2, 1 / 2],
+            [1 / 2, 1 / 2],
+        ],
+        dtype=torch.float,
+    )
+    assert torch.allclose(gcn_laplacian.to_dense(), expected_gcn_laplacian, atol=1e-6)
+
+
+def test_get_sparse_normalized_laplacian_does_not_double_count_existing_reverse_edges():
+    edge_index = torch.tensor([[0, 1], [1, 0]])
+    edge_weights = torch.tensor([2.0, 2.0])
+
+    gcn_laplacian = EdgeIndex(
+        edge_index,
+        edge_weights=edge_weights,
+    ).get_sparse_normalized_gcn_laplacian(
+        num_nodes=2,
+        use_edge_weights=True,
+    )
+
+    expected_gcn_laplacian = torch.tensor(
+        [
+            [1 / 3, 2 / 3],  # If we double-counted the reverse edge, this would be [1/5, 4/5]
+            [2 / 3, 1 / 3],  # If we double-counted the reverse edge, this would be [4/5, 1/5]
+        ],
+        dtype=torch.float,
+    )
+    assert torch.allclose(gcn_laplacian.to_dense(), expected_gcn_laplacian, atol=1e-6)
+
+
 def test_get_sparse_identity_matrix_is_sparse():
     edge_index = EdgeIndex(torch.tensor([[0], [1]]))
     identity_matrix = edge_index.get_sparse_identity_matrix(num_nodes=2)
@@ -918,6 +1120,19 @@ def test_edge_index_remove_selfloops():
     assert (2, 3) in edges
     assert (3, 2) in edges
     assert edge_index.num_edges == 3
+
+
+def test_edge_index_remove_selfloops_keeps_edge_weights_aligned():
+    edge_index = EdgeIndex(
+        torch.tensor([[0, 1, 2, 3], [1, 1, 3, 2]]),
+        edge_weights=torch.tensor([0.25, 0.5, 0.75, 1.0]),
+    )
+    edge_index.remove_selfloops()
+
+    assert edge_index.edge_weights is not None
+
+    # We remove the self-loop (1, 1) which has weight 0.5
+    assert torch.allclose(edge_index.edge_weights, torch.tensor([0.25, 0.75, 1.0]))
 
 
 def test_edge_index_remove_selfloops_when_all_selfloops():
@@ -941,6 +1156,30 @@ def test_get_sparse_identity_matrix():
 
     expected = torch.eye(3)
     assert torch.allclose(dense_identity, expected)
+
+
+def test_remove_duplicate_edges_sums_duplicate_edge_weights():
+    edge_index = EdgeIndex(
+        torch.tensor([[0, 0, 1], [1, 1, 2]]),
+        edge_weights=torch.tensor([0.25, 0.75, 1.0]),
+    )
+    edge_index.remove_duplicate_edges()
+
+    assert torch.equal(edge_index.item, torch.tensor([[0, 1], [1, 2]]))
+    assert edge_index.edge_weights is not None
+    assert torch.allclose(edge_index.edge_weights, torch.tensor([1.0, 1.0]))
+
+
+def test_to_undirected_duplicates_edge_weights_for_reverse_edges():
+    edge_index = EdgeIndex(
+        torch.tensor([[0], [1]]),
+        edge_weights=torch.tensor([0.25]),
+    )
+    edge_index.to_undirected()
+
+    assert torch.equal(edge_index.item, torch.tensor([[0, 1], [1, 0]]))
+    assert edge_index.edge_weights is not None
+    assert torch.allclose(edge_index.edge_weights, torch.tensor([0.25, 0.25]))
 
 
 def test_get_sparse_identity_matrix_infers_num_nodes():

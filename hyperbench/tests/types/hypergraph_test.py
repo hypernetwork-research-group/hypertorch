@@ -619,11 +619,14 @@ def test_clique_expansion_overlapping_hyperedges():
     ],
 )
 def test_reduce_to_graph_edge_count(x, hyperedge_index, with_mediators, expected_num_edges):
-    result = HyperedgeIndex(hyperedge_index).reduce_to_edge_index_on_random_direction(
-        x, with_mediators=with_mediators, remove_selfloops=False
+    edge_index, edge_weights = HyperedgeIndex(
+        hyperedge_index
+    ).reduce_to_edge_index_on_random_direction(
+        x=x, with_mediators=with_mediators, remove_selfloops=False
     )
 
-    assert result.shape[1] == expected_num_edges
+    assert edge_index.shape[1] == expected_num_edges
+    assert edge_weights is None
 
 
 @pytest.mark.parametrize(
@@ -647,18 +650,12 @@ def test_reduce_to_graph_edge_count(x, hyperedge_index, with_mediators, expected
     ],
 )
 def test_reduce_to_graph_output_has_two_rows(x, hyperedge_index):
-    result = HyperedgeIndex(hyperedge_index).reduce_to_edge_index_on_random_direction(x)
+    edge_index, edge_weights = HyperedgeIndex(
+        hyperedge_index
+    ).reduce_to_edge_index_on_random_direction(x)
 
-    assert result.shape[0] == 2
-
-
-def test_reduce_to_graph_output_dtype_is_long():
-    x = torch.tensor([[1.0, 0.0], [0.0, 1.0]])
-    hyperedge_index = torch.tensor([[0, 1], [0, 0]])
-
-    result = HyperedgeIndex(hyperedge_index).reduce_to_edge_index_on_random_direction(x)
-
-    assert result.dtype == torch.long
+    assert edge_index.shape[0] == 2
+    assert edge_weights is None
 
 
 def test_reduce_to_graph_output_nodes_are_within_bounds():
@@ -666,11 +663,14 @@ def test_reduce_to_graph_output_nodes_are_within_bounds():
     x = torch.tensor([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0], [0.5, 0.5, 0.0]])
     hyperedge_index = torch.tensor([[0, 1, 2, 1, 2, 3], [0, 0, 0, 1, 1, 1]])
 
-    result = HyperedgeIndex(hyperedge_index).reduce_to_edge_index_on_random_direction(x)
+    edge_index, edge_weights = HyperedgeIndex(
+        hyperedge_index
+    ).reduce_to_edge_index_on_random_direction(x)
     num_nodes = x.shape[0]
 
-    assert result.min() >= 0
-    assert result.max() < num_nodes
+    assert edge_index.min() >= 0
+    assert edge_index.max() < num_nodes
+    assert edge_weights is None
 
 
 def test_reduce_to_graph_removes_selfloops():
@@ -679,31 +679,33 @@ def test_reduce_to_graph_removes_selfloops():
     x = torch.tensor([[1.0, 0.0], [0.0, 1.0]])
     hyperedge_index = torch.tensor([[0, 0], [0, 0]])
 
-    result = HyperedgeIndex(hyperedge_index).reduce_to_edge_index_on_random_direction(
-        x, remove_selfloops=True
-    )
+    edge_index, edge_weights = HyperedgeIndex(
+        hyperedge_index
+    ).reduce_to_edge_index_on_random_direction(x=x, remove_selfloops=True)
 
     # Either zero or one edge remains, the reason why one edge may remain is that
     # after removing self-loops, there could be multiple hyperedges projecting to
     # the same graph edge, which would be kept as a single edge
     # Example: hyperedges [[0,1,1],[0,0,2]] both project to graph edge [0,2]
-    assert result.shape[1] <= 1
+    assert edge_index.shape[1] <= 1
+    assert edge_weights is None
 
-    if result.shape[1] > 0:
+    if edge_index.shape[1] > 0:
         # If any edges remain, check that no self-loops are present
-        assert not torch.any(result[0] == result[1]).item()
+        assert not torch.any(edge_index[0] == edge_index[1]).item()
 
 
 def test_reduce_to_graph_keeps_selfloops_when_disabled():
     x = torch.tensor([[1.0, 0.0], [0.0, 1.0]])
     hyperedge_index = torch.tensor([[0, 0], [0, 0]])
 
-    result = HyperedgeIndex(hyperedge_index).reduce_to_edge_index_on_random_direction(
-        x, remove_selfloops=False
-    )
+    edge_index, edge_weights = HyperedgeIndex(
+        hyperedge_index
+    ).reduce_to_edge_index_on_random_direction(x=x, remove_selfloops=False)
 
-    assert result.shape[1] == 1  # One node, one hyperedge
-    assert result[0, 0] == result[1, 0]  # Self-loop edge [0, 0] is preserved
+    assert edge_index.shape[1] == 1  # One node, one hyperedge
+    assert edge_index[0, 0] == edge_index[1, 0]  # Self-loop edge [0, 0] is preserved
+    assert edge_weights is None
 
 
 def test_reduce_to_graph_raises_on_single_node_hyperedge():
@@ -718,9 +720,12 @@ def test_reduce_to_graph_returns_empty_edge_index_for_empty_hyperedge_index():
     x = torch.empty((0, 2))
     hyperedge_index = torch.empty((2, 0), dtype=torch.long)
 
-    result = HyperedgeIndex(hyperedge_index).reduce_to_edge_index_on_random_direction(x)
+    edge_index, edge_weights = HyperedgeIndex(
+        hyperedge_index
+    ).reduce_to_edge_index_on_random_direction(x)
 
-    assert result.shape == (2, 0)  # Empty edge index
+    assert edge_index.shape == (2, 0)  # Empty edge index
+    assert edge_weights is None
 
 
 def test_reduce_to_graph_keeps_duplicate_edges_from_different_hyperedges():
@@ -728,17 +733,104 @@ def test_reduce_to_graph_keeps_duplicate_edges_from_different_hyperedges():
     # Two identical hyperedges {0,1} and both reduce to the same graph edge
     hyperedge_index = torch.tensor([[0, 1, 0, 1], [0, 0, 1, 1]])
 
-    result = HyperedgeIndex(hyperedge_index).reduce_to_edge_index_on_random_direction(
-        x,
+    edge_index, edge_weights = HyperedgeIndex(
+        hyperedge_index
+    ).reduce_to_edge_index_on_random_direction(
+        x=x,
         with_mediators=False,
         remove_selfloops=False,
     )
 
-    assert result.shape == (2, 2)
+    assert edge_index.shape == (2, 2)
+    assert edge_weights is None
 
     # hyperedges [[0,1],[0,1]] both project to graph edge [0,1],
     # so we expect two identical edges in the output
-    assert torch.equal(result, torch.tensor([[0, 0], [1, 1]]))
+    assert torch.equal(edge_index, torch.tensor([[0, 0], [1, 1]]))
+
+
+def test_reduce_to_graph_return_weights_false_returns_none():
+    x = torch.tensor([[0.0, 0.0], [1.0, 1.0]])
+    hyperedge_index = torch.tensor([[0, 1], [0, 0]])
+
+    edge_index, edge_weights = HyperedgeIndex(
+        hyperedge_index
+    ).reduce_to_edge_index_on_random_direction(
+        x=x,
+        return_weights=False,
+    )
+
+    assert torch.equal(edge_index, torch.tensor([[0], [1]]))
+    assert edge_weights is None
+
+
+def test_reduce_to_graph_return_weights_true_without_mediators():
+    x = torch.tensor([[0.0, 0.0], [0.5, 0.5], [1.0, 1.0]])
+    hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 0]])
+
+    edge_index, edge_weights = HyperedgeIndex(
+        hyperedge_index
+    ).reduce_to_edge_index_on_random_direction(
+        x=x,
+        return_weights=True,
+    )
+
+    assert torch.equal(edge_index, torch.tensor([[0], [2]]))
+    assert edge_weights is not None
+    # When no mediators are present, weight = 1 / number of nodes in hyperedge = 1/3
+    assert torch.allclose(edge_weights, torch.tensor([1 / 3]))
+
+
+def test_reduce_to_graph_return_weights_true_with_mediators():
+    x = torch.tensor([[0.0, 0.0], [0.5, 0.5], [1.0, 1.0]])
+    hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 0]])
+
+    edge_index, edge_weights = HyperedgeIndex(
+        hyperedge_index
+    ).reduce_to_edge_index_on_random_direction(
+        x=x,
+        with_mediators=True,
+        return_weights=True,
+        remove_selfloops=False,
+    )
+
+    assert torch.equal(edge_index, torch.tensor([[0, 2], [1, 1]]))
+    assert edge_weights is not None
+    assert torch.allclose(edge_weights, torch.tensor([1 / 3, 1 / 3]))
+
+
+def test_reduce_to_graph_return_weights_true_keeps_duplicate_edge_weights_aligned():
+    x = torch.tensor([[0.0, 0.0], [1.0, 1.0]])
+    hyperedge_index = torch.tensor([[0, 1, 0, 1], [0, 0, 1, 1]])
+
+    edge_index, edge_weights = HyperedgeIndex(
+        hyperedge_index
+    ).reduce_to_edge_index_on_random_direction(
+        x=x,
+        return_weights=True,
+        remove_selfloops=False,
+    )
+
+    assert torch.equal(edge_index, torch.tensor([[0, 0], [1, 1]]))
+    assert edge_weights is not None
+    assert torch.allclose(edge_weights, torch.tensor([0.5, 0.5]))
+
+
+def test_reduce_to_graph_return_weights_true_removes_weights_for_selfloops():
+    x = torch.tensor([[1.0, 0.0], [0.0, 1.0]])
+    hyperedge_index = torch.tensor([[0, 0], [0, 0]])
+
+    edge_index, edge_weights = HyperedgeIndex(
+        hyperedge_index
+    ).reduce_to_edge_index_on_random_direction(
+        x,
+        return_weights=True,
+        remove_selfloops=True,
+    )
+
+    assert edge_index.shape == (2, 0)
+    assert edge_weights is not None
+    assert edge_weights.shape == (0,)
 
 
 @pytest.mark.parametrize(

@@ -1,7 +1,7 @@
 import torch
 
 from torch import Tensor
-from typing import Optional, List, Dict, Any, Literal, Set, TypeAlias
+from typing import Optional, List, Dict, Any, Literal, Set, Tuple, TypeAlias
 from hyperbench.utils import sparse_dropout, to_0based_ids
 
 from hyperbench.types.graph import EdgeIndex, Graph
@@ -677,7 +677,8 @@ class HyperedgeIndex:
         x: Tensor,
         with_mediators: bool = False,
         remove_selfloops: bool = True,
-    ) -> Tensor:
+        return_weights: bool = False,
+    ) -> Tuple[Tensor, Optional[Tensor]]:
         """
         Construct a graph from a hypergraph with methods proposed in `HyperGCN: A New Method of Training Graph Convolutional Networks on Hypergraphs <https://arxiv.org/pdf/1809.02589.pdf>`_ paper.
         Reference implementation: `source <https://deephypergraph.readthedocs.io/en/latest/_modules/dhg/structure/graphs/graph.html#Graph.from_hypergraph_hypergcn>`_.
@@ -686,9 +687,12 @@ class HyperedgeIndex:
             x: Node feature matrix. Size ``(|V|, C)``.
             with_mediators: Whether to use mediator to transform the hyperedges to edges in the graph. Defaults to ``False``.
             remove_selfloops: Whether to remove self-loops. Defaults to ``True``.
+            return_weights: Whether to return the DHG-style reduced-edge weights alongside the edge index. Defaults to ``False``.
 
         Returns:
-            The edge index. Size ``(2, |E'|)``.
+            A tuple ``(edge_index, edge_weights)`` where:
+            - ``edge_index`` has size ``(2, |num_edges|)``.
+            - ``edge_weights`` has size ``(|num_edges|,)`` when ``return_weights=True``, otherwise ``None``.
 
         Raises:
             ValueError: If any hyperedge contains fewer than 2 nodes.
@@ -698,6 +702,7 @@ class HyperedgeIndex:
         hypergraph = Hypergraph.from_hyperedge_index(self.__hyperedge_index)
         hypergraph_edges: List[List[int]] = hypergraph.hyperedges
         graph_edges: List[List[int]] = []
+        graph_edge_weights: List[float] = []
 
         # Random direction (feature_dim, 1) for projecting nodes in each hyperedge
         # Geometrically, we are choosing a random line through the origin in ℝᵈ, where ᵈ = feature_dim
@@ -720,18 +725,27 @@ class HyperedgeIndex:
 
             if not with_mediators:  # Just connect the two farthest nodes
                 graph_edges.append([edge[node_min_proj_idx], edge[node_max_proj_idx]])
+                graph_edge_weights.append(1.0 / num_nodes_in_edge)
                 continue
 
+            edge_weight = 1.0 / (2 * num_nodes_in_edge - 3)
             for node_idx in range(num_nodes_in_edge):
                 if node_idx != node_max_proj_idx and node_idx != node_min_proj_idx:
                     graph_edges.append([edge[node_min_proj_idx], edge[node_idx]])
                     graph_edges.append([edge[node_max_proj_idx], edge[node_idx]])
+                    graph_edge_weights.extend([edge_weight, edge_weight])
 
-        graph = Graph(edges=graph_edges)
+        graph = Graph(
+            edges=graph_edges,
+            edge_weights=graph_edge_weights if return_weights else None,
+        )
         if remove_selfloops:
             graph.remove_selfloops()
 
-        return graph.to_edge_index().to(device)
+        return (
+            graph.to_edge_index().to(device),
+            graph.edge_weights_tensor.to(device) if return_weights else None,
+        )
 
     def remove_duplicate_edges(self) -> "HyperedgeIndex":
         """Remove duplicate edges from the hyperedge index. Keeps the tensor contiguous in memory."""
