@@ -506,6 +506,68 @@ def test_hyperedge_index_nodes_in(hyperedge_index_tensor, hyperedge_id, expected
     assert hyperedge_index.nodes_in(hyperedge_id) == expected_nodes
 
 
+def _edge_index_to_edge_set(edge_index: torch.Tensor) -> set[tuple[int, int]]:
+    return set(zip(edge_index[0].tolist(), edge_index[1].tolist()))
+
+
+@pytest.mark.parametrize(
+    "hyperedge_index_tensor, expected_edges",
+    [
+        pytest.param(
+            torch.empty((2, 0), dtype=torch.long),
+            set(),
+            id="empty_hypergraph",
+        ),
+        pytest.param(
+            torch.tensor([[0, 1, 2], [0, 0, 0]], dtype=torch.long),
+            {
+                (0, 0),
+                (0, 1),
+                (0, 2),
+                (1, 0),
+                (1, 1),
+                (1, 2),
+                (2, 0),
+                (2, 1),
+                (2, 2),
+            },
+            id="single_hyperedge_three_nodes",
+        ),
+        pytest.param(
+            torch.tensor([[0, 1, 1, 2], [0, 0, 1, 1]], dtype=torch.long),
+            {
+                (0, 0),
+                (0, 1),
+                (1, 0),
+                (1, 1),
+                (1, 2),
+                (2, 1),
+                (2, 2),
+            },
+            id="two_overlapping_hyperedges",
+        ),
+    ],
+)
+def test_reduce_with_clique_expansion_returns_expected_edges(
+    hyperedge_index_tensor, expected_edges
+):
+    result = HyperedgeIndex(hyperedge_index_tensor).reduce("clique_expansion")
+
+    assert result.dtype == torch.long
+    assert result.shape[0] == 2
+    assert _edge_index_to_edge_set(result) == expected_edges
+
+
+def test_reduce_with_clique_expansion_matches_specialized_reducer():
+    hyperedge_index = torch.tensor([[0, 1, 2, 1], [0, 0, 1, 1]], dtype=torch.long)
+    hyperedge_index_wrapper = HyperedgeIndex(hyperedge_index)
+
+    result = hyperedge_index_wrapper.reduce("clique_expansion")
+    expected = hyperedge_index_wrapper.reduce_to_edge_index_on_clique_expansion()
+
+    assert torch.equal(result, expected)
+
+
 @pytest.mark.parametrize(
     "hyperedge_index_tensor, expected_num_edges",
     [
