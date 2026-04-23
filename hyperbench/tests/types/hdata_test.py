@@ -220,6 +220,16 @@ def test_hdata_to_cpu_handles_none_hyperedge_attr(mock_hdata):
     assert mock_hdata.hyperedge_attr is None
 
 
+def test_hdata_to_cpu_handles_none_global_node_ids(mock_hdata):
+    mock_hdata.global_node_ids = None
+    returned = mock_hdata.to("cpu")
+
+    assert returned is mock_hdata
+    assert mock_hdata.x.device.type == "cpu"
+    assert mock_hdata.hyperedge_index.device.type == "cpu"
+    assert mock_hdata.global_node_ids is None
+
+
 def test_hdata_to_cpu_moves_hyperedge_weights():
     x = torch.randn(3, 2)
     hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 0]])
@@ -512,6 +522,18 @@ def test_split_subsets_labels():
     assert torch.equal(result.y, torch.tensor([0.0]))
 
 
+def test_split_handles_none_global_node_ids():
+    x = torch.tensor([[10.0], [20.0], [30.0], [40.0]])
+    hyperedge_index = torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]])
+    hdata = HData(x=x, hyperedge_index=hyperedge_index)
+    hdata.global_node_ids = None
+
+    result = HData.split(hdata, split_hyperedge_ids=torch.tensor([1]))
+
+    assert result.global_node_ids is not None
+    assert torch.equal(result.global_node_ids, torch.arange(result.num_nodes))
+
+
 def test_split_subsets_edge_attr():
     x = torch.randn(4, 2)
     hyperedge_index = torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]])
@@ -645,6 +667,16 @@ def test_get_device_if_all_consistent_includes_edge_attr():
 
     with pytest.raises(ValueError, match="Inconsistent device placement"):
         hdata.get_device_if_all_consistent()
+
+
+def test_get_device_if_all_consistent_handles_none_global_node_ids():
+    x = torch.randn(3, 2)
+    hyperedge_index = torch.tensor([[0, 1], [0, 0]])
+    hyperedge_attr = torch.randn(1, 4)
+    hdata = HData(x=x, hyperedge_index=hyperedge_index, hyperedge_attr=hyperedge_attr)
+    hdata.global_node_ids = None
+
+    assert hdata.get_device_if_all_consistent() == torch.device("cpu")
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA not available")
@@ -958,6 +990,18 @@ def test_remove_hyperedges_with_fewer_than_k_nodes_keeps_none_hyperedge_attr():
     result = hdata.remove_hyperedges_with_fewer_than_k_nodes(k=1)
 
     assert result.hyperedge_attr is None
+
+
+def test_remove_hyperedges_with_fewer_than_k_nodes_handles_none_global_node_ids():
+    x = torch.randn(5, 2)
+    hyperedge_index = torch.tensor([[0, 1, 2, 3, 4], [0, 0, 1, 1, 1]])
+    hdata = HData(x=x, hyperedge_index=hyperedge_index)
+    hdata.global_node_ids = None
+
+    result = hdata.remove_hyperedges_with_fewer_than_k_nodes(k=3)
+
+    assert result.global_node_ids is not None
+    assert torch.equal(result.global_node_ids, torch.arange(result.num_nodes))
 
 
 def test_remove_hyperedges_with_fewer_than_k_nodes_subsets_hyperedge_weights():
