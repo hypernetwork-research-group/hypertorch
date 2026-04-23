@@ -1,7 +1,7 @@
-from unittest.mock import MagicMock
 import pytest
 import torch
 
+from unittest.mock import MagicMock
 from torch import Tensor
 from hyperbench import utils
 from hyperbench.nn import NodeEnricher, HyperedgeEnricher
@@ -634,6 +634,98 @@ def test_enrich_node_features_concatenate(mock_hdata):
     expected_x = torch.cat([original_x, enriched_x], dim=1)
     assert torch.equal(result.x, expected_x)
     assert result.x.shape == (5, 7)  # 4 original + 3 enriched
+
+
+def test_enrich_hyperedge_weights_replace():
+    x = torch.tensor([[1.0], [2.0], [3.0]])
+    hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 1]])
+    hyperedge_attr = torch.tensor([[10.0, 11.0], [20.0, 21.0]])
+    hyperedge_weights = torch.tensor([0.1, 0.2])
+    global_node_ids = torch.tensor([10, 20, 30])
+    y = torch.tensor([1.0, 0.0])
+    hdata = HData(
+        x=x,
+        hyperedge_index=hyperedge_index,
+        hyperedge_weights=hyperedge_weights,
+        hyperedge_attr=hyperedge_attr,
+        global_node_ids=global_node_ids,
+        y=y,
+    )
+
+    enriched_weights = torch.tensor([0.5, 0.9])
+    enricher = MagicMock(spec=HyperedgeEnricher)
+    enricher.enrich.return_value = enriched_weights
+
+    result = hdata.enrich_hyperedge_weights(enricher)
+
+    enricher.enrich.assert_called_once_with(hyperedge_index)
+    assert torch.equal(utils.to_non_empty_edgeattr(result.hyperedge_weights), enriched_weights)
+    assert torch.equal(result.x, x)
+    assert torch.equal(result.hyperedge_index, hyperedge_index)
+    assert torch.equal(utils.to_non_empty_edgeattr(result.hyperedge_attr), hyperedge_attr)
+    assert torch.equal(utils.to_non_empty_edgeattr(result.global_node_ids), global_node_ids)
+    assert torch.equal(result.y, y)
+
+
+def test_enrich_hyperedge_weights_concatenate():
+    x = torch.tensor([[1.0], [2.0], [3.0]])
+    hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 1]])
+    hdata = HData(x=x, hyperedge_index=hyperedge_index, hyperedge_weights=None)
+
+    enriched_weights = torch.tensor([0.3, 0.7])
+    enricher = MagicMock(spec=HyperedgeEnricher)
+    enricher.enrich.return_value = enriched_weights
+
+    result = hdata.enrich_hyperedge_weights(enricher, enrichment_mode="concatenate")
+
+    enricher.enrich.assert_called_once_with(hyperedge_index)
+    assert torch.equal(utils.to_non_empty_edgeattr(result.hyperedge_weights), enriched_weights)
+
+
+def test_enrich_hyperedge_attr_replace():
+    x = torch.tensor([[1.0], [2.0], [3.0]])
+    hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 1]])
+    hyperedge_weights = torch.tensor([0.1, 0.2])
+    hyperedge_attr = torch.tensor([[10.0], [20.0]])
+    global_node_ids = torch.tensor([10, 20, 30])
+    y = torch.tensor([1.0, 0.0])
+    hdata = HData(
+        x=x,
+        hyperedge_index=hyperedge_index,
+        hyperedge_weights=hyperedge_weights,
+        hyperedge_attr=hyperedge_attr,
+        global_node_ids=global_node_ids,
+        y=y,
+    )
+
+    enriched_attr = torch.tensor([[5.0, 6.0], [7.0, 8.0]])
+    enricher = MagicMock(spec=HyperedgeEnricher)
+    enricher.enrich.return_value = enriched_attr
+
+    result = hdata.enrich_hyperedge_attr(enricher)
+
+    enricher.enrich.assert_called_once_with(hyperedge_index)
+    assert torch.equal(utils.to_non_empty_edgeattr(result.hyperedge_attr), enriched_attr)
+    assert torch.equal(result.x, x)
+    assert torch.equal(result.hyperedge_index, hyperedge_index)
+    assert torch.equal(utils.to_non_empty_edgeattr(result.hyperedge_weights), hyperedge_weights)
+    assert torch.equal(utils.to_non_empty_edgeattr(result.global_node_ids), global_node_ids)
+    assert torch.equal(result.y, y)
+
+
+def test_enrich_hyperedge_attr_concatenate():
+    x = torch.tensor([[1.0], [2.0], [3.0]])
+    hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 1]])
+    hdata = HData(x=x, hyperedge_index=hyperedge_index, hyperedge_attr=None)
+
+    enriched_attr = torch.tensor([[5.0, 6.0], [7.0, 8.0]])
+    enricher = MagicMock(spec=HyperedgeEnricher)
+    enricher.enrich.return_value = enriched_attr
+
+    result = hdata.enrich_hyperedge_attr(enricher, enrichment_mode="concatenate")
+
+    enricher.enrich.assert_called_once_with(hyperedge_index)
+    assert torch.equal(utils.to_non_empty_edgeattr(result.hyperedge_attr), enriched_attr)
 
 
 def test_get_device_if_all_consistent_returns_device_when_all_consistent():

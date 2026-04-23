@@ -45,8 +45,8 @@ class HData:
         hyperedge_attr: Optional[Tensor] = None,
         num_nodes: Optional[int] = None,
         num_hyperedges: Optional[int] = None,
-        y: Optional[Tensor] = None,
         global_node_ids: Optional[Tensor] = None,
+        y: Optional[Tensor] = None,
     ):
         self.x: Tensor = x
 
@@ -71,7 +71,8 @@ class HData:
         )
 
         self.global_node_ids: Optional[Tensor] = (
-            # torch.arange is to handle isolated nodes
+            # torch.arange is to handle isolated nodes, as they are already considered
+            # when computing self.num_nodes via num_nodes_if_isolated_exist
             global_node_ids if global_node_ids is not None else torch.arange(self.num_nodes)
         )
 
@@ -387,6 +388,7 @@ class HData:
             hyperedge_attr=hyperedge_attr,
             num_nodes=self.num_nodes,
             num_hyperedges=self.num_hyperedges,
+            global_node_ids=self.global_node_ids,
             y=self.y,
         )
 
