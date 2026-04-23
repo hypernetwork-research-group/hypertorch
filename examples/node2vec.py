@@ -75,8 +75,8 @@ if __name__ == "__main__":
 
     node2vec_enricher = Node2VecEnricher(
         num_features=embedding_dim,
-        walk_length=20,
         context_size=10,
+        walk_length=20,
         num_walks_per_node=10,
         num_negative_samples=1,
         num_nodes=dataset.hdata.num_nodes,
@@ -133,8 +133,17 @@ if __name__ == "__main__":
         encoder_config={
             "mode": "joint",
             "num_features": embedding_dim,
+            "context_size": 10,
+            "walk_length": 20,
+            "num_walks_per_node": 10,
+            "p": 1.0,
+            "q": 1.0,
+            "num_negative_samples": 1,
             "train_hyperedge_index": train_hyperedge_index,
             "num_nodes": dataset.hdata.num_nodes,
+            "graph_reduction_strategy": "clique_expansion",
+            "random_walk_batch_size": 128,
+            "node2vec_loss_weight": 1.0,
         },
         aggregation="mean",
         lr=0.001,

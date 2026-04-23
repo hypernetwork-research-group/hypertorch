@@ -125,7 +125,7 @@ class Node2VecEnricher(NodeEnricher):
     def __init__(
         self,
         num_features: int,
-        walk_length: int = 10,
+        walk_length: int = 20,
         context_size: int = 10,
         num_walks_per_node: int = 10,
         p: float = 1.0,
@@ -154,9 +154,15 @@ class Node2VecEnricher(NodeEnricher):
                 Defaults to ``10``.
             num_walks_per_node: Number of random walks to start at each node.
             p: Return hyperparameter for Node2Vec. Default is ``1.0`` (unbiased).
-                It controls the likelihood of immediately revisiting a node in the walk.
-            q: In-out hyperparameter for Node2Vec. Default ``is 1.0`` (unbiased).
-                It controls the likelihood of visiting nodes further away in the walk.
+                This controls the probability of stepping back to the node visited in the previous step.
+                Lower values of ``p`` make immediate backtracking more likely, which keeps walks closer to the
+                local neighborhood. Higher values of ``p`` discourage returning to the previous node, so walks
+                are less likely to bounce back and forth across the same edge.
+            q: In-out hyperparameter for Node2Vec. Default is ``1.0`` (unbiased).
+                This controls whether walks stay near the source node or explore further outward.
+                Lower values of ``q`` bias the walk toward outward exploration, behaving more like DFS and
+                emphasizing structural roles. Higher values of ``q`` bias the walk toward nearby nodes,
+                behaving more like BFS and emphasizing community structure and homophily.
             num_negative_samples: Number of negative samples to use for training the skip-gram model.
                 If set to ``X``, then for each positive pair ``(u, v)`` generated from the random walks, ``X`` negative pairs ``(u, v_neg)`` will be generated,
                 where ``v_neg`` is a node sampled uniformly at random from all nodes in the graph.
@@ -172,6 +178,12 @@ class Node2VecEnricher(NodeEnricher):
             verbose: Whether to print verbose output during training. Defaults to ``False``.
         """
         super().__init__(cache_dir=cache_dir)
+        if walk_length < context_size:
+            raise ValueError(
+                f"Expected walk_length >= context_size, got "
+                f"walk_length={walk_length}, context_size={context_size}."
+            )
+
         self.embedding_dim = num_features
         self.walk_length = walk_length
         self.context_size = context_size

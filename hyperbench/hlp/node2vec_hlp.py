@@ -26,8 +26,13 @@ class Node2VecEncoderConfig(TypedDict):
             Rule of thumb: Graphs with strong local structure (5-10), Graphs with communities/long-range patterns (10-20).
             Defaults to ``10``.
         num_walks_per_node: Number of walks sampled per node.
-        p: Node2Vec return parameter.
-        q: Node2Vec in-out parameter.
+        p: Node2Vec return parameter. Controls the probability of stepping back to the node visited
+            in the previous step. Lower values of ``p`` make immediate backtracking more likely,
+            while higher values discourage returning to the previous node.
+        q: Node2Vec in-out parameter. Controls whether walks stay near the source node or explore
+            further outward. Lower values of ``q`` bias the walk toward DFS-like exploration and
+            structural similarity, while higher values bias it toward BFS-like exploration and
+            local community structure and homophily.
         num_negative_samples: Number of negative samples per positive walk context.
             If set to ``X``, then for each positive pair ``(u, v)`` generated from the random walks,
             ``X`` negative pairs ``(u, v_neg)`` will be generated,
@@ -45,8 +50,8 @@ class Node2VecEncoderConfig(TypedDict):
 
     mode: NotRequired[Literal["precomputed", "joint"]]
     num_features: int
-    walk_length: NotRequired[int]
     context_size: NotRequired[int]
+    walk_length: NotRequired[int]
     num_walks_per_node: NotRequired[int]
     p: NotRequired[float]
     q: NotRequired[float]
@@ -95,6 +100,14 @@ class Node2VecHlpModule(HlpModule):
             if "train_hyperedge_index" not in encoder_config:
                 raise ValueError(f"Node2Vec in mode {self.mode} requires train_hyperedge_index.")
 
+            walk_length = encoder_config.get("walk_length", 20)
+            context_size = encoder_config.get("context_size", 10)
+            if walk_length < context_size:
+                raise ValueError(
+                    f"Expected walk_length >= context_size, got "
+                    f"walk_length={walk_length}, context_size={context_size}."
+                )
+
             reduced_edge_index = HyperedgeIndex(encoder_config["train_hyperedge_index"]).reduce(
                 encoder_config.get("graph_reduction_strategy", "clique_expansion")
             )
@@ -103,8 +116,8 @@ class Node2VecHlpModule(HlpModule):
             encoder = Node2Vec(
                 edge_index=edge_index_wrapper.item,
                 embedding_dim=self.embedding_dim,
-                walk_length=encoder_config.get("walk_length", 10),
-                context_size=encoder_config.get("context_size", 10),
+                walk_length=walk_length,
+                context_size=context_size,
                 num_walks_per_node=encoder_config.get("num_walks_per_node", 10),
                 p=encoder_config.get("p", 1.0),
                 q=encoder_config.get("q", 1.0),
