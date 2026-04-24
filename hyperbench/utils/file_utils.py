@@ -1,7 +1,8 @@
-from typing import Optional
-import zstandard as zstd
-import tempfile
 import os
+import tempfile
+import zstandard as zstd
+
+from typing import Optional
 
 
 def decompress_zst(zst_path: str) -> str:

@@ -1,12 +1,12 @@
 import json
 import os
+import requests
 import tempfile
 import torch
-import requests
 import warnings
 import zstandard as zstd
 
-from typing import Any, Dict, List, Optional, TypeAlias, Literal
+from typing import Any, Dict, List, Optional, Literal
 from torch import Tensor
 from torch.utils.data import Dataset as TorchDataset
 from hyperbench.nn.enricher import EnrichmentMode, NodeEnricher, HyperedgeEnricher
@@ -22,6 +22,8 @@ from hyperbench.utils import (
 
 from hyperbench.data.sampling import SamplingStrategy, create_sampler_from_strategy
 from hyperbench.data.hif import HIFLoader, HIFProcessor
+from hyperbench.nn import EnrichmentMode, NodeEnricher, HyperedgeEnricher
+from hyperbench.types import HData
 
 
 class Dataset(TorchDataset):
