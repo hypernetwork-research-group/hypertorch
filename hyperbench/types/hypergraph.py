@@ -487,6 +487,38 @@ class HyperedgeIndex:
         )
         return incidence_matrix.coalesce()
 
+    def get_sparse_normalized_node_degree_matrix(
+        self,
+        incidence_matrix: Tensor,
+        power: float,
+        num_nodes: Optional[int] = None,
+    ) -> Tensor:
+        """
+        Compute a sparse diagonal node degree matrix from row-sums of the incidence matrix.
+
+        Args:
+            incidence_matrix: The sparse incidence matrix H of shape ``(num_nodes, num_hyperedges)``.
+            power: Exponent applied to node degrees before placing them on the diagonal.
+            num_nodes: Total number of nodes. If ``None``, inferred from hyperedge index.
+
+        Returns:
+            The sparse diagonal matrix of shape ``(num_nodes, num_nodes)``.
+        """
+        device = self.__hyperedge_index.device
+        num_nodes = num_nodes if num_nodes is not None else self.num_nodes
+
+        degrees = torch.sparse.sum(incidence_matrix, dim=1).to_dense()
+        normalized_degrees = degrees.pow(power)
+        normalized_degrees[normalized_degrees == float("inf")] = 0
+
+        diagonal_indices = torch.arange(num_nodes, device=device).unsqueeze(0).repeat(2, 1)
+        degree_matrix = torch.sparse_coo_tensor(
+            indices=diagonal_indices,
+            values=normalized_degrees,
+            size=(num_nodes, num_nodes),
+        )
+        return degree_matrix.coalesce()
+
     def get_sparse_rownormalized_node_degree_matrix(
         self,
         incidence_matrix: Tensor,
@@ -504,9 +536,6 @@ class HyperedgeIndex:
         Returns:
             The sparse diagonal matrix D_n^-1 of shape ``(num_nodes, num_nodes)``.
         """
-        device = self.__hyperedge_index.device
-        num_nodes = num_nodes if num_nodes is not None else self.num_nodes
-
         # Example: hyperedge_index = [[0, 1, 2, 0],
         #                             [0, 0, 0, 1]]
         #                         hyperedges 0  1
@@ -514,30 +543,13 @@ class HyperedgeIndex:
         #                                   [1, 0], node 1
         #                                   [1, 0]] node 2
         #                                          nodes 0  1  2
-        #          -> row-sum gives node degrees: d_n = [2, 1, 1], shape (num_nodes,)
-        degrees = torch.sparse.sum(incidence_matrix, dim=1).to_dense()
-
-        # Example: d_n = [2, 1, 1]
-        #          -> degree_inv = [1/2, 1, 1]
-        degree_inv = degrees.pow(-1)
-        degree_inv[degree_inv == float("inf")] = 0
-
-        # Construct the sparse diagonal matrix D_n^{-1}
-        # Example: degree_inv = [1/2, 1, 1] as the diagonal values,
-        #          diagonal_indices = [[0, 0],
-        #                              [1, 1],
-        #                              [2, 2]]
-        #                      nodes 0  1   2
-        #          -> D_n^{-1} = [[1/2, 0, 0], node 0
-        #                         [0, 1, 0],   node 1
-        #                         [0, 0, 1]]   node 2
-        diagonal_indices = torch.arange(num_nodes, device=device).unsqueeze(0).repeat(2, 1)
-        degree_matrix = torch.sparse_coo_tensor(
-            indices=diagonal_indices,
-            values=degree_inv,
-            size=(num_nodes, num_nodes),
+        #          -> row-sum gives node degrees: d_n = [2, 1, 1]
+        #          -> D_n^{-1} has diagonal [1/2, 1, 1]
+        return self.get_sparse_normalized_node_degree_matrix(
+            incidence_matrix=incidence_matrix,
+            power=-1,
+            num_nodes=num_nodes,
         )
-        return degree_matrix.coalesce()
 
     def get_sparse_symnormalized_node_degree_matrix(
         self,
@@ -556,9 +568,6 @@ class HyperedgeIndex:
         Returns:
             The sparse diagonal matrix D_n^-1/2 of shape ``(num_nodes, num_nodes)``.
         """
-        device = self.__hyperedge_index.device
-        num_nodes = num_nodes if num_nodes is not None else self.num_nodes
-
         # Example: hyperedge_index = [[0, 1, 2, 0],
         #                             [0, 0, 0, 1]]
         #                         hyperedges 0  1
@@ -566,30 +575,13 @@ class HyperedgeIndex:
         #                                   [1, 0], node 1
         #                                   [1, 0]] node 2
         #                                          nodes 0  1  2
-        #          -> row-sum gives node degrees: d_n = [2, 1, 1], shape (num_nodes,)
-        degrees = torch.sparse.sum(incidence_matrix, dim=1).to_dense()
-
-        # Example: d_n = [2, 1, 1]
-        #          -> degree_inv_sqrt = [1/sqrt(2), 1, 1]
-        degree_inv_sqrt = degrees.pow(-0.5)
-        degree_inv_sqrt[degree_inv_sqrt == float("inf")] = 0
-
-        # Construct the sparse diagonal matrix D_n^{-1/2}
-        # Example: degree_inv_sqrt = [1/sqrt(2), 1, 1] as the diagonal values,
-        #          diagonal_indices = [[0, 0],
-        #                              [1, 1],
-        #                              [2, 2]]
-        #                      nodes 0  1   2
-        #          -> D_n^{-1/2} = [[1/sqrt(2), 0, 0], node 0
-        #                           [0, 1, 0],         node 1
-        #                           [0, 0, 1]]         node 2
-        diagonal_indices = torch.arange(num_nodes, device=device).unsqueeze(0).repeat(2, 1)
-        degree_matrix = torch.sparse_coo_tensor(
-            indices=diagonal_indices,
-            values=degree_inv_sqrt,
-            size=(num_nodes, num_nodes),
+        #          -> row-sum gives node degrees: d_n = [2, 1, 1]
+        #          -> D_n^{-1/2} has diagonal [1/sqrt(2), 1, 1]
+        return self.get_sparse_normalized_node_degree_matrix(
+            incidence_matrix=incidence_matrix,
+            power=-0.5,
+            num_nodes=num_nodes,
         )
-        return degree_matrix.coalesce()
 
     def get_sparse_normalized_hyperedge_degree_matrix(
         self,

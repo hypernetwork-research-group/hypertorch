@@ -1261,6 +1261,53 @@ def test_get_sparse_symnormalized_node_degree_matrix_infers_num_nodes():
     assert node_degree_matrix.to_dense().shape == (3, 3)
 
 
+@pytest.mark.parametrize(
+    "power, expected_diagonal",
+    [
+        pytest.param(1.0, torch.tensor([2.0, 1.0, 1.0]), id="power_1"),
+        pytest.param(2.0, torch.tensor([4.0, 1.0, 1.0]), id="power_2"),
+        pytest.param(-2.0, torch.tensor([0.25, 1.0, 1.0]), id="power_minus_2"),
+    ],
+)
+def test_get_sparse_normalized_node_degree_matrix_applies_requested_power_to_node_degrees(
+    power, expected_diagonal
+):
+    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1, 0, 2], [0, 0, 1, 1]]))
+    incidence_matrix = hyperedge_index.get_sparse_incidence_matrix()  # shape (3,2)
+
+    node_degree_matrix = hyperedge_index.get_sparse_normalized_node_degree_matrix(
+        incidence_matrix,
+        power=power,
+    )
+
+    assert node_degree_matrix.is_sparse
+    assert node_degree_matrix.shape == (3, 3)
+    assert torch.allclose(node_degree_matrix.to_dense(), torch.diag(expected_diagonal), atol=1e-6)
+
+
+def test_get_sparse_normalized_node_degree_matrix_zeroes_isolated_nodes_for_negative_powers():
+    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1, 0], [0, 0, 1]]))
+    incidence_matrix = hyperedge_index.get_sparse_incidence_matrix(num_nodes=3)  # shape (3,2)
+
+    node_degree_matrix = hyperedge_index.get_sparse_normalized_node_degree_matrix(
+        incidence_matrix,
+        power=-1.5,
+        num_nodes=3,
+    )
+
+    expected_diagonal = torch.tensor(
+        [
+            1 / (2**1.5),
+            1.0,
+            0.0,
+        ]
+    )
+
+    assert node_degree_matrix.is_sparse
+    assert node_degree_matrix.shape == (3, 3)
+    assert torch.allclose(node_degree_matrix.to_dense(), torch.diag(expected_diagonal), atol=1e-6)
+
+
 def test_get_sparse_rownormalized_node_degree_matrix_is_expected_diagonal():
     hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1, 0, 2], [0, 0, 1, 1]]))
     incidence_matrix = hyperedge_index.get_sparse_incidence_matrix()  # shape (3,2)
