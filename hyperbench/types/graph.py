@@ -658,6 +658,3 @@ class EdgeIndex:
                 "edge_weights must have the same number of entries as edge_index columns. "
                 f"Got {edge_weights.size(0)} edge weights but {self.__edge_index.size(1)} edge columns."
             )
-
-        if edge_weights.device != self.__edge_index.device:
-            raise ValueError("edge_weights must be on the same device as edge_index.")

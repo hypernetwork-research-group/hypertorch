@@ -515,17 +515,6 @@ def test_edge_index_raises_for_misaligned_edge_weights():
         EdgeIndex(edge_index_tensor, edge_weights=edge_weights)
 
 
-def test_edge_index_raises_for_edge_weights_on_different_device():
-    edge_index_tensor = torch.tensor([[0, 1], [1, 0]], device="cpu")
-    edge_weights = torch.tensor([0.25, 0.75], device="mps")
-
-    with pytest.raises(
-        ValueError,
-        match="edge_weights must be on the same device as edge_index.",
-    ):
-        EdgeIndex(edge_index_tensor, edge_weights=edge_weights)
-
-
 @pytest.mark.parametrize(
     "edge_index_tensor, expected_num_edges",
     [
