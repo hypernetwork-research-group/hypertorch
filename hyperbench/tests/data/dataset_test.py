@@ -396,7 +396,7 @@ def test_from_url(strategy, mock_hdata):
     ],
 )
 def test_from_path(strategy, mock_hdata):
-    filepath = "/tmp/sample.json.zst"
+    filepath = "/abc/sample.json.zst"
 
     with patch.object(HIFLoader, "load_from_path", return_value=mock_hdata) as mock_load_from_path:
         dataset = Dataset.from_path(filepath=filepath, sampling_strategy=strategy)

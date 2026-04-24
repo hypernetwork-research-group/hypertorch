@@ -217,7 +217,7 @@ def test_load_from_url_raises_when_status_is_not_200():
 
 def test_load_from_path_raises_for_missing_file():
     with pytest.raises(ValueError, match="does not exist"):
-        HIFLoader.load_from_path("/tmp/does-not-exist.json.zst")
+        HIFLoader.load_from_path("/abc/does-not-exist.json.zst")
 
 
 def test_load_from_path_raises_for_unsupported_extension(tmp_path):
