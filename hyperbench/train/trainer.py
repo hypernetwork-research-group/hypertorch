@@ -127,6 +127,8 @@ class MultiModelTrainer:
     EXPERIMENT_NAME_PREFIX = "experiment"
     VERSION_NAME_PREFIX = "version"
 
+    __UNKNOWN_DEVICE = "unknown"
+
     def __init__(
         self,
         model_configs: List[ModelConfig],
@@ -207,8 +209,12 @@ class MultiModelTrainer:
     def __del__(self) -> None:
         try:
             self.finalize()
-        except Exception:
-            pass
+        except Exception as e:
+            warnings.warn(
+                f"Exception occurred during {self.__class__.__name__} cleanup. Error: {e}",
+                category=UserWarning,
+                stacklevel=2,
+            )
 
     @property
     def models(self) -> List[L.LightningModule]:
@@ -244,7 +250,9 @@ class MultiModelTrainer:
 
             if verbose:
                 print(
-                    f"Fit model {config.full_model_name()} [{i + 1}/{len(self.model_configs)} models]"
+                    f"Fit model {config.full_model_name()} "
+                    f"[{i + 1}/{len(self.model_configs)} models] "
+                    f"(device: {self.__device(config.trainer)})"
                 )
 
             train_dataloaders = (
@@ -280,7 +288,9 @@ class MultiModelTrainer:
 
             if verbose:
                 print(
-                    f"Test model {config.full_model_name()} [{i + 1}/{len(self.model_configs)} models]"
+                    f"Test model {config.full_model_name()} "
+                    f"[{i + 1}/{len(self.model_configs)} models] "
+                    f"(device: {self.__device(config.trainer)})"
                 )
 
             test_dataloaders = (
@@ -300,19 +310,6 @@ class MultiModelTrainer:
             )
 
         return test_results
-
-    def __auto_start_tensorboard_if_enabled(self) -> None:
-        if self.auto_start_tensorboard:
-            if self.__is_tensorboard_available():
-                self.__tensorboard_process = self.__start_tensorboard_process()
-            else:
-                warnings.warn(
-                    "TensorBoard is not available. "
-                    "Install it with `pip install hyperbench[tensorboard]` or `pip install tensorboard`"
-                    "to enable auto-start.",
-                    category=UserWarning,
-                    stacklevel=2,
-                )
 
     def finalize(self) -> None:
         if self.auto_wait:
@@ -336,7 +333,20 @@ class MultiModelTrainer:
         try:
             input("Press Enter to stop...")
         except (KeyboardInterrupt, EOFError):
-            pass
+            print("Stopping TensorBoard...")
+
+    def __auto_start_tensorboard_if_enabled(self) -> None:
+        if self.auto_start_tensorboard:
+            if self.__is_tensorboard_available():
+                self.__tensorboard_process = self.__start_tensorboard_process()
+            else:
+                warnings.warn(
+                    "TensorBoard is not available. "
+                    "Install it with `pip install hyperbench[tensorboard]` or `pip install tensorboard`"
+                    "to enable auto-start.",
+                    category=UserWarning,
+                    stacklevel=2,
+                )
 
     def __is_tensorboard_available(self) -> bool:
         return importlib.util.find_spec("tensorboard") is not None
@@ -359,6 +369,14 @@ class MultiModelTrainer:
                 stacklevel=2,
             )
             return None
+
+    def __device(self, trainer: L.Trainer) -> str:
+        if trainer.strategy is None:
+            return MultiModelTrainer.__UNKNOWN_DEVICE
+        strategy = trainer.strategy
+        if strategy.root_device is None:
+            return MultiModelTrainer.__UNKNOWN_DEVICE
+        return str(strategy.root_device)
 
     def __next_experiment_name(self, save_dir: Path) -> Path:
         if not save_dir.exists():
@@ -412,6 +430,11 @@ class MultiModelTrainer:
                 name=model_config.name,
                 version=f"{MultiModelTrainer.VERSION_NAME_PREFIX}_{model_config.version}",
             ),
+            MarkdownTableLogger(
+                save_dir=self.log_dir,
+                model_name=model_config.full_model_name(),
+                experiment_name=experiment_name,
+            ),
             LaTexTableLogger(
                 save_dir=self.log_dir,
                 model_name=model_config.full_model_name(),
@@ -421,11 +444,6 @@ class MultiModelTrainer:
                     "sort_by": ["des", "asc"],
                     "border": False,
                 },
-            ),
-            MarkdownTableLogger(
-                save_dir=self.log_dir,
-                model_name=model_config.full_model_name(),
-                experiment_name=experiment_name,
             ),
         ]
 
