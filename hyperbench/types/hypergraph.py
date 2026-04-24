@@ -487,7 +487,59 @@ class HyperedgeIndex:
         )
         return incidence_matrix.coalesce()
 
-    def get_sparse_normalized_node_degree_matrix(
+    def get_sparse_rownormalized_node_degree_matrix(
+        self,
+        incidence_matrix: Tensor,
+        num_nodes: Optional[int] = None,
+    ) -> Tensor:
+        """
+        Compute the sparse normalized node degree matrix D_n^-1.
+        The node degree ``d_n[i]`` is the number of hyperedges containing node ``i``
+        (i.e., the row-sum of the incidence matrix H).
+
+        Args:
+            incidence_matrix: The sparse incidence matrix H of shape ``(num_nodes, num_hyperedges)``.
+            num_nodes: Total number of nodes. If ``None``, inferred from hyperedge index.
+
+        Returns:
+            The sparse diagonal matrix D_n^-1 of shape ``(num_nodes, num_nodes)``.
+        """
+        device = self.__hyperedge_index.device
+        num_nodes = num_nodes if num_nodes is not None else self.num_nodes
+
+        # Example: hyperedge_index = [[0, 1, 2, 0],
+        #                             [0, 0, 0, 1]]
+        #                         hyperedges 0  1
+        #          -> incidence_matrix H = [[1, 1], node 0
+        #                                   [1, 0], node 1
+        #                                   [1, 0]] node 2
+        #                                          nodes 0  1  2
+        #          -> row-sum gives node degrees: d_n = [2, 1, 1], shape (num_nodes,)
+        degrees = torch.sparse.sum(incidence_matrix, dim=1).to_dense()
+
+        # Example: d_n = [2, 1, 1]
+        #          -> degree_inv = [1/2, 1, 1]
+        degree_inv = degrees.pow(-1)
+        degree_inv[degree_inv == float("inf")] = 0
+
+        # Construct the sparse diagonal matrix D_n^{-1}
+        # Example: degree_inv = [1/2, 1, 1] as the diagonal values,
+        #          diagonal_indices = [[0, 0],
+        #                              [1, 1],
+        #                              [2, 2]]
+        #                      nodes 0  1   2
+        #          -> D_n^{-1} = [[1/2, 0, 0], node 0
+        #                         [0, 1, 0],   node 1
+        #                         [0, 0, 1]]   node 2
+        diagonal_indices = torch.arange(num_nodes, device=device).unsqueeze(0).repeat(2, 1)
+        degree_matrix = torch.sparse_coo_tensor(
+            indices=diagonal_indices,
+            values=degree_inv,
+            size=(num_nodes, num_nodes),
+        )
+        return degree_matrix.coalesce()
+
+    def get_sparse_symnormalized_node_degree_matrix(
         self,
         incidence_matrix: Tensor,
         num_nodes: Optional[int] = None,
@@ -615,7 +667,7 @@ class HyperedgeIndex:
         num_hyperedges = num_hyperedges if num_hyperedges is not None else self.num_hyperedges
 
         incidence_matrix = self.get_sparse_incidence_matrix(num_nodes, num_hyperedges)
-        node_degree_matrix = self.get_sparse_normalized_node_degree_matrix(
+        node_degree_matrix = self.get_sparse_symnormalized_node_degree_matrix(
             incidence_matrix,
             num_nodes,
         )
@@ -634,6 +686,50 @@ class HyperedgeIndex:
             ),
         )
         return normalized_laplacian_matrix.coalesce()
+
+    def get_sparse_hgnnp_smoothing_matrix(
+        self,
+        num_nodes: Optional[int] = None,
+        num_hyperedges: Optional[int] = None,
+    ) -> Tensor:
+        """
+        Compute the sparse HGNN+ smoothing matrix for hypergraph mean aggregation.
+
+        Implements: ``M_HGNN+ = D_v^{-1} H D_e^{-1} H^T``
+
+        This matrix is row-stochastic for non-isolated nodes and corresponds to
+        the two-stage mean aggregation used by HGNN+:
+            1. ``D_e^{-1} H^T X``: mean over nodes in each hyperedge.
+            2. ``D_v^{-1} H (...)``: mean over hyperedges incident to each node.
+
+        Args:
+            num_nodes: Total number of nodes. If ``None``, inferred from hyperedge index.
+            num_hyperedges: Total number of hyperedges. If ``None``, inferred from hyperedge index.
+
+        Returns:
+            The sparse HGNN+ smoothing matrix of shape ``(num_nodes, num_nodes)``.
+        """
+        num_nodes = num_nodes if num_nodes is not None else self.num_nodes
+        num_hyperedges = num_hyperedges if num_hyperedges is not None else self.num_hyperedges
+
+        incidence_matrix = self.get_sparse_incidence_matrix(num_nodes, num_hyperedges)
+        node_degree_matrix = self.get_sparse_rownormalized_node_degree_matrix(
+            incidence_matrix,
+            num_nodes,
+        )
+        hyperedge_degree_matrix = self.get_sparse_normalized_hyperedge_degree_matrix(
+            incidence_matrix,
+            num_hyperedges,
+        )
+
+        smoothing_matrix = torch.sparse.mm(
+            node_degree_matrix,
+            torch.sparse.mm(
+                incidence_matrix,
+                torch.sparse.mm(hyperedge_degree_matrix, incidence_matrix.t()),
+            ),
+        )
+        return smoothing_matrix.coalesce()
 
     def reduce(self, strategy: Literal["clique_expansion"], **kwargs) -> Tensor:
         """

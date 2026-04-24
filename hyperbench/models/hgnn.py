@@ -68,7 +68,7 @@ class HGNN(nn.Module):
         The second layer is the output layer (no activation/dropout) and maps
         ``hidden_channels -> num_classes``.
 
-        When ``fast=True`` (default), the HGNN Laplacian ``D_n^{-1/2} H D_e^{-1} H^T D_n^{-1/2}``
+        When ``fast=True``, the HGNN Laplacian ``D_n^{-1/2} H D_e^{-1} H^T D_n^{-1/2}``
         is computed once from ``hyperedge_index`` and cached. The cache is invalidated only when
         ``num_nodes`` changes (e.g., due to negative sampling adding nodes across batches).
         This is safe because the HGNN Laplacian depends solely on the hypergraph topology,
