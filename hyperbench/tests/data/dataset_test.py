@@ -107,7 +107,7 @@ def test_Preloaded_dataset_init():
 
 def test_Preloaded_dataset_loads_hdata_when_hdata_is_none():
     mock_hdata = MagicMock(spec=HData)
-    with patch.object(HIFLoader, "load_from_name", return_value=mock_hdata) as mock_load:
+    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata) as mock_load:
         dataset = AlgebraDataset(hdata=None)
 
     assert dataset.hdata == mock_hdata
@@ -125,7 +125,7 @@ def test_dataset_is_available_with_all_strategies(
     strategy, expected_len, mock_hdata_four_node_hypergraph
 ):
 
-    with patch.object(HIFLoader, "load_from_name", return_value=mock_hdata_four_node_hypergraph):
+    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_four_node_hypergraph):
         dataset = AlgebraDataset(sampling_strategy=strategy)
 
         assert dataset.DATASET_NAME == "algebra"
@@ -133,7 +133,7 @@ def test_dataset_is_available_with_all_strategies(
 
 
 def test_dataset_process_no_incidences(mock_hdata_no_incidences):
-    with patch.object(HIFLoader, "load_from_name", return_value=mock_hdata_no_incidences):
+    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_no_incidences):
         dataset = AlgebraDataset()
 
         assert dataset.hdata is not None
@@ -144,9 +144,7 @@ def test_dataset_process_no_incidences(mock_hdata_no_incidences):
 
 
 def test_dataset_process_with_edge_attributes(mock_hdata_with_two_edge_attributes):
-    with patch.object(
-        HIFLoader, "load_from_name", return_value=mock_hdata_with_two_edge_attributes
-    ):
+    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_with_two_edge_attributes):
         dataset = AlgebraDataset()
 
     assert dataset.hdata is not None
@@ -161,7 +159,7 @@ def test_dataset_process_with_edge_attributes(mock_hdata_with_two_edge_attribute
 
 
 def test_dataset_process_without_edge_attributes(mock_hdata_no_edge_attr_hypergraph):
-    with patch.object(HIFLoader, "load_from_name", return_value=mock_hdata_no_edge_attr_hypergraph):
+    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_no_edge_attr_hypergraph):
         dataset = AlgebraDataset()
 
     assert dataset.hdata is not None
@@ -171,7 +169,7 @@ def test_dataset_process_without_edge_attributes(mock_hdata_no_edge_attr_hypergr
 
 
 def test_dataset_process_hyperedge_index_in_correct_format(mock_hdata_four_node_hypergraph):
-    with patch.object(HIFLoader, "load_from_name", return_value=mock_hdata_four_node_hypergraph):
+    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_four_node_hypergraph):
         dataset = AlgebraDataset()
 
     assert dataset.hdata.hyperedge_index.shape == (2, 4)
@@ -180,7 +178,7 @@ def test_dataset_process_hyperedge_index_in_correct_format(mock_hdata_four_node_
 
 
 def test_dataset_process_random_ids(mock_hdata_random_ids):
-    with patch.object(HIFLoader, "load_from_name", return_value=mock_hdata_random_ids):
+    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_random_ids):
         dataset = AlgebraDataset()
 
     assert dataset.hdata.hyperedge_index.shape == (2, 3)
@@ -197,7 +195,7 @@ def test_dataset_process_random_ids(mock_hdata_random_ids):
     ],
 )
 def test_getitem_index_list_empty(mock_hdata_simple_hypergraph, strategy):
-    with patch.object(HIFLoader, "load_from_name", return_value=mock_hdata_simple_hypergraph):
+    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_simple_hypergraph):
         dataset = AlgebraDataset(sampling_strategy=strategy)
 
     with pytest.raises(ValueError, match="Index list cannot be empty."):
@@ -224,7 +222,7 @@ def test_getitem_index_list_empty(mock_hdata_simple_hypergraph, strategy):
 def test_getitem_raises_when_index_list_larger_than_max(
     mock_hdata_four_node_hypergraph, strategy, index_list, expected_message
 ):
-    with patch.object(HIFLoader, "load_from_name", return_value=mock_hdata_four_node_hypergraph):
+    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_four_node_hypergraph):
         dataset = AlgebraDataset(sampling_strategy=strategy)
 
     with pytest.raises(ValueError, match=expected_message):
@@ -248,7 +246,7 @@ def test_getitem_raises_when_index_list_larger_than_max(
 def test_getitem_raises_when_index_out_of_bounds(
     mock_hdata_four_node_hypergraph, strategy, index, expected_message
 ):
-    with patch.object(HIFLoader, "load_from_name", return_value=mock_hdata_four_node_hypergraph):
+    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_four_node_hypergraph):
         dataset = AlgebraDataset(sampling_strategy=strategy)
 
     with pytest.raises(IndexError, match=expected_message):
@@ -267,7 +265,7 @@ def test_getitem_raises_when_index_out_of_bounds(
 def test_getitem_single_index(
     mock_hdata_sample_hypergraph, strategy, index, expected_shape, expected_num_hyperedges
 ):
-    with patch.object(HIFLoader, "load_from_name", return_value=mock_hdata_sample_hypergraph):
+    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_sample_hypergraph):
         dataset = AlgebraDataset(sampling_strategy=strategy)
 
     data = dataset[index]
@@ -288,7 +286,7 @@ def test_getitem_single_index(
 def test_getitem_when_list_index_provided(
     mock_hdata_four_node_hypergraph, strategy, index, expected_shape, expected_num_hyperedges
 ):
-    with patch.object(HIFLoader, "load_from_name", return_value=mock_hdata_four_node_hypergraph):
+    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_four_node_hypergraph):
         dataset = AlgebraDataset(sampling_strategy=strategy)
 
     data = dataset[index]
@@ -306,7 +304,7 @@ def test_getitem_when_list_index_provided(
 )
 def test_getitem_with_edge_attr(mock_hdata_three_node_weighted_hypergraph, strategy):
     with patch.object(
-        HIFLoader, "load_from_name", return_value=mock_hdata_three_node_weighted_hypergraph
+        HIFLoader, "load_by_name", return_value=mock_hdata_three_node_weighted_hypergraph
     ):
         dataset = AlgebraDataset(sampling_strategy=strategy)
 
@@ -325,7 +323,7 @@ def test_getitem_with_edge_attr(mock_hdata_three_node_weighted_hypergraph, strat
     ],
 )
 def test_getitem_without_edge_attr(mock_hdata_no_edge_attr_hypergraph, strategy):
-    with patch.object(HIFLoader, "load_from_name", return_value=mock_hdata_no_edge_attr_hypergraph):
+    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_no_edge_attr_hypergraph):
         dataset = AlgebraDataset(sampling_strategy=strategy)
 
     data = dataset[0]
@@ -345,7 +343,7 @@ def test_getitem_with_multiple_edges_attr(
     mock_hdata_multiple_edges_attr_hypergraph, strategy, index
 ):
     with patch.object(
-        HIFLoader, "load_from_name", return_value=mock_hdata_multiple_edges_attr_hypergraph
+        HIFLoader, "load_by_name", return_value=mock_hdata_multiple_edges_attr_hypergraph
     ):
         dataset = AlgebraDataset(sampling_strategy=strategy)
 
@@ -709,8 +707,8 @@ def test_enrich_hyperedge_weights_concatenate(mock_hdata_with_hyperedge_weights)
 # #         dataset = AlgebraDataset()
 
     # Default strategy is HYPEREDGE, so len should be num_hyperedges (2), not num_nodes (4)
-    assert dataset.sampling_strategy == SamplingStrategy.HYPEREDGE
-    assert len(dataset) == 2
+    # assert dataset.sampling_strategy == SamplingStrategy.HYPEREDGE
+    # assert len(dataset) == 2
 
 
 # # def test_explicit_node_sampling_strategy(mock_four_node_hypergraph):
@@ -718,8 +716,8 @@ def test_enrich_hyperedge_weights_concatenate(mock_hdata_with_hyperedge_weights)
 # #         dataset = AlgebraDataset(sampling_strategy=SamplingStrategy.NODE)
 
     # NODE strategy, so len should be num_nodes (4), not num_hyperedges (2)
-    assert dataset.sampling_strategy == SamplingStrategy.NODE
-    assert len(dataset) == 4
+    # assert dataset.sampling_strategy == SamplingStrategy.NODE
+    # assert len(dataset) == 4
 
 
 # # @pytest.mark.parametrize(
@@ -733,10 +731,10 @@ def test_enrich_hyperedge_weights_concatenate(mock_hdata_with_hyperedge_weights)
 # #     with patch.object(HIFLoader, "load", return_value=mock_four_node_hypergraph):
 # #         dataset = AlgebraDataset(sampling_strategy=strategy)
 
-    splits = dataset.split([0.5, 0.5])
+    # splits = dataset.split([0.5, 0.5])
 
-    for split in splits:
-        assert split.sampling_strategy == strategy
+    # for split in splits:
+    #     assert split.sampling_strategy == strategy
 
 
 def test_from_hdata_with_explicit_strategy(mock_hdata):

@@ -21,7 +21,7 @@ def compress_to_zst(json_path: str) -> bytes:
     return compressed_content
 
 
-def save_on_disk(dataset_name: str, content: bytes) -> None:
+def write_to_disk(dataset_name: str, content: bytes) -> None:
     current_dir = os.path.dirname(os.path.abspath(__file__))
     datasets_dir = os.path.join(current_dir, "..", "data", "datasets")
     zst_filename = os.path.join(datasets_dir, f"{dataset_name}.json.zst")

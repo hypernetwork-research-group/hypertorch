@@ -26,7 +26,7 @@ from .node_utils import (
 )
 from .sparse_utils import sparse_dropout
 from .url_utils import validate_http_url
-from .file_utils import decompress_zst, compress_to_zst, save_on_disk
+from .file_utils import decompress_zst, compress_to_zst, write_to_disk
 
 __all__ = [
     "INPUT_LAYER",
@@ -53,5 +53,5 @@ __all__ = [
     "decompress_zst",
     "compress_to_zst",
     "validate_http_url",
-    "save_on_disk",
+    "write_to_disk",
 ]

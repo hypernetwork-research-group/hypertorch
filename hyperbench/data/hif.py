@@ -5,6 +5,7 @@ import zstandard as zstd
 import requests
 import tempfile
 import warnings
+
 from huggingface_hub import hf_hub_download
 from typing import Optional, Dict, Any, List
 from torch import Tensor
@@ -15,8 +16,8 @@ from hyperbench.utils import (
     decompress_zst,
     compress_to_zst,
     validate_http_url,
+    write_to_disk,
 )
-from hyperbench.utils import save_on_disk as save
 
 
 class HIFProcessor:
@@ -54,8 +55,8 @@ class HIFProcessor:
         values = [float(value) for value in numeric_attrs.values()]
         return torch.tensor(values, dtype=torch.float)
 
-    @staticmethod
-    def _process_hypergraph(hypergraph: HIFHypergraph) -> HData:
+    @classmethod
+    def process_hypergraph(cls, hypergraph: HIFHypergraph) -> HData:
         """
         Process the loaded hypergraph into :class:`HData` format, mapping HIF structure to tensors.
 
@@ -66,7 +67,7 @@ class HIFProcessor:
         #     raise ValueError("process can only be called for the original dataset.")
 
         num_nodes = len(hypergraph.nodes)
-        x = HIFProcessor._process_x(hypergraph, num_nodes)
+        x = cls.__process_x(hypergraph, num_nodes)
 
         # Remap node IDs to 0-based contiguous IDs (using indices) matching the x tensor order
         node_id_to_idx = {node.get("node"): idx for idx, node in enumerate(hypergraph.nodes)}
@@ -99,13 +100,13 @@ class HIFProcessor:
                 hyperedge_ids.append(new_hyperedge_id)
 
         num_hyperedges = len(hyperedge_id_to_idx)
-        hyperedge_attr = HIFProcessor._process_hyperedge_attr(
+        hyperedge_attr = cls.__process_hyperedge_attr(
             hypergraph=hypergraph,
             hyperedge_id_to_idx=hyperedge_id_to_idx,
             num_hyperedges=num_hyperedges,
         )
 
-        hyperedge_weights = HIFProcessor._process_hyperedge_weights(
+        hyperedge_weights = cls.__process_hyperedge_weights(
             hypergraph=hypergraph,
             hyperedge_id_to_idx=hyperedge_id_to_idx,
             num_hyperedges=num_hyperedges,
@@ -122,8 +123,7 @@ class HIFProcessor:
             num_hyperedges=num_hyperedges,
         )
 
-    @staticmethod
-    def _collect_attr_keys(attr_keys: List[Dict[str, Any]]) -> List[str]:
+    def __collect_attr_keys(attr_keys: List[Dict[str, Any]]) -> List[str]:
         """
         Collect unique numeric attribute keys from a list of attribute dictionaries.
 
@@ -141,8 +141,9 @@ class HIFProcessor:
 
         return unique_keys
 
-    @staticmethod
-    def _process_hyperedge_attr(
+    @classmethod
+    def __process_hyperedge_attr(
+        cls,
         hypergraph: HIFHypergraph,
         hyperedge_id_to_idx: Dict[Any, int],
         num_hyperedges: int,
@@ -159,9 +160,7 @@ class HIFProcessor:
                 e.get("edge"): e.get("attrs", {}) for e in hypergraph.hyperedges
             }
 
-            hyperedge_attr_keys = HIFProcessor._collect_attr_keys(
-                list(hyperedge_id_to_attrs.values())
-            )
+            hyperedge_attr_keys = cls.__collect_attr_keys(list(hyperedge_id_to_attrs.values()))
 
             # Build attributes in exact order of hyperedge_set indices (0 to num_hyperedges - 1)
             hyperedge_idx_to_id = {idx: id for id, idx in hyperedge_id_to_idx.items()}
@@ -181,10 +180,10 @@ class HIFProcessor:
 
         return hyperedge_attr
 
-    @staticmethod
-    def _process_x(hypergraph: HIFHypergraph, num_nodes: int) -> Tensor:
+    @classmethod
+    def __process_x(cls, hypergraph: HIFHypergraph, num_nodes: int) -> Tensor:
         # Collect all attribute keys to have tensors of same size
-        node_attr_keys = HIFProcessor._collect_attr_keys(
+        node_attr_keys = cls.__collect_attr_keys(
             [node.get("attrs", {}) for node in hypergraph.nodes]
         )
 
@@ -202,8 +201,9 @@ class HIFProcessor:
 
         return x  # shape [num_nodes, num_node_features]
 
-    @staticmethod
-    def _process_hyperedge_weights(
+    @classmethod
+    def __process_hyperedge_weights(
+        cls,
         hypergraph: HIFHypergraph,
         hyperedge_id_to_idx: Dict[Any, int],
         num_hyperedges: int,
@@ -236,7 +236,6 @@ class HIFProcessor:
 class HIFLoader:
     """A utility class to load hypergraphs from HIF format."""
 
-    @staticmethod
     def load_from_url(url: str, save_on_disk: bool = False) -> HData:
         """
         Load a hypergraph from a given URL pointing to a .json or .json.zst file in HIF format.
@@ -262,12 +261,12 @@ class HIFLoader:
 
         if zst_filename.endswith(".zst"):
             if save_on_disk:
-                save(os.path.basename(url), response.content)
+                write_to_disk(os.path.basename(url), response.content)
             output = decompress_zst(zst_filename)
         elif zst_filename.endswith(".json"):
             if save_on_disk:
                 compressed = compress_to_zst(zst_filename)
-                save(os.path.basename(url), compressed)
+                write_to_disk(os.path.basename(url), compressed)
             output = zst_filename
         else:
             raise ValueError(
@@ -275,10 +274,9 @@ class HIFLoader:
             )
 
         hypergraph = HIFLoader.__extract_hif(output)
-        hdata = HIFProcessor._process_hypergraph(hypergraph)
+        hdata = HIFProcessor.process_hypergraph(hypergraph)
         return hdata
 
-    @staticmethod
     def load_from_path(filepath: str) -> HData:
         """
         Load a hypergraph from a local file path pointing to a .json or .json.zst file in HIF format.
@@ -301,12 +299,10 @@ class HIFLoader:
             )
 
         hypergraph = HIFLoader.__extract_hif(output)
-        hdata = HIFProcessor._process_hypergraph(hypergraph)
+        hdata = HIFProcessor.process_hypergraph(hypergraph)
         return hdata
 
-    @staticmethod
-    def load_from_name(dataset_name: str, save_on_disk: bool = False) -> HData:
-        print(f"Loading dataset '{dataset_name}' from disk or remote sources...")
+    def load_by_name(dataset_name: str, save_on_disk: bool = False) -> HData:
         current_dir = os.path.dirname(os.path.abspath(__file__))
         zst_filename = os.path.join(current_dir, "datasets", f"{dataset_name}.json.zst")
 
@@ -345,7 +341,6 @@ class HIFLoader:
                 response._content = hf_content
 
             if save_on_disk:
-                print(f"Saving downloaded dataset '{dataset_name}' to disk at '{zst_filename}'")
                 os.makedirs(os.path.join(current_dir, "datasets"), exist_ok=True)
                 with open(zst_filename, "wb") as f:
                     f.write(response.content)
@@ -359,7 +354,7 @@ class HIFLoader:
 
         output = decompress_zst(zst_filename)
         hypergraph = HIFLoader.__extract_hif(output)
-        hdata = HIFProcessor._process_hypergraph(hypergraph)
+        hdata = HIFProcessor.process_hypergraph(hypergraph)
         return hdata
 
     @staticmethod

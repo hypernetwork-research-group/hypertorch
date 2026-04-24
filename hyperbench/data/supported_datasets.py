@@ -7,6 +7,9 @@ class PreloadedDataset(Dataset):
     """
     Base class for datasets that use default loading. Subclasses should specify the DATASET_NAME class variable.
     The dataset will be saved on disk after the first load.
+    Args:
+        hdata: Optional HData object. If None, the dataset will be loaded using the DATASET_NAME.
+        sampling_strategy: The sampling strategy to use for this dataset. Default is SamplingStrategy.HYPEREDGE.
     """
 
     DATASET_NAME = ""
@@ -18,7 +21,7 @@ class PreloadedDataset(Dataset):
     ) -> None:
         super().__init__(hdata=hdata, sampling_strategy=sampling_strategy)
         if hdata is None:
-            self.hdata = HIFLoader.load_from_name(self.DATASET_NAME, save_on_disk=True)
+            self.hdata = HIFLoader.load_by_name(self.DATASET_NAME, save_on_disk=True)
 
 
 class AlgebraDataset(PreloadedDataset):

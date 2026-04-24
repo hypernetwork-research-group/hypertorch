@@ -28,7 +28,7 @@ class Dataset(TorchDataset):
     """
     A dataset class for loading and processing hypergraph data.
 
-    Attributes:
+    Args:
         DATASET_NAME: Class variable indicating the name of the dataset to load.
         hypergraph: The loaded hypergraph in HIF format. Can be ``None`` if initialized from an HData object.
         hdata: The processed hypergraph data in HData format.
@@ -394,14 +394,12 @@ class Dataset(TorchDataset):
         ranged_hyperedge_ids_permutation = torch.arange(num_hyperedges, device=device)
         return ranged_hyperedge_ids_permutation
 
-    @staticmethod
     def transform_node_attrs(
         attrs: Dict[str, Any],
         attr_keys: Optional[List[str]] = None,
     ) -> Tensor:
         return HIFProcessor.transform_attrs(attrs, attr_keys)
 
-    @staticmethod
     def transform_hyperedge_attrs(
         attrs: Dict[str, Any],
         attr_keys: Optional[List[str]] = None,

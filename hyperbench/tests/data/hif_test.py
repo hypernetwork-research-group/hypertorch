@@ -454,7 +454,7 @@ def test_load_skips_download_when_file_exists(tmp_path, mock_hypergraph):
         patch("hyperbench.data.hif.decompress_zst", return_value=json_path),
         patch("hyperbench.data.hif.validate_hif_json", return_value=True),
     ):
-        result = HIFLoader.load_from_name("algebra", save_on_disk=True)
+        result = HIFLoader.load_by_name("algebra", save_on_disk=True)
 
     mock_get.assert_not_called()
     assert result.num_nodes == 2
@@ -473,7 +473,7 @@ def test_HIFLoader_download_failure_when_hf_fallback_fails():
 
         with pytest.warns(UserWarning, match="GitHub raw download failed"):
             with pytest.raises(ValueError, match="Failed to download dataset 'algebra'"):
-                HIFLoader.load_from_name("algebra")
+                HIFLoader.load_by_name("algebra")
 
 
 def test_HIFLoader_falls_back_to_hf_hub_download_when_github_raw_download_fails(
@@ -497,7 +497,7 @@ def test_HIFLoader_falls_back_to_hf_hub_download_when_github_raw_download_fails(
         mock_response.content = b""
 
         with pytest.warns(UserWarning, match="GitHub raw download failed"):
-            result = HIFLoader.load_from_name("algebra", save_on_disk=False)
+            result = HIFLoader.load_by_name("algebra", save_on_disk=False)
 
     mock_get.assert_called_once()
     mock_hf_hub_download.assert_called_once()
@@ -519,7 +519,7 @@ def test_load_saves_downloaded_dataset_on_disk(tmp_path, mock_hypergraph):
         mock_response.status_code = 200
         mock_response.content = b"downloaded-content"
 
-        result = HIFLoader.load_from_name("algebra", save_on_disk=True)
+        result = HIFLoader.load_by_name("algebra", save_on_disk=True)
 
     saved = tmp_path / "datasets" / "algebra.json.zst"
     assert saved.exists()
@@ -537,4 +537,4 @@ def test_HIFLoader_download_raises_when_network_error():
         ),
     ):
         with pytest.raises(requests.RequestException, match="Network error"):
-            HIFLoader.load_from_name("algebra")
+            HIFLoader.load_by_name("algebra")
