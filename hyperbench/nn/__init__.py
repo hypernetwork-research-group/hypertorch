@@ -9,7 +9,6 @@ from .enricher import (
     HyperedgeAttrsEnricher,
     HyperedgeWeightsEnricher,
     LaplacianPositionalEncodingEnricher,
-    LaplacianPositionalEncodingEnricher,
     Node2VecEnricher,
 )
 from .scorer import CommonNeighborsScorer, NeighborScorer
