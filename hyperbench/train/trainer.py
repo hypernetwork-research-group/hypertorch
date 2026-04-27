@@ -372,30 +372,30 @@ class MultiModelTrainer:
 
     def __device(self, trainer: L.Trainer) -> str:
         if trainer.strategy is None:
-            return MultiModelTrainer.__UNKNOWN_DEVICE
+            return self.__UNKNOWN_DEVICE
         strategy = trainer.strategy
         if strategy.root_device is None:
-            return MultiModelTrainer.__UNKNOWN_DEVICE
+            return self.__UNKNOWN_DEVICE
         return str(strategy.root_device)
 
     def __next_experiment_name(self, save_dir: Path) -> Path:
         if not save_dir.exists():
-            return Path(f"{MultiModelTrainer.EXPERIMENT_NAME_PREFIX}_0")
+            return Path(f"{self.EXPERIMENT_NAME_PREFIX}_0")
 
         existing_experiment_names: List[str] = [
             dir.name
             for dir in save_dir.iterdir()
-            if dir.is_dir() and dir.name.startswith(MultiModelTrainer.EXPERIMENT_NAME_PREFIX)
+            if dir.is_dir() and dir.name.startswith(self.EXPERIMENT_NAME_PREFIX)
         ]
         if len(existing_experiment_names) < 1:
-            return Path(f"{MultiModelTrainer.EXPERIMENT_NAME_PREFIX}_0")
+            return Path(f"{self.EXPERIMENT_NAME_PREFIX}_0")
 
         last_experiment_number = max(
             int(experiment_name.split("_")[1])
             for experiment_name in existing_experiment_names
             if experiment_name.split("_")[1].isdigit()
         )
-        return Path(f"{MultiModelTrainer.EXPERIMENT_NAME_PREFIX}_{last_experiment_number + 1}")
+        return Path(f"{self.EXPERIMENT_NAME_PREFIX}_{last_experiment_number + 1}")
 
     def __setup_logdir(
         self,
@@ -403,9 +403,7 @@ class MultiModelTrainer:
         experiment_name: Optional[str],
     ) -> Path:
         base_dir = (
-            Path(MultiModelTrainer.DEFAULT_BASE_LOG_DIR)
-            if default_root_dir is None
-            else Path(default_root_dir)
+            Path(self.DEFAULT_BASE_LOG_DIR) if default_root_dir is None else Path(default_root_dir)
         )
         next_experiment_name = (
             self.__next_experiment_name(base_dir)
@@ -428,7 +426,7 @@ class MultiModelTrainer:
             CSVLogger(
                 save_dir=self.log_dir,
                 name=model_config.name,
-                version=f"{MultiModelTrainer.VERSION_NAME_PREFIX}_{model_config.version}",
+                version=f"{self.VERSION_NAME_PREFIX}_{model_config.version}",
             ),
             MarkdownTableLogger(
                 save_dir=self.log_dir,
@@ -454,7 +452,7 @@ class MultiModelTrainer:
                 TensorBoardLogger(
                     save_dir=self.log_dir,
                     name=model_config.name,
-                    version=f"{MultiModelTrainer.VERSION_NAME_PREFIX}_{model_config.version}",
+                    version=f"{self.VERSION_NAME_PREFIX}_{model_config.version}",
                 ),
             )
 

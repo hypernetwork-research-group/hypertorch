@@ -1,5 +1,6 @@
 from .common_neighbors_hlp import CommonNeighborsHlpModule
 from .hgnn_hlp import HGNNHlpModule, HGNNEncoderConfig
+from .hnhn_hlp import HNHNEncoderConfig, HNHNHlpModule
 from .hgnnp_hlp import HGNNPEncoderConfig, HGNNPHlpModule
 from .hlp import HlpModule
 from .hypergcn_hlp import HyperGCNHlpModule, HyperGCNEncoderConfig
@@ -10,6 +11,8 @@ __all__ = [
     "CommonNeighborsHlpModule",
     "HGNNEncoderConfig",
     "HGNNHlpModule",
+    "HNHNEncoderConfig",
+    "HNHNHlpModule",
     "HGNNPEncoderConfig",
     "HGNNPHlpModule",
     "HlpModule",

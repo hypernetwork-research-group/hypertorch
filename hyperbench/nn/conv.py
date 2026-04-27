@@ -1,5 +1,6 @@
-from typing import Optional
+from typing import Literal, Optional
 from torch import Tensor, nn
+from hyperbench.nn.aggregator import HyperedgeAggregator, NodeAggregator
 from hyperbench.types import EdgeIndex, Graph, HyperedgeIndex, Hypergraph
 
 
@@ -136,12 +137,11 @@ class HGNNConv(nn.Module):
         for efficiency when the hypergraph structure does not change across forward passes.
 
         Args:
-            x: Input node feature matrix. Size ``(num_nodes, in_channels)``.
-            hyperedge_index: Hyperedge incidence in COO format. Size ``(2, num_incidences)``,
-                where row 0 contains node IDs and row 1 contains hyperedge IDs.
+            x: Input node feature matrix of size ``(num_nodes, in_channels)``.
+            hyperedge_index: Hyperedge incidence in COO format of size ``(2, num_incidences)``.
 
         Returns:
-            The output node feature matrix. Size ``(num_nodes, out_channels)``.
+            The output node feature matrix of size ``(num_nodes, out_channels)``.
         """
         x = self.theta(x)
 
@@ -204,12 +204,11 @@ class HGNNPConv(nn.Module):
             ``X' = sigma( D_v^{-1} H D_e^{-1} H^T (X Theta) )``
 
         Args:
-            x: Input node feature matrix. Size ``(num_nodes, in_channels)``.
-            hyperedge_index: Hyperedge incidence in COO format. Size ``(2, num_incidences)``,
-                where row 0 contains node IDs and row 1 contains hyperedge IDs.
+            x: Input node feature matrix of size ``(num_nodes, in_channels)``.
+            hyperedge_index: Hyperedge incidence in COO format of size ``(2, num_incidences)``.
 
         Returns:
-            The output node feature matrix. Size ``(num_nodes, out_channels)``.
+            The output node feature matrix of size ``(num_nodes, out_channels)``.
         """
         x = self.theta(x)
 
@@ -217,6 +216,72 @@ class HGNNPConv(nn.Module):
             num_nodes=x.size(0),
         )
         x = Hypergraph.smoothing_with_matrix(x, smoothing_matrix)
+
+        if not self.is_last:
+            x = self.activation_fn(x)
+            if self.batch_norm_1d is not None:
+                x = self.batch_norm_1d(x)
+            x = self.dropout(x)
+
+        return x
+
+
+class HNHNConv(nn.Module):
+    """
+    The HNHNConv layer proposed in `HNHN: Hypergraph Networks with Hyperedge Neurons <https://arxiv.org/abs/2006.12278>`_ paper.
+    Reference implementation: `source <https://deephypergraph.readthedocs.io/en/latest/_modules/dhg/nn/convs/hypergraphs/hnhn_conv.html#HNHNConv>`_.
+
+    Args:
+        in_channels: The number of input channels.
+        out_channels: The number of output channels.
+        bias: If set to ``False``, the layer will not learn the bias parameter. Defaults to ``True``.
+        use_batch_normalization: If set to ``True``, the layer will use batch normalization. Defaults to ``False``.
+        drop_rate: If set to a positive number, the layer will use dropout. Defaults to ``0.5``.
+        is_last: If set to ``True``, the layer will not apply the final activation and dropout functions. Defaults to ``False``.
+    """
+
+    __AGGREGATION: Literal["mean"] = "mean"
+
+    def __init__(
+        self,
+        in_channels: int,
+        out_channels: int,
+        bias: bool = True,
+        use_batch_normalization: bool = False,
+        drop_rate: float = 0.5,
+        is_last: bool = False,
+    ):
+        super().__init__()
+        self.is_last = is_last
+        self.batch_norm_1d = nn.BatchNorm1d(out_channels) if use_batch_normalization else None
+        self.activation_fn = nn.ReLU(inplace=True)
+        self.dropout = nn.Dropout(drop_rate)
+        self.theta_v2e = nn.Linear(in_channels, out_channels, bias=bias)
+        self.theta_e2v = nn.Linear(out_channels, out_channels, bias=bias)
+
+    def forward(self, x: Tensor, hyperedge_index: Tensor) -> Tensor:
+        """
+        Apply one HNHN convolution layer using two learned projections around
+        node-to-hyperedge and hyperedge-to-node mean aggregation.
+
+        Args:
+            x: Input node feature matrix of size ``(num_nodes, in_channels)``.
+            hyperedge_index: Hyperedge incidence in COO format of size ``(2, num_incidences)``.
+
+        Returns:
+            The output node feature matrix of size ``(num_nodes, out_channels)``.
+        """
+        x = self.theta_v2e(x)
+
+        hyperedge_embeddings = HyperedgeAggregator(hyperedge_index, x).pool(self.__AGGREGATION)
+        hyperedge_embeddings = self.activation_fn(hyperedge_embeddings)
+        hyperedge_embeddings = self.theta_e2v(hyperedge_embeddings)
+
+        x = NodeAggregator(
+            hyperedge_index=hyperedge_index,
+            hyperedge_embeddings=hyperedge_embeddings,
+            num_nodes=x.size(0),
+        ).pool(self.__AGGREGATION)
 
         if not self.is_last:
             x = self.activation_fn(x)

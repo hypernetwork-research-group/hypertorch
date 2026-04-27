@@ -1,7 +1,7 @@
 from hyperbench.utils import Aggregation
 
-from .aggregator import HyperedgeAggregator
-from .conv import HGNNConv, HGNNPConv, HyperGCNConv
+from .aggregator import HyperedgeAggregator, NodeAggregator
+from .conv import HGNNConv, HGNNPConv, HNHNConv, HyperGCNConv
 from .enricher import (
     EnrichmentMode,
     NodeEnricher,
@@ -19,9 +19,11 @@ __all__ = [
     "EnrichmentMode",
     "HGNNConv",
     "HGNNPConv",
+    "HNHNConv",
     "HyperedgeAggregator",
     "HyperGCNConv",
     "NeighborScorer",
+    "NodeAggregator",
     "NodeEnricher",
     "HyperedgeEnricher",
     "HyperedgeAttrsEnricher",
