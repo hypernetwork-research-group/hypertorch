@@ -5,8 +5,6 @@ from torchmetrics.classification import (
     BinaryPrecision,
     BinaryRecall,
 )
-from lightning.pytorch.callbacks import EarlyStopping
-
 from hyperbench.data import AlgebraDataset, DataLoader, SamplingStrategy
 from hyperbench.hlp import HGNNPHlpModule
 from hyperbench.nn import LaplacianPositionalEncodingEnricher
@@ -74,8 +72,8 @@ if __name__ == "__main__":
         enricher=LaplacianPositionalEncodingEnricher(num_features=32),
         enrichment_mode="replace",
     )
-    val_dataset.hdata.x = train_dataset.hdata.x[: val_dataset.hdata.num_nodes]
-    test_dataset.hdata.x = train_dataset.hdata.x[:, : test_dataset.hdata.num_nodes]
+    val_dataset.enrich_node_features_from(train_dataset)
+    test_dataset.enrich_node_features_from(train_dataset)
 
     print("Creating dataloaders...")
 
@@ -127,12 +125,6 @@ if __name__ == "__main__":
         ),
     ]
 
-    early_stopping = EarlyStopping(
-        monitor="val_loss",
-        patience=30,
-        mode="min",
-    )
-
     print("Starting training and evaluation...")
 
     with MultiModelTrainer(
@@ -140,7 +132,6 @@ if __name__ == "__main__":
         max_epochs=60,
         accelerator="auto",
         log_every_n_steps=1,
-        callbacks=[early_stopping],
         enable_checkpointing=False,
         auto_start_tensorboard=True,
         auto_wait=True,

@@ -1,5 +1,3 @@
-import torch
-
 from torchmetrics import MetricCollection
 from torchmetrics.classification import (
     BinaryAUROC,
@@ -7,47 +5,11 @@ from torchmetrics.classification import (
     BinaryPrecision,
     BinaryRecall,
 )
-from lightning.pytorch.callbacks import EarlyStopping
-
 from hyperbench.data import AlgebraDataset, DataLoader, SamplingStrategy
 from hyperbench.hlp import HNHNHlpModule
 from hyperbench.nn import LaplacianPositionalEncodingEnricher
 from hyperbench.train import MultiModelTrainer, RandomNegativeSampler
 from hyperbench.types import HData, ModelConfig
-
-
-def assign_train_node_features(train_dataset, target_dataset) -> tuple[int, int]:
-    train_hdata = train_dataset.hdata
-    target_hdata = target_dataset.hdata
-
-    if train_hdata.global_node_ids is None or target_hdata.global_node_ids is None:
-        raise ValueError("Expected global_node_ids to align train features across splits.")
-
-    num_features = train_hdata.x.size(1)
-    target_x = torch.zeros(
-        (target_hdata.num_nodes, num_features),
-        dtype=train_hdata.x.dtype,
-        device=train_hdata.x.device,
-    )
-
-    train_rows_by_global_id = {
-        int(global_node_id): row_idx
-        for row_idx, global_node_id in enumerate(train_hdata.global_node_ids.tolist())
-    }
-
-    num_matched = 0
-    for target_row_idx, global_node_id in enumerate(target_hdata.global_node_ids.tolist()):
-        train_row_idx = train_rows_by_global_id.get(int(global_node_id))
-        if train_row_idx is None:
-            target_x[target_row_idx] = torch.zeros(
-                num_features, dtype=train_hdata.x.dtype, device=train_hdata.x.device
-            )
-            continue
-        target_x[target_row_idx] = train_hdata.x[train_row_idx]
-        num_matched += 1
-
-    target_hdata.x = target_x
-    return num_matched, target_hdata.num_nodes - num_matched
 
 
 if __name__ == "__main__":
@@ -108,18 +70,8 @@ if __name__ == "__main__":
         enricher=LaplacianPositionalEncodingEnricher(num_features=64),
         enrichment_mode="replace",
     )
-    val_matched, val_missing = assign_train_node_features(train_dataset, val_dataset)
-    test_matched, test_missing = assign_train_node_features(train_dataset, test_dataset)
-
-    if verbose:
-        print(
-            f"Val train-feature matches: {val_matched}/{val_dataset.hdata.num_nodes} "
-            f"(missing: {val_missing})"
-        )
-        print(
-            f"Test train-feature matches: {test_matched}/{test_dataset.hdata.num_nodes} "
-            f"(missing: {test_missing})"
-        )
+    val_dataset.enrich_node_features_from(train_dataset)
+    test_dataset.enrich_node_features_from(train_dataset)
 
     print("Creating dataloaders...")
 
@@ -173,12 +125,6 @@ if __name__ == "__main__":
         ),
     ]
 
-    early_stopping = EarlyStopping(
-        monitor="val_loss",
-        patience=100,
-        mode="min",
-    )
-
     print("Starting training and evaluation...")
 
     with MultiModelTrainer(
@@ -186,7 +132,6 @@ if __name__ == "__main__":
         max_epochs=200,
         accelerator="auto",
         log_every_n_steps=1,
-        callbacks=[early_stopping],
         enable_checkpointing=False,
         auto_start_tensorboard=True,
         auto_wait=True,

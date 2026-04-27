@@ -317,6 +317,81 @@ class HData:
             hyperedge_attr=self.hyperedge_attr,
             num_nodes=self.num_nodes,
             num_hyperedges=self.num_hyperedges,
+            global_node_ids=self.global_node_ids,
+            y=self.y,
+        )
+
+    def enrich_node_features_from(self, hdata_with_features: "HData") -> "HData":
+        """
+        Copy node features from another :class:`HData` by aligning features by ``global_node_ids``.
+        This is intended for transductive splits where validation or test nodes should reuse
+        features computed on the training split.
+
+        Args:
+            hdata_with_features: Source :class:`HData` providing node features.
+
+        Returns:
+            A new :class:`HData` with node features copied from ``hdata_with_features``.
+
+        Raises:
+            ValueError: If either instance lacks ``global_node_ids``, if the source feature rows
+                do not align with the source node IDs, or if the target contains node IDs missing from the source.
+        """
+        source_global_node_ids = hdata_with_features.global_node_ids
+        source_x = hdata_with_features.x
+        if self.global_node_ids is None or source_global_node_ids is None:
+            raise ValueError(
+                "Both HData instances must define global_node_ids to align node features."
+            )
+        if source_x.size(0) != source_global_node_ids.size(0):
+            raise ValueError(
+                "Expected hdata_with_features.x rows to align with hdata_with_features.global_node_ids."
+            )
+
+        target_global_node_ids = self.global_node_ids.detach().cpu().tolist()
+
+        # We need the index of the features for each node in the source, as we will use the index to track back
+        # to the node feautures after we match the global node id in the target to the one that is in the source
+        source_feature_idx_by_global_node_id = {
+            int(global_node_id): feature_idx
+            for feature_idx, global_node_id in enumerate(
+                source_global_node_ids.detach().cpu().tolist()
+            )
+        }
+
+        # A node is missing if it appears in the target global node IDs but not in the source global node IDs
+        missing_global_node_ids = [
+            int(global_node_id)
+            for global_node_id in target_global_node_ids
+            if int(global_node_id) not in source_feature_idx_by_global_node_id
+        ]
+        # There should be no missing global node IDs, as the target
+        # should be a subset of the source in a transductive setting
+        if len(missing_global_node_ids) > 0:
+            raise ValueError(
+                f"Missing node features for target global_node_ids: {missing_global_node_ids}."
+            )
+
+        # Match the global node IDs in the target to the corresponding feature indices in the source
+        # Example: source_global_node_ids = [10, 20, 30], source_x has shape (3, num_features)
+        #          target_global_node_ids = [10, 30]
+        #          -> source_feature_idx_by_global_node_id = {10: 0, 20: 1, 30: 2}
+        #          -> source_feature_idx_in_target = [0, 2] to select the correct rows from source_x
+        source_feature_idx_in_target = [
+            source_feature_idx_by_global_node_id[int(global_node_id)]
+            for global_node_id in target_global_node_ids
+        ]
+
+        enriched_x = source_x[source_feature_idx_in_target].to(device=self.device)
+
+        return self.__class__(
+            x=enriched_x,
+            hyperedge_index=self.hyperedge_index,
+            hyperedge_weights=self.hyperedge_weights,
+            hyperedge_attr=self.hyperedge_attr,
+            num_nodes=self.num_nodes,
+            num_hyperedges=self.num_hyperedges,
+            global_node_ids=self.global_node_ids,
             y=self.y,
         )
 

@@ -636,6 +636,121 @@ def test_enrich_node_features_concatenate(mock_hdata):
     assert result.x.shape == (5, 7)  # 4 original + 3 enriched
 
 
+@pytest.mark.parametrize(
+    "enrichment_mode",
+    [
+        pytest.param("replace", id="replace"),
+        pytest.param("concatenate", id="concatenate"),
+        pytest.param(None, id="none_enrichment_mode_defaults_to_replace"),
+    ],
+)
+def test_enrich_node_features_replace_preserves_global_node_ids(mock_hdata, enrichment_mode):
+    global_node_ids = torch.tensor([10, 20, 30, 40, 50])
+    mock_hdata.global_node_ids = global_node_ids
+
+    enricher = MagicMock(spec=NodeEnricher)
+    enricher.enrich.return_value = torch.randn(5, 3)
+
+    result = mock_hdata.enrich_node_features(enricher, enrichment_mode=enrichment_mode)
+
+    assert result.global_node_ids is not None
+    assert torch.equal(result.global_node_ids, global_node_ids)
+
+
+def test_enrich_node_features_from_aligns_by_global_node_ids():
+    source_hdata = HData(
+        x=torch.tensor([[1.0, 10.0], [2.0, 20.0], [3.0, 30.0]]),
+        hyperedge_index=torch.tensor([[0, 1, 2], [0, 0, 1]]),
+        global_node_ids=torch.tensor([100, 200, 300]),
+    )
+    target_hdata = HData(
+        x=torch.tensor([[0.0], [0.0]]),
+        hyperedge_index=torch.tensor([[0, 1], [0, 0]]),
+        global_node_ids=torch.tensor([300, 100]),
+        y=torch.tensor([0.0]),
+    )
+
+    result = target_hdata.enrich_node_features_from(source_hdata)
+
+    assert torch.equal(result.x, torch.tensor([[3.0, 30.0], [1.0, 10.0]]))
+    assert torch.equal(result.hyperedge_index, target_hdata.hyperedge_index)
+    assert result.hyperedge_weights is None
+    assert result.hyperedge_attr is None
+    assert result.global_node_ids is not None
+    assert torch.equal(
+        result.global_node_ids, utils.to_non_empty_edgeattr(target_hdata.global_node_ids)
+    )
+    assert torch.equal(result.y, target_hdata.y)
+
+
+@pytest.mark.parametrize(
+    "missing_side",
+    [
+        pytest.param("source", id="source_missing_global_node_ids"),
+        pytest.param("target", id="target_missing_global_node_ids"),
+    ],
+)
+def test_enrich_node_features_from_raises_without_global_node_ids(missing_side):
+    source_hdata = HData(
+        x=torch.tensor([[1.0], [2.0]]),
+        hyperedge_index=torch.tensor([[0, 1], [0, 0]]),
+        global_node_ids=torch.tensor([10, 20]),
+    )
+    target_hdata = HData(
+        x=torch.tensor([[0.0]]),
+        hyperedge_index=torch.tensor([[0], [0]]),
+        global_node_ids=torch.tensor([10]),
+    )
+
+    if missing_side == "source":
+        source_hdata.global_node_ids = None
+    else:
+        target_hdata.global_node_ids = None
+
+    with pytest.raises(
+        ValueError,
+        match="Both HData instances must define global_node_ids to align node features.",
+    ):
+        target_hdata.enrich_node_features_from(source_hdata)
+
+
+def test_enrich_node_features_from_raises_when_source_rows_do_not_match_global_node_ids():
+    source_hdata = HData(
+        x=torch.empty((0, 0)),
+        hyperedge_index=torch.tensor([[0, 1], [0, 0]]),
+    )
+    target_hdata = HData(
+        x=torch.tensor([[0.0]]),
+        hyperedge_index=torch.tensor([[0], [0]]),
+        global_node_ids=torch.tensor([0]),
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Expected hdata_with_features.x rows to align with hdata_with_features.global_node_ids.",
+    ):
+        target_hdata.enrich_node_features_from(source_hdata)
+
+
+def test_enrich_node_features_from_raises_when_target_node_missing_from_source():
+    source_hdata = HData(
+        x=torch.tensor([[1.0], [2.0]]),
+        hyperedge_index=torch.tensor([[0, 1], [0, 0]]),
+        global_node_ids=torch.tensor([10, 20]),
+    )
+    target_hdata = HData(
+        x=torch.tensor([[0.0], [0.0]]),
+        hyperedge_index=torch.tensor([[0, 1], [0, 0]]),
+        global_node_ids=torch.tensor([10, 30]),
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=r"Missing node features for target global_node_ids: \[30\]\.",
+    ):
+        target_hdata.enrich_node_features_from(source_hdata)
+
+
 def test_enrich_hyperedge_weights_replace():
     x = torch.tensor([[1.0], [2.0], [3.0]])
     hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 1]])

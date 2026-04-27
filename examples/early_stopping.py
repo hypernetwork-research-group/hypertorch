@@ -5,8 +5,9 @@ from torchmetrics.classification import (
     BinaryPrecision,
     BinaryRecall,
 )
-from hyperbench.hlp import HyperGCNHlpModule
-from hyperbench.nn import HyperedgeWeightsEnricher, LaplacianPositionalEncodingEnricher
+from lightning.pytorch.callbacks import EarlyStopping
+from hyperbench.hlp import MLPHlpModule
+from hyperbench.nn import LaplacianPositionalEncodingEnricher
 from hyperbench.train import MultiModelTrainer, RandomNegativeSampler
 from hyperbench.types import HData, ModelConfig
 from hyperbench.data import AlgebraDataset, DataLoader, SamplingStrategy
@@ -28,7 +29,6 @@ if __name__ == "__main__":
     print("Loading and preparing dataset...")
 
     dataset = AlgebraDataset(sampling_strategy=sampling_strategy, prepare=True)
-    dataset.remove_hyperedges_with_fewer_than_k_nodes(k=2)
     if verbose:
         print(f"Dataset:\n {dataset.hdata}\n")
 
@@ -72,14 +72,6 @@ if __name__ == "__main__":
         if verbose:
             print(f"{name} dataset after adding negative samples: {shuffled_hdata}\n")
 
-    print("Enriching hyperedge weights...")
-
-    for ds in [train_dataset, val_dataset, test_dataset]:
-        ds.enrich_hyperedge_weights(
-            enricher=HyperedgeWeightsEnricher(alpha=1.0, beta=None),
-            enrichment_mode="replace",
-        )
-
     print("Enriching node features...")
 
     train_dataset.enrich_node_features(
@@ -91,21 +83,21 @@ if __name__ == "__main__":
 
     print("Creating dataloaders...")
 
-    train_loader_full_hypergraph = DataLoader(
+    train_loader = DataLoader(
         train_dataset,
-        sample_full_hypergraph=True,
+        batch_size=128,  # or 256
         shuffle=False,
         num_workers=num_workers,
         persistent_workers=True,
     )
-    val_loader_full_hypergraph = DataLoader(
+    val_loader = DataLoader(
         val_dataset,
         sample_full_hypergraph=True,
         shuffle=False,
         num_workers=num_workers,
         persistent_workers=True,
     )
-    test_loader_full_hypergraph = DataLoader(
+    test_loader = DataLoader(
         test_dataset,
         sample_full_hypergraph=True,
         shuffle=False,
@@ -113,58 +105,27 @@ if __name__ == "__main__":
         persistent_workers=True,
     )
 
-    mean_hypergcn_no_mediator_module = HyperGCNHlpModule(
+    mean_mlp_module = MLPHlpModule(
         encoder_config={
             "in_channels": 32,
-            "hidden_channels": 16,
-            "out_channels": 16,
-            "bias": True,
-            "use_batch_normalization": False,
-            "drop_rate": 0.5,
-            "use_mediator": False,
-            "fast": False,
+            "out_channels": 32,
+            "hidden_channels": 64,
+            "num_layers": 3,
+            "drop_rate": 0.3,
         },
         aggregation="mean",
-        lr=0.01,
-        weight_decay=5e-4,
-        metrics=metrics,
-    )
-
-    mean_hypergcn_with_mediator_module = HyperGCNHlpModule(
-        encoder_config={
-            "in_channels": 32,
-            "hidden_channels": 16,
-            "out_channels": 16,
-            "bias": True,
-            "use_batch_normalization": False,
-            "drop_rate": 0.5,
-            "use_mediator": True,
-            "fast": False,
-        },
-        aggregation="mean",
-        lr=0.01,
-        weight_decay=5e-4,
         metrics=metrics,
     )
 
     configs = [
-        ModelConfig(
-            name="hypergcn",
-            version="mean-no-mediator",
-            model=mean_hypergcn_no_mediator_module,
-            train_dataloader=train_loader_full_hypergraph,
-            val_dataloader=val_loader_full_hypergraph,
-            test_dataloader=test_loader_full_hypergraph,
-        ),
-        ModelConfig(
-            name="hypergcn",
-            version="mean-with-mediator",
-            model=mean_hypergcn_with_mediator_module,
-            train_dataloader=train_loader_full_hypergraph,
-            val_dataloader=val_loader_full_hypergraph,
-            test_dataloader=test_loader_full_hypergraph,
-        ),
+        ModelConfig(name="mlp", version="mean", model=mean_mlp_module),
     ]
+
+    early_stopping = EarlyStopping(
+        monitor="val_loss",
+        patience=10,
+        mode="min",
+    )
 
     print("Starting training and evaluation...")
 
@@ -172,16 +133,13 @@ if __name__ == "__main__":
         model_configs=configs,
         max_epochs=200,
         accelerator="auto",
-        log_every_n_steps=1,
+        log_every_n_steps=10,
+        callbacks=[early_stopping],
         enable_checkpointing=False,
         auto_start_tensorboard=True,
         auto_wait=True,
     ) as trainer:
-        trainer.fit_all(
-            train_dataloader=train_loader_full_hypergraph,
-            val_dataloader=val_loader_full_hypergraph,
-            verbose=True,
-        )
-        trainer.test_all(dataloader=test_loader_full_hypergraph, verbose=True)
+        trainer.fit_all(train_dataloader=train_loader, val_dataloader=val_loader, verbose=True)
+        trainer.test_all(dataloader=test_loader, verbose=True)
 
     print("Complete!")

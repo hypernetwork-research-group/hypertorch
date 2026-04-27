@@ -14,7 +14,6 @@ from torch.utils.data import Dataset as TorchDataset
 
 from hyperbench.nn import EnrichmentMode, NodeEnricher, HyperedgeEnricher
 from hyperbench.types import HData, HIFHypergraph, HyperedgeIndex
-from hyperbench.nn import EnrichmentMode
 from hyperbench.utils import validate_hif_json
 
 from hyperbench.data.sampling import SamplingStrategy, create_sampler_from_strategy
@@ -299,6 +298,20 @@ class Dataset(TorchDataset):
                 ``replace`` substitutes ``hdata.x`` entirely.
         """
         self.hdata = self.hdata.enrich_node_features(enricher, enrichment_mode)
+
+    def enrich_node_features_from(self, dataset_with_features: "Dataset") -> None:
+        """
+        Copy node features from another dataset by aligning features by ``global_node_ids``.
+        This is intended for transductive splits where validation or test nodes should reuse
+        features computed on the training split.
+
+        Args:
+            dataset_with_features: Source dataset providing node features.
+
+        Raises:
+            ValueError: If the source dataset's node features cannot be aligned with the target dataset's nodes.
+        """
+        self.hdata = self.hdata.enrich_node_features_from(dataset_with_features.hdata)
 
     def enrich_hyperedge_attr(
         self,

@@ -1012,6 +1012,51 @@ def test_enrich_node_features_concatenate(mock_hdata):
     assert dataset.hdata.x.shape == (3, 5)  # 1 original + 4 enriched
 
 
+def test_enrich_node_features_from_dataset():
+    source_dataset = Dataset.from_hdata(
+        HData(
+            x=torch.tensor([[1.0, 10.0], [2.0, 20.0], [3.0, 30.0]]),
+            hyperedge_index=torch.tensor([[0, 1, 2], [0, 0, 1]]),
+            global_node_ids=torch.tensor([100, 200, 300]),
+        )
+    )
+    target_dataset = Dataset.from_hdata(
+        HData(
+            x=torch.tensor([[0.0], [0.0]]),
+            hyperedge_index=torch.tensor([[0, 1], [0, 0]]),
+            global_node_ids=torch.tensor([300, 100]),
+        )
+    )
+
+    target_dataset.enrich_node_features_from(source_dataset)
+
+    assert torch.equal(target_dataset.hdata.x, torch.tensor([[3.0, 30.0], [1.0, 10.0]]))
+
+
+def test_enrich_node_features_from_propagates_hdata_validation_errors():
+    source_dataset = Dataset.from_hdata(
+        HData(
+            x=torch.tensor([[1.0], [2.0]]),
+            hyperedge_index=torch.tensor([[0, 1], [0, 0]]),
+            global_node_ids=torch.tensor([10, 20]),
+        )
+    )
+    target_dataset = Dataset.from_hdata(
+        HData(
+            x=torch.tensor([[0.0]]),
+            hyperedge_index=torch.tensor([[0], [0]]),
+            global_node_ids=torch.tensor([10]),
+        )
+    )
+    target_dataset.hdata.global_node_ids = None
+
+    with pytest.raises(
+        ValueError,
+        match="Both HData instances must define global_node_ids to align node features.",
+    ):
+        target_dataset.enrich_node_features_from(source_dataset)
+
+
 def test_enrich_hyperedge_attr_replace(mock_hdata):
     dataset = Dataset.from_hdata(mock_hdata)
 
