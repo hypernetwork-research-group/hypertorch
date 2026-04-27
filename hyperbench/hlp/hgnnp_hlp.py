@@ -105,11 +105,19 @@ class HGNNPHlpModule(HlpModule):
         if self.encoder is None:
             raise ValueError("Encoder is not defined for this HLP module.")
 
+        # Encode: produce node embeddings using HGNN+, no graph reduction is applied
+        # Example: x: (num_nodes, in_channels)
+        #          -> node_embeddings: (num_nodes, out_channels), out_channels)
         node_embeddings: Tensor = self.encoder(x, hyperedge_index)
+
+        # Aggregate: pool node embeddings per hyperedge
+        # shape: (num_hyperedges, out_channels)
         hyperedge_embeddings = HyperedgeAggregator(hyperedge_index, node_embeddings).pool(
             self.aggregation
         )
 
+        # Decode: linear projection to scalar score per hyperedge
+        # shape: (num_hyperedges, 1) -> squeeze -> (num_hyperedges,)
         scores: Tensor = self.decoder(hyperedge_embeddings).squeeze(-1)
         return scores
 
