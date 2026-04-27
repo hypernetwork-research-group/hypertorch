@@ -45,7 +45,7 @@ class HyperGCNConv(nn.Module):
         hyperedge_index: Tensor,
         gcn_laplacian_matrix: Optional[Tensor] = None,
     ) -> Tensor:
-        r"""
+        """
         The forward function.
 
         Args:
@@ -124,7 +124,7 @@ class HGNNConv(nn.Module):
         self.theta = nn.Linear(in_channels, out_channels, bias=bias)
 
     def forward(self, x: Tensor, hyperedge_index: Tensor) -> Tensor:
-        r"""
+        """
         Apply one HGNN convolution layer: project features, smooth via hypergraph Laplacian,
         then apply activation, batch norm, and dropout (unless this is the last layer).
 

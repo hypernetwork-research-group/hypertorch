@@ -111,16 +111,16 @@ class Graph:
         laplacian_matrix: Tensor,
         drop_rate: float = 0.0,
     ) -> Tensor:
-        r"""
+        """
         Return the feature matrix smoothed with a Laplacian matrix.
 
         Args:
-            x: Node feature matrix. Size ``(|V|, C)``.
-            laplacian_matrix: The Laplacian matrix. Size ``(|V|, |V|)``.
+            x: Node feature matrix. Size ``(num_nodes, C)``.
+            laplacian_matrix: The Laplacian matrix. Size ``(num_nodes, num_nodes)``.
             drop_rate: Randomly dropout the connections in the Laplacian with probability ``drop_rate``. Defaults to ``0.0``.
 
         Returns:
-            The smoothed feature matrix. Size ``(|V|, C)``.
+            The smoothed feature matrix. Size ``(num_nodes, C)``.
         """
         if drop_rate > 0.0:
             laplacian_matrix = utils.sparse_dropout(laplacian_matrix, drop_rate)

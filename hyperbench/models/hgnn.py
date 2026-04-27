@@ -52,7 +52,7 @@ class HGNN(nn.Module):
         )
 
     def forward(self, x: Tensor, hyperedge_index: Tensor) -> Tensor:
-        r"""
+        """
         Apply two stacked ``HGNNConv`` layers to produce node embeddings.
 
         The first layer applies ReLU + dropout and maps ``in_channels -> hidden_channels``.

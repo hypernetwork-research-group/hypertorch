@@ -785,7 +785,7 @@ class HyperedgeIndex:
         Reference implementation: `source <https://deephypergraph.readthedocs.io/en/latest/_modules/dhg/structure/graphs/graph.html#Graph.from_hypergraph_hypergcn>`_.
 
         Args:
-            x: Node feature matrix. Size ``(|V|, C)``.
+            x: Node feature matrix. Size ``(num_nodes, C)``.
             with_mediators: Whether to use mediator to transform the hyperedges to edges in the graph. Defaults to ``False``.
             remove_selfloops: Whether to remove self-loops. Defaults to ``True``.
             return_weights: Whether to return the DHG-style reduced-edge weights alongside the edge index. Defaults to ``False``.

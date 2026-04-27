@@ -61,7 +61,7 @@ class HyperGCN(nn.Module):
         )
 
     def forward(self, x: Tensor, hyperedge_index: Tensor) -> Tensor:
-        r"""
+        """
         The forward function.
 
         Args:

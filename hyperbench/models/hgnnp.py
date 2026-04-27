@@ -49,7 +49,7 @@ class HGNNP(nn.Module):
         )
 
     def forward(self, x: Tensor, hyperedge_index: Tensor) -> Tensor:
-        r"""
+        """
         Apply two stacked ``HGNNPConv`` layers to produce node embeddings.
 
         Args:

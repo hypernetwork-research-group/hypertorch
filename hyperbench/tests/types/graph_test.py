@@ -310,7 +310,7 @@ def test_cyclic_graph():
     ],
 )
 def test_smoothing_with_laplacian_output_shape_matches_x_shape(num_nodes, num_features):
-    """Output shape should match input node feature matrix X shape (|V|, C)."""
+    """Output shape should match input node feature matrix X shape (num_nodes, C)."""
     x = torch.randn(num_nodes, num_features)
     edge_index = torch.tensor([[i, (i + 1) % num_nodes] for i in range(num_nodes)]).T
 
