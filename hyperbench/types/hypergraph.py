@@ -345,34 +345,32 @@ class Hypergraph:
         return cls(hyperedges=hyperedges)
 
     @staticmethod
-    def smoothing_with_laplacian_matrix(
+    def smoothing_with_matrix(
         x: Tensor,
-        laplacian_matrix: Tensor,
+        matrix: Tensor,
         drop_rate: float = 0.0,
     ) -> Tensor:
         """
-        Return the feature matrix smoothed with a Laplacian matrix.
-
-        Computes ``L @ X`` where ``L`` is the Laplacian matrix (e.g., the HGNN
-        hypergraph Laplacian ``D_n^{-1/2} H D_e^{-1} H^T D_n^{-1/2}``).
+        Return the feature matrix smoothed with a smoothing matrix.
+        Computes ``M @ X`` where ``M`` is the smoothing matrix and ``X`` is the node feature matrix.
 
         Args:
-            x: Node feature matrix. Size ``(|V|, C)``.
-            laplacian_matrix: The Laplacian matrix. Size ``(|V|, |V|)``.
-            drop_rate: Randomly dropout the connections in the Laplacian with probability ``drop_rate``. Defaults to ``0.0``.
+            x: Node feature matrix. Size ``(num_nodes, C)``.
+            matrix: The smoothing matrix. Size ``(num_nodes, num_nodes)``.
+            drop_rate: Randomly dropout the connections in the smoothing matrix with probability ``drop_rate``. Defaults to ``0.0``.
 
         Returns:
-            The smoothed feature matrix. Size ``(|V|, C)``.
+            The smoothed feature matrix. Size ``(num_nodes, C)``.
         """
         if drop_rate > 0.0:
-            laplacian_matrix = sparse_dropout(laplacian_matrix, drop_rate)
-        return laplacian_matrix.matmul(x)
+            matrix = sparse_dropout(matrix, drop_rate)
+        return matrix.matmul(x)
 
 
 class HyperedgeIndex:
     """
     A wrapper for hyperedge index representation.
-    Hyperedge index is a tensor of shape (2, |E|) that encodes the relationships between nodes and hyperedges.
+    Hyperedge index is a tensor of shape ``(2, num_incidences)`` that encodes the relationships between nodes and hyperedges.
     Each column in the tensor represents an incidence between a node and a hyperedge, with the first row containing node indices
     and the second row containing corresponding hyperedge indices.
 
@@ -388,7 +386,7 @@ class HyperedgeIndex:
         The number of hyperedges is 2 (hyperedges 0 and 1).
 
     Args:
-        hyperedge_index: A tensor of shape ``(2, |E|)`` representing hyperedges, where each column is (node, hyperedge).
+        hyperedge_index: A tensor of shape ``(2, num_incidences)`` representing hyperedges, where each column is (node, hyperedge).
     """
 
     def __init__(self, hyperedge_index: Tensor):
@@ -633,7 +631,7 @@ class HyperedgeIndex:
         )
         return degree_matrix.coalesce()
 
-    def get_sparse_hgnn_laplacian(
+    def get_sparse_hgnn_smoothing_matrix(
         self,
         num_nodes: Optional[int] = None,
         num_hyperedges: Optional[int] = None,

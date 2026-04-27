@@ -1,14 +1,13 @@
 from torch import Tensor, nn, optim
 from typing import Literal, Optional, TypedDict
-
 from torchmetrics import MetricCollection
 from typing_extensions import NotRequired
-
-from hyperbench.hlp.hlp import HlpModule
 from hyperbench.models import HGNNP, SLP
 from hyperbench.nn import HyperedgeAggregator
 from hyperbench.types import HData
 from hyperbench.utils import Stage
+
+from hyperbench.hlp.hlp import HlpModule
 
 
 class HGNNPEncoderConfig(TypedDict):
@@ -22,7 +21,6 @@ class HGNNPEncoderConfig(TypedDict):
         bias: Whether to include bias terms. Defaults to ``True``.
         use_batch_normalization: Whether to use batch normalization. Defaults to ``False``.
         drop_rate: Dropout rate. Defaults to ``0.5``.
-        fast: Whether to cache the HGNN+ smoothing matrix. Defaults to ``False``.
     """
 
     in_channels: int
@@ -31,7 +29,6 @@ class HGNNPEncoderConfig(TypedDict):
     bias: NotRequired[bool]
     use_batch_normalization: NotRequired[bool]
     drop_rate: NotRequired[float]
-    fast: NotRequired[bool]
 
 
 class HGNNPHlpModule(HlpModule):
@@ -67,7 +64,6 @@ class HGNNPHlpModule(HlpModule):
             bias=encoder_config.get("bias", True),
             use_batch_normalization=encoder_config.get("use_batch_normalization", False),
             drop_rate=encoder_config.get("drop_rate", 0.5),
-            fast=encoder_config.get("fast", False),
         )
         decoder = SLP(in_channels=encoder_config["out_channels"], out_channels=1)
 

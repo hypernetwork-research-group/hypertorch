@@ -123,12 +123,7 @@ class HGNNConv(nn.Module):
         self.dropout = nn.Dropout(drop_rate)
         self.theta = nn.Linear(in_channels, out_channels, bias=bias)
 
-    def forward(
-        self,
-        x: Tensor,
-        hyperedge_index: Tensor,
-        hgnn_laplacian_matrix: Optional[Tensor] = None,
-    ) -> Tensor:
+    def forward(self, x: Tensor, hyperedge_index: Tensor) -> Tensor:
         r"""
         Apply one HGNN convolution layer: project features, smooth via hypergraph Laplacian,
         then apply activation, batch norm, and dropout (unless this is the last layer).
@@ -144,22 +139,16 @@ class HGNNConv(nn.Module):
             x: Input node feature matrix. Size ``(num_nodes, in_channels)``.
             hyperedge_index: Hyperedge incidence in COO format. Size ``(2, num_incidences)``,
                 where row 0 contains node IDs and row 1 contains hyperedge IDs.
-            hgnn_laplacian_matrix: Optional precomputed HGNN Laplacian
-                ``D_n^{-1/2} H D_e^{-1} H^T D_n^{-1/2}``. Size ``(num_nodes, num_nodes)``.
-                If provided, skips recomputing the Laplacian from ``hyperedge_index``.
 
         Returns:
             The output node feature matrix. Size ``(num_nodes, out_channels)``.
         """
         x = self.theta(x)
 
-        if hgnn_laplacian_matrix is not None:
-            x = Hypergraph.smoothing_with_laplacian_matrix(x, hgnn_laplacian_matrix)
-        else:
-            laplacian = HyperedgeIndex(hyperedge_index).get_sparse_hgnn_laplacian(
-                num_nodes=x.size(0),
-            )
-            x = Hypergraph.smoothing_with_laplacian_matrix(x, laplacian)
+        smoothing_matrix = HyperedgeIndex(hyperedge_index).get_sparse_hgnn_smoothing_matrix(
+            num_nodes=x.size(0),
+        )
+        x = Hypergraph.smoothing_with_matrix(x, smoothing_matrix)
 
         if not self.is_last:
             x = self.activation_fn(x)
@@ -207,13 +196,8 @@ class HGNNPConv(nn.Module):
         self.dropout = nn.Dropout(drop_rate)
         self.theta = nn.Linear(in_channels, out_channels, bias=bias)
 
-    def forward(
-        self,
-        x: Tensor,
-        hyperedge_index: Tensor,
-        hgnnp_smoothing_matrix: Optional[Tensor] = None,
-    ) -> Tensor:
-        r"""
+    def forward(self, x: Tensor, hyperedge_index: Tensor) -> Tensor:
+        """
         Apply one HGNN+ convolution layer using row-stochastic hypergraph smoothing.
 
         The full per-layer formula is:
@@ -223,22 +207,16 @@ class HGNNPConv(nn.Module):
             x: Input node feature matrix. Size ``(num_nodes, in_channels)``.
             hyperedge_index: Hyperedge incidence in COO format. Size ``(2, num_incidences)``,
                 where row 0 contains node IDs and row 1 contains hyperedge IDs.
-            hgnnp_smoothing_matrix: Optional precomputed HGNN+ smoothing matrix
-                ``D_v^{-1} H D_e^{-1} H^T``. Size ``(num_nodes, num_nodes)``.
-                If provided, skips recomputing the matrix from ``hyperedge_index``.
 
         Returns:
             The output node feature matrix. Size ``(num_nodes, out_channels)``.
         """
         x = self.theta(x)
 
-        if hgnnp_smoothing_matrix is not None:
-            x = Hypergraph.smoothing_with_laplacian_matrix(x, hgnnp_smoothing_matrix)
-        else:
-            smoothing_matrix = HyperedgeIndex(hyperedge_index).get_sparse_hgnnp_smoothing_matrix(
-                num_nodes=x.size(0),
-            )
-            x = Hypergraph.smoothing_with_laplacian_matrix(x, smoothing_matrix)
+        smoothing_matrix = HyperedgeIndex(hyperedge_index).get_sparse_hgnnp_smoothing_matrix(
+            num_nodes=x.size(0),
+        )
+        x = Hypergraph.smoothing_with_matrix(x, smoothing_matrix)
 
         if not self.is_last:
             x = self.activation_fn(x)

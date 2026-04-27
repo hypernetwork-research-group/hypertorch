@@ -980,46 +980,44 @@ def test_remove_hyperedges_with_fewer_than_k_nodes_returns_self():
         pytest.param(0.0, id="with_dropout"),
     ],
 )
-def test_hypergraph_smoothing_with_laplacian_does_not_apply_dropout_when_not_provided(dropout):
+def test_hypergraph_smoothing_with_matrix_does_not_apply_dropout_when_not_provided(dropout):
     x = torch.tensor([[1.0], [2.0]])
-    laplacian = torch.tensor([[1.0, 0.0], [0.0, 1.0]]).to_sparse()
+    matrix = torch.tensor([[1.0, 0.0], [0.0, 1.0]]).to_sparse()
 
     with patch(
         "hyperbench.types.hypergraph.sparse_dropout",
-        return_value=torch.zeros_like(laplacian),
+        return_value=torch.zeros_like(matrix),
     ) as mock_sparse_dropout:
         if dropout is not None:
-            smoothed_laplacian = Hypergraph.smoothing_with_laplacian_matrix(
-                x, laplacian, drop_rate=dropout
-            )
+            smoothed_matrix = Hypergraph.smoothing_with_matrix(x, matrix, drop_rate=dropout)
         else:
-            smoothed_laplacian = Hypergraph.smoothing_with_laplacian_matrix(x, laplacian)
+            smoothed_matrix = Hypergraph.smoothing_with_matrix(x, matrix)
 
     mock_sparse_dropout.assert_not_called()
 
-    # It is equal to x as the laplacian is identity and no dropout is applied
-    assert smoothed_laplacian.shape == x.shape
-    assert torch.equal(smoothed_laplacian, x)
+    # It is equal to x as the matrix is identity and no dropout is applied
+    assert smoothed_matrix.shape == x.shape
+    assert torch.equal(smoothed_matrix, x)
 
 
-def test_hypergraph_smoothing_with_laplacian_applies_dropout_when_enabled():
+def test_hypergraph_smoothing_with_matrix_applies_dropout_when_enabled():
     x = torch.tensor([[1.0], [2.0]])
-    laplacian = torch.tensor([[1.0, 0.0], [0.0, 1.0]]).to_sparse()
+    matrix = torch.tensor([[1.0, 0.0], [0.0, 1.0]]).to_sparse()
 
     with patch(
         "hyperbench.types.hypergraph.sparse_dropout",
-        return_value=torch.zeros_like(laplacian),
+        return_value=torch.zeros_like(matrix),
     ) as mock_sparse_dropout:
-        smoothed_laplacian = Hypergraph.smoothing_with_laplacian_matrix(x, laplacian, drop_rate=0.7)
+        smoothed_matrix = Hypergraph.smoothing_with_matrix(x, matrix, drop_rate=0.7)
 
     mock_sparse_dropout.assert_called_once()
 
     called_matrix, called_drop_rate = mock_sparse_dropout.call_args.args
 
-    assert called_matrix is laplacian
+    assert called_matrix is matrix
     assert called_drop_rate == 0.7
-    assert smoothed_laplacian.shape == x.shape
-    assert torch.equal(smoothed_laplacian, torch.zeros_like(x))
+    assert smoothed_matrix.shape == x.shape
+    assert torch.equal(smoothed_matrix, torch.zeros_like(x))
 
 
 def test_hyperedge_index_sparse_symnormalized_node_degree_handles_isolated_nodes():
@@ -1080,7 +1078,7 @@ def test_hyperedge_index_sparse_normalized_hyperedge_degree_handles_empty_hypere
 def test_hyperedge_index_sparse_hgnn_laplacian_matches_formula():
     hyperedge_index = HyperedgeIndex(torch.tensor([[0, 0, 1], [0, 1, 1]]))
 
-    laplacian = hyperedge_index.get_sparse_hgnn_laplacian(num_nodes=3, num_hyperedges=2)
+    laplacian = hyperedge_index.get_sparse_hgnn_smoothing_matrix(num_nodes=3, num_hyperedges=2)
 
     incidence_matrix = torch.tensor(
         [
@@ -1110,8 +1108,8 @@ def test_hyperedge_index_sparse_hgnn_laplacian_matches_formula():
 def test_get_sparse_hgnn_laplacian_inferred_equals_explicit():
     hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1, 0, 2], [0, 0, 1, 1]]))
 
-    laplacian_inferred = hyperedge_index.get_sparse_hgnn_laplacian()
-    laplacian_explicit = hyperedge_index.get_sparse_hgnn_laplacian(
+    laplacian_inferred = hyperedge_index.get_sparse_hgnn_smoothing_matrix()
+    laplacian_explicit = hyperedge_index.get_sparse_hgnn_smoothing_matrix(
         num_nodes=3,
         num_hyperedges=2,
     )

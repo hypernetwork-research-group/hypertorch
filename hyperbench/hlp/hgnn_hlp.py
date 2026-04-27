@@ -21,7 +21,6 @@ class HGNNEncoderConfig(TypedDict):
         bias: Whether to include bias terms. Defaults to ``True``.
         use_batch_normalization: Whether to use batch normalization. Defaults to ``False``.
         drop_rate: Dropout rate. Defaults to ``0.5``.
-        fast: Whether to cache the HGNN Laplacian. Defaults to ``False``.
     """
 
     in_channels: int
@@ -30,7 +29,6 @@ class HGNNEncoderConfig(TypedDict):
     bias: NotRequired[bool]
     use_batch_normalization: NotRequired[bool]
     drop_rate: NotRequired[float]
-    fast: NotRequired[bool]
 
 
 class HGNNHlpModule(HlpModule):
@@ -66,7 +64,6 @@ class HGNNHlpModule(HlpModule):
             bias=encoder_config.get("bias", True),
             use_batch_normalization=encoder_config.get("use_batch_normalization", False),
             drop_rate=encoder_config.get("drop_rate", 0.5),
-            fast=encoder_config.get("fast", False),
         )
         decoder = SLP(in_channels=encoder_config["out_channels"], out_channels=1)
 

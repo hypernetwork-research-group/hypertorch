@@ -113,7 +113,6 @@ if __name__ == "__main__":
             "bias": True,
             "use_batch_normalization": False,
             "drop_rate": 0.5,
-            "fast": False,
         },
         aggregation="mean",
         lr=0.01,

@@ -1,9 +1,5 @@
-from typing import Optional
-
 from torch import Tensor, nn
-
 from hyperbench.nn import HGNNPConv
-from hyperbench.types import HyperedgeIndex
 
 
 class HGNNP(nn.Module):
@@ -20,9 +16,6 @@ class HGNNP(nn.Module):
         bias: If set to ``False``, the layer will not learn the bias parameter. Defaults to ``True``.
         use_batch_normalization: If set to ``True``, layers will use batch normalization. Defaults to ``False``.
         drop_rate: Dropout ratio. Defaults to ``0.5``.
-        fast: If set to ``True``, the HGNN+ smoothing matrix will be computed once and cached.
-            Defaults to ``False``. Since the matrix depends only on hypergraph topology,
-            caching is safe whenever the incidence structure is unchanged.
     """
 
     def __init__(
@@ -33,11 +26,8 @@ class HGNNP(nn.Module):
         bias: bool = True,
         use_batch_normalization: bool = False,
         drop_rate: float = 0.5,
-        fast: bool = False,
     ):
         super().__init__()
-        self.fast = fast
-        self.cached_hgnnp_smoothing_matrix: Optional[Tensor] = None
 
         self.layers = nn.ModuleList(
             [
@@ -62,10 +52,6 @@ class HGNNP(nn.Module):
         r"""
         Apply two stacked ``HGNNPConv`` layers to produce node embeddings.
 
-        When ``fast=True``, the HGNN+ smoothing matrix ``D_v^{-1} H D_e^{-1} H^T``
-        is computed once from ``hyperedge_index`` and cached. The cache is invalidated
-        only when ``num_nodes`` changes.
-
         Args:
             x: Input node feature matrix. Size ``(num_nodes, in_channels)``.
             hyperedge_index: Hyperedge incidence in COO format. Size ``(2, num_incidences)``,
@@ -74,25 +60,6 @@ class HGNNP(nn.Module):
         Returns:
             The output node feature matrix. Size ``(num_nodes, num_classes)``.
         """
-        if not self.fast:
-            for layer in self.layers:
-                x = layer(x, hyperedge_index)
-            return x
-
-        should_not_use_cached = (
-            self.cached_hgnnp_smoothing_matrix is None
-            or self.cached_hgnnp_smoothing_matrix.size(0) != x.size(0)
-        )
-
-        if should_not_use_cached:
-            self.cached_hgnnp_smoothing_matrix = HyperedgeIndex(
-                hyperedge_index
-            ).get_sparse_hgnnp_smoothing_matrix(num_nodes=x.size(0))
-
         for layer in self.layers:
-            x = layer(
-                x,
-                hyperedge_index,
-                hgnnp_smoothing_matrix=self.cached_hgnnp_smoothing_matrix,
-            )
+            x = layer(x, hyperedge_index)
         return x
