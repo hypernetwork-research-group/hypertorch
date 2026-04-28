@@ -481,29 +481,87 @@ def test_cat_same_node_space_drops_hyperedge_attr_when_partially_missing():
             torch.tensor([[0, 1, 2, 2, 3], [0, 0, 0, 1, 1]]),
             id="both_hyperedges",
         ),
+        pytest.param(
+            torch.tensor([0]),
+            3,
+            1,
+            torch.tensor([[0, 1, 2], [0, 0, 0]]),
+            id="subset_hyperedges",
+        ),
     ],
 )
-def test_split_counts(
+def test_split_inductive_counts(
     split_ids, expected_num_nodes, expected_num_hyperedges, expected_hyperedge_index
 ):
     x = torch.randn(4, 2)
     hyperedge_index = torch.tensor([[0, 1, 2, 2, 3], [0, 0, 0, 1, 1]])
     hdata = HData(x=x, hyperedge_index=hyperedge_index)
 
-    result = HData.split(hdata, split_hyperedge_ids=split_ids)
+    result = HData.split(
+        hdata,
+        split_hyperedge_ids=split_ids,
+        node_space_setting="inductive",
+    )
 
     assert result.num_nodes == expected_num_nodes
     assert result.num_hyperedges == expected_num_hyperedges
     assert torch.equal(result.hyperedge_index, expected_hyperedge_index)
 
 
-def test_split_subsets_node_features():
+@pytest.mark.parametrize(
+    "split_ids, expected_num_nodes, expected_num_hyperedges, expected_hyperedge_index",
+    [
+        pytest.param(
+            torch.tensor([0]), 4, 1, torch.tensor([[0, 1, 2], [0, 0, 0]]), id="first_hyperedge"
+        ),
+        pytest.param(
+            torch.tensor([1]), 4, 1, torch.tensor([[2, 3], [0, 0]]), id="second_hyperedge"
+        ),
+        pytest.param(
+            torch.tensor([0, 1]),
+            4,
+            2,
+            torch.tensor([[0, 1, 2, 2, 3], [0, 0, 0, 1, 1]]),
+            id="both_hyperedges",
+        ),
+        pytest.param(
+            torch.tensor([0]),
+            4,
+            1,
+            torch.tensor([[0, 1, 2], [0, 0, 0]]),
+            id="subset_hyperedges",
+        ),
+    ],
+)
+def test_split_transductive_counts(
+    split_ids, expected_num_nodes, expected_num_hyperedges, expected_hyperedge_index
+):
+    x = torch.randn(4, 2)
+    hyperedge_index = torch.tensor([[0, 1, 2, 2, 3], [0, 0, 0, 1, 1]])
+    hdata = HData(x=x, hyperedge_index=hyperedge_index)
+
+    result = HData.split(
+        hdata,
+        split_hyperedge_ids=split_ids,
+        node_space_setting="transductive",
+    )
+
+    assert result.num_nodes == expected_num_nodes
+    assert result.num_hyperedges == expected_num_hyperedges
+    assert torch.equal(result.hyperedge_index, expected_hyperedge_index)
+
+
+def test_split_inductive_subsets_node_features():
     x = torch.tensor([[10.0], [20.0], [30.0], [40.0], [50.0]])
     hyperedge_index = torch.tensor([[0, 1, 3, 4], [0, 0, 1, 1]])
     hdata = HData(x=x, hyperedge_index=hyperedge_index)
 
     hyperedge_ids = torch.tensor([1])  # Split by hyperedge 1, which includes nodes 3 and 4
-    result = HData.split(hdata, split_hyperedge_ids=hyperedge_ids)
+    result = HData.split(
+        hdata,
+        split_hyperedge_ids=hyperedge_ids,
+        node_space_setting="inductive",
+    )
 
     # Only nodes 3 and 4 should be included
     assert result.num_nodes == 2
@@ -522,16 +580,80 @@ def test_split_subsets_labels():
     assert torch.equal(result.y, torch.tensor([0.0]))
 
 
-def test_split_handles_none_global_node_ids():
+@pytest.mark.parametrize(
+    "node_space_setting, split_hyperedge_ids, expected_global_node_ids",
+    [
+        pytest.param(
+            "transductive",
+            torch.tensor([1]),
+            torch.arange(4),
+            id="transductive",
+        ),
+        pytest.param(
+            "inductive",
+            torch.tensor([1]),
+            torch.arange(2),
+            id="inductive",
+        ),
+    ],
+)
+def test_split_handles_none_global_node_ids(
+    node_space_setting, split_hyperedge_ids, expected_global_node_ids
+):
     x = torch.tensor([[10.0], [20.0], [30.0], [40.0]])
     hyperedge_index = torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]])
     hdata = HData(x=x, hyperedge_index=hyperedge_index)
     hdata.global_node_ids = None
 
-    result = HData.split(hdata, split_hyperedge_ids=torch.tensor([1]))
+    result = HData.split(
+        hdata,
+        split_hyperedge_ids=split_hyperedge_ids,
+        node_space_setting=node_space_setting,
+    )
 
     assert result.global_node_ids is not None
-    assert torch.equal(result.global_node_ids, torch.arange(result.num_nodes))
+    assert torch.equal(result.global_node_ids, expected_global_node_ids)
+
+
+def test_split_transductive_keeps_full_x_and_global_node_ids():
+    x = torch.tensor([[10.0], [20.0], [30.0], [40.0], [50.0]])
+    hyperedge_index = torch.tensor([[0, 2, 3, 4], [0, 0, 1, 1]])
+    global_node_ids = torch.tensor([10, 20, 30, 40, 50])
+    hdata = HData(
+        x=x,
+        hyperedge_index=hyperedge_index,
+        global_node_ids=global_node_ids,
+        y=torch.tensor([1.0, 0.0]),
+    )
+
+    result = HData.split(
+        hdata,
+        split_hyperedge_ids=torch.tensor([1]),
+        node_space_setting="transductive",
+    )
+
+    assert result.num_nodes == hdata.num_nodes
+    assert torch.equal(result.x, x)
+    assert result.global_node_ids is not None
+    assert torch.equal(result.global_node_ids, global_node_ids)
+    assert torch.equal(result.hyperedge_index, torch.tensor([[3, 4], [0, 0]]))
+    assert torch.equal(result.y, torch.tensor([0.0]))
+
+
+def test_split_transductive_handles_none_global_node_ids():
+    x = torch.tensor([[10.0], [20.0], [30.0], [40.0], [50.0]])
+    hyperedge_index = torch.tensor([[0, 2, 3, 4], [0, 0, 1, 1]])
+    hdata = HData(x=x, hyperedge_index=hyperedge_index, y=torch.tensor([1.0, 0.0]))
+    hdata.global_node_ids = None
+
+    result = HData.split(
+        hdata,
+        split_hyperedge_ids=torch.tensor([1]),
+        node_space_setting="transductive",
+    )
+
+    assert result.global_node_ids is not None
+    assert torch.equal(result.global_node_ids, torch.arange(hdata.num_nodes))
 
 
 def test_split_subsets_edge_attr():
@@ -749,6 +871,121 @@ def test_enrich_node_features_from_raises_when_target_node_missing_from_source()
         match=r"Missing node features for target global_node_ids: \[30\]\.",
     ):
         target_hdata.enrich_node_features_from(source_hdata)
+
+
+@pytest.mark.parametrize(
+    "fill_value, expected_x",
+    [
+        pytest.param(0.5, torch.tensor([[1.0, 10.0], [0.5, 0.5]]), id="scalar_fill_value"),
+        pytest.param(
+            [7.0, 8.0],
+            torch.tensor([[1.0, 10.0], [7.0, 8.0]]),
+            id="vector_fill_value",
+        ),
+        pytest.param(
+            torch.tensor([7.0, 8.0]),
+            torch.tensor([[1.0, 10.0], [7.0, 8.0]]),
+            id="tensor_fill_value",
+        ),
+        pytest.param(
+            [0.5],
+            torch.tensor([[1.0, 10.0], [0.5, 0.5]]),
+            id="missing_dimensions_scalar_vector_fill_value",
+        ),
+        pytest.param(
+            torch.tensor(0.5),
+            torch.tensor([[1.0, 10.0], [0.5, 0.5]]),
+            id="missing_dimensions_scalar_tensor_fill_value",
+        ),
+    ],
+)
+def test_enrich_node_features_from_inductive_fill_value(fill_value, expected_x):
+    source_hdata = HData(
+        x=torch.tensor([[1.0, 10.0], [2.0, 20.0]]),
+        hyperedge_index=torch.tensor([[0, 1], [0, 0]]),
+        global_node_ids=torch.tensor([10, 20]),
+    )
+    target_hdata = HData(
+        x=torch.tensor([[0.0], [0.0]]),
+        hyperedge_index=torch.tensor([[0, 1], [0, 0]]),
+        global_node_ids=torch.tensor([10, 30]),
+    )
+
+    result = target_hdata.enrich_node_features_from(
+        source_hdata,
+        node_space_setting="inductive",
+        fill_value=fill_value,
+    )
+
+    assert torch.equal(result.x, expected_x)
+
+
+def test_enrich_node_features_from_inductive_raises_without_fill_value():
+    source_hdata = HData(
+        x=torch.tensor([[1.0, 10.0], [2.0, 20.0]]),
+        hyperedge_index=torch.tensor([[0, 1], [0, 0]]),
+        global_node_ids=torch.tensor([10, 20]),
+    )
+    target_hdata = HData(
+        x=torch.tensor([[0.0], [0.0]]),
+        hyperedge_index=torch.tensor([[0, 1], [0, 0]]),
+        global_node_ids=torch.tensor([10, 30]),
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="fill_value must be provided when node_space_setting='inductive'.",
+    ):
+        target_hdata.enrich_node_features_from(
+            source_hdata,
+            node_space_setting="inductive",
+        )
+
+
+def test_enrich_node_features_from_transductive_raises_when_fill_value_provided():
+    source_hdata = HData(
+        x=torch.tensor([[1.0, 10.0], [2.0, 20.0]]),
+        hyperedge_index=torch.tensor([[0, 1], [0, 0]]),
+        global_node_ids=torch.tensor([10, 20]),
+    )
+    target_hdata = HData(
+        x=torch.tensor([[0.0]]),
+        hyperedge_index=torch.tensor([[0], [0]]),
+        global_node_ids=torch.tensor([10]),
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="fill_value cannot be provided when node_space_setting='transductive'.",
+    ):
+        target_hdata.enrich_node_features_from(
+            source_hdata,
+            node_space_setting="transductive",
+            fill_value=0.0,
+        )
+
+
+def test_enrich_node_features_from_non_transductive_raises_on_fill_value_shape_mismatch():
+    source_hdata = HData(
+        x=torch.tensor([[1.0, 10.0], [2.0, 20.0]]),
+        hyperedge_index=torch.tensor([[0, 1], [0, 0]]),
+        global_node_ids=torch.tensor([10, 20]),
+    )
+    target_hdata = HData(
+        x=torch.tensor([[0.0], [0.0]]),
+        hyperedge_index=torch.tensor([[0, 1], [0, 0]]),
+        global_node_ids=torch.tensor([10, 30]),
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=r"Expected fill_value to define exactly 2 features, got shape \(3,\)\.",
+    ):
+        target_hdata.enrich_node_features_from(
+            source_hdata,
+            node_space_setting="inductive",
+            fill_value=[1.0, 2.0, 3.0],
+        )
 
 
 def test_enrich_hyperedge_weights_replace():

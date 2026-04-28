@@ -1057,6 +1057,31 @@ def test_enrich_node_features_from_propagates_hdata_validation_errors():
         target_dataset.enrich_node_features_from(source_dataset)
 
 
+def test_enrich_node_features_from_dataset_with_fill_value():
+    source_dataset = Dataset.from_hdata(
+        HData(
+            x=torch.tensor([[1.0, 10.0], [2.0, 20.0]]),
+            hyperedge_index=torch.tensor([[0, 1], [0, 0]]),
+            global_node_ids=torch.tensor([10, 20]),
+        )
+    )
+    target_dataset = Dataset.from_hdata(
+        HData(
+            x=torch.tensor([[0.0], [0.0]]),
+            hyperedge_index=torch.tensor([[0, 1], [0, 0]]),
+            global_node_ids=torch.tensor([10, 30]),
+        )
+    )
+
+    target_dataset.enrich_node_features_from(
+        source_dataset,
+        node_space_setting="inductive",
+        fill_value=[7.0, 8.0],
+    )
+
+    assert torch.equal(target_dataset.hdata.x, torch.tensor([[1.0, 10.0], [7.0, 8.0]]))
+
+
 def test_enrich_hyperedge_attr_replace(mock_hdata):
     dataset = Dataset.from_hdata(mock_hdata)
 
@@ -1273,6 +1298,89 @@ def test_split_without_edge_attr(mock_no_edge_attr_hypergraph):
 
     for split in splits:
         assert split.hdata.hyperedge_attr is None
+
+
+def test_split_transductive_default_preserves_first_split_node_space():
+    hdata = HData(
+        x=torch.arange(4, dtype=torch.float).unsqueeze(1),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3], [0, 1, 2, 3]]),
+        global_node_ids=torch.tensor([100, 200, 300, 400]),
+    )
+    dataset = Dataset.from_hdata(hdata)
+
+    train_dataset, test_dataset = dataset.split([0.75, 0.25])
+
+    assert train_dataset.hdata.num_nodes == dataset.hdata.num_nodes
+    assert torch.equal(train_dataset.hdata.x, dataset.hdata.x)
+    assert test_dataset.hdata.num_nodes == 1
+
+
+def test_split_transductive_all_preserves_all_split_node_spaces():
+    hdata = HData(
+        x=torch.arange(4, dtype=torch.float).unsqueeze(1),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3], [0, 1, 2, 3]]),
+        global_node_ids=torch.tensor([100, 200, 300, 400]),
+    )
+    dataset = Dataset.from_hdata(hdata)
+
+    train_dataset, test_dataset = dataset.split(
+        [0.75, 0.25],
+        node_space_setting="transductive",
+        assign_node_space_to="all",
+    )
+
+    assert train_dataset.hdata.num_nodes == dataset.hdata.num_nodes
+    assert test_dataset.hdata.num_nodes == dataset.hdata.num_nodes
+    assert torch.equal(train_dataset.hdata.x, dataset.hdata.x)
+    assert torch.equal(test_dataset.hdata.x, dataset.hdata.x)
+
+
+def test_split_raises_when_node_space_provided_with_transductive_disabled():
+    hdata = HData(
+        x=torch.arange(4, dtype=torch.float).unsqueeze(1),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3], [0, 1, 2, 3]]),
+        global_node_ids=torch.tensor([100, 200, 300, 400]),
+    )
+    dataset = Dataset.from_hdata(hdata)
+
+    with pytest.raises(
+        ValueError,
+        match="assign_node_space_to can only be provided when node_space_setting='transductive'.",
+    ):
+        dataset.split(
+            [0.75, 0.25],
+            node_space_setting="inductive",
+            assign_node_space_to="first",
+        )
+
+
+def test_nested_transductive_split_supports_train_feature_reuse():
+    hdata = HData(
+        x=torch.arange(4, dtype=torch.float).unsqueeze(1),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3], [0, 1, 2, 3]]),
+        global_node_ids=torch.tensor([100, 200, 300, 400]),
+    )
+    dataset = Dataset.from_hdata(hdata)
+
+    train_dataset, test_dataset = dataset.split(
+        [0.75, 0.25],
+        node_space_setting="transductive",
+    )
+    train_dataset, val_dataset = train_dataset.split(
+        [2 / 3, 1 / 3],
+        node_space_setting="transductive",
+    )
+
+    enricher = MagicMock(spec=NodeEnricher)
+    enricher.enrich.return_value = torch.tensor(
+        [[10.0, 11.0], [20.0, 21.0], [30.0, 31.0], [40.0, 41.0]]
+    )
+    train_dataset.enrich_node_features(enricher, enrichment_mode="replace")
+    val_dataset.enrich_node_features_from(train_dataset)
+    test_dataset.enrich_node_features_from(train_dataset)
+
+    assert torch.equal(val_dataset.hdata.x, torch.tensor([[30.0, 31.0]]))
+    assert torch.equal(test_dataset.hdata.x, torch.tensor([[40.0, 41.0]]))
 
 
 def test_to_device(mock_hdata):

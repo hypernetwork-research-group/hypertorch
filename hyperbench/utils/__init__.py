@@ -15,6 +15,16 @@ from .nn_utils import (
     is_input_layer,
     is_layer,
 )
+from .node_utils import (
+    NodeSpaceAssignment,
+    NodeSpaceFiller,
+    NodeSpaceSetting,
+    is_assigned_to_all,
+    is_assigned_to_first,
+    is_inductive_setting,
+    is_transductive_setting,
+    is_transductive_split,
+)
 from .sparse_utils import sparse_dropout
 
 __all__ = [
@@ -23,9 +33,17 @@ __all__ = [
     "NormalizationFn",
     "Aggregation",
     "Stage",
+    "NodeSpaceAssignment",
+    "NodeSpaceFiller",
+    "NodeSpaceSetting",
     "empty_edgeattr",
     "empty_hyperedgeindex",
     "empty_nodefeatures",
+    "is_assigned_to_all",
+    "is_assigned_to_first",
+    "is_inductive_setting",
+    "is_transductive_setting",
+    "is_transductive_split",
     "is_input_layer",
     "is_layer",
     "sparse_dropout",

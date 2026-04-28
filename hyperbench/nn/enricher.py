@@ -289,13 +289,27 @@ class Node2VecEnricher(NodeEnricher):
 
 
 class LaplacianPositionalEncodingEnricher(NodeEnricher):
+    """
+    Enrich node features with Laplacian Positional Encodings computed from the symmetric normalized Laplacian of the clique expansion of the hypergraph.
+
+    Args:
+        num_features: Number of positional encoding features to generate for each node.
+        num_nodes: Total number of nodes in the graph. If not provided, it will be inferred from the hyperedge_index.
+            This is only needed if the hyperedge_index does not include all nodes (e.g., some isolated nodes are missing).
+            Another instance is when the setting is transductive and the hyperedge index contains some hyperedges
+            that do not contain all the nodes in the node space.
+        cache_dir: Optional directory to cache computed features. If ``None``, caching is disabled.
+    """
+
     def __init__(
         self,
         num_features: int,
+        num_nodes: int = 0,
         cache_dir: Optional[str] = None,
     ):
         super().__init__(cache_dir=cache_dir)
         self.num_features = num_features
+        self.num_nodes = num_nodes
 
     def enrich(self, hyperedge_index: Tensor) -> Tensor:
         """
@@ -313,7 +327,8 @@ class LaplacianPositionalEncodingEnricher(NodeEnricher):
         """
         edge_index = HyperedgeIndex(hyperedge_index).reduce_to_edge_index_on_clique_expansion()
         edge_index_wrapper = EdgeIndex(edge_index)
-        laplacian_matrix = edge_index_wrapper.get_sparse_normalized_laplacian()
+        num_nodes = self.num_nodes if self.num_nodes > 0 else None
+        laplacian_matrix = edge_index_wrapper.get_sparse_normalized_laplacian(num_nodes=num_nodes)
         laplacian_matrix_dense = (
             laplacian_matrix.to_dense()  # torch.linalg.eigh only works on dense tensors
         )

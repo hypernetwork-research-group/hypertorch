@@ -2,19 +2,25 @@ import json
 import os
 import tempfile
 import torch
-import zstandard as zstd
 import requests
 import warnings
+import zstandard as zstd
 
 from enum import Enum
 from huggingface_hub import hf_hub_download
 from typing import Any, Dict, List, Optional
 from torch import Tensor
 from torch.utils.data import Dataset as TorchDataset
-
-from hyperbench.nn import EnrichmentMode, NodeEnricher, HyperedgeEnricher
+from hyperbench.nn.enricher import EnrichmentMode, NodeEnricher, HyperedgeEnricher
 from hyperbench.types import HData, HIFHypergraph, HyperedgeIndex
-from hyperbench.utils import validate_hif_json
+from hyperbench.utils import (
+    NodeSpaceAssignment,
+    NodeSpaceFiller,
+    NodeSpaceSetting,
+    is_inductive_setting,
+    is_transductive_split,
+    validate_hif_json,
+)
 
 from hyperbench.data.sampling import SamplingStrategy, create_sampler_from_strategy
 
@@ -299,19 +305,41 @@ class Dataset(TorchDataset):
         """
         self.hdata = self.hdata.enrich_node_features(enricher, enrichment_mode)
 
-    def enrich_node_features_from(self, dataset_with_features: "Dataset") -> None:
+    def enrich_node_features_from(
+        self,
+        dataset_with_features: "Dataset",
+        node_space_setting: NodeSpaceSetting = "transductive",
+        fill_value: Optional[NodeSpaceFiller] = None,
+    ) -> None:
         """
-        Copy node features from another dataset by aligning features by ``global_node_ids``.
-        This is intended for transductive splits where validation or test nodes should reuse
-        features computed on the training split.
+        Enrich node features from another dataset by copying features by ``global_node_ids``.
+
+        Examples:
+            In a transductive setting, the full node space is preserved across datasets:
+            >>> val_dataset.enrich_node_features_from(train_dataset)
+
+            In inductive setting, missing node features can be filled with 0.0:
+            >>> test_dataset.enrich_node_features_from(
+            ...     train_dataset,
+            ...     node_space_setting="inductive",
+            ...     fill_value=0.0,  # torch.tensor(0.0) also works and will be broadcast to the appropriate shape
+            ... )
 
         Args:
             dataset_with_features: Source dataset providing node features.
+            node_space_setting: The setting for the node space, determining how nodes are handled.
+                ``transductive`` (default) preserves the full node space of the target dataset.
+                ``inductive`` allows the target dataset to have a different node space, filling missing features with ``fill_value``.
+            fill_value: Scalar or vector used to fill missing node features when ``node_space_setting`` is not transductive.
 
         Raises:
             ValueError: If the source dataset's node features cannot be aligned with the target dataset's nodes.
         """
-        self.hdata = self.hdata.enrich_node_features_from(dataset_with_features.hdata)
+        self.hdata = self.hdata.enrich_node_features_from(
+            hdata_with_features=dataset_with_features.hdata,
+            node_space_setting=node_space_setting,
+            fill_value=fill_value,
+        )
 
     def enrich_hyperedge_attr(
         self,
@@ -369,28 +397,49 @@ class Dataset(TorchDataset):
         ratios: List[float],
         shuffle: Optional[bool] = False,
         seed: Optional[int] = None,
+        node_space_setting: NodeSpaceSetting = "transductive",
+        assign_node_space_to: Optional[NodeSpaceAssignment] = "first",
     ) -> List["Dataset"]:
         """
-        Split the dataset by hyperedges into partitions with contiguous 0-based IDs.
+        Split the dataset by hyperedges into partitions with contiguous 0-based hyperedge IDs.
 
         Boundaries are computed using cumulative floor to prevent early splits from
         over-consuming edges. The last split absorbs any rounding remainder.
 
         Examples:
-            With ``num_hyperedges = 3`` and ``ratios = [0.5, 0.25, 0.25]``:
+            Transductive split keeping the full node space only on the first split (default):
+            >>> train, test = dataset.split([0.8, 0.2])
+            >>> train.hdata.num_nodes == dataset.hdata.num_nodes
+            >>> test.hdata.num_nodes <= dataset.hdata.num_nodes
 
-            >>> cumulative_ratios = [0.5, 0.75, 1.0]
+            Transductive split keeping the full node space on all splits:
+            >>> train, test = dataset.split(
+            ...     [0.8, 0.2],
+            ...     node_space_setting="transductive",
+            ...     assign_node_space_to="all",
+            ... )
+            >>> train.hdata.num_nodes == dataset.hdata.num_nodes
+            >>> test.hdata.num_nodes == dataset.hdata.num_nodes
 
-            Boundaries:
-
-            - ``i=0`` -> ``end = int(0.5 * 3) = 1`` -> slice ``[0:1]`` -> 1 edge
-            - ``i=1`` -> ``end = int(0.75 * 3) = 2`` -> slice ``[1:2]`` -> 1 edge
-            - ``i=2`` -> ``end = 3`` (clamped) -> slice ``[2:3]`` -> 1 edge
+            Inductive split:
+            >>> train, test = dataset.split(
+            ...     [0.8, 0.2],
+            ...     node_space_setting="inductive",
+            ...     assign_node_space_to=None,
+            ... )
+            >>> train.hdata.num_nodes <= dataset.hdata.num_nodes
+            >>> test.hdata.num_nodes <= dataset.hdata.num_nodes
 
         Args:
             ratios: List of floats summing to ``1.0``, e.g., ``[0.8, 0.1, 0.1]``.
             shuffle: Whether to shuffle hyperedges before splitting. Defaults to ``False`` for deterministic splits.
             seed: Optional random seed for reproducibility. Ignored if shuffle is set to ``False``.
+            node_space_setting: Whether to preserve the full node space in the splits.
+                ``transductive`` (default) ensures all nodes are present in every split,
+                while ``inductive`` allows splits to have disjoint node spaces.
+            assign_node_space_to: Which split(s) preserve the full node space when
+                ``node_space_setting="transductive"``.
+                ``first`` preserves only the first returned split. ``all`` preserves all splits.
 
         Returns:
             List of Dataset objects, one per split, each with contiguous IDs.
@@ -401,6 +450,10 @@ class Dataset(TorchDataset):
         #          ratios = [0.8, 0.1, 0.1, 0.0000001] -> sum = 1.0000001 (valid, allows small imprecision)
         if abs(sum(ratios) - 1.0) > 1e-6:
             raise ValueError(f"Split ratios must sum to 1.0, got {sum(ratios)}.")
+        if is_inductive_setting(node_space_setting) and assign_node_space_to is not None:
+            raise ValueError(
+                "assign_node_space_to can only be provided when node_space_setting='transductive'."
+            )
 
         device = self.hdata.device
         num_hyperedges = self.hdata.num_hyperedges
@@ -437,7 +490,16 @@ class Dataset(TorchDataset):
             #          i=1 -> permutation[1:2] = [1] (1 edge)
             #          i=2 -> permutation[2:3] = [2] (1 edge)
             split_hyperedge_ids = hyperedge_ids_permutation[start:end]
-            split_hdata = HData.split(self.hdata, split_hyperedge_ids).to(device=device)
+
+            use_transductive_node_space = is_transductive_split(
+                node_space_setting, assign_node_space_to, split_num=i
+            )
+            split_hdata = HData.split(
+                self.hdata,
+                split_hyperedge_ids,
+                node_space_setting="transductive" if use_transductive_node_space else "inductive",
+            ).to(device=device)
+
             split_dataset = self.__class__(
                 hdata=split_hdata,
                 sampling_strategy=self.sampling_strategy,

@@ -2,9 +2,17 @@ import torch
 
 from torch import Tensor
 from typing import Optional, Sequence, Dict, Any
-from hyperbench.utils import empty_hyperedgeindex, empty_nodefeatures
-from hyperbench.nn.enricher import EnrichmentMode, NodeEnricher, HyperedgeEnricher
+from hyperbench.utils import (
+    NodeSpaceFiller,
+    NodeSpaceSetting,
+    empty_hyperedgeindex,
+    empty_nodefeatures,
+    is_inductive_setting,
+    is_transductive_setting,
+    to_0based_ids,
+)
 
+from hyperbench.nn.enricher import EnrichmentMode, NodeEnricher, HyperedgeEnricher
 from hyperbench.types.hypergraph import HyperedgeIndex
 
 
@@ -217,23 +225,33 @@ class HData:
         )
 
     @classmethod
-    def split(cls, hdata: "HData", split_hyperedge_ids: Tensor) -> "HData":
+    def split(
+        cls,
+        hdata: "HData",
+        split_hyperedge_ids: Tensor,
+        node_space_setting: NodeSpaceSetting = "transductive",
+    ) -> "HData":
         """
         Build an :class:`HData` for a single split from the given hyperedge IDs.
 
         Examples:
-            >>> hyperedge_index = [[0, 0, 1, 2, 3, 4],
-            ...                    [0, 0, 0, 1, 2, 2]]
-            >>> split_hyperedge_ids = [0, 2]
-            >>> new_hyperedge_index = [[0, 0, 1, 2, 3],  # nodes 0 -> 0, 1 -> 1, 3 -> 2, 4 -> 3 (remapped to 0-based)
-            ...                        [0, 0, 0, 1, 1]]  # hyperedges 0 -> 0, 2 -> 1 (remapped to 0-based)
-            >>> new_x = [x[0], x[1], x[3], x[4]]
-            >>> new_hyperedge_attr = [hyperedge_attr[0], hyperedge_attr[2]]
-            >>> new_hyperedge_weights = [hyperedge_weights[0], hyperedge_weights[2]]
+            Transductive split (default) preserving the full node space:
+            >>> split_hdata = HData.split(hdata, torch.tensor([1]), node_space_setting="transductive")
+            >>> split_hdata.x.shape[0] == hdata.x.shape[0]
+            >>> split_hdata.hyperedge_index
+            ... # node IDs stay in the original row space, hyperedge IDs are rebased
+
+            Inductive split:
+            >>> split_hdata = HData.split(hdata, torch.tensor([1]), node_space_setting="inductive")
+            >>> split_hdata.x.shape[0]  # only nodes incident to hyperedge 1
+            ... 2
 
         Args:
             hdata: The original :class:`HData` containing the full hypergraph.
             split_hyperedge_ids: Tensor of hyperedge IDs to include in this split.
+            node_space_setting: Whether to preserve the full node space in the splits.
+                ``transductive`` (default) ensures all nodes are present in every split,
+                while ``inductive`` allows splits to have disjoint node spaces.
 
         Returns:
             The splitted instance with remapped node and hyperedge IDs.
@@ -248,44 +266,71 @@ class HData:
         # Example: hyperedge_index = [[0, 0, 1, 3, 4],
         #                             [0, 0, 0, 2, 2]]
         #          incidence [2, 1] is missing as 1 is not in split_hyperedge_ids = [0, 2]
-        split_hyperedge_index = hdata.hyperedge_index[:, keep_mask]
+        split_hyperedge_index = hdata.hyperedge_index[:, keep_mask].clone()
+
+        # Example: split_hyperedge_index = [[2, 3, 4],
+        #                                   [2, 2, 5]]
+        #          -> split_unique_hyperedge_ids = [2, 5]
+        split_unique_hyperedge_ids = split_hyperedge_index[1].unique()
+
+        split_y = hdata.y[split_unique_hyperedge_ids]
+
+        split_hyperedge_attr = None
+        if hdata.hyperedge_attr is not None:
+            split_hyperedge_attr = hdata.hyperedge_attr[split_unique_hyperedge_ids]
+
+        split_hyperedge_weights = None
+        if hdata.hyperedge_weights is not None:
+            split_hyperedge_weights = hdata.hyperedge_weights[split_unique_hyperedge_ids]
+
+        # We don't need to split nodes, so we split only hyperedges and rebase their IDs to 0-based
+        if is_transductive_setting(node_space_setting):
+            # Example: split_unique_hyperedge_ids = [2, 5]
+            #          -> hyperedge 2 -> 0, hyperedge 5 -> 1
+            split_hyperedge_index[1] = to_0based_ids(
+                original_ids=split_hyperedge_index[1],
+                ids_to_rebase=split_unique_hyperedge_ids,
+            )
+            return cls(
+                x=hdata.x,
+                hyperedge_index=split_hyperedge_index,
+                hyperedge_weights=split_hyperedge_weights,
+                hyperedge_attr=split_hyperedge_attr,
+                num_nodes=hdata.num_nodes,
+                num_hyperedges=len(split_unique_hyperedge_ids),
+                global_node_ids=hdata.global_node_ids,
+                y=split_y,
+            )
 
         # Example: split_hyperedge_index = [[0, 0, 1, 3, 4],
         #                                   [0, 0, 0, 2, 2]]
         #          -> split_unique_node_ids = [0, 1, 3, 4]
-        #          -> split_unique_hyperedge_ids = [0, 2]
         split_unique_node_ids = split_hyperedge_index[0].unique()
-        split_unique_hyperedge_ids = split_hyperedge_index[1].unique()
 
-        split_hyperedge_index_wrapper = HyperedgeIndex(split_hyperedge_index).to_0based(
-            node_ids_to_rebase=split_unique_node_ids,
-            hyperedge_ids_to_rebase=split_unique_hyperedge_ids,
+        split_hyperedge_index = (
+            HyperedgeIndex(split_hyperedge_index)
+            .to_0based(
+                node_ids_to_rebase=split_unique_node_ids,
+                hyperedge_ids_to_rebase=split_unique_hyperedge_ids,
+            )
+            .item
         )
 
-        new_x = hdata.x[split_unique_node_ids]
-        new_global_node_ids = None
+        split_x = hdata.x[split_unique_node_ids]
+
+        split_global_node_ids = None
         if hdata.global_node_ids is not None:
-            new_global_node_ids = hdata.global_node_ids[split_unique_node_ids]
-        new_y = hdata.y[split_unique_hyperedge_ids]
-
-        # Subset hyperedge_attr if present
-        new_hyperedge_attr = None
-        if hdata.hyperedge_attr is not None:
-            new_hyperedge_attr = hdata.hyperedge_attr[split_unique_hyperedge_ids]
-
-        new_hyperedge_weights = None
-        if hdata.hyperedge_weights is not None:
-            new_hyperedge_weights = hdata.hyperedge_weights[split_unique_hyperedge_ids]
+            split_global_node_ids = hdata.global_node_ids[split_unique_node_ids]
 
         return cls(
-            x=new_x,
-            hyperedge_index=split_hyperedge_index_wrapper.item,
-            hyperedge_weights=new_hyperedge_weights,
-            hyperedge_attr=new_hyperedge_attr,
+            x=split_x,
+            hyperedge_index=split_hyperedge_index,
+            hyperedge_weights=split_hyperedge_weights,
+            hyperedge_attr=split_hyperedge_attr,
             num_nodes=len(split_unique_node_ids),
             num_hyperedges=len(split_unique_hyperedge_ids),
-            global_node_ids=new_global_node_ids,
-            y=new_y,
+            global_node_ids=split_global_node_ids,
+            y=split_y,
         )
 
     def enrich_node_features(
@@ -321,21 +366,47 @@ class HData:
             y=self.y,
         )
 
-    def enrich_node_features_from(self, hdata_with_features: "HData") -> "HData":
+    def enrich_node_features_from(
+        self,
+        hdata_with_features: "HData",
+        node_space_setting: NodeSpaceSetting = "transductive",
+        fill_value: Optional[NodeSpaceFiller] = None,
+    ) -> "HData":
         """
         Copy node features from another :class:`HData` by aligning features by ``global_node_ids``.
-        This is intended for transductive splits where validation or test nodes should reuse
-        features computed on the training split.
+
+        Examples:
+            Transductive enrichment (default) expecting the same node space in both source and target:
+            >>> target = target.enrich_node_features_from(source, node_space_setting="transductive")
+
+            Inductive with a scalar fill value:
+            >>> target = target.enrich_node_features_from(
+            ...     source,
+            ...     node_space_setting="inductive",
+            ...     fill_value=0.0,
+            ... )
+
+            Inductive with a feature vector fill value:
+            >>> target = target.enrich_node_features_from(
+            ...     source,
+            ...     node_space_setting="inductive",
+            ...     fill_value=[0.0, 1.0, 0.0],
+            ... )
 
         Args:
             hdata_with_features: Source :class:`HData` providing node features.
+            node_space_setting: The setting for the node space, determining how nodes are handled.
+                If ``"transductive"``, every target node is expected to exist in the source.
+                If ``"inductive"``, the target dataset may have a different node space, and missing nodes are filled using ``fill_value``.
+            fill_value: Scalar or vector used to fill missing node features when ``node_space_setting`` is not transductive.
 
         Returns:
             A new :class:`HData` with node features copied from ``hdata_with_features``.
 
         Raises:
             ValueError: If either instance lacks ``global_node_ids``, if the source feature rows
-                do not align with the source node IDs, or if the target contains node IDs missing from the source.
+                do not align with the source node IDs, if ``fill_value`` is used with
+                ``node_space_setting="transductive"``, or if ``fill_value`` is missing or malformed when ``node_space_setting="inductive"``.
         """
         source_global_node_ids = hdata_with_features.global_node_ids
         source_x = hdata_with_features.x
@@ -347,6 +418,7 @@ class HData:
             raise ValueError(
                 "Expected hdata_with_features.x rows to align with hdata_with_features.global_node_ids."
             )
+        self.__validate_node_space_setting(node_space_setting, fill_value)
 
         target_global_node_ids = self.global_node_ids.detach().cpu().tolist()
 
@@ -359,30 +431,44 @@ class HData:
             )
         }
 
-        # A node is missing if it appears in the target global node IDs but not in the source global node IDs
-        missing_global_node_ids = [
-            int(global_node_id)
-            for global_node_id in target_global_node_ids
-            if int(global_node_id) not in source_feature_idx_by_global_node_id
-        ]
-        # There should be no missing global node IDs, as the target
-        # should be a subset of the source in a transductive setting
+        fill_features = self.__to_fill_features(
+            fill_value=fill_value,
+            num_features=int(source_x.size(1)),
+            dtype=source_x.dtype,
+            device=source_x.device,
+        )
+
+        enriched_rows = []
+        missing_global_node_ids = []
+        for global_node_id in target_global_node_ids:
+            source_feature_idx = source_feature_idx_by_global_node_id.get(int(global_node_id))
+            if source_feature_idx is None:
+                # Example: global_node_id = 30 is not present in the source
+                #          -> strict transductive mode records it as missing and then raises an error
+                #          -> non-transductive mode fills the features with fill_value and continues enriching the other nodes
+                if is_transductive_setting(node_space_setting):
+                    missing_global_node_ids.append(
+                        int(global_node_id)
+                    )  # record missing node for error message
+                else:
+                    enriched_rows.append(
+                        fill_features
+                    )  # fill missing node features with fill_value and
+                continue
+
+            # Match the global node IDs in the target to the corresponding feature indices in the source
+            # Example: source_global_node_ids = [10, 20, 30], source_x has shape (3, num_features)
+            #          target_global_node_ids = [10, 30]
+            #          -> source_feature_idx_by_global_node_id = {10: 0, 20: 1, 30: 2}
+            #          -> pick source_x rows 0 and 2 for the target
+            enriched_rows.append(source_x[source_feature_idx])
+
         if len(missing_global_node_ids) > 0:
             raise ValueError(
                 f"Missing node features for target global_node_ids: {missing_global_node_ids}."
             )
 
-        # Match the global node IDs in the target to the corresponding feature indices in the source
-        # Example: source_global_node_ids = [10, 20, 30], source_x has shape (3, num_features)
-        #          target_global_node_ids = [10, 30]
-        #          -> source_feature_idx_by_global_node_id = {10: 0, 20: 1, 30: 2}
-        #          -> source_feature_idx_in_target = [0, 2] to select the correct rows from source_x
-        source_feature_idx_in_target = [
-            source_feature_idx_by_global_node_id[int(global_node_id)]
-            for global_node_id in target_global_node_ids
-        ]
-
-        enriched_x = source_x[source_feature_idx_in_target].to(device=self.device)
+        enriched_x = torch.stack(enriched_rows, dim=0).to(device=self.device)
 
         return self.__class__(
             x=enriched_x,
@@ -751,3 +837,47 @@ class HData:
             "distribution_node_degree_hist": distribution_node_degree_hist,
             "distribution_hyperedge_size_hist": distribution_hyperedge_size_hist,
         }
+
+    def __to_fill_features(
+        self,
+        fill_value: Optional[NodeSpaceFiller],
+        num_features: int,
+        dtype: torch.dtype,
+        device: torch.device,
+    ) -> Tensor:
+        if fill_value is None:
+            return torch.empty((0,), dtype=dtype, device=device)
+
+        if isinstance(fill_value, Tensor):
+            fill_features = fill_value.to(dtype=dtype, device=device)
+        elif isinstance(fill_value, (int, float)):
+            fill_features = torch.full(
+                (num_features,), float(fill_value), dtype=dtype, device=device
+            )
+        else:
+            fill_features = torch.tensor(fill_value, dtype=dtype, device=device)
+
+        # This can happen when fill_value is:
+        # - A scalar tensor, e.g., tensor(0.0), which should be broadcasted to all features
+        # - A list with a single value, e.g., [0.0], which should also be broadcasted to all features
+        if fill_features.numel() == 1:
+            fill_features = fill_features.repeat(num_features)
+
+        if fill_features.dim() != 1 or fill_features.numel() != num_features:
+            raise ValueError(
+                f"Expected fill_value to define exactly {num_features} features, got shape "
+                f"{tuple(fill_features.shape)}."
+            )
+        return fill_features
+
+    def __validate_node_space_setting(
+        self,
+        node_space_setting: NodeSpaceSetting,
+        fill_value: Optional[NodeSpaceFiller],
+    ) -> None:
+        if is_transductive_setting(node_space_setting) and fill_value is not None:
+            raise ValueError(
+                "fill_value cannot be provided when node_space_setting='transductive'."
+            )
+        if is_inductive_setting(node_space_setting) and fill_value is None:
+            raise ValueError("fill_value must be provided when node_space_setting='inductive'.")

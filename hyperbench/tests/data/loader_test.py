@@ -328,7 +328,8 @@ def test_collate_sample_full_hypergraph_returns_cached_hdata(mock_dataset_single
     assert torch.equal(batched.x, expected_hdata.x)
     assert torch.equal(batched.hyperedge_index, expected_hdata.hyperedge_index)
     assert torch.equal(
-        utils.to_non_empty_edgeattr(batched.hyperedge_attr), expected_hdata.hyperedge_attr
+        utils.to_non_empty_edgeattr(batched.hyperedge_attr),
+        utils.to_non_empty_edgeattr(expected_hdata.hyperedge_attr),
     )
 
 
