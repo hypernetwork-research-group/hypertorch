@@ -16,6 +16,17 @@ from hyperbench.nn.enricher import EnrichmentMode, NodeEnricher, HyperedgeEnrich
 from hyperbench.types.hypergraph import HyperedgeIndex
 
 
+def _clone_optional(t: Optional[Tensor]) -> Optional[Tensor]:
+    """Clone ``t`` defensively, or return ``None`` if it is ``None``.
+
+    Used by the :class:`HData` "return a new instance" helpers so that
+    derived instances don't share mutable tensor storage with their source.
+    Mutating a tensor on the returned object must not silently mutate the
+    same tensor on the original (issue #172).
+    """
+    return None if t is None else t.clone()
+
+
 class HData:
     """
     Container for hypergraph data.
@@ -149,7 +160,15 @@ class HData:
                 "Overlapping hyperedge IDs found across instances. Ensure each instance uses distinct hyperedge IDs."
             )
 
-        new_x = x if x is not None else max(hdatas, key=lambda hdata: hdata.num_nodes).x
+        # When x is taken from one of the inputs we clone it so the returned
+        # HData has independent storage from the source — mutations on the
+        # concatenated instance must not bleed back into the original input
+        # it was sourced from (issue #172). When the caller passes x in
+        # explicitly we trust them to own its lifetime.
+        new_x = (
+            x if x is not None
+            else max(hdatas, key=lambda hdata: hdata.num_nodes).x.clone()
+        )
         new_y = torch.cat([hdata.y for hdata in hdatas], dim=0)
         new_hyperedge_index = torch.cat([hdata.hyperedge_index for hdata in hdatas], dim=1)
 
@@ -166,6 +185,8 @@ class HData:
         new_hyperedge_weights = (
             torch.cat(hyperedge_weights, dim=0) if len(hyperedge_weights) > 0 else None
         )
+        # global_node_ids is sourced from one of the inputs, so clone it for
+        # the same reason as new_x above (issue #172).
         return cls(
             x=new_x,
             hyperedge_index=new_hyperedge_index,
@@ -173,7 +194,9 @@ class HData:
             hyperedge_attr=new_hyperedge_attr,
             num_nodes=new_x.size(0),
             num_hyperedges=new_y.size(0),
-            global_node_ids=max(hdatas, key=lambda hdata: hdata.num_nodes).global_node_ids,
+            global_node_ids=_clone_optional(
+                max(hdatas, key=lambda hdata: hdata.num_nodes).global_node_ids,
+            ),
             y=new_y,
         )
 
@@ -291,14 +314,17 @@ class HData:
                 original_ids=split_hyperedge_index[1],
                 ids_to_rebase=split_unique_hyperedge_ids,
             )
+            # x and global_node_ids are reused unchanged in transductive mode;
+            # clone them so the split instance doesn't share storage with the
+            # parent and mutations on either side stay isolated (issue #172).
             return cls(
-                x=hdata.x,
+                x=hdata.x.clone(),
                 hyperedge_index=split_hyperedge_index,
                 hyperedge_weights=split_hyperedge_weights,
                 hyperedge_attr=split_hyperedge_attr,
                 num_nodes=hdata.num_nodes,
                 num_hyperedges=len(split_unique_hyperedge_ids),
-                global_node_ids=hdata.global_node_ids,
+                global_node_ids=_clone_optional(hdata.global_node_ids),
                 y=split_y,
             )
 
@@ -355,15 +381,18 @@ class HData:
             case _:
                 x = enriched_features
 
+        # x is freshly produced (either by the enricher or by torch.cat), so
+        # it doesn't alias self.x; the rest of the tensors are cloned so the
+        # returned instance has independent storage from self (issue #172).
         return self.__class__(
             x=x,
-            hyperedge_index=self.hyperedge_index,
-            hyperedge_weights=self.hyperedge_weights,
-            hyperedge_attr=self.hyperedge_attr,
+            hyperedge_index=self.hyperedge_index.clone(),
+            hyperedge_weights=_clone_optional(self.hyperedge_weights),
+            hyperedge_attr=_clone_optional(self.hyperedge_attr),
             num_nodes=self.num_nodes,
             num_hyperedges=self.num_hyperedges,
-            global_node_ids=self.global_node_ids,
-            y=self.y,
+            global_node_ids=_clone_optional(self.global_node_ids),
+            y=_clone_optional(self.y),
         )
 
     def enrich_node_features_from(
@@ -470,15 +499,18 @@ class HData:
 
         enriched_x = torch.stack(enriched_rows, dim=0).to(device=self.device)
 
+        # enriched_x is freshly stacked so it doesn't alias either source's
+        # tensors; the remaining fields are cloned so the returned instance
+        # has independent storage from self (issue #172).
         return self.__class__(
             x=enriched_x,
-            hyperedge_index=self.hyperedge_index,
-            hyperedge_weights=self.hyperedge_weights,
-            hyperedge_attr=self.hyperedge_attr,
+            hyperedge_index=self.hyperedge_index.clone(),
+            hyperedge_weights=_clone_optional(self.hyperedge_weights),
+            hyperedge_attr=_clone_optional(self.hyperedge_attr),
             num_nodes=self.num_nodes,
             num_hyperedges=self.num_hyperedges,
-            global_node_ids=self.global_node_ids,
-            y=self.y,
+            global_node_ids=_clone_optional(self.global_node_ids),
+            y=_clone_optional(self.y),
         )
 
     def enrich_hyperedge_weights(
@@ -505,15 +537,18 @@ class HData:
             case _:
                 hyperedge_weights = enriched_weights
 
+        # hyperedge_weights is freshly produced (enricher or torch.cat). The
+        # rest of the tensors are cloned so the returned instance has
+        # independent storage from self (issue #172).
         return self.__class__(
-            x=self.x,
-            hyperedge_index=self.hyperedge_index,
+            x=self.x.clone(),
+            hyperedge_index=self.hyperedge_index.clone(),
             hyperedge_weights=hyperedge_weights,
-            hyperedge_attr=self.hyperedge_attr,
+            hyperedge_attr=_clone_optional(self.hyperedge_attr),
             num_nodes=self.num_nodes,
             num_hyperedges=self.num_hyperedges,
-            global_node_ids=self.global_node_ids,
-            y=self.y,
+            global_node_ids=_clone_optional(self.global_node_ids),
+            y=_clone_optional(self.y),
         )
 
     def enrich_hyperedge_attr(
@@ -542,15 +577,18 @@ class HData:
             case _:
                 hyperedge_attr = enriched_features
 
+        # hyperedge_attr is freshly produced (enricher or torch.cat). The
+        # rest of the tensors are cloned so the returned instance has
+        # independent storage from self (issue #172).
         return self.__class__(
-            x=self.x,
-            hyperedge_index=self.hyperedge_index,
-            hyperedge_weights=self.hyperedge_weights,
+            x=self.x.clone(),
+            hyperedge_index=self.hyperedge_index.clone(),
+            hyperedge_weights=_clone_optional(self.hyperedge_weights),
             hyperedge_attr=hyperedge_attr,
             num_nodes=self.num_nodes,
             num_hyperedges=self.num_hyperedges,
-            global_node_ids=self.global_node_ids,
-            y=self.y,
+            global_node_ids=_clone_optional(self.global_node_ids),
+            y=_clone_optional(self.y),
         )
 
     def get_device_if_all_consistent(self) -> torch.device:
@@ -668,14 +706,19 @@ class HData:
         #          -> new_y = [y[1], y[2], y[0]] = [1, 0, 1]
         new_y = self.y[permutation]
 
+        # x and global_node_ids are not changed by shuffle so they used to be
+        # passed by reference; clone them so callers can mutate the returned
+        # instance without affecting the original (issue #172). The other
+        # fields here (new_hyperedge_index, new_y, etc.) are already produced
+        # by clone/permute and don't alias self.
         return self.__class__(
-            x=self.x,
+            x=self.x.clone(),
             hyperedge_index=new_hyperedge_index,
             hyperedge_weights=new_hyperedge_weights,
             hyperedge_attr=new_hyperedge_attr,
             num_nodes=self.num_nodes,
             num_hyperedges=self.num_hyperedges,
-            global_node_ids=self.global_node_ids,
+            global_node_ids=_clone_optional(self.global_node_ids),
             y=new_y,
         )
 
@@ -718,14 +761,17 @@ class HData:
         Returns:
             A new :class:`HData` instance with the same attributes except for y, which is set to a tensor of the given value.
         """
+        # Tensors are cloned so the returned instance has independent storage —
+        # mutating its hyperedge_index, x, etc. must not bleed back into self
+        # (see issue #172).
         return self.__class__(
-            x=self.x,
-            hyperedge_index=self.hyperedge_index,
-            hyperedge_weights=self.hyperedge_weights,
-            hyperedge_attr=self.hyperedge_attr,
+            x=self.x.clone(),
+            hyperedge_index=self.hyperedge_index.clone(),
+            hyperedge_weights=_clone_optional(self.hyperedge_weights),
+            hyperedge_attr=_clone_optional(self.hyperedge_attr),
             num_nodes=self.num_nodes,
             num_hyperedges=self.num_hyperedges,
-            global_node_ids=self.global_node_ids,
+            global_node_ids=_clone_optional(self.global_node_ids),
             y=torch.full((self.num_hyperedges,), value, dtype=torch.float, device=self.device),
         )
 

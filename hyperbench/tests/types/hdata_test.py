@@ -1498,3 +1498,161 @@ def test_stats_with_empty_hdata():
     stats = empty_hdata.stats()
 
     assert stats == expected_stats
+
+
+# ---------------------------------------------------------------------------
+# Storage-isolation regression tests for issue #172.
+#
+# Methods that return a new HData used to retain references to mutable tensors
+# from the source object, so mutating the returned object also mutated the
+# original. These tests pin down the contract: derived instances must own
+# their tensor storage.
+# ---------------------------------------------------------------------------
+
+
+def _hdata_with_all_optional_fields():
+    """Build an HData populated with every optional tensor field.
+
+    Used by the storage-isolation tests so each test exercises every field
+    a derived method might re-use without cloning.
+    """
+    return HData(
+        x=torch.randn(5, 4),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3, 4, 0], [0, 0, 1, 1, 2, 2]]),
+        hyperedge_weights=torch.randn(3),
+        hyperedge_attr=torch.randn(3, 2),
+        global_node_ids=torch.tensor([10, 20, 30, 40, 50]),
+        y=torch.tensor([1.0, 0.0, 1.0]),
+    )
+
+
+def test_with_y_to_does_not_share_tensor_storage():
+    src = _hdata_with_all_optional_fields()
+    derived = src.with_y_zeros()
+
+    assert derived.x.data_ptr() != src.x.data_ptr()
+    assert derived.hyperedge_index.data_ptr() != src.hyperedge_index.data_ptr()
+    assert derived.hyperedge_weights.data_ptr() != src.hyperedge_weights.data_ptr()
+    assert derived.hyperedge_attr.data_ptr() != src.hyperedge_attr.data_ptr()
+    assert derived.global_node_ids.data_ptr() != src.global_node_ids.data_ptr()
+
+
+def test_with_y_to_mutating_derived_does_not_affect_source():
+    src = _hdata_with_all_optional_fields()
+    src_x_snapshot = src.x.clone()
+    src_hyperedge_index_snapshot = src.hyperedge_index.clone()
+
+    derived = src.with_y_zeros()
+    derived.x.add_(1.0)
+    derived.hyperedge_index.fill_(99)
+
+    assert torch.equal(src.x, src_x_snapshot)
+    assert torch.equal(src.hyperedge_index, src_hyperedge_index_snapshot)
+
+
+def test_split_transductive_does_not_share_x_or_global_node_ids():
+    src = _hdata_with_all_optional_fields()
+    src_x_snapshot = src.x.clone()
+    src_global_node_ids_snapshot = src.global_node_ids.clone()
+
+    derived = HData.split(
+        src,
+        split_hyperedge_ids=torch.tensor([1]),
+        node_space_setting="transductive",
+    )
+
+    assert derived.x.data_ptr() != src.x.data_ptr()
+    assert derived.global_node_ids.data_ptr() != src.global_node_ids.data_ptr()
+
+    derived.x.add_(1.0)
+    derived.global_node_ids.fill_(0)
+
+    assert torch.equal(src.x, src_x_snapshot)
+    assert torch.equal(src.global_node_ids, src_global_node_ids_snapshot)
+
+
+def test_cat_same_node_space_does_not_share_x_or_global_node_ids():
+    src = _hdata_with_all_optional_fields()
+    src_x_snapshot = src.x.clone()
+    src_global_node_ids_snapshot = src.global_node_ids.clone()
+
+    other = HData(
+        x=torch.randn(3, 4),
+        hyperedge_index=torch.tensor([[0, 2], [3, 3]]),
+        global_node_ids=torch.tensor([10, 30, 50]),
+        y=torch.tensor([1.0]),
+    )
+
+    derived = HData.cat_same_node_space([src, other])
+
+    # x and global_node_ids on the result come from the largest input
+    # (`src` here), so this is the case the issue calls out.
+    assert derived.x.data_ptr() != src.x.data_ptr()
+    assert derived.global_node_ids.data_ptr() != src.global_node_ids.data_ptr()
+
+    derived.x.add_(1.0)
+    derived.global_node_ids.fill_(0)
+
+    assert torch.equal(src.x, src_x_snapshot)
+    assert torch.equal(src.global_node_ids, src_global_node_ids_snapshot)
+
+
+def test_shuffle_does_not_share_x_or_global_node_ids():
+    src = _hdata_with_all_optional_fields()
+    src_x_snapshot = src.x.clone()
+    src_global_node_ids_snapshot = src.global_node_ids.clone()
+
+    derived = src.shuffle(seed=42)
+    derived.x.add_(1.0)
+    derived.global_node_ids.fill_(0)
+
+    assert torch.equal(src.x, src_x_snapshot)
+    assert torch.equal(src.global_node_ids, src_global_node_ids_snapshot)
+
+
+def test_enrich_hyperedge_weights_does_not_share_other_tensors():
+    src = _hdata_with_all_optional_fields()
+    src_x_snapshot = src.x.clone()
+    src_hyperedge_index_snapshot = src.hyperedge_index.clone()
+
+    enricher = MagicMock(spec=HyperedgeEnricher)
+    enricher.enrich.return_value = torch.tensor([0.5, 0.5, 0.5])
+
+    derived = src.enrich_hyperedge_weights(enricher)
+    derived.x.add_(1.0)
+    derived.hyperedge_index.fill_(99)
+
+    assert torch.equal(src.x, src_x_snapshot)
+    assert torch.equal(src.hyperedge_index, src_hyperedge_index_snapshot)
+
+
+def test_enrich_hyperedge_attr_does_not_share_other_tensors():
+    src = _hdata_with_all_optional_fields()
+    src_x_snapshot = src.x.clone()
+    src_hyperedge_index_snapshot = src.hyperedge_index.clone()
+
+    enricher = MagicMock(spec=HyperedgeEnricher)
+    enricher.enrich.return_value = torch.randn(3, 2)
+
+    derived = src.enrich_hyperedge_attr(enricher)
+    derived.x.add_(1.0)
+    derived.hyperedge_index.fill_(99)
+
+    assert torch.equal(src.x, src_x_snapshot)
+    assert torch.equal(src.hyperedge_index, src_hyperedge_index_snapshot)
+
+
+def test_enrich_node_features_does_not_share_other_tensors():
+    src = _hdata_with_all_optional_fields()
+    src_hyperedge_index_snapshot = src.hyperedge_index.clone()
+    src_y_snapshot = src.y.clone()
+
+    enricher = MagicMock(spec=NodeEnricher)
+    enricher.enrich.return_value = torch.randn(5, 8)
+
+    derived = src.enrich_node_features(enricher)
+    derived.hyperedge_index.fill_(99)
+    derived.y.fill_(99.0)
+
+    assert torch.equal(src.hyperedge_index, src_hyperedge_index_snapshot)
+    assert torch.equal(src.y, src_y_snapshot)
