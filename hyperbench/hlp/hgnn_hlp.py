@@ -53,7 +53,7 @@ class HGNNHlpModule(HlpModule):
         encoder_config: HGNNEncoderConfig,
         aggregation: Literal["mean", "max", "min", "sum"] = "mean",
         loss_fn: Optional[nn.Module] = None,
-        lr: float = 0.01,
+        lr: float = 0.001,
         weight_decay: float = 5e-4,
         metrics: Optional[MetricCollection] = None,
     ):
