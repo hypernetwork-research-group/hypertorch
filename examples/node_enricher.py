@@ -3,12 +3,14 @@ from hyperbench.data import AlgebraDataset, SamplingStrategy
 
 
 if __name__ == "__main__":
+    num_features = 32
+
     print("Loading and preparing dataset...")
 
     dataset = AlgebraDataset(sampling_strategy=SamplingStrategy.HYPEREDGE, prepare=True)
 
     dataset.enrich_node_features(
-        enricher=LaplacianPositionalEncodingEnricher(num_features=32),
+        enricher=LaplacianPositionalEncodingEnricher(num_features=num_features),
         enrichment_mode="replace",
     )
 
@@ -18,7 +20,7 @@ if __name__ == "__main__":
         print(f"- First 5 node features:\n {dataset.hdata.x[:5]}\n")
 
     node2vec_enricher = Node2VecEnricher(
-        num_features=32,
+        num_features=num_features,
         walk_length=20,
         context_size=10,
         num_walks_per_node=10,

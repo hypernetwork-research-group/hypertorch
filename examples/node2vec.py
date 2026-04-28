@@ -15,7 +15,7 @@ from hyperbench.types import HData, ModelConfig
 if __name__ == "__main__":
     verbose = False
     num_workers = 8
-    embedding_dim = 32
+    num_features = 32
     sampling_strategy = SamplingStrategy.HYPEREDGE
     metrics = MetricCollection(
         {
@@ -34,10 +34,14 @@ if __name__ == "__main__":
         print(f"Dataset:\n {dataset.hdata}\n")
 
     # Split dataset into train and test (80/20)
-    train_dataset, test_dataset = dataset.split(ratios=[0.8, 0.2], shuffle=True, seed=42)
+    train_dataset, test_dataset = dataset.split(
+        ratios=[0.8, 0.2], shuffle=True, seed=42, node_space_setting="transductive"
+    )
 
     # Split train into train and val (87.5/12.5 of train = 70/10 of total)
-    train_dataset, val_dataset = train_dataset.split(ratios=[0.875, 0.125], shuffle=True, seed=42)
+    train_dataset, val_dataset = train_dataset.split(
+        ratios=[0.875, 0.125], shuffle=True, seed=42, node_space_setting="transductive"
+    )
     if verbose:
         print(f"Train dataset:\n {train_dataset.hdata}\n")
         print(f"Val dataset:\n {val_dataset.hdata}\n")
@@ -73,7 +77,7 @@ if __name__ == "__main__":
     print("Computing Node2Vec embeddings from the train graph...")
 
     node2vec_enricher = Node2VecEnricher(
-        num_features=embedding_dim,
+        num_features=num_features,
         context_size=10,
         walk_length=20,
         num_walks_per_node=10,
@@ -119,7 +123,7 @@ if __name__ == "__main__":
     precomputed_node2vec_module = Node2VecHlpModule(
         encoder_config={
             "mode": "precomputed",
-            "num_features": embedding_dim,
+            "num_features": num_features,
         },
         aggregation="mean",
         lr=0.001,
@@ -131,7 +135,7 @@ if __name__ == "__main__":
     joint_node2vec_module = Node2VecHlpModule(
         encoder_config={
             "mode": "joint",
-            "num_features": embedding_dim,
+            "num_features": num_features,
             "context_size": 10,
             "walk_length": 20,
             "num_walks_per_node": 10,

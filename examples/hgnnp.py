@@ -15,6 +15,7 @@ from hyperbench.types import HData, ModelConfig
 if __name__ == "__main__":
     verbose = False
     num_workers = 8
+    num_features = 32
     sampling_strategy = SamplingStrategy.HYPEREDGE
     metrics = MetricCollection(
         {
@@ -31,8 +32,12 @@ if __name__ == "__main__":
     if verbose:
         print(f"Dataset:\n {dataset.hdata}\n")
 
-    train_dataset, test_dataset = dataset.split(ratios=[0.8, 0.2], shuffle=True, seed=42)
-    train_dataset, val_dataset = train_dataset.split(ratios=[0.875, 0.125], shuffle=True, seed=42)
+    train_dataset, test_dataset = dataset.split(
+        ratios=[0.8, 0.2], shuffle=True, seed=42, node_space_setting="transductive"
+    )
+    train_dataset, val_dataset = train_dataset.split(
+        ratios=[0.875, 0.125], shuffle=True, seed=42, node_space_setting="transductive"
+    )
     if verbose:
         print(f"Train dataset (before train/val split):\n {train_dataset.hdata}\n")
         print(f"Train dataset (after train/val split):\n {train_dataset.hdata}\n")
@@ -69,7 +74,12 @@ if __name__ == "__main__":
     print("Enriching node features...")
 
     train_dataset.enrich_node_features(
-        enricher=LaplacianPositionalEncodingEnricher(num_features=32),
+        enricher=LaplacianPositionalEncodingEnricher(
+            num_features=num_features,
+            # In transductive setting, use total number of nodes to ensure consistent encoding across splits
+            # as the train dataset contain all nodes but may have no hyperedges where they appear
+            num_nodes=train_dataset.hdata.num_nodes,
+        ),
         enrichment_mode="replace",
     )
     val_dataset.enrich_node_features_from(train_dataset)
@@ -101,7 +111,7 @@ if __name__ == "__main__":
 
     mean_hgnnp_module = HGNNPHlpModule(
         encoder_config={
-            "in_channels": 32,
+            "in_channels": num_features,
             "hidden_channels": 16,
             "out_channels": 16,
             "bias": True,
