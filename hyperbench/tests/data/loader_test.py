@@ -451,3 +451,72 @@ def test_collate_with_node_sampled_batch():
     assert torch.equal(batched.hyperedge_index, expected_hyperedge_index)
 
     assert batched.hyperedge_attr is None
+
+
+# ---------------------------------------------------------------------------
+# Storage-isolation regression tests for issue #173.
+#
+# When sample_full_hypergraph=True, DataLoader.collate() used to return
+# `self.__cached_dataset_hdata.to(batch[0].device)`. Because HData.to() is
+# in-place, that returned the cached dataset object itself — so iterating
+# the dataloader and mutating the batch (or moving it through a different
+# code path on the next iteration) silently mutated the dataset's cached
+# hdata.
+# ---------------------------------------------------------------------------
+
+
+def test_collate_sample_full_hypergraph_does_not_share_storage_with_cached_hdata(
+    mock_dataset_single_sample,
+):
+    loader = DataLoader(mock_dataset_single_sample, sample_full_hypergraph=True)
+
+    batched = loader.collate([mock_dataset_single_sample[0]])
+
+    cached: HData = mock_dataset_single_sample.hdata
+    assert batched is not cached
+    # The most-likely-mutated tensors must not share storage with the
+    # cached dataset, otherwise a downstream caller mutating the batch
+    # would corrupt the dataset.
+    assert batched.x.data_ptr() != cached.x.data_ptr()
+    assert batched.hyperedge_index.data_ptr() != cached.hyperedge_index.data_ptr()
+    assert batched.hyperedge_attr is not None
+    assert batched.hyperedge_attr.data_ptr() != cached.hyperedge_attr.data_ptr()
+
+
+def test_collate_sample_full_hypergraph_mutating_batch_does_not_affect_cached_hdata(
+    mock_dataset_single_sample,
+):
+    cached: HData = mock_dataset_single_sample.hdata
+    cached_x_snapshot = cached.x.clone()
+    cached_hyperedge_index_snapshot = cached.hyperedge_index.clone()
+    cached_hyperedge_attr_snapshot = cached.hyperedge_attr.clone()
+
+    loader = DataLoader(mock_dataset_single_sample, sample_full_hypergraph=True)
+    batched = loader.collate([mock_dataset_single_sample[0]])
+
+    batched.x.add_(1.0)
+    batched.hyperedge_index.fill_(99)
+    batched.hyperedge_attr.add_(1.0)
+
+    assert torch.equal(cached.x, cached_x_snapshot)
+    assert torch.equal(cached.hyperedge_index, cached_hyperedge_index_snapshot)
+    assert torch.equal(cached.hyperedge_attr, cached_hyperedge_attr_snapshot)
+
+
+def test_collate_sample_full_hypergraph_with_weights_isolates_weights(
+    mock_dataset_single_sample_with_weights,
+):
+    cached: HData = mock_dataset_single_sample_with_weights.hdata
+    cached_weights_snapshot = cached.hyperedge_weights.clone()
+
+    loader = DataLoader(
+        mock_dataset_single_sample_with_weights, sample_full_hypergraph=True,
+    )
+    batched = loader.collate([mock_dataset_single_sample_with_weights[0]])
+
+    assert batched.hyperedge_weights is not None
+    assert batched.hyperedge_weights.data_ptr() != cached.hyperedge_weights.data_ptr()
+
+    batched.hyperedge_weights.fill_(0.0)
+
+    assert torch.equal(cached.hyperedge_weights, cached_weights_snapshot)

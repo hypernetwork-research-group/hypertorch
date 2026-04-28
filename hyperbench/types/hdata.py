@@ -679,6 +679,33 @@ class HData:
             y=new_y,
         )
 
+    def clone(self) -> "HData":
+        """
+        Return a deep copy of this :class:`HData` with independent tensor storage.
+
+        Useful when a caller wants to mutate or device-transfer a derived
+        :class:`HData` without leaking changes back into the original — see
+        e.g. :class:`hyperbench.data.DataLoader` with
+        ``sample_full_hypergraph=True``, which historically returned the
+        cached dataset object directly and was vulnerable to in-place
+        mutation by ``HData.to`` (issue #173).
+
+        Returns:
+            A new :class:`HData` whose every tensor field is a fresh
+            ``.clone()`` of the original; ``num_nodes`` / ``num_hyperedges``
+            are passed through unchanged.
+        """
+        return self.__class__(
+            x=self.x.clone(),
+            hyperedge_index=self.hyperedge_index.clone(),
+            hyperedge_weights=self.hyperedge_weights.clone() if self.hyperedge_weights is not None else None,
+            hyperedge_attr=self.hyperedge_attr.clone() if self.hyperedge_attr is not None else None,
+            num_nodes=self.num_nodes,
+            num_hyperedges=self.num_hyperedges,
+            global_node_ids=self.global_node_ids.clone() if self.global_node_ids is not None else None,
+            y=self.y.clone(),
+        )
+
     def to(self, device: torch.device | str, non_blocking: bool = False) -> "HData":
         """
         Move all tensors to the specified device.

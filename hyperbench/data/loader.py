@@ -71,7 +71,12 @@ class DataLoader(TorchDataLoader):
             A single :class:`HData` object containing the collated data.
         """
         if self.__sample_full_hypergraph:
-            return self.__cached_dataset_hdata.to(batch[0].device)
+            # `HData.to` is in-place, so without `clone()` the dataloader
+            # would return the cached dataset object itself — meaning any
+            # downstream mutation (or device transfer through a different
+            # path on the next iteration) would silently mutate shared
+            # dataset state. See issue #173.
+            return self.__cached_dataset_hdata.clone().to(batch[0].device)
 
         collated_hyperedge_index = torch.cat([data.hyperedge_index for data in batch], dim=1)
         hyperedge_index_wrapper = HyperedgeIndex(collated_hyperedge_index).remove_duplicate_edges()
