@@ -5,7 +5,7 @@ from .hgnnp_hlp import HGNNPEncoderConfig, HGNNPHlpModule
 from .hlp import HlpModule
 from .hypergcn_hlp import HyperGCNHlpModule, HyperGCNEncoderConfig
 from .mlp_hlp import MLPHlpModule, MlpEncoderConfig
-from .node2vec_hlp import Node2VecEncoderConfig, Node2VecHlpModule
+from .node2vec_hlp import Node2VecEncoderConfig, Node2VecSLPHlpModule
 
 __all__ = [
     "CommonNeighborsHlpModule",
@@ -21,5 +21,5 @@ __all__ = [
     "MlpEncoderConfig",
     "MLPHlpModule",
     "Node2VecEncoderConfig",
-    "Node2VecHlpModule",
+    "Node2VecSLPHlpModule",
 ]

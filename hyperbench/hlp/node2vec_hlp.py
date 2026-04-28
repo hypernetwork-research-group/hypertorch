@@ -63,7 +63,7 @@ class Node2VecEncoderConfig(TypedDict):
     node2vec_loss_weight: NotRequired[float]
 
 
-class Node2VecHlpModule(HlpModule):
+class Node2VecSLPHlpModule(HlpModule):
     """
     A LightningModule for Node2Vec-based Hyperedge Link Prediction.
 

@@ -6,7 +6,7 @@ from torchmetrics.classification import (
     BinaryRecall,
 )
 from hyperbench.data import AlgebraDataset, DataLoader, SamplingStrategy
-from hyperbench.hlp import Node2VecHlpModule
+from hyperbench.hlp import Node2VecSLPHlpModule
 from hyperbench.nn import Node2VecEnricher
 from hyperbench.train import MultiModelTrainer, RandomNegativeSampler
 from hyperbench.types import HData, ModelConfig
@@ -120,7 +120,7 @@ if __name__ == "__main__":
         persistent_workers=True,
     )
 
-    precomputed_node2vec_module = Node2VecHlpModule(
+    precomputed_node2vecslp_module = Node2VecSLPHlpModule(
         encoder_config={
             "mode": "precomputed",
             "num_features": num_features,
@@ -132,7 +132,7 @@ if __name__ == "__main__":
     )
 
     train_hyperedge_index = train_dataset.hdata.hyperedge_index
-    joint_node2vec_module = Node2VecHlpModule(
+    joint_node2vecslp_module = Node2VecSLPHlpModule(
         encoder_config={
             "mode": "joint",
             "num_features": num_features,
@@ -156,17 +156,17 @@ if __name__ == "__main__":
 
     configs = [
         ModelConfig(
-            name="node2vec",
+            name="node2vecslp",
             version="precomputed",
-            model=precomputed_node2vec_module,
+            model=precomputed_node2vecslp_module,
             train_dataloader=train_loader,
             val_dataloader=val_loader,
             test_dataloader=test_loader,
         ),
         ModelConfig(
-            name="node2vec",
+            name="node2vecslp",
             version="joint",
-            model=joint_node2vec_module,
+            model=joint_node2vecslp_module,
             train_dataloader=train_loader,
             val_dataloader=val_loader,
             test_dataloader=test_loader,
