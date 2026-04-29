@@ -151,20 +151,12 @@ def _next_walk_batch(
         return next(state.cached_walk_loader_iterator)
 
 
-def _to_node2vec_walk_edge_index(
+def _to_node2vec_edge_index(
     node2vec_config: Node2VecHlpConfig,
     mode: Node2VecMode,
 ) -> Tuple[Tensor, int]:
     if "train_hyperedge_index" not in node2vec_config:
         raise ValueError(f"Node2Vec in mode {mode} requires train_hyperedge_index.")
-
-    walk_length = node2vec_config.get("walk_length", 20)
-    context_size = node2vec_config.get("context_size", 10)
-    if walk_length < context_size:
-        raise ValueError(
-            f"Expected walk_length >= context_size, got "
-            f"walk_length={walk_length}, context_size={context_size}."
-        )
 
     reduced_edge_index = HyperedgeIndex(node2vec_config["train_hyperedge_index"]).reduce(
         strategy=node2vec_config.get("graph_reduction_strategy", "clique_expansion")
@@ -172,13 +164,6 @@ def _to_node2vec_walk_edge_index(
     edge_index_wrapper = EdgeIndex(reduced_edge_index).remove_selfloops()
     num_nodes = node2vec_config.get("num_nodes", edge_index_wrapper.num_nodes)
     return edge_index_wrapper.item, num_nodes
-
-
-def _to_gcn_edge_index(hyperedge_index: Tensor, gcn_config: Node2VecGCNHlpConfig) -> Tensor:
-    reduced_edge_index = HyperedgeIndex(hyperedge_index).reduce(
-        strategy=gcn_config.get("graph_reduction_strategy", "clique_expansion")
-    )
-    return EdgeIndex(reduced_edge_index).remove_selfloops().item
 
 
 def _to_gcn_config(embedding_dim: int, gcn_hlp_config: Node2VecGCNHlpConfig) -> GCNConfig:
@@ -225,4 +210,12 @@ def _validate_global_node_ids(
             f"Expected IDs in [0, {max_acceptable_node_id}], got "
             f"[{min_global_node_id}, {max_global_node_id}]. "
             "Set encoder_config['node2vec_config']['num_nodes'] for the full stable node space."
+        )
+
+
+def _validate_walk_length_and_context_size(walk_length: int, context_size: int) -> None:
+    if walk_length < context_size:
+        raise ValueError(
+            f"Expected walk_length >= context_size, got "
+            f"walk_length={walk_length}, context_size={context_size}."
         )

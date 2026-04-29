@@ -3,7 +3,7 @@ from typing import Literal, Optional, TypedDict
 from typing_extensions import NotRequired
 from torchmetrics import MetricCollection
 from hyperbench.models import GCN, Node2VecGCN, Node2VecConfig, SLP
-from hyperbench.types import HData
+from hyperbench.types import EdgeIndex, HData, HyperedgeIndex
 from hyperbench.nn import HyperedgeAggregator
 from hyperbench.utils import Stage
 
@@ -18,9 +18,9 @@ from hyperbench.hlp.node2vec_common import (
     _next_walk_batch,
     _to_gcn_config,
     _to_node2vec_encoder,
-    _to_gcn_edge_index,
-    _to_node2vec_walk_edge_index,
+    _to_node2vec_edge_index,
     _validate_global_node_ids,
+    _validate_walk_length_and_context_size,
 )
 
 
@@ -113,7 +113,7 @@ class Node2VecGCNHlpModule(HlpModule):
         hyperedge_index: Tensor,
         global_node_ids: Optional[Tensor] = None,
     ) -> Tensor:
-        gcn_edge_index = _to_gcn_edge_index(hyperedge_index, self.gcn_hlp_config)
+        gcn_edge_index = self.__to_gcn_edge_index(hyperedge_index)
 
         if self.mode == NODE2VEC_JOINT_MODE:
             encoder = _to_node2vec_encoder(self.encoder, self.mode)
@@ -188,7 +188,12 @@ class Node2VecGCNHlpModule(HlpModule):
         gcn_config: Node2VecGCNHlpConfig,
         mode: Node2VecMode,
     ) -> Node2VecGCN:
-        edge_index, num_nodes = _to_node2vec_walk_edge_index(node2vec_config, mode)
+        _validate_walk_length_and_context_size(
+            walk_length=node2vec_config.get("walk_length", 20),
+            context_size=node2vec_config.get("context_size", 10),
+        )
+
+        edge_index, num_nodes = _to_node2vec_edge_index(node2vec_config, mode)
 
         model_node2vec_config: Node2VecConfig = {
             "edge_index": edge_index,
@@ -216,3 +221,10 @@ class Node2VecGCNHlpModule(HlpModule):
         loss = self._compute_loss(scores, labels, batch_size, stage)
         self._compute_metrics(scores, labels, batch_size, stage)
         return loss
+
+    def __to_gcn_edge_index(self, hyperedge_index: Tensor) -> Tensor:
+        graph_reduction_strategy = self.gcn_hlp_config.get(
+            "graph_reduction_strategy", "clique_expansion"
+        )
+        reduced_gcn_edge_index = HyperedgeIndex(hyperedge_index).reduce(graph_reduction_strategy)
+        return EdgeIndex(reduced_gcn_edge_index).remove_selfloops().item

@@ -1,4 +1,5 @@
 from .common_neighbors_hlp import CommonNeighborsHlpModule
+from .gcn_hlp import GCNEncoderConfig, GCNHlpModule
 from .hgnn_hlp import HGNNHlpModule, HGNNEncoderConfig
 from .hnhn_hlp import HNHNEncoderConfig, HNHNHlpModule
 from .hgnnp_hlp import HGNNPEncoderConfig, HGNNPHlpModule
@@ -19,6 +20,8 @@ __all__ = [
     "NODE2VEC_JOINT_MODE",
     "NODE2VEC_PRECOMPUTED_MODE",
     "CommonNeighborsHlpModule",
+    "GCNEncoderConfig",
+    "GCNHlpModule",
     "Node2VecGCNHlpConfig",
     "HGNNEncoderConfig",
     "HGNNHlpModule",

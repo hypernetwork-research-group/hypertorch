@@ -14,9 +14,10 @@ from hyperbench.hlp.node2vec_common import (
     Node2VecMode,
     Node2VecWalkLoaderState,
     _next_walk_batch,
-    _to_node2vec_walk_edge_index,
+    _to_node2vec_edge_index,
     _to_node2vec_encoder,
     _validate_global_node_ids,
+    _validate_walk_length_and_context_size,
 )
 
 
@@ -174,7 +175,12 @@ class Node2VecSLPHlpModule(HlpModule):
         node2vec_config: Node2VecHlpConfig,
         mode: Node2VecMode,
     ) -> Node2Vec:
-        edge_index, num_nodes = _to_node2vec_walk_edge_index(node2vec_config, mode)
+        _validate_walk_length_and_context_size(
+            walk_length=node2vec_config.get("walk_length", 20),
+            context_size=node2vec_config.get("context_size", 10),
+        )
+
+        edge_index, num_nodes = _to_node2vec_edge_index(node2vec_config, mode)
 
         return Node2Vec(
             edge_index=edge_index,
