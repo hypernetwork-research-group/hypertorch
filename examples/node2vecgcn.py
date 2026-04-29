@@ -6,7 +6,7 @@ from torchmetrics.classification import (
     BinaryRecall,
 )
 from hyperbench.data import AlgebraDataset, DataLoader, SamplingStrategy
-from hyperbench.hlp import Node2VecSLPHlpModule
+from hyperbench.hlp import Node2VecGCNHlpModule, Node2VecGCNHlpConfig
 from hyperbench.nn import Node2VecEnricher
 from hyperbench.train import MultiModelTrainer, RandomNegativeSampler
 from hyperbench.types import HData, ModelConfig
@@ -120,11 +120,25 @@ if __name__ == "__main__":
         persistent_workers=True,
     )
 
-    precomputed_node2vecslp_module = Node2VecSLPHlpModule(
+    gcn_config: Node2VecGCNHlpConfig = {
+        "out_channels": num_features,
+        "hidden_channels": num_features,
+        "num_layers": 2,
+        "drop_rate": 0.1,
+        "bias": True,
+        "improved": False,
+        "add_self_loops": True,
+        "normalize": True,
+        "cached": False,
+        "graph_reduction_strategy": "clique_expansion",
+    }
+
+    precomputed_node2vecgcn_module = Node2VecGCNHlpModule(
         encoder_config={
             "mode": "precomputed",
             "num_features": num_features,
             "node2vec_config": {},
+            "gcn_config": gcn_config,
         },
         aggregation="mean",
         lr=0.001,
@@ -133,7 +147,7 @@ if __name__ == "__main__":
     )
 
     train_hyperedge_index = train_dataset.hdata.hyperedge_index
-    joint_node2vecslp_module = Node2VecSLPHlpModule(
+    joint_node2vecgcn_module = Node2VecGCNHlpModule(
         encoder_config={
             "mode": "joint",
             "num_features": num_features,
@@ -150,6 +164,7 @@ if __name__ == "__main__":
                 "random_walk_batch_size": 128,
                 "node2vec_loss_weight": 1.0,
             },
+            "gcn_config": gcn_config,
         },
         aggregation="mean",
         lr=0.001,
@@ -159,17 +174,17 @@ if __name__ == "__main__":
 
     configs = [
         ModelConfig(
-            name="node2vecslp",
+            name="node2vecgcn",
             version="precomputed",
-            model=precomputed_node2vecslp_module,
+            model=precomputed_node2vecgcn_module,
             train_dataloader=train_loader,
             val_dataloader=val_loader,
             test_dataloader=test_loader,
         ),
         ModelConfig(
-            name="node2vecslp",
+            name="node2vecgcn",
             version="joint",
-            model=joint_node2vecslp_module,
+            model=joint_node2vecgcn_module,
             train_dataloader=train_loader,
             val_dataloader=val_loader,
             test_dataloader=test_loader,
