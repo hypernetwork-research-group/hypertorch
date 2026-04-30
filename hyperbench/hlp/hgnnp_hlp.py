@@ -7,7 +7,7 @@ from hyperbench.nn import HyperedgeAggregator
 from hyperbench.types import HData
 from hyperbench.utils import Stage
 
-from hyperbench.hlp.hlp import HlpModule
+from hyperbench.hlp.common import HlpModule
 
 
 class HGNNPEncoderConfig(TypedDict):

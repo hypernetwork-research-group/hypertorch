@@ -7,7 +7,7 @@ from hyperbench.types import HData
 from torchmetrics import MetricCollection
 from hyperbench.utils import ActivationFn, NormalizationFn, Stage
 
-from hyperbench.hlp.hlp import HlpModule
+from hyperbench.hlp.common import HlpModule
 
 
 class MlpEncoderConfig(TypedDict):

@@ -7,7 +7,7 @@ from hyperbench.nn import HyperedgeAggregator
 from hyperbench.types import EdgeIndex, HData, HyperedgeIndex
 from hyperbench.utils import ActivationFn, Stage
 
-from hyperbench.hlp.hlp import HlpModule
+from hyperbench.hlp.common import HlpModule
 
 
 class GCNEncoderConfig(TypedDict):

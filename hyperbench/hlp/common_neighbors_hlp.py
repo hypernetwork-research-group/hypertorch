@@ -1,5 +1,5 @@
 import torch
-import logging as log
+import warnings
 
 from torch import Tensor, nn
 from typing import Literal, Optional
@@ -8,7 +8,7 @@ from hyperbench.models import CommonNeighbors
 from hyperbench.types import HData, Hypergraph
 from hyperbench.utils import Aggregation, Stage
 
-from hyperbench.hlp.hlp import HlpModule
+from hyperbench.hlp.common import HlpModule
 
 
 class CommonNeighborsHlpModule(HlpModule):
@@ -57,9 +57,11 @@ class CommonNeighborsHlpModule(HlpModule):
     def on_fit_start(self) -> None:
         """Warn users if they are running unnecessary training epochs."""
         if self.trainer.max_epochs is None or self.trainer.max_epochs > 0:
-            log.warning(
+            warnings.warn(
                 f"{self.__class__.__name__} is a non-trainable heuristic model. "
-                "No optimization occurs. Set max_epochs=0 in your trainer for instant evaluation."
+                "No optimization occurs. Set max_epochs=0 in your trainer for instant evaluation.",
+                UserWarning,
+                stacklevel=2,
             )
 
     def training_step(self, batch: HData, batch_idx: int) -> Tensor:

@@ -7,7 +7,7 @@ from hyperbench.types import HData
 from hyperbench.utils import Stage
 from hyperbench.nn import HyperedgeAggregator
 
-from hyperbench.hlp.hlp import HlpModule
+from hyperbench.hlp.common import HlpModule
 from hyperbench.hlp.node2vec_common import (
     NODE2VEC_JOINT_MODE,
     Node2VecHlpConfig,

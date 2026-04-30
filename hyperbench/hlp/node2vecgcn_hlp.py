@@ -7,7 +7,7 @@ from hyperbench.types import EdgeIndex, HData, HyperedgeIndex
 from hyperbench.nn import HyperedgeAggregator
 from hyperbench.utils import Stage
 
-from hyperbench.hlp.hlp import HlpModule
+from hyperbench.hlp.common import HlpModule
 from hyperbench.hlp.node2vec_common import (
     NODE2VEC_JOINT_MODE,
     NODE2VEC_PRECOMPUTED_MODE,

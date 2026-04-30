@@ -1,14 +1,13 @@
 from typing import Literal, Optional, TypedDict
-
 from torch import Tensor, nn, optim
 from torchmetrics import MetricCollection
 from typing_extensions import NotRequired
-
-from hyperbench.hlp.hlp import HlpModule
 from hyperbench.models import HNHN, SLP
 from hyperbench.nn import HyperedgeAggregator
 from hyperbench.types import HData
 from hyperbench.utils import Stage
+
+from hyperbench.hlp.common import HlpModule
 
 
 class HNHNEncoderConfig(TypedDict):
