@@ -6,6 +6,7 @@ from .hgnnp_hlp import HGNNPEncoderConfig, HGNNPHlpModule
 from .hlp import HlpModule
 from .hypergcn_hlp import HyperGCNHlpModule, HyperGCNEncoderConfig
 from .mlp_hlp import MLPHlpModule, MlpEncoderConfig
+from .nhp_hlp import NHPEncoderConfig, NHPHlpModule, NHPRankingLoss
 from .node2vec_common import (
     NODE2VEC_JOINT_MODE,
     NODE2VEC_PRECOMPUTED_MODE,
@@ -34,6 +35,9 @@ __all__ = [
     "HyperGCNHlpModule",
     "MlpEncoderConfig",
     "MLPHlpModule",
+    "NHPEncoderConfig",
+    "NHPHlpModule",
+    "NHPRankingLoss",
     "Node2VecHlpConfig",
     "Node2VecGCNEncoderConfig",
     "Node2VecGCNHlpModule",

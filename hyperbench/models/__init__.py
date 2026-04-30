@@ -5,6 +5,7 @@ from .hnhn import HNHN
 from .hgnnp import HGNNP
 from .hypergcn import HyperGCN
 from .mlp import MLP, SLP
+from .nhp import NHP
 from .node2vec import Node2Vec, Node2VecConfig, Node2VecGCN
 
 __all__ = [
@@ -16,6 +17,8 @@ __all__ = [
     "HNHN",
     "HyperGCN",
     "MLP",
+    "NHP",
+    "NHPAggregation",
     "Node2Vec",
     "Node2VecConfig",
     "Node2VecGCN",
