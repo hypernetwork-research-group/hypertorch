@@ -4,7 +4,6 @@ from abc import ABC, abstractmethod
 from torch import Tensor
 from typing import Dict, List, Literal, Optional
 from hyperbench.types import Neighborhood, Hypergraph, HyperedgeIndex
-from hyperbench.utils import Aggregation
 
 
 class NeighborScorer(ABC):
@@ -97,11 +96,11 @@ class CommonNeighborsScorer(NeighborScorer):
             return score
 
         match self.aggregation:
-            case Aggregation.MEAN:
+            case "mean":
                 score = sum(pairwise_counts) / len(pairwise_counts)
-            case Aggregation.MIN:
+            case "min":
                 score = float(min(pairwise_counts))
-            case Aggregation.SUM:
+            case "sum":
                 score = float(sum(pairwise_counts))
 
         return score

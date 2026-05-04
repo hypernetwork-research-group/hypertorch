@@ -9,7 +9,7 @@ from hyperbench.models import NHP
 from hyperbench.types import HData
 from hyperbench.utils import ActivationFn, Stage
 
-from hyperbench.hlp.hlp import HlpModule
+from hyperbench.hlp.common import HlpModule
 
 
 class NHPEncoderConfig(TypedDict):

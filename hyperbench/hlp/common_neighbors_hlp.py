@@ -6,7 +6,7 @@ from typing import Literal, Optional
 from torchmetrics import MetricCollection
 from hyperbench.models import CommonNeighbors
 from hyperbench.types import HData, Hypergraph
-from hyperbench.utils import Aggregation, Stage
+from hyperbench.utils import Stage
 
 from hyperbench.hlp.common import HlpModule
 
@@ -25,7 +25,7 @@ class CommonNeighborsHlpModule(HlpModule):
     def __init__(
         self,
         train_hyperedge_index: Tensor,
-        aggregation: Literal["mean", "min", "sum"] = Aggregation.MEAN,
+        aggregation: Literal["mean", "min", "sum"] = "mean",
         decoder: Optional[nn.Module] = None,
         loss_fn: Optional[nn.Module] = None,
         metrics: Optional[MetricCollection] = None,
