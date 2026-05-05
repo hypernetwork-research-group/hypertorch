@@ -2,7 +2,6 @@
 
 PROJECT_NAME=hyperbench
 UV=uv
-UVX=uvx
 PYTEST=pytest
 LINTER=ruff
 TYPECHECKER=ty
@@ -30,7 +29,7 @@ format:
 
 typecheck:
 	@echo '=== Type checker ==='
-	$(UVX) $(TYPECHECKER) check
+	$(UV) run $(TYPECHECKER) check
 
 test:
 	@echo '=== Tests ==='
