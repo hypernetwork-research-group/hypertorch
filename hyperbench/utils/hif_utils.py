@@ -3,6 +3,7 @@ import json
 import requests
 
 from huggingface_hub import HfApi
+from importlib import resources
 
 HIF_SCHEMA_COMMIT_SHA = "b691a3d2ec32100c0229ebe1151e9afad015c356"
 
@@ -21,7 +22,7 @@ def validate_hif_json(filename: str) -> bool:
     try:
         schema = requests.get(url, timeout=10).json()
     except (requests.RequestException, requests.Timeout):
-        with open("../schema/hif_schema.json", "r") as f:
+        with resources.files("hyperbench.utils.schema").joinpath("hif_schema.json").open("r") as f:
             schema = json.load(f)
     validator = fastjsonschema.compile(schema)
     hiftext = json.load(open(filename, "r"))

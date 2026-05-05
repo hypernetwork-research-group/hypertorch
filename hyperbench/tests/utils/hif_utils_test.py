@@ -39,29 +39,46 @@ def test_validate_hif_json_with_url_success():
 def test_validate_hif_json_with_url_timeout_fallback():
     path_valid = f"{MOCK_BASE_PATH}/hif_compliant.json"
 
+    mock_file = mock_open(read_data='{"type": "object"}')
+    mock_path = MagicMock()
+    mock_path.open.return_value = mock_file()
+    mock_files = MagicMock()
+    mock_files.joinpath.return_value = mock_path
+
     with (
         patch("hyperbench.utils.hif_utils.requests.get") as mock_get,
-        patch("builtins.open", mock_open(read_data='{"type": "object"}')) as mock_file,
+        patch(
+            "hyperbench.utils.hif_utils.resources.files", return_value=mock_files
+        ) as mock_files_call,
     ):
         mock_get.side_effect = requests.Timeout("Connection timeout")
         validate_hif_json(path_valid)
-        # local file was opened
-        calls = [str(call) for call in mock_file.call_args_list]
-        assert any("../schema/hif_schema.json" in call for call in calls)
+
+        mock_files_call.assert_called_once_with("hyperbench.utils.schema")
+        mock_files.joinpath.assert_called_once_with("hif_schema.json")
+        mock_path.open.assert_called_once_with("r")
 
 
 def test_validate_hif_json_with_url_request_exception_fallback():
     path_valid = f"{MOCK_BASE_PATH}/hif_compliant.json"
+    mock_file = mock_open(read_data='{"type": "object"}')
+    mock_path = MagicMock()
+    mock_path.open.return_value = mock_file()
+    mock_files = MagicMock()
+    mock_files.joinpath.return_value = mock_path
 
     with (
         patch("hyperbench.utils.hif_utils.requests.get") as mock_get,
-        patch("builtins.open", mock_open(read_data='{"type": "object"}')) as mock_file,
+        patch(
+            "hyperbench.utils.hif_utils.resources.files", return_value=mock_files
+        ) as mock_files_call,
     ):
         mock_get.side_effect = requests.RequestException("Network error")
         validate_hif_json(path_valid)
-        # local file was opened
-        calls = [str(call) for call in mock_file.call_args_list]
-        assert any("../schema/hif_schema.json" in call for call in calls)
+
+        mock_files_call.assert_called_once_with("hyperbench.utils.schema")
+        mock_files.joinpath.assert_called_once_with("hif_schema.json")
+        mock_path.open.assert_called_once_with("r")
 
 
 def test_compress_to_zst_returns_non_empty_bytes(tmp_path):
