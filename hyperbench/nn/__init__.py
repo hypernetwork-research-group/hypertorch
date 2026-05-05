@@ -9,6 +9,7 @@ from .enricher import (
     LaplacianPositionalEncodingEnricher,
     Node2VecEnricher,
 )
+from .loss import NHPRankingLoss, VilLainLoss, VilLainLossParts
 from .scorer import CommonNeighborsScorer, NeighborScorer
 
 __all__ = [
@@ -27,4 +28,7 @@ __all__ = [
     "HyperedgeWeightsEnricher",
     "LaplacianPositionalEncodingEnricher",
     "Node2VecEnricher",
+    "NHPRankingLoss",
+    "VilLainLoss",
+    "VilLainLossParts",
 ]

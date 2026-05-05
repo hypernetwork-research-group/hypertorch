@@ -15,15 +15,19 @@ class HyperedgeAggregator:
     Args:
         hyperedge_index: Hyperedge incidence in COO format of size ``(2, num_incidences)``.
         node_embeddings: Node embedding matrix of size ``(num_nodes, num_channels)``.
+        num_hyperedges: Optional explicit hyperedge count.
+            When provided, the pooled output preserves empty hyperedges that do not appear in ``hyperedge_index``.
     """
 
     def __init__(
         self,
         hyperedge_index: Tensor,
         node_embeddings: Tensor,
+        num_hyperedges: Optional[int] = None,
     ):
         self.hyperedge_index_wrapper = HyperedgeIndex(hyperedge_index)
         self.node_embeddings = node_embeddings
+        self.num_hyperedges = num_hyperedges
 
     def pool(self, aggregation: Literal["max", "min", "mean", "mul", "sum"]) -> Tensor:
         """
@@ -81,11 +85,17 @@ class HyperedgeAggregator:
         #          [[max(1, 2, 3), max(10, 20, 30)],  # hyperedge 0 contains node 0, 1, 2
         #           [max(3, 4), max(30, 40)]]         # hyperedge 1 contains node 2, 3
         #          shape: (num_hyperedges, num_channels)
+        num_hyperedges = (
+            self.num_hyperedges
+            if self.num_hyperedges is not None
+            else self.hyperedge_index_wrapper.num_hyperedges
+        )
+
         return scatter(
             src=incidence_node_embeddings,
             index=self.hyperedge_index_wrapper.all_hyperedge_ids,
             dim=0,  # scatter along the hyperedge dimension
-            dim_size=self.hyperedge_index_wrapper.num_hyperedges,
+            dim_size=num_hyperedges,
             reduce=aggregation,
         )
 
