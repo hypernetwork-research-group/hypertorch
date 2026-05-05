@@ -28,7 +28,7 @@ if __name__ == "__main__":
 
     print("Loading and preparing dataset...")
 
-    dataset = AlgebraDataset(sampling_strategy=sampling_strategy, prepare=True)
+    dataset = AlgebraDataset(sampling_strategy=sampling_strategy)
     if verbose:
         print(f"Dataset:\n {dataset.hdata}\n")
 
