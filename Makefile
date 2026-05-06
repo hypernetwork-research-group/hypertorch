@@ -9,8 +9,8 @@ UV=uv
 PYTEST=pytest
 LINTER=ruff
 TYPECHECKER=ty
-MKDOCS_CONFIG=.github/mkdocs.yml
-MKDOCS_URL=http://127.0.0.1:8000
+ZENSICAL_CONFIG=zensical.toml
+DOCS_ADDR=127.0.0.1:8000
 
 all: clean setup check test
 
@@ -76,11 +76,11 @@ docs: docs-build docs-serve
 
 docs-build:
 	@echo '=== Building docs ==='
-	$(UV) run mkdocs build -f $(MKDOCS_CONFIG)
+	$(UV) run zensical build --clean -f $(ZENSICAL_CONFIG)
 
 docs-serve:
-	@echo '=== Serving docs at $(MKDOCS_URL) ==='
-	$(UV) run mkdocs serve -f $(MKDOCS_CONFIG)
+	@echo '=== Serving docs at http://$(DOCS_ADDR) ==='
+	$(UV) run zensical serve -f $(ZENSICAL_CONFIG) -a $(DOCS_ADDR)
 
 loc:
 	@echo '=== Counting lines of code ==='
@@ -90,7 +90,7 @@ clean:
 	@echo '=== Cleaning up ==='
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 	find . -type f -name "*.pyc" -delete 2>/dev/null || true
-	rm -rf $(PROJECT_NAME).egg-info .pytest_cache .coverage .$(LINTER)_cache .github/site
+	rm -rf $(PROJECT_NAME).egg-info .pytest_cache .coverage .$(LINTER)_cache site .github/site
 
 destroy: clean
 	@echo '=== Destroying environment ==='
@@ -99,23 +99,19 @@ destroy: clean
 help:
 	@echo "Usage: make [target]"
 	@echo "Targets:"
-	@echo "  all                     - Clean, setup, lint, typecheck, test"
-	@echo "  build                   - Clean and setup"
-	@echo "  setup                   - Install dependencies"
-	@echo "  setup-tensorboard       - Install optional TensorBoard dependency"
-	@echo "  check                   - Run lint and typecheck"
-	@echo "  format                  - Run formatting"
-	@echo "  typecheck               - Run type checking"
-	@echo "  lint                    - Run linting"
-	@echo "  lint-fix                - Run linting and fix issues"
-	@echo "  lint-rule R=<rule>      - Run linting for a specific rule (e.g., R=E501)"
-	@echo "  lint-rule-fix R=<rule>  - Run linting for a specific rule and fix issues"
-	@echo "  test                    - Run all tests"
-	@echo "  stest T=<test_name>     - Run a single test"
-	@echo "  run <file.py>           - Run a single file"
-	@echo "  docs                    - Build and serve documentation"
-	@echo "  docs-build              - Build documentation without serving"
-	@echo "  docs-serve              - Serve built documentation locally at $(MKDOCS_URL)"
-	@echo "  loc                     - Count lines of code"
-	@echo "  clean                   - Remove build/test artifacts"
-	@echo "  destroy                 - Destroy the environment"
+	@echo "  all                  - Clean, setup, lint, typecheck, test"
+	@echo "  build                - Clean and setup"
+	@echo "  setup                - Install dependencies"
+	@echo "  setup-tensorboard    - Install optional TensorBoard dependency"
+	@echo "  format               - Run linter and formatter"
+	@echo "  typecheck            - Run type checker"
+	@echo "  test                 - Run all tests"
+	@echo "  stest T=<test_name>  - Run a single test"
+	@echo "  run <file.py>        - Run a single file"
+	@echo "  check                - Run lint and typecheck"
+	@echo "  docs                 - Build and serve documentation"
+	@echo "  docs-build           - Build documentation without serving"
+	@echo "  docs-serve           - Serve built documentation locally at http://$(DOCS_ADDR)"
+	@echo "  loc                  - Count lines of code"
+	@echo "  clean                - Remove build/test artifacts"
+	@echo "  destroy              - Destroy the environment"

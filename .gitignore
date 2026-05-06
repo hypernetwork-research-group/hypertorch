@@ -97,7 +97,7 @@ ENV/
 env.bak/
 venv.bak/
 
-# mkdocs documentation
+# Documentation build output (Zensical)
 /site
 .github/site
 

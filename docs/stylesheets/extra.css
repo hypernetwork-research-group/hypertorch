@@ -1,0 +1,142 @@
+/* Ensure anchors don’t hide under the fixed header */
+.md-typeset .doc.doc-heading {
+  scroll-margin-top: 5rem;
+}
+
+/* Make mkdocstrings objects read as “cards” */
+.md-typeset .doc.doc-object {
+  margin: 1.25em 0;
+  padding: 0.9em 1em;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 0.4rem;
+  background: var(--md-default-bg-color);
+}
+
+/* Prefer theme-derived borders when supported */
+@supports (color: color-mix(in srgb, black, white)) {
+  .md-typeset .doc.doc-object {
+    border-color: color-mix(in srgb, var(--md-default-fg-color) 12%, transparent);
+  }
+}
+
+/* Don’t over-card the top-level module block */
+.md-typeset .doc.doc-object.doc-module {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+/* Tighter, more readable headings */
+.md-typeset .doc.doc-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* Signature code in headings (mkdocstrings renders it as inline highlighted code) */
+.md-typeset .doc.doc-heading code.highlight.language-python {
+  padding: 0.15em 0.45em;
+  border-radius: 0.25rem;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--md-code-bg-color);
+  font-size: 0.85em;
+}
+
+@supports (color: color-mix(in srgb, black, white)) {
+  .md-typeset .doc.doc-heading code.highlight.language-python {
+    border-color: color-mix(in srgb, var(--md-default-fg-color) 12%, transparent);
+  }
+}
+
+/* Hide the “¶” permalinks until hover (less visual noise) */
+.md-typeset .doc.doc-heading .headerlink {
+  opacity: 0;
+  margin-left: 0.15rem;
+  transition: opacity 120ms ease-in-out;
+}
+.md-typeset .doc.doc-heading:hover .headerlink,
+.md-typeset .doc.doc-heading:focus-within .headerlink {
+  opacity: 0.9;
+}
+
+/* mkdocstrings labels (classmethod, property, etc.) */
+.md-typeset .doc.doc-label {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.08em 0.45em;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: transparent;
+  font-size: 0.75em;
+  line-height: 1.6;
+}
+
+@supports (color: color-mix(in srgb, black, white)) {
+  .md-typeset .doc.doc-label {
+    border-color: color-mix(in srgb, var(--md-default-fg-color) 18%, transparent);
+  }
+}
+
+/* Section titles like Parameters / Returns */
+.md-typeset .doc-section-title {
+  font-weight: 700;
+}
+
+/* Table styling inside doc blocks (Parameters/Returns/Raises) */
+.md-typeset .doc table {
+  width: 100%;
+  margin-top: 0.5em;
+  margin-bottom: 1em;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 0.4rem;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+}
+
+@supports (color: color-mix(in srgb, black, white)) {
+  .md-typeset .doc table {
+    border-color: color-mix(in srgb, var(--md-default-fg-color) 12%, transparent);
+  }
+}
+
+.md-typeset .doc table thead th {
+  background: var(--md-code-bg-color);
+  font-weight: 700;
+}
+
+.md-typeset .doc table th,
+.md-typeset .doc table td {
+  padding: 0.45em 0.75em;
+  vertical-align: top;
+}
+
+.md-typeset .doc table tbody tr:hover {
+  background: color-mix(in srgb, var(--md-accent-fg-color) 6%, transparent);
+}
+
+/* Slightly tighter paragraph spacing within doc objects */
+.md-typeset .doc.doc-contents p {
+  margin: 0.6em 0;
+}
+
+/* Source toggles created by mkdocstrings when show_source=true */
+.md-typeset details.mkdocstrings-source {
+  margin: 0.75em 0 0.25em;
+  padding: 0.4em 0.8em;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 0.4rem;
+  background: var(--md-code-bg-color);
+}
+
+@supports (color: color-mix(in srgb, black, white)) {
+  .md-typeset details.mkdocstrings-source {
+    border-color: color-mix(in srgb, var(--md-default-fg-color) 12%, transparent);
+  }
+}
+
+.md-typeset details.mkdocstrings-source > summary {
+  cursor: pointer;
+  font-weight: 600;
+}

@@ -14,6 +14,17 @@ pre-commit install --config .github/hooks/.pre-commit-config.yaml --hook-type pr
 
 This will ensure that your code adheres to the project's coding standards before each commit.
 
+## Documentation (Zensical)
+
+Build and preview the documentation locally:
+
+```bash
+make docs-serve
+```
+
+API reference rendering is powered by `mkdocstrings` and configured in `zensical.toml` under
+`[project.plugins.mkdocstrings]`.
+
 ## Commit message style
 
 Commit messages should follow the [conventional commit specification](https://www.conventionalcommits.org/en/v1.0.0/).
