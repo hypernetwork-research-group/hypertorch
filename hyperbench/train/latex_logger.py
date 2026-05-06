@@ -239,7 +239,7 @@ class LaTexTableLogger(Logger):
         self,
         sections_data: list[tuple[str, Mapping[str, Mapping[str, Any]]]],
         precision: int = 4,
-        table_caption: str | None = None,
+        table_caption: Optional[str] = None,
         sort_by: list[str] | None = None,
         border: bool = True,
     ) -> str:
