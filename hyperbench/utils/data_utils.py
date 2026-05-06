@@ -27,7 +27,7 @@ def to_0based_ids(original_ids: Tensor, ids_to_rebase: Tensor | None = None) -> 
     If ``ids_to_rebase`` is provided, only IDs present in it are kept and remapped.
     If ``ids_to_rebase`` is not provided, all unique IDs in ``original_ids`` are remapped.
 
-    Examples:
+    Example:
         >>> to_0based_ids(torch.tensor([1, 3, 3, 7]), torch.tensor([3, 7]))
         ... -> tensor([0, 0, 1])  # 1 is excluded, 3 -> 0, 7 -> 1
 

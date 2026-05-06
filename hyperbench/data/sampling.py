@@ -113,7 +113,7 @@ class HyperedgeSampler(BaseSampler):
         """
         Sample hyperedges by their IDs and return the sub-hypergraph containing only those hyperedges and their incident nodes.
 
-        Examples:
+        Example:
         >>> hyperedge_index = [[0, 0, 1, 2, 3, 4],
         ...                    [0, 0, 0, 1, 2, 2]]
         >>> hdata = HData.from_hyperedge_index(hyperedge_index)
@@ -171,7 +171,7 @@ class NodeSampler(BaseSampler):
         """
         Sample nodes by their IDs and return the sub-hypergraph containing only those nodes and their incident hyperedges.
 
-        Examples:
+        Example:
         >>> hyperedge_index = [[0, 0, 1, 2, 3, 4],
         ...                    [0, 0, 0, 1, 2, 2]]
         >>> hdata = HData.from_hyperedge_index(hyperedge_index)

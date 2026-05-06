@@ -11,7 +11,7 @@ class MLP(nn.Module):
     """
     A simple multi-layer perceptron (MLP) with configurable number of layers, hidden channels, activation functions, normalization, and dropout.
 
-    Examples:
+    Example:
         >>> mlp = MLP(in_channels=16, out_channels=1, hidden_channels=32, num_layers=3)
         >>> x = torch.randn(10, 16)  # 10 samples, 16 features
         >>> output = mlp(x)
@@ -107,7 +107,7 @@ class SLP(MLP):
     """
     A single-layer perceptron (SLP) which is a special case of MLP with exactly one layer and no hidden units.
 
-    Examples:
+    Example:
         >>> slp = SLP(in_channels=16, out_channels=1)
         >>> x = torch.randn(10, 16)  # 10 samples, 16 features
         >>> output = slp(x)

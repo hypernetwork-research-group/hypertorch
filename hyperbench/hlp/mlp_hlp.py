@@ -94,7 +94,7 @@ class MLPHlpModule(HlpModule):
         """
         Encode node features, aggregate per hyperedge via mean pooling, and score.
 
-        Examples:
+        Example:
             Given 4 nodes with 3 features each and 2 hyperedges:
                 >>> x = [[0.1, 0.2, 0.3],   # node 0
                 ...      [0.4, 0.5, 0.6],   # node 1

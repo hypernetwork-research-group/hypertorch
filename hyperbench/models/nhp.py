@@ -16,7 +16,7 @@ class NHP(nn.Module):
     A node that appears in multiple candidate hyperedges can receive a different incidence embedding in each one,
     because its update depends on the other nodes in that candidate hyperedge.
 
-    Examples:
+    Example:
         >>> x = [
         ...     [1., 0.],  # node 0
         ...     [0., 1.],  # node 1

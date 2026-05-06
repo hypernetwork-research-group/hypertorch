@@ -34,19 +34,7 @@ class HyperedgeAggregator:
         """
         Aggregate node embeddings for each hyperedge.
 
-        ``hyperedge_index`` is the COO encoding of the nonzero entries of ``H``,
-        so ``hyperedge_index[0, k] = v`` and ``hyperedge_index[1, k] = e`` means ``H[v, e] = 1`` for incidence ``k``.
-
-        Let ``H`` be the binary incidence matrix of shape ``(num_nodes, num_hyperedges)``
-        and let ``X`` be the node embedding matrix of shape ``(num_nodes, num_channels)``.
-        This method pools node features into hyperedge features using the incidence pattern in ``H``:
-        - ``aggregation="sum"`` computes the equivalent of the standard sparse matrix product ``H^T X``.
-        - ``aggregation="mean"`` computes ``D_e^{-1} H^T X``, where ``D_e[e, e] = sum_v H[v, e]`` is the hyperedge cardinality matrix.
-        - ``aggregation in {"max", "min", "mul"}`` uses the same sparsity pattern as ``H^T X``,
-          but replaces the summation over incident nodes with a channel-wise ``max``, ``min``, or product reduction.
-        - ``aggregation="maxmin"`` computes the channel-wise range ``max - min`` for each hyperedge.
-
-        Examples:
+        Example:
             >>> hyperedge_index = [[0, 1, 2, 2, 3],
             ...                    [0, 0, 0, 1, 1]]
             >>> node_embeddings = [[1, 10], [2, 20], [3, 30], [4, 40]]
@@ -139,18 +127,7 @@ class NodeAggregator:
         """
         Aggregate hyperedge embeddings for each node.
 
-        ``hyperedge_index`` is the COO encoding of the nonzero entries of ``H``,
-        so ``hyperedge_index[0, k] = v`` and ``hyperedge_index[1, k] = e`` means ``H[v, e] = 1`` for incidence ``k``.
-
-        Let ``H`` be the incidence matrix of shape ``(num_nodes, num_hyperedges)``
-        and let ``E`` be the hyperedge embedding matrix of shape ``(num_hyperedges, num_channels)``.
-        This method pools hyperedge features into node features using the incidence pattern in ``H``:
-        - ``aggregation="sum"`` computes the equivalent of the standard sparse matrix product ``H E``.
-        - ``aggregation="mean"`` computes ``D_v^{-1} H E``, where ``D_v[v, v] = sum_e H[v, e]`` is the node degree matrix.
-        - ``aggregation in {"max", "min", "mul"}`` uses the same sparsity pattern as ``H E``,
-          but replaces the summation over incident hyperedges with a channel-wise ``max``, ``min``, or product reduction.
-
-        Examples:
+        Example:
             >>> hyperedge_index = [[0, 1, 1, 2],
             ...                    [0, 0, 1, 1]]
             >>> hyperedge_embeddings = [[10, 100], [20, 200]]

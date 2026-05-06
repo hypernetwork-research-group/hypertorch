@@ -132,7 +132,7 @@ class EdgeIndex:
     Edge index is a tensor of shape ``(2, num_edges)`` where the first row contains source node indices
     and the second row contains destination node indices for each edge.
 
-    Examples:
+    Example:
         >>> edge_index = [[0, 1, 2],
         ...               [1, 0, 3]]
 
@@ -195,7 +195,7 @@ class EdgeIndex:
         """
         Add self-loops to each node in the edge index.
 
-        Examples:
+        Example:
             >>> edge_index = [[0, 1, 2],
             ...               [1, 0, 3]]
             >>> edge_index_with_selfloops = [[0, 1, 2, 0, 1, 2, 3],
@@ -277,7 +277,7 @@ class EdgeIndex:
         Compute the sparse adjacency matrix from a graph edge index.
         To get the normalized adjacency matrix, add self-loops to the edge_index.
 
-        Examples:
+        Example:
             >>> edge_index = [[0, 1, 2],
             ...               [1, 0, 3]]
             >>> num_nodes = 4
@@ -332,7 +332,7 @@ class EdgeIndex:
         """
         Compute the sparse identity matrix I of shape (num_nodes, num_nodes).
 
-        Examples:
+        Example:
             >>> num_nodes = 3
             >>> identity_indices = [[0, 1, 2],
             ...                     [0, 1, 2]]

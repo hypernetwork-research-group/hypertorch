@@ -154,7 +154,7 @@ class Dataset(TorchDataset):
         """
         Enrich node features from another dataset by copying features by ``global_node_ids``.
 
-        Examples:
+        Example:
             In a transductive setting, the full node space is preserved across datasets:
             >>> val_dataset.enrich_node_features_from(train_dataset)
 
@@ -268,7 +268,7 @@ class Dataset(TorchDataset):
         Boundaries are computed using cumulative floor to prevent early splits from
         over-consuming edges. The last split absorbs any rounding remainder.
 
-        Examples:
+        Example:
             Transductive split keeping the full node space only on the first split (default):
             >>> train, test = dataset.split([0.8, 0.2])
             >>> train.hdata.num_nodes == dataset.hdata.num_nodes

@@ -275,7 +275,7 @@ class RandomNegativeSampler(SameNodeSpaceNegativeSampler):
         The resulting negative samples are returned as a new :class:`HData` object with remapped 0-based node and hyperedge IDs, if ``self.return_0based_negatives == True``.
         Otherwise, the negative samples retain their original global node and hyperedge IDs from the input data.
 
-        Examples:
+        Example:
             With ``self.return_0based_negatives = True``:
 
             >>> num_negative_samples = 2

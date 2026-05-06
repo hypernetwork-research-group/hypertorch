@@ -374,7 +374,7 @@ class HyperedgeIndex:
     Each column in the tensor represents an incidence between a node and a hyperedge, with the first row containing node indices
     and the second row containing corresponding hyperedge indices.
 
-    Examples:
+    Example:
         >>> hyperedge_index = [[0, 1, 2, 0],
         ...                    [0, 0, 0, 1]]
 

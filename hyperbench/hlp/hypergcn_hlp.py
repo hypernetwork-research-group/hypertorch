@@ -95,7 +95,7 @@ class HyperGCNHlpModule(HlpModule):
                using the configured pooling method (mean/max/min/sum).
             3. Decode: A linear layer scores each hyperedge embedding.
 
-        Examples:
+        Example:
             Given 5 nodes with 3 features and 2 hyperedges::
 
                 >>> x.shape  # (5, 3) — all nodes in the hypergraph

@@ -24,7 +24,7 @@ class HData:
     """
     Container for hypergraph data.
 
-    Examples:
+    Example:
         >>> x = torch.randn(10, 16)  # 10 nodes with 16 features each
         >>> hyperedge_index = torch.tensor([[0, 0, 1, 1, 1],  # node IDs
         ...                                 [0, 1, 2, 3, 4]]) # hyperedge IDs
@@ -124,7 +124,7 @@ class HData:
             - ``hyperedge_attr`` is the concatenation of all input hyperedge attributes, if present. If some instances have hyperedge attributes and others do not, the resulting ``hyperedge_attr`` will be set to ``None``.
             - ``y`` is the concatenation of all input labels.
 
-        Examples:
+        Example:
             >>> x = torch.randn(5, 8)
             >>> pos = HData(x=x, hyperedge_index=torch.tensor([[0, 1, 2, 3, 4], [0, 0, 1, 2, 2]]))
             >>> neg = HData(x=x, hyperedge_index=torch.tensor([[0, 2], [3, 3]]))
@@ -223,7 +223,7 @@ class HData:
         - Hyperedge weights are set to ``None``.
         - The number of nodes and hyperedges are inferred from the hyperedge index.
 
-        Examples:
+        Example:
             >>> hyperedge_index = [[0, 0, 1, 2, 3, 4],
             ...                    [0, 0, 0, 1, 2, 2]]
             >>> num_nodes = 5
@@ -257,7 +257,7 @@ class HData:
         """
         Build an :class:`HData` for a single split from the given hyperedge IDs.
 
-        Examples:
+        Example:
             Transductive split (default) preserving the full node space:
             >>> split_hdata = HData.split(hdata, torch.tensor([1]), node_space_setting="transductive")
             >>> split_hdata.x.shape[0] == hdata.x.shape[0]
@@ -398,7 +398,7 @@ class HData:
         """
         Copy node features from another :class:`HData` by aligning features by ``global_node_ids``.
 
-        Examples:
+        Example:
             Transductive enrichment (default) expecting the same node space in both source and target:
             >>> target = target.enrich_node_features_from(source, node_space_setting="transductive")
 
@@ -637,7 +637,7 @@ class HData:
         ``y`` and ``hyperedge_attr`` are reordered to match, so that ``y[new_id]`` still corresponds to the correct hyperedge.
         Same for ``hyperedge_attr[new_id]`` if hyperedge attributes are present.
 
-        Examples:
+        Example:
             >>> hyperedge_index = torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]])
             >>> y  = torch.tensor([1, 0])
             >>> hdata = HData(x=x, hyperedge_index=hyperedge_index, y=y)

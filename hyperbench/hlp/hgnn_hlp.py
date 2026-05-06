@@ -95,7 +95,7 @@ class HGNNHlpModule(HlpModule):
            scalar score representing the likelihood that the hyperedge is a real (positive)
            hyperedge. Shape: ``(num_hyperedges,)``.
 
-        Examples:
+        Example:
             Given 5 nodes with 8 features and 2 hyperedges::
 
                 >>> x.shape  # (5, 8) - all nodes in the hypergraph
