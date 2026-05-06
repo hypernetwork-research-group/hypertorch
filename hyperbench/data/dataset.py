@@ -200,30 +200,6 @@ class Dataset(TorchDataset):
         """
         self.hdata = self.hdata.remove_hyperedges_with_fewer_than_k_nodes(k)
 
-    def __get_hyperedge_ids_permutation(
-        self,
-        num_hyperedges: int,
-        shuffle: Optional[bool],
-        seed: Optional[int],
-    ) -> Tensor:
-        device = self.hdata.device
-
-        # Shuffle hyperedge IDs if shuffle is requested, otherwise keep original order for deterministic splits
-        if shuffle:
-            generator = torch.Generator(device=device)
-            if seed is not None:
-                generator.manual_seed(seed)
-
-            random_hyperedge_ids_permutation = torch.randperm(
-                n=num_hyperedges,
-                generator=generator,
-                device=device,
-            )
-            return random_hyperedge_ids_permutation
-
-        ranged_hyperedge_ids_permutation = torch.arange(num_hyperedges, device=device)
-        return ranged_hyperedge_ids_permutation
-
     def split(
         self,
         ratios: List[float],
@@ -434,3 +410,27 @@ class Dataset(TorchDataset):
             IndexError: If any node/hyperedge ID is out of bounds.
         """
         return self.__sampler.sample(index, self.hdata)
+
+    def __get_hyperedge_ids_permutation(
+        self,
+        num_hyperedges: int,
+        shuffle: Optional[bool],
+        seed: Optional[int],
+    ) -> Tensor:
+        device = self.hdata.device
+
+        # Shuffle hyperedge IDs if shuffle is requested, otherwise keep original order for deterministic splits
+        if shuffle:
+            generator = torch.Generator(device=device)
+            if seed is not None:
+                generator.manual_seed(seed)
+
+            random_hyperedge_ids_permutation = torch.randperm(
+                n=num_hyperedges,
+                generator=generator,
+                device=device,
+            )
+            return random_hyperedge_ids_permutation
+
+        ranged_hyperedge_ids_permutation = torch.arange(num_hyperedges, device=device)
+        return ranged_hyperedge_ids_permutation
