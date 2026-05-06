@@ -4,12 +4,10 @@ import requests
 import tempfile
 import torch
 import warnings
-import zstandard as zstd
 
 from huggingface_hub import hf_hub_download
 from typing import Optional, Dict, Any, List
 from torch import Tensor
-
 from hyperbench.types import HData, HIFHypergraph
 from hyperbench.utils import (
     validate_hif_json,
@@ -18,6 +16,7 @@ from hyperbench.utils import (
     validate_http_url,
     write_to_disk,
 )
+
 
 GITHUB_COMMIT_SHA = "3879b2ce84750e54f984ca06ce3246dff22c71c7"
 
