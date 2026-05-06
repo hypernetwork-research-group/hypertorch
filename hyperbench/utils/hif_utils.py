@@ -52,7 +52,11 @@ def get_hf_dataset_sha(dataset_name: str, namespace: str = "HypernetworkRG") -> 
         info = api.dataset_info(repo_id=repo_id)
         return info.sha
     except Exception as e:
-        warnings.warn(f"{dataset_name}: failed to retrieve SHA ({e})")
+        warnings.warn(
+            f"{dataset_name}: failed to retrieve SHA ({e})",
+            category=UserWarning,
+            stacklevel=2,
+        )
         return None
 
 
@@ -85,7 +89,11 @@ def get_gh_dataset_sha(dataset_name: str, owner: str, repository: str) -> str | 
         response = requests.get(url, params=params)
         response.raise_for_status()
     except requests.RequestException as e:
-        warnings.warn(f"{dataset_name}: failed to retrieve SHA ({e})")
+        warnings.warn(
+            f"{dataset_name}: failed to retrieve SHA ({e})",
+            category=UserWarning,
+            stacklevel=2,
+        )
         return None
 
     data = response.json()
@@ -93,6 +101,10 @@ def get_gh_dataset_sha(dataset_name: str, owner: str, repository: str) -> str | 
     if data:
         commit_sha = data[0]["sha"]
     else:
-        warnings.warn(f"{dataset_name}: no commits found for {FILE_PATH}")
+        warnings.warn(
+            f"{dataset_name}: no commits found for {FILE_PATH}",
+            category=UserWarning,
+            stacklevel=2,
+        )
         return None
     return commit_sha
