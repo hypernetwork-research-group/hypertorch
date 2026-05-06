@@ -3,6 +3,7 @@ from typing import Literal, Optional
 from torch_geometric.utils import scatter
 
 from hyperbench.types import HyperedgeIndex
+from hyperbench.utils import maxmin_scatter
 
 
 class HyperedgeAggregator:
@@ -29,7 +30,7 @@ class HyperedgeAggregator:
         self.node_embeddings = node_embeddings
         self.num_hyperedges = num_hyperedges
 
-    def pool(self, aggregation: Literal["max", "min", "mean", "mul", "sum"]) -> Tensor:
+    def pool(self, aggregation: Literal["maxmin", "max", "min", "mean", "mul", "sum"]) -> Tensor:
         """
         Aggregate node embeddings for each hyperedge.
 
@@ -43,6 +44,7 @@ class HyperedgeAggregator:
         - ``aggregation="mean"`` computes ``D_e^{-1} H^T X``, where ``D_e[e, e] = sum_v H[v, e]`` is the hyperedge cardinality matrix.
         - ``aggregation in {"max", "min", "mul"}`` uses the same sparsity pattern as ``H^T X``,
           but replaces the summation over incident nodes with a channel-wise ``max``, ``min``, or product reduction.
+        - ``aggregation="maxmin"`` computes the channel-wise range ``max - min`` for each hyperedge.
 
         Examples:
             >>> hyperedge_index = [[0, 1, 2, 2, 3],
@@ -54,6 +56,8 @@ class HyperedgeAggregator:
             ... [[6, 60], [7, 70]]
             >>> HyperedgeAggregator(hyperedge_index, node_embeddings).pool("max")
             ... [[3, 30], [4, 40]]
+            >>> HyperedgeAggregator(hyperedge_index, node_embeddings).pool("maxmin")
+            ... [[2, 20], [1, 10]]
 
         Args:
             aggregation: Reduction applied across the nodes belonging to each hyperedge.
@@ -91,6 +95,14 @@ class HyperedgeAggregator:
             else self.hyperedge_index_wrapper.num_hyperedges
         )
 
+        if aggregation == "maxmin":
+            return maxmin_scatter(
+                src=incidence_node_embeddings,
+                index=self.hyperedge_index_wrapper.all_hyperedge_ids,
+                dim=0,  # scatter along the hyperedge dimension
+                dim_size=num_hyperedges,
+            )
+
         return scatter(
             src=incidence_node_embeddings,
             index=self.hyperedge_index_wrapper.all_hyperedge_ids,
@@ -123,7 +135,7 @@ class NodeAggregator:
         self.hyperedge_embeddings = hyperedge_embeddings
         self.num_nodes = num_nodes
 
-    def pool(self, aggregation: Literal["max", "min", "mean", "mul", "sum"]) -> Tensor:
+    def pool(self, aggregation: Literal["maxmin", "max", "min", "mean", "mul", "sum"]) -> Tensor:
         """
         Aggregate hyperedge embeddings for each node.
 
@@ -171,6 +183,14 @@ class NodeAggregator:
         num_nodes = (
             self.num_nodes if self.num_nodes is not None else self.hyperedge_index_wrapper.num_nodes
         )
+
+        if aggregation == "maxmin":
+            return maxmin_scatter(
+                src=incidence_hyperedge_embeddings,
+                index=self.hyperedge_index_wrapper.all_node_ids,
+                dim=0,  # scatter along the node dimension
+                dim_size=num_nodes,
+            )
 
         # Scatter-aggregate hyperedge embeddings into node embeddings.
         # Example: with aggregation="sum":
