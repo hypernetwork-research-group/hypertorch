@@ -7,6 +7,7 @@ from huggingface_hub import HfApi
 from importlib import resources
 from typing import Dict, Optional
 
+
 HIF_SCHEMA_COMMIT_SHA = "b691a3d2ec32100c0229ebe1151e9afad015c356"
 
 
