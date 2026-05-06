@@ -1,6 +1,7 @@
 from torchmetrics import MetricCollection
 from torchmetrics.classification import (
     BinaryAUROC,
+    BinaryAccuracy,
     BinaryAveragePrecision,
     BinaryPrecision,
     BinaryRecall,
@@ -20,6 +21,7 @@ if __name__ == "__main__":
     metrics = MetricCollection(
         {
             "auc": BinaryAUROC(),
+            "accuracy": BinaryAccuracy(),
             "avg_precision": BinaryAveragePrecision(),
             "precision": BinaryPrecision(),
             "recall": BinaryRecall(),
