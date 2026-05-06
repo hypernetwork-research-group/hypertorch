@@ -188,7 +188,9 @@ def _to_gcn_config(embedding_dim: int, gcn_hlp_config: Node2VecGCNHlpConfig) -> 
 
 def _to_node2vec_encoder(encoder: Optional[nn.Module], mode: Node2VecMode) -> Node2VecEncoder:
     if encoder is None or not isinstance(encoder, (Node2Vec, Node2VecGCN)):
-        raise ValueError(f"Node2Vec in mode {mode} requires an encoder, but none was provided.")
+        raise ValueError(
+            f"Node2Vec in mode {mode} requires a Node2Vec encoder, but none was provided."
+        )
     return encoder
 
 
