@@ -38,7 +38,6 @@ def validate_hif_json(filename: str) -> bool:
 def get_datasets_shas(
     dataset_names: list[str], namespace: str = "HypernetworkRG"
 ) -> Dict[str, str | None]:
-    api = HfApi()
     shas: Dict[str, str | None] = {}
 
     for dataset_name in dataset_names:
