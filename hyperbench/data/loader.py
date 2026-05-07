@@ -1,6 +1,5 @@
 import torch
 
-from typing import List, Optional
 from torch.utils.data import DataLoader as TorchDataLoader
 from hyperbench.data import Dataset
 from hyperbench.types import HData, HyperedgeIndex
@@ -11,7 +10,7 @@ class DataLoader(TorchDataLoader):
         self,
         dataset: Dataset,
         batch_size: int = 1,
-        shuffle: Optional[bool] = False,
+        shuffle: bool | None = False,
         sample_full_hypergraph: bool = False,
         **kwargs,
     ) -> None:
@@ -27,7 +26,7 @@ class DataLoader(TorchDataLoader):
 
         self.__cached_dataset_hdata = dataset.hdata
 
-    def collate(self, batch: List[HData]) -> HData:
+    def collate(self, batch: list[HData]) -> HData:
         """
         Collates a list of :class:`HData objects into a single batched :class:`HData object.
 

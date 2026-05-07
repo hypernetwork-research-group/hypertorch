@@ -2,7 +2,7 @@ import torch
 
 from abc import ABC, abstractmethod
 from torch import Tensor
-from typing import Dict, List, Literal, Optional
+from typing import Literal
 from hyperbench.types import Neighborhood, Hypergraph, HyperedgeIndex
 
 
@@ -10,8 +10,8 @@ class NeighborScorer(ABC):
     @abstractmethod
     def score(
         self,
-        candidate_nodes: List[int],
-        candidate_to_neighbors: Dict[int, Neighborhood],
+        candidate_nodes: list[int],
+        candidate_to_neighbors: dict[int, Neighborhood],
     ) -> float:
         raise NotImplementedError
 
@@ -19,7 +19,7 @@ class NeighborScorer(ABC):
     def score_batch(
         self,
         hyperedge_index: Tensor,
-        node_to_neighbors: Optional[Dict[int, Neighborhood]] = None,
+        node_to_neighbors: dict[int, Neighborhood] | None = None,
     ) -> Tensor:
         raise NotImplementedError
 
@@ -32,8 +32,8 @@ class CommonNeighborsScorer(NeighborScorer):
 
     def score(
         self,
-        candidate_nodes: List[int],
-        candidate_to_neighbors: Dict[int, Neighborhood],
+        candidate_nodes: list[int],
+        candidate_to_neighbors: dict[int, Neighborhood],
     ) -> float:
         """
         Compute the CN score for a single candidate hyperedge.
@@ -49,7 +49,7 @@ class CommonNeighborsScorer(NeighborScorer):
         if len(candidate_nodes) < 2:
             return self.__DEFAULT_SCORE
 
-        pairwise_counts: List[int] = []
+        pairwise_counts: list[int] = []
         candidates_tensor = torch.tensor(candidate_nodes)
 
         # Example: candidate_nodes = [1, 2, 3]
@@ -66,7 +66,7 @@ class CommonNeighborsScorer(NeighborScorer):
     def score_batch(
         self,
         hyperedge_index: Tensor,
-        node_to_neighbors: Optional[Dict[int, Neighborhood]] = None,
+        node_to_neighbors: dict[int, Neighborhood] | None = None,
     ) -> Tensor:
         """
         Score all hyperedges in a hyperedge index tensor.
@@ -81,7 +81,7 @@ class CommonNeighborsScorer(NeighborScorer):
         if node_to_neighbors is None:
             node_to_neighbors = Hypergraph.from_hyperedge_index(hyperedge_index).neighbors_of_all()
 
-        scores: List[float] = []
+        scores: list[float] = []
         hyperedge_index_wrapper = HyperedgeIndex(hyperedge_index)
         for hyperedge_id in range(hyperedge_index_wrapper.num_hyperedges):
             node_ids = hyperedge_index_wrapper.nodes_in(hyperedge_id)
@@ -90,7 +90,7 @@ class CommonNeighborsScorer(NeighborScorer):
 
         return torch.tensor(scores, dtype=torch.float32, device=hyperedge_index.device)
 
-    def __to_score_by_aggregation(self, pairwise_counts: List[int]) -> float:
+    def __to_score_by_aggregation(self, pairwise_counts: list[int]) -> float:
         score = self.__DEFAULT_SCORE
         if len(pairwise_counts) < 1:
             return score

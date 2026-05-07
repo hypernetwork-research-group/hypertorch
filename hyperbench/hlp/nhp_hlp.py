@@ -1,5 +1,5 @@
 from torch import Tensor, nn, optim
-from typing import Dict, Literal, Optional, TypedDict
+from typing import Literal, TypedDict
 from torchmetrics import MetricCollection
 from typing_extensions import NotRequired
 from hyperbench.models import NHP
@@ -24,8 +24,8 @@ class NHPEncoderConfig(TypedDict):
 
     in_channels: int
     hidden_channels: NotRequired[int]
-    activation_fn: NotRequired[Optional[ActivationFn]]
-    activation_fn_kwargs: NotRequired[Optional[Dict]]
+    activation_fn: NotRequired[ActivationFn | None]
+    activation_fn_kwargs: NotRequired[dict | None]
     aggregation: NotRequired[Literal["mean", "maxmin"]]
     bias: NotRequired[bool]
 
@@ -49,10 +49,10 @@ class NHPHlpModule(HlpModule):
     def __init__(
         self,
         encoder_config: NHPEncoderConfig,
-        loss_fn: Optional[nn.Module] = None,
+        loss_fn: nn.Module | None = None,
         lr: float = 0.001,
         weight_decay: float = 5e-4,
-        metrics: Optional[MetricCollection] = None,
+        metrics: MetricCollection | None = None,
     ):
         encoder = NHP(
             in_channels=encoder_config["in_channels"],

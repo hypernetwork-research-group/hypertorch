@@ -5,7 +5,8 @@ import warnings
 import lightning as L
 
 from pathlib import Path
-from typing import Any, Dict, List, Mapping, Optional
+from typing import Any
+from collections.abc import Mapping
 from collections.abc import Iterable
 from lightning.pytorch.accelerators import Accelerator
 from lightning.pytorch.callbacks import Callback
@@ -13,8 +14,9 @@ from lightning.pytorch.loggers import CSVLogger, Logger
 from lightning.pytorch.profilers import Profiler
 from lightning.pytorch.strategies import Strategy
 from hyperbench.data import DataLoader
-from hyperbench.train.markdown_logger import MarkdownTableLogger
 from hyperbench.types import CkptStrategy, ModelConfig, TestResult
+
+from hyperbench.train.markdown_logger import MarkdownTableLogger
 from hyperbench.train.latex_logger import LaTexTableLogger
 
 
@@ -131,31 +133,30 @@ class MultiModelTrainer:
 
     def __init__(
         self,
-        model_configs: List[ModelConfig],
-        experiment_name: Optional[str] = None,
+        model_configs: list[ModelConfig],
+        experiment_name: str | None = None,
         # args to pass to each Trainer
         accelerator: str | Accelerator = "auto",
         devices: list[int] | str | int = "auto",
         strategy: str | Strategy = "auto",
         num_nodes: int = 1,
-        precision: Optional[
-            Any  # Any as Lightning accepts multiple types (int, str, Literal, etc.)
-        ] = None,
-        max_epochs: Optional[int] = None,
-        min_epochs: Optional[int] = None,
+        precision: Any
+        | None = None,  # Any as Lightning accepts multiple types (int, str, Literal, etc.)
+        max_epochs: int | None = None,
+        min_epochs: int | None = None,
         max_steps: int = -1,
-        min_steps: Optional[int] = None,
-        check_val_every_n_epoch: Optional[int] = 1,
-        logger: Optional[Logger | Iterable[Logger] | bool] = None,
-        default_root_dir: Optional[str | Path] = None,
+        min_steps: int | None = None,
+        check_val_every_n_epoch: int | None = 1,
+        logger: Logger | Iterable[Logger] | bool | None = None,
+        default_root_dir: str | Path | None = None,
         enable_autolog_hparams: bool = True,
-        log_every_n_steps: Optional[int] = None,
-        profiler: Optional[Profiler | str] = None,
+        log_every_n_steps: int | None = None,
+        profiler: Profiler | str | None = None,
         fast_dev_run: int | bool = False,
         enable_checkpointing: bool = True,
         enable_progress_bar: bool = True,
-        enable_model_summary: Optional[bool] = None,
-        callbacks: Optional[List[Callback] | Callback] = None,
+        enable_model_summary: bool | None = None,
+        callbacks: list[Callback] | Callback | None = None,
         auto_start_tensorboard: bool = False,
         tensorboard_port: int = 6006,
         auto_wait: bool = False,
@@ -167,7 +168,7 @@ class MultiModelTrainer:
         self.auto_start_tensorboard = auto_start_tensorboard
         self.auto_wait = auto_wait
         self.tensorboard_port = tensorboard_port
-        self.__tensorboard_process: Optional[subprocess.Popen] = None
+        self.__tensorboard_process: subprocess.Popen | None = None
 
         for model_config in model_configs:
             if model_config.trainer is None:
@@ -217,10 +218,10 @@ class MultiModelTrainer:
             )
 
     @property
-    def models(self) -> List[L.LightningModule]:
+    def models(self) -> list[L.LightningModule]:
         return [config.model for config in self.model_configs]
 
-    def model(self, name: str, version: str = "default") -> Optional[L.LightningModule]:
+    def model(self, name: str, version: str = "default") -> L.LightningModule | None:
         for config in self.model_configs:
             if config.name == name and config.version == version:
                 return config.model
@@ -228,10 +229,10 @@ class MultiModelTrainer:
 
     def fit_all(
         self,
-        train_dataloader: Optional[DataLoader] = None,
-        val_dataloader: Optional[DataLoader] = None,
-        datamodule: Optional[L.LightningDataModule] = None,
-        ckpt_path: Optional[CkptStrategy] = None,
+        train_dataloader: DataLoader | None = None,
+        val_dataloader: DataLoader | None = None,
+        datamodule: L.LightningDataModule | None = None,
+        ckpt_path: CkptStrategy | None = None,
         verbose: bool = True,
     ) -> None:
         if len(self.model_configs) < 1:
@@ -271,16 +272,16 @@ class MultiModelTrainer:
 
     def test_all(
         self,
-        dataloader: Optional[DataLoader] = None,
-        datamodule: Optional[L.LightningDataModule] = None,
-        ckpt_path: Optional[CkptStrategy] = None,
+        dataloader: DataLoader | None = None,
+        datamodule: L.LightningDataModule | None = None,
+        ckpt_path: CkptStrategy | None = None,
         verbose: bool = True,
         verbose_loop: bool = True,
     ) -> Mapping[str, TestResult]:
         if len(self.model_configs) < 1:
             raise ValueError("No models to test.")
 
-        test_results: Dict[str, TestResult] = {}
+        test_results: dict[str, TestResult] = {}
 
         for i, config in enumerate(self.model_configs):
             if config.trainer is None:
@@ -296,7 +297,7 @@ class MultiModelTrainer:
             test_dataloaders = (
                 config.test_dataloader if config.test_dataloader is not None else dataloader
             )
-            trainer_test_results: List[TestResult] = config.trainer.test(
+            trainer_test_results: list[TestResult] = config.trainer.test(
                 model=config.model,
                 dataloaders=test_dataloaders,
                 datamodule=datamodule,
@@ -351,7 +352,7 @@ class MultiModelTrainer:
     def __is_tensorboard_available(self) -> bool:
         return importlib.util.find_spec("tensorboard") is not None
 
-    def __start_tensorboard_process(self) -> Optional[subprocess.Popen]:
+    def __start_tensorboard_process(self) -> subprocess.Popen | None:
         try:
             process = subprocess.Popen(
                 ["tensorboard", "--logdir", self.log_dir, "--port", str(self.tensorboard_port)],
@@ -382,7 +383,7 @@ class MultiModelTrainer:
         if not save_dir.exists():
             return Path(f"{self.EXPERIMENT_NAME_PREFIX}_0")
 
-        existing_experiment_names: List[str] = [
+        existing_experiment_names: list[str] = [
             dir.name
             for dir in save_dir.iterdir()
             if dir.is_dir() and dir.name.startswith(self.EXPERIMENT_NAME_PREFIX)
@@ -399,8 +400,8 @@ class MultiModelTrainer:
 
     def __setup_logdir(
         self,
-        default_root_dir: Optional[str | Path],
-        experiment_name: Optional[str],
+        default_root_dir: str | Path | None,
+        experiment_name: str | None,
     ) -> Path:
         base_dir = (
             Path(self.DEFAULT_BASE_LOG_DIR) if default_root_dir is None else Path(default_root_dir)
@@ -415,14 +416,14 @@ class MultiModelTrainer:
     def __setup_logger(
         self,
         model_config: ModelConfig,
-        logger: Optional[Logger | Iterable[Logger] | bool],
-    ) -> Optional[Logger | Iterable[Logger] | bool]:
+        logger: Logger | Iterable[Logger] | bool | None,
+    ) -> Logger | Iterable[Logger] | bool | None:
         if logger is not None:
             return logger
 
         experiment_name = str(self.__next_experiment_name(self.log_dir))
 
-        loggers: List[Logger] = [
+        loggers: list[Logger] = [
             CSVLogger(
                 save_dir=self.log_dir,
                 name=model_config.name,

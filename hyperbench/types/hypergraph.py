@@ -1,13 +1,13 @@
 import torch
 
 from torch import Tensor
-from typing import Optional, List, Dict, Any, Literal, Set, Tuple, TypeAlias
+from typing import Any, Literal, TypeAlias
 from hyperbench.utils import sparse_dropout, to_0based_ids
 
 from hyperbench.types.graph import EdgeIndex, Graph
 
 
-Neighborhood: TypeAlias = Set[int]
+Neighborhood: TypeAlias = set[int]
 
 
 class HIFHypergraph:
@@ -25,11 +25,11 @@ class HIFHypergraph:
 
     def __init__(
         self,
-        network_type: Optional[Literal["asc", "directed", "undirected"]] = None,
-        metadata: Optional[Dict[str, Any]] = None,
-        incidences: Optional[List[Dict[str, Any]]] = None,
-        nodes: Optional[List[Dict[str, Any]]] = None,
-        hyperedges: Optional[List[Dict[str, Any]]] = None,
+        network_type: Literal["asc", "directed", "undirected"] | None = None,
+        metadata: dict[str, Any] | None = None,
+        incidences: list[dict[str, Any]] | None = None,
+        nodes: list[dict[str, Any]] | None = None,
+        hyperedges: list[dict[str, Any]] | None = None,
     ):
         self.network_type = network_type
         self.metadata = metadata if metadata is not None else {}
@@ -48,7 +48,7 @@ class HIFHypergraph:
         )
 
     @classmethod
-    def from_hif(cls, data: Dict[str, Any]) -> "HIFHypergraph":
+    def from_hif(cls, data: dict[str, Any]) -> "HIFHypergraph":
         """
         Create a Hypergraph from a HIF (Hypergraph Interchange Format).
 
@@ -82,7 +82,7 @@ class HIFHypergraph:
         """Return the number of hyperedges in the hypergraph."""
         return len(self.hyperedges)
 
-    def stats(self) -> Dict[str, Any]:
+    def stats(self) -> dict[str, Any]:
         """
         Compute statistics for the HIFhypergraph.
         The fields returned in the dictionary include:
@@ -105,8 +105,8 @@ class HIFHypergraph:
             A dictionary containing various statistics about the hypergraph.
         """
 
-        node_degree: Dict[Any, int] = {}
-        hyperedge_size: Dict[Any, int] = {}
+        node_degree: dict[Any, int] = {}
+        hyperedge_size: dict[Any, int] = {}
 
         for incidence in self.incidences:
             node_id = incidence.get("node")
@@ -118,8 +118,8 @@ class HIFHypergraph:
         num_hyperedges = len(self.hyperedges)
         total_incidences = len(self.incidences)
 
-        distribution_node_degree: List[int] = sorted(node_degree.values())
-        distribution_hyperedge_size: List[int] = sorted(hyperedge_size.values())
+        distribution_node_degree: list[int] = sorted(node_degree.values())
+        distribution_hyperedge_size: list[int] = sorted(hyperedge_size.values())
 
         avg_degree_node_raw = total_incidences / num_nodes if num_nodes else 0
         avg_degree_node = int(avg_degree_node_raw)
@@ -158,11 +158,11 @@ class HIFHypergraph:
             else 0
         )
 
-        distribution_node_degree_hist: Dict[int, int] = {}
+        distribution_node_degree_hist: dict[int, int] = {}
         for d in distribution_node_degree:
             distribution_node_degree_hist[d] = distribution_node_degree_hist.get(d, 0) + 1
 
-        distribution_hyperedge_size_hist: Dict[int, int] = {}
+        distribution_hyperedge_size_hist: dict[int, int] = {}
         for s in distribution_hyperedge_size:
             distribution_hyperedge_size_hist[s] = distribution_hyperedge_size_hist.get(s, 0) + 1
 
@@ -192,7 +192,7 @@ class Hypergraph:
         hyperedges: A list of hyperedges, where each hyperedge is represented as a list of node IDs.
     """
 
-    def __init__(self, hyperedges: List[List[int]]):
+    def __init__(self, hyperedges: list[list[int]]):
         self.hyperedges = hyperedges
 
     @property
@@ -229,7 +229,7 @@ class Hypergraph:
         neighbors.discard(node)
         return neighbors
 
-    def neighbors_of_all(self) -> Dict[int, Neighborhood]:
+    def neighbors_of_all(self) -> dict[int, Neighborhood]:
         """
         Build a mapping from every node to its neighbors.
 
@@ -239,20 +239,20 @@ class Hypergraph:
         Returns:
             A dictionary mapping each node ID to its set of neighbors.
         """
-        nodes: Set[int] = set()
+        nodes: set[int] = set()
         for hyperedge in self.hyperedges:
             nodes.update(hyperedge)
 
-        node_to_neighbors: Dict[int, Neighborhood] = {}
+        node_to_neighbors: dict[int, Neighborhood] = {}
         for node in nodes:
             node_to_neighbors[node] = self.neighbors_of(node)
 
         return node_to_neighbors
 
-    def stats(self) -> Dict[str, Any]:
+    def stats(self) -> dict[str, Any]:
         """Return basic statistics about the hypergraph."""
-        node_degree: Dict[int, int] = {}
-        distribution_hyperedge_size: List[int] = []
+        node_degree: dict[int, int] = {}
+        distribution_hyperedge_size: list[int] = []
         total_incidences = 0
 
         for hyperedge in self.hyperedges:
@@ -264,7 +264,7 @@ class Hypergraph:
 
         num_nodes = len(node_degree)
         num_hyperedges = len(self.hyperedges)
-        distribution_node_degree: List[int] = sorted(node_degree.values())
+        distribution_node_degree: list[int] = sorted(node_degree.values())
 
         avg_degree_hyperedge = total_incidences / num_hyperedges if num_hyperedges else 0
         total_incidences_nodes = sum(distribution_node_degree)
@@ -299,11 +299,11 @@ class Hypergraph:
             else 0
         )
 
-        distribution_hyperedge_size_hist: Dict[int, int] = {}
+        distribution_hyperedge_size_hist: dict[int, int] = {}
         for s in distribution_hyperedge_size:
             distribution_hyperedge_size_hist[s] = distribution_hyperedge_size_hist.get(s, 0) + 1
 
-        distribution_node_degree_hist: Dict[int, int] = {}
+        distribution_node_degree_hist: dict[int, int] = {}
         for d in distribution_node_degree:
             distribution_node_degree_hist[d] = distribution_node_degree_hist.get(d, 0) + 1
 
@@ -440,7 +440,7 @@ class HyperedgeIndex:
         """Return the number of incidences in the hypergraph, which is the number of columns in the hyperedge index."""
         return self.__hyperedge_index.size(1)
 
-    def nodes_in(self, hyperedge_id: int) -> List[int]:
+    def nodes_in(self, hyperedge_id: int) -> list[int]:
         """Return the list of node IDs that belong to the given hyperedge."""
         return self.__hyperedge_index[0, self.__hyperedge_index[1] == hyperedge_id].tolist()
 
@@ -458,8 +458,8 @@ class HyperedgeIndex:
 
     def get_sparse_incidence_matrix(
         self,
-        num_nodes: Optional[int] = None,
-        num_hyperedges: Optional[int] = None,
+        num_nodes: int | None = None,
+        num_hyperedges: int | None = None,
     ) -> Tensor:
         """
         Compute the sparse incidence matrix H of shape ``(num_nodes, num_hyperedges)``.
@@ -489,7 +489,7 @@ class HyperedgeIndex:
         self,
         incidence_matrix: Tensor,
         power: float,
-        num_nodes: Optional[int] = None,
+        num_nodes: int | None = None,
     ) -> Tensor:
         """
         Compute a sparse diagonal node degree matrix from row-sums of the incidence matrix.
@@ -520,7 +520,7 @@ class HyperedgeIndex:
     def get_sparse_rownormalized_node_degree_matrix(
         self,
         incidence_matrix: Tensor,
-        num_nodes: Optional[int] = None,
+        num_nodes: int | None = None,
     ) -> Tensor:
         """
         Compute the sparse normalized node degree matrix D_n^-1.
@@ -552,7 +552,7 @@ class HyperedgeIndex:
     def get_sparse_symnormalized_node_degree_matrix(
         self,
         incidence_matrix: Tensor,
-        num_nodes: Optional[int] = None,
+        num_nodes: int | None = None,
     ) -> Tensor:
         """
         Compute the sparse normalized node degree matrix D_n^-1/2.
@@ -584,7 +584,7 @@ class HyperedgeIndex:
     def get_sparse_normalized_hyperedge_degree_matrix(
         self,
         incidence_matrix: Tensor,
-        num_hyperedges: Optional[int] = None,
+        num_hyperedges: int | None = None,
     ) -> Tensor:
         """
         Compute the sparse normalized hyperedge degree matrix D_e^-1.
@@ -633,8 +633,8 @@ class HyperedgeIndex:
 
     def get_sparse_hgnn_smoothing_matrix(
         self,
-        num_nodes: Optional[int] = None,
-        num_hyperedges: Optional[int] = None,
+        num_nodes: int | None = None,
+        num_hyperedges: int | None = None,
     ) -> Tensor:
         """
         Compute the sparse HGNN Laplacian matrix for hypergraph spectral convolution.
@@ -679,8 +679,8 @@ class HyperedgeIndex:
 
     def get_sparse_hgnnp_smoothing_matrix(
         self,
-        num_nodes: Optional[int] = None,
-        num_hyperedges: Optional[int] = None,
+        num_nodes: int | None = None,
+        num_hyperedges: int | None = None,
     ) -> Tensor:
         """
         Compute the sparse HGNN+ smoothing matrix for hypergraph mean aggregation.
@@ -779,7 +779,7 @@ class HyperedgeIndex:
         with_mediators: bool = False,
         remove_selfloops: bool = True,
         return_weights: bool = False,
-    ) -> Tuple[Tensor, Optional[Tensor]]:
+    ) -> tuple[Tensor, Tensor | None]:
         """
         Construct a graph from a hypergraph with methods proposed in `HyperGCN: A New Method of Training Graph Convolutional Networks on Hypergraphs <https://arxiv.org/pdf/1809.02589.pdf>`_ paper.
         Reference implementation: `source <https://deephypergraph.readthedocs.io/en/latest/_modules/dhg/structure/graphs/graph.html#Graph.from_hypergraph_hypergcn>`_.
@@ -801,9 +801,9 @@ class HyperedgeIndex:
         device = x.device
 
         hypergraph = Hypergraph.from_hyperedge_index(self.__hyperedge_index)
-        hypergraph_edges: List[List[int]] = hypergraph.hyperedges
-        graph_edges: List[List[int]] = []
-        graph_edge_weights: List[float] = []
+        hypergraph_edges: list[list[int]] = hypergraph.hyperedges
+        graph_edges: list[list[int]] = []
+        graph_edge_weights: list[float] = []
 
         # Random direction (feature_dim, 1) for projecting nodes in each hyperedge
         # Geometrically, we are choosing a random line through the origin in ℝᵈ, where ᵈ = feature_dim
@@ -900,8 +900,8 @@ class HyperedgeIndex:
 
     def to_0based(
         self,
-        node_ids_to_rebase: Optional[Tensor] = None,
-        hyperedge_ids_to_rebase: Optional[Tensor] = None,
+        node_ids_to_rebase: Tensor | None = None,
+        hyperedge_ids_to_rebase: Tensor | None = None,
     ) -> "HyperedgeIndex":
         """
         Convert hyperedge index to the 0-based format by rebasing node IDs to the range ``[0, num_nodes-1]`` and hyperedge IDs ``[0, num_hyperedges-1]``.

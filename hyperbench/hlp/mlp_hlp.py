@@ -1,5 +1,5 @@
 from torch import Tensor, nn, optim
-from typing import Dict, Literal, Optional, TypedDict
+from typing import Literal, TypedDict
 from typing_extensions import NotRequired
 from hyperbench.models import MLP, SLP
 from hyperbench.nn import HyperedgeAggregator
@@ -30,11 +30,11 @@ class MlpEncoderConfig(TypedDict):
     in_channels: int
     out_channels: NotRequired[int]
     num_layers: NotRequired[int]
-    hidden_channels: NotRequired[Optional[int]]
-    activation_fn: NotRequired[Optional[ActivationFn]]
-    activation_fn_kwargs: NotRequired[Optional[Dict]]
-    normalization_fn: NotRequired[Optional[NormalizationFn]]
-    normalization_fn_kwargs: NotRequired[Optional[Dict]]
+    hidden_channels: NotRequired[int | None]
+    activation_fn: NotRequired[ActivationFn | None]
+    activation_fn_kwargs: NotRequired[dict | None]
+    normalization_fn: NotRequired[NormalizationFn | None]
+    normalization_fn_kwargs: NotRequired[dict | None]
     bias: NotRequired[bool]
     drop_rate: NotRequired[float]
 
@@ -58,9 +58,9 @@ class MLPHlpModule(HlpModule):
         self,
         encoder_config: MlpEncoderConfig,
         aggregation: Literal["mean", "max", "min", "sum"] = "mean",
-        loss_fn: Optional[nn.Module] = None,
+        loss_fn: nn.Module | None = None,
         lr: float = 0.001,
-        metrics: Optional[MetricCollection] = None,
+        metrics: MetricCollection | None = None,
     ):
         # The encoder outputs node embeddings of shape (num_nodes, out_channels).
         encoder = MLP(

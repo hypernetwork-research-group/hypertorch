@@ -1,5 +1,5 @@
 from torch import Tensor, nn, optim
-from typing import Dict, Literal, Optional, TypedDict
+from typing import Literal, TypedDict
 from typing_extensions import NotRequired
 from torchmetrics import MetricCollection
 from hyperbench.models import GCN, SLP
@@ -42,7 +42,7 @@ class GCNEncoderConfig(TypedDict):
     cached: NotRequired[bool]
     graph_reduction_strategy: NotRequired[Literal["clique_expansion"]]
     activation_fn: NotRequired[ActivationFn]
-    activation_fn_kwargs: NotRequired[Dict]
+    activation_fn_kwargs: NotRequired[dict]
 
 
 class GCNHlpModule(HlpModule):
@@ -65,10 +65,10 @@ class GCNHlpModule(HlpModule):
         self,
         encoder_config: GCNEncoderConfig,
         aggregation: Literal["mean", "max", "min", "sum"] = "mean",
-        loss_fn: Optional[nn.Module] = None,
+        loss_fn: nn.Module | None = None,
         lr: float = 0.001,
         weight_decay: float = 0.0,
-        metrics: Optional[MetricCollection] = None,
+        metrics: MetricCollection | None = None,
     ):
         encoder = GCN(
             in_channels=encoder_config["in_channels"],

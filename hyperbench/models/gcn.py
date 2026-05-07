@@ -1,5 +1,5 @@
 from torch import Tensor, nn
-from typing import Dict, Optional, TypedDict
+from typing import TypedDict
 from typing_extensions import NotRequired
 from torch_geometric.nn import GCNConv
 from hyperbench.utils import ActivationFn, is_layer
@@ -32,7 +32,7 @@ class GCNConfig(TypedDict):
     drop_rate: NotRequired[float]
     bias: NotRequired[bool]
     activation_fn: NotRequired[ActivationFn]
-    activation_fn_kwargs: NotRequired[Dict]
+    activation_fn_kwargs: NotRequired[dict]
     improved: NotRequired[bool]
     add_self_loops: NotRequired[bool]
     normalize: NotRequired[bool]
@@ -63,12 +63,12 @@ class GCN(nn.Module):
         self,
         in_channels: int,
         out_channels: int,
-        hidden_channels: Optional[int] = None,
+        hidden_channels: int | None = None,
         num_layers: int = 2,
         drop_rate: float = 0.0,
         bias: bool = True,
-        activation_fn: Optional[ActivationFn] = None,
-        activation_fn_kwargs: Optional[Dict] = None,
+        activation_fn: ActivationFn | None = None,
+        activation_fn_kwargs: dict | None = None,
         improved: bool = False,
         add_self_loops: bool = True,
         normalize: bool = True,
@@ -108,7 +108,7 @@ class GCN(nn.Module):
         self,
         in_channels: int,
         out_channels: int,
-        hidden_channels: Optional[int],
+        hidden_channels: int | None,
         num_layers: int,
         bias: bool,
         improved: bool,
@@ -125,7 +125,7 @@ class GCN(nn.Module):
                 f"Expected positive hidden_channels for GCN with multiple layers, got {hidden_channels}."
             )
 
-        common_kwargs: Dict[str, bool] = {
+        common_kwargs: dict[str, bool] = {
             "bias": bias,
             "improved": improved,
             "add_self_loops": add_self_loops,

@@ -1,7 +1,7 @@
 from pathlib import Path
-from typing import Any, ClassVar, Dict, Optional, Tuple, TypedDict, Mapping, Union
+from typing import Any, ClassVar, TypedDict
+from collections.abc import Mapping
 from typing_extensions import NotRequired
-
 from lightning.pytorch.loggers import Logger
 
 
@@ -96,7 +96,7 @@ class LaTexTableLogger(Logger):
     """
 
     # Class-level shared store: {experiment_name: {model_name: {metric_name: value}}}
-    __shared_stores: ClassVar[Dict[str, Dict[str, Dict[str, Any]]]] = {}
+    __shared_stores: ClassVar[dict[str, dict[str, dict[str, Any]]]] = {}
 
     def __init__(
         self,
@@ -127,19 +127,19 @@ class LaTexTableLogger(Logger):
         return self.__model_name
 
     @property
-    def store(self) -> Dict[str, Dict[str, Any]]:
+    def store(self) -> dict[str, dict[str, Any]]:
         """Access the shared store for the current experiment."""
         return dict(self.__shared_stores.get(self.__experiment_name, {}))
 
     @property
-    def save_dir(self) -> Union[str, Path]:
+    def save_dir(self) -> str | Path:
         return self.__save_dir
 
     @property
-    def experiment_name(self) -> Union[str, Path]:
+    def experiment_name(self) -> str | Path:
         return self.__experiment_name
 
-    def log_metrics(self, metrics: Dict[str, Any], step: Optional[int] = None) -> None:
+    def log_metrics(self, metrics: dict[str, Any], step: int | None = None) -> None:
         """Accumulate metrics for this model. Called by Lightning on every log step.
 
         Keeps only the latest value for each metric name. For example, if
@@ -197,7 +197,7 @@ class LaTexTableLogger(Logger):
 
     def __split_results(
         self,
-    ) -> Tuple[Dict[str, Dict[str, Any]], Dict[str, Dict[str, Any]], Dict[str, Dict[str, Any]]]:
+    ) -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, Any]], dict[str, dict[str, Any]]]:
         """
         Split all accumulated metrics into test vs train/val groups.
 
@@ -208,14 +208,14 @@ class LaTexTableLogger(Logger):
         - anything else (e.g., "epoch") --> ignored
         """
         store = self.__shared_stores.get(self.__experiment_name, {})
-        test_results: Dict[str, Dict[str, Any]] = {}
-        train_results: Dict[str, Dict[str, Any]] = {}
-        val_results: Dict[str, Dict[str, Any]] = {}
+        test_results: dict[str, dict[str, Any]] = {}
+        train_results: dict[str, dict[str, Any]] = {}
+        val_results: dict[str, dict[str, Any]] = {}
 
         for model_name, metrics in store.items():
-            test_metrics: Dict[str, Any] = {}
-            train_metrics: Dict[str, Any] = {}
-            val_metrics: Dict[str, Any] = {}
+            test_metrics: dict[str, Any] = {}
+            train_metrics: dict[str, Any] = {}
+            val_metrics: dict[str, Any] = {}
 
             for metric_name, value in metrics.items():
                 if metric_name.startswith("test"):
@@ -242,7 +242,7 @@ class LaTexTableLogger(Logger):
         self,
         sections_data: list[tuple[str, Mapping[str, Mapping[str, Any]]]],
         precision: int = 4,
-        table_caption: Optional[str] = None,
+        table_caption: str | None = None,
         sort_by: list[str] | None = None,
         border: bool = True,
     ) -> str:
@@ -379,7 +379,7 @@ class LaTexTableLogger(Logger):
     def __save_comparison_tables(
         self,
         test_results: Mapping[str, Mapping[str, Any]],
-        save_dir: Union[str, Path],
+        save_dir: str | Path,
         train_results: Mapping[str, Mapping[str, Any]] | None = None,
         val_results: Mapping[str, Mapping[str, Any]] | None = None,
         filename: str = "overall.tex",

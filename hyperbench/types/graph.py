@@ -1,7 +1,6 @@
 import torch
 
 from torch import Tensor
-from typing import List, Optional
 from hyperbench import utils
 
 
@@ -14,13 +13,13 @@ class Graph:
         edge_weights: Optional list of edge weights corresponding to each edge in ``edges``. If provided, must have the same length as ``edges``.
     """
 
-    def __init__(self, edges: List[List[int]], edge_weights: Optional[List[float]] = None):
+    def __init__(self, edges: list[list[int]], edge_weights: list[float] | None = None):
         self.edges = edges
         self.__validate_edge_weights(edge_weights)
         self.__edge_weights = edge_weights
 
     @property
-    def edge_weights(self) -> Optional[List[float]]:
+    def edge_weights(self) -> list[float] | None:
         """Return the edge weights, if present."""
         return self.__edge_weights
 
@@ -95,7 +94,7 @@ class Graph:
         edge_index = torch.tensor(self.edges, dtype=torch.long).t()
         return edge_index
 
-    def __validate_edge_weights(self, edge_weights: Optional[List[float]]) -> None:
+    def __validate_edge_weights(self, edge_weights: list[float] | None) -> None:
         if edge_weights is None:
             return
 
@@ -148,7 +147,7 @@ class EdgeIndex:
     def __init__(
         self,
         edge_index: Tensor,
-        edge_weights: Optional[Tensor] = None,
+        edge_weights: Tensor | None = None,
     ):
         self.__edge_index = edge_index
         self.__validate_edge_weights(edge_weights)
@@ -160,7 +159,7 @@ class EdgeIndex:
         return self.__edge_index
 
     @property
-    def edge_weights(self) -> Optional[Tensor]:
+    def edge_weights(self) -> Tensor | None:
         """Return the edge weight tensor, if present."""
         return self.__edge_weights
 
@@ -190,7 +189,7 @@ class EdgeIndex:
 
     def add_selfloops(
         self,
-        num_nodes: Optional[int] = None,
+        num_nodes: int | None = None,
         with_duplicate_removal: bool = True,
     ) -> "EdgeIndex":
         """
@@ -271,7 +270,7 @@ class EdgeIndex:
 
     def get_sparse_adjacency_matrix(
         self,
-        num_nodes: Optional[int] = None,
+        num_nodes: int | None = None,
         use_edge_weights: bool = False,
     ) -> Tensor:
         """
@@ -329,7 +328,7 @@ class EdgeIndex:
         adj_matrix = torch.sparse_coo_tensor(adj_indices, adj_values, size=(num_nodes, num_nodes))
         return adj_matrix.coalesce()
 
-    def get_sparse_identity_matrix(self, num_nodes: Optional[int] = None) -> Tensor:
+    def get_sparse_identity_matrix(self, num_nodes: int | None = None) -> Tensor:
         """
         Compute the sparse identity matrix I of shape (num_nodes, num_nodes).
 
@@ -371,7 +370,7 @@ class EdgeIndex:
 
     def get_sparse_normalized_degree_matrix(
         self,
-        num_nodes: Optional[int] = None,
+        num_nodes: int | None = None,
         use_edge_weights: bool = False,
     ) -> Tensor:
         """
@@ -424,7 +423,7 @@ class EdgeIndex:
 
     def get_sparse_normalized_laplacian(
         self,
-        num_nodes: Optional[int] = None,
+        num_nodes: int | None = None,
     ) -> Tensor:
         """
         Compute the sparse symmetric normalized Laplacian matrix: L = I - D^{-1/2} A D^{-1/2}.
@@ -458,7 +457,7 @@ class EdgeIndex:
 
     def get_sparse_normalized_gcn_laplacian(
         self,
-        num_nodes: Optional[int] = None,
+        num_nodes: int | None = None,
         use_edge_weights: bool = False,
     ) -> Tensor:
         """
@@ -509,7 +508,7 @@ class EdgeIndex:
             self.__edge_weights = self.__edge_weights[keep_mask]
         return self
 
-    def remove_duplicate_edges(self, num_nodes: Optional[int] = None) -> "EdgeIndex":
+    def remove_duplicate_edges(self, num_nodes: int | None = None) -> "EdgeIndex":
         """
         Remove duplicate edges from the edge index. Keeps the tensor contiguous in memory.
 
@@ -561,7 +560,7 @@ class EdgeIndex:
     def to_undirected(
         self,
         with_selfloops: bool = False,
-        num_nodes: Optional[int] = None,
+        num_nodes: int | None = None,
     ) -> "EdgeIndex":
         """
         Convert the edge index to an undirected edge index by adding reverse edges.
@@ -644,7 +643,7 @@ class EdgeIndex:
 
         return self
 
-    def __validate_edge_weights(self, edge_weights: Optional[Tensor]) -> None:
+    def __validate_edge_weights(self, edge_weights: Tensor | None) -> None:
         if edge_weights is None:
             return
 

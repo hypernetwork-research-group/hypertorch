@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any
 
 from hyperbench.train.negative_sampler import NegativeSampler
 from hyperbench.types.hdata import HData
@@ -36,10 +36,10 @@ class NegativeSamplingScheduler:
         self.negative_sampling_schedule = negative_sampling_schedule
         self.negative_sampling_every_n = negative_sampling_every_n
 
-        self.__cached_negative_samples: Optional[HData] = None
+        self.__cached_negative_samples: HData | None = None
 
     @property
-    def config(self) -> Dict[str, Any]:
+    def config(self) -> dict[str, Any]:
         """Returns the configuration of the negative sampling scheduler as a dictionary."""
         return {
             "negative_sampler": self.negative_sampler,

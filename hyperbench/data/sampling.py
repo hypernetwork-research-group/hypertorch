@@ -3,7 +3,6 @@ import torch
 from abc import ABC, abstractmethod
 from enum import Enum
 from torch import Tensor
-from typing import List
 from hyperbench.types import HData
 
 
@@ -14,7 +13,7 @@ class SamplingStrategy(Enum):
 
 class BaseSampler(ABC):
     @abstractmethod
-    def sample(self, index: int | List[int], hdata: HData) -> HData:
+    def sample(self, index: int | list[int], hdata: HData) -> HData:
         """
         Sample a sub-hypergraph and return HData with global IDs.
 
@@ -37,7 +36,7 @@ class BaseSampler(ABC):
         """
         raise NotImplementedError("Subclasses must implement the len method.")
 
-    def _normalize_index(self, index: int | List[int], size: int) -> List[int]:
+    def _normalize_index(self, index: int | list[int], size: int) -> list[int]:
         """
         Convert index to list, deduplicate, validate length.
 
@@ -92,7 +91,7 @@ class BaseSampler(ABC):
         sampled_hyperedge_index = hyperedge_index[:, sampled_hyperedges_mask]
         return sampled_hyperedge_index
 
-    def _validate_bounds(self, ids: List[int], size: int, label: str) -> None:
+    def _validate_bounds(self, ids: list[int], size: int, label: str) -> None:
         """
         Check all IDs are in [0, self.len).
 
@@ -110,7 +109,7 @@ class BaseSampler(ABC):
 
 
 class HyperedgeSampler(BaseSampler):
-    def sample(self, index: int | List[int], hdata: HData) -> HData:
+    def sample(self, index: int | list[int], hdata: HData) -> HData:
         """
         Sample hyperedges by their IDs and return the sub-hypergraph containing only those hyperedges and their incident nodes.
 
@@ -168,7 +167,7 @@ class HyperedgeSampler(BaseSampler):
 
 
 class NodeSampler(BaseSampler):
-    def sample(self, index: int | List[int], hdata: HData) -> HData:
+    def sample(self, index: int | list[int], hdata: HData) -> HData:
         """
         Sample nodes by their IDs and return the sub-hypergraph containing only those nodes and their incident hyperedges.
 

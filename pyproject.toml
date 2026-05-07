@@ -99,5 +99,6 @@ select = [
     "PERF",  # perflint: performance suggestions (https://docs.astral.sh/ruff/rules/#perflint-perf)
     "SIM",   # flake8-simplify: simplify code (https://docs.astral.sh/ruff/rules/#flake8-simplify-sim)
     "RUF",   # Ruff-specific rules (https://docs.astral.sh/ruff/rules/#ruff-specific-rules-ruf)
+    "UP",    # pyupgrade: modern Python syntax (https://docs.astral.sh/ruff/rules/#pyupgrade-up)
 ]
 ignore = ["E501", "I001"]

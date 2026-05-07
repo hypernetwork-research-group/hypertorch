@@ -1,5 +1,5 @@
 from torch import Tensor, nn, optim
-from typing import Literal, Optional, TypedDict
+from typing import Literal, TypedDict
 from typing_extensions import NotRequired
 from hyperbench.models import HyperGCN, SLP
 from hyperbench.nn import HyperedgeAggregator
@@ -56,10 +56,10 @@ class HyperGCNHlpModule(HlpModule):
         self,
         encoder_config: HyperGCNEncoderConfig,
         aggregation: Literal["mean", "max", "min", "sum"] = "mean",
-        loss_fn: Optional[nn.Module] = None,
+        loss_fn: nn.Module | None = None,
         lr: float = 0.01,
         weight_decay: float = 5e-4,
-        metrics: Optional[MetricCollection] = None,
+        metrics: MetricCollection | None = None,
     ):
         encoder = HyperGCN(
             in_channels=encoder_config["in_channels"],

@@ -1,7 +1,7 @@
 import torch
 
 from torch import Tensor, nn
-from typing import Dict, Literal, Optional
+from typing import Literal
 from hyperbench.nn import HyperedgeAggregator
 from hyperbench.utils import ActivationFn
 
@@ -47,8 +47,8 @@ class NHP(nn.Module):
         self,
         in_channels: int,
         hidden_channels: int,
-        activation_fn: Optional[ActivationFn] = None,
-        activation_fn_kwargs: Optional[Dict] = None,
+        activation_fn: ActivationFn | None = None,
+        activation_fn_kwargs: dict | None = None,
         aggregation: Literal["mean", "maxmin"] = "maxmin",
         bias: bool = True,
     ):

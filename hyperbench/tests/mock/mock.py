@@ -1,5 +1,6 @@
 from os import PathLike
-from typing import IO, Any, Iterator
+from typing import IO, Any
+from collections.abc import Iterator
 from unittest.mock import MagicMock
 from contextlib import contextmanager
 

@@ -115,7 +115,7 @@ def test_decompress_returns_correct_json(tmp_path):
     assert decompressed_path.endswith(".json")
     assert os.path.exists(decompressed_path)
 
-    with open(decompressed_path, "r") as f:
+    with open(decompressed_path) as f:
         decompressed_data = json.load(f)
 
     assert decompressed_data == expected_data

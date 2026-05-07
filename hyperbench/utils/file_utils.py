@@ -2,8 +2,6 @@ import os
 import tempfile
 import zstandard as zstd
 
-from typing import Optional
-
 
 def decompress_zst(zst_path: str) -> str:
     """
@@ -38,7 +36,7 @@ def compress_to_zst(json_path: str) -> bytes:
     return compressed_content
 
 
-def write_to_disk(dataset_name: str, content: bytes, output_dir: Optional[str] = None) -> None:
+def write_to_disk(dataset_name: str, content: bytes, output_dir: str | None = None) -> None:
     """
     Writes the compressed content to disk in the specified output directory or a default location.
     Args:

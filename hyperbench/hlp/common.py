@@ -2,7 +2,7 @@ import torch
 import lightning as L
 
 from torch import Tensor, nn
-from typing import Any, Dict, Optional
+from typing import Any
 from torchmetrics import MetricCollection
 from hyperbench.train import NegativeSampler, NegativeSamplingSchedule, NegativeSamplingScheduler
 from hyperbench.types import HData
@@ -28,9 +28,9 @@ class HlpModule(L.LightningModule):
         self,
         decoder: nn.Module,
         loss_fn: nn.Module,
-        encoder: Optional[nn.Module] = None,
-        metrics: Optional[MetricCollection] = None,
-        negative_sampler: Optional[NegativeSampler] = None,
+        encoder: nn.Module | None = None,
+        metrics: MetricCollection | None = None,
+        negative_sampler: NegativeSampler | None = None,
         negative_sampling_schedule: NegativeSamplingSchedule = NegativeSamplingSchedule.EVERY_EPOCH,
         negative_sampling_every_n: int = 1,
     ):
@@ -57,7 +57,7 @@ class HlpModule(L.LightningModule):
             )
 
     @property
-    def negative_sampling_config(self) -> Dict[str, Any]:
+    def negative_sampling_config(self) -> dict[str, Any]:
         if self.__negative_sampling_scheduler is None:
             return {}
         return self.__negative_sampling_scheduler.config
@@ -125,7 +125,7 @@ class HlpModule(L.LightningModule):
             batch_size=batch_size,
         )
 
-    def _get_stage_metrics(self, stage: Stage) -> Optional[MetricCollection]:
+    def _get_stage_metrics(self, stage: Stage) -> MetricCollection | None:
         """
         Return the metric collection for the given stage, or ``None``.
 

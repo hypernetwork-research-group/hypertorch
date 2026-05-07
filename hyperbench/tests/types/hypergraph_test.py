@@ -16,7 +16,7 @@ def seed():
 
 
 def test_build_HIFHypergraph_instance():
-    with open(f"{MOCK_BASE_PATH}/algebra.hif.json", "r") as f:
+    with open(f"{MOCK_BASE_PATH}/algebra.hif.json") as f:
         hiftext = json.load(f)
 
     hypergraph = HIFHypergraph.from_hif(hiftext)
@@ -473,7 +473,7 @@ def test_hifhypergraph_stats_returns_correct_statistics():
         "distribution_hyperedge_size_hist": {3: 1, 2: 1},
     }
 
-    with open(f"{MOCK_BASE_PATH}/hif_stats.hif.json", "r") as f:
+    with open(f"{MOCK_BASE_PATH}/hif_stats.hif.json") as f:
         hiftext = json.load(f)
 
     hypergraph = HIFHypergraph.from_hif(hiftext)

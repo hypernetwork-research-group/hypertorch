@@ -6,7 +6,7 @@ import torch
 import warnings
 
 from huggingface_hub import hf_hub_download
-from typing import Optional, Dict, Any, List
+from typing import Any
 from torch import Tensor
 from hyperbench.types import HData, HIFHypergraph
 from hyperbench.utils import (
@@ -26,8 +26,8 @@ class HIFProcessor:
 
     @staticmethod
     def transform_attrs(
-        attrs: Dict[str, Any],
-        attr_keys: Optional[List[str]] = None,
+        attrs: dict[str, Any],
+        attr_keys: list[str] | None = None,
     ) -> Tensor:
         """
         Extract and encode numeric attributes to tensor.
@@ -72,7 +72,7 @@ class HIFProcessor:
         node_id_to_idx = {node.get("node"): idx for idx, node in enumerate(hypergraph.nodes)}
         # Initialize edge_set only with edges that have incidences, so that
         # we avoid inflating edge count due to isolated nodes/missing incidences
-        hyperedge_id_to_idx: Dict[Any, int] = {}
+        hyperedge_id_to_idx: dict[Any, int] = {}
 
         node_ids = []
         hyperedge_ids = []
@@ -122,7 +122,7 @@ class HIFProcessor:
             num_hyperedges=num_hyperedges,
         )
 
-    def __collect_attr_keys(attr_keys: List[Dict[str, Any]]) -> List[str]:
+    def __collect_attr_keys(attr_keys: list[dict[str, Any]]) -> list[str]:
         """
         Collect unique numeric attribute keys from a list of attribute dictionaries.
 
@@ -144,9 +144,9 @@ class HIFProcessor:
     def __process_hyperedge_attr(
         cls,
         hypergraph: HIFHypergraph,
-        hyperedge_id_to_idx: Dict[Any, int],
+        hyperedge_id_to_idx: dict[Any, int],
         num_hyperedges: int,
-    ) -> Optional[Tensor]:
+    ) -> Tensor | None:
         # hyperedge-attr: shape [num_hyperedges, num_hyperedge_attributes]
         hyperedge_attr = None
         has_hyperedges = hypergraph.hyperedges is not None and len(hypergraph.hyperedges) > 0
@@ -155,7 +155,7 @@ class HIFProcessor:
         )
 
         if has_any_hyperedge_attrs:
-            hyperedge_id_to_attrs: Dict[Any, Dict[str, Any]] = {
+            hyperedge_id_to_attrs: dict[Any, dict[str, Any]] = {
                 e.get("edge"): e.get("attrs", {}) for e in hypergraph.hyperedges
             }
 
@@ -204,9 +204,9 @@ class HIFProcessor:
     def __process_hyperedge_weights(
         cls,
         hypergraph: HIFHypergraph,
-        hyperedge_id_to_idx: Dict[Any, int],
+        hyperedge_id_to_idx: dict[Any, int],
         num_hyperedges: int,
-    ) -> Optional[Tensor]:
+    ) -> Tensor | None:
         has_hyperedges = hypergraph.hyperedges is not None and len(hypergraph.hyperedges) > 0
         has_any_hyperedge_attrs = has_hyperedges and any(
             "attrs" in edge for edge in hypergraph.hyperedges
@@ -217,7 +217,7 @@ class HIFProcessor:
             return None
 
         # Map real edge id -> attrs (self-loops are absent and will default to 1.0)
-        hyperedge_id_to_attrs: Dict[Any, Dict[str, Any]] = {
+        hyperedge_id_to_attrs: dict[Any, dict[str, Any]] = {
             e.get("edge"): e.get("attrs", {}) for e in hypergraph.hyperedges
         }
 
@@ -305,7 +305,7 @@ class HIFLoader:
 
     @classmethod
     def load_by_name(
-        cls, dataset_name: str, hf_sha: Optional[str] = None, save_on_disk: bool = False
+        cls, dataset_name: str, hf_sha: str | None = None, save_on_disk: bool = False
     ) -> HData:
         current_dir = os.path.dirname(os.path.abspath(__file__))
         zst_filename = os.path.join(current_dir, "datasets", f"{dataset_name}.json.zst")
@@ -369,7 +369,7 @@ class HIFLoader:
 
     @classmethod
     def __extract_hif(cls, json_file: str) -> HIFHypergraph:
-        with open(json_file, "r") as f:
+        with open(json_file) as f:
             hiftext = json.load(f)
         if not validate_hif_json(json_file):
             raise ValueError(f"Dataset from file '{json_file}' is not HIF-compliant.")

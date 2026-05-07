@@ -1,7 +1,8 @@
 import torch
 
 from torch import Tensor
-from typing import Optional, Sequence, Dict, Any
+from typing import Any
+from collections.abc import Sequence
 from hyperbench.utils import (
     NodeSpaceFiller,
     NodeSpaceSetting,
@@ -49,20 +50,20 @@ class HData:
         self,
         x: Tensor,
         hyperedge_index: Tensor,
-        hyperedge_weights: Optional[Tensor] = None,
-        hyperedge_attr: Optional[Tensor] = None,
-        num_nodes: Optional[int] = None,
-        num_hyperedges: Optional[int] = None,
-        global_node_ids: Optional[Tensor] = None,
-        y: Optional[Tensor] = None,
+        hyperedge_weights: Tensor | None = None,
+        hyperedge_attr: Tensor | None = None,
+        num_nodes: int | None = None,
+        num_hyperedges: int | None = None,
+        global_node_ids: Tensor | None = None,
+        y: Tensor | None = None,
     ):
         self.x: Tensor = x
 
         self.hyperedge_index: Tensor = hyperedge_index
 
-        self.hyperedge_weights: Optional[Tensor] = hyperedge_weights
+        self.hyperedge_weights: Tensor | None = hyperedge_weights
 
-        self.hyperedge_attr: Optional[Tensor] = hyperedge_attr
+        self.hyperedge_attr: Tensor | None = hyperedge_attr
 
         hyperedge_index_wrapper = HyperedgeIndex(hyperedge_index)
 
@@ -78,7 +79,7 @@ class HData:
             num_hyperedges if num_hyperedges is not None else hyperedge_index_wrapper.num_hyperedges
         )
 
-        self.global_node_ids: Optional[Tensor] = (
+        self.global_node_ids: Tensor | None = (
             # torch.arange is to handle isolated nodes, as they are already considered
             # when computing self.num_nodes via num_nodes_if_isolated_exist
             global_node_ids if global_node_ids is not None else torch.arange(self.num_nodes)
@@ -108,7 +109,7 @@ class HData:
         )
 
     @classmethod
-    def cat_same_node_space(cls, hdatas: Sequence["HData"], x: Optional[Tensor] = None) -> "HData":
+    def cat_same_node_space(cls, hdatas: Sequence["HData"], x: Tensor | None = None) -> "HData":
         """
         Concatenate :class:`HData` instances that share the same node space, meaning nodes with the same ID in different instances are the same node.
         This is useful when combining positive and negative hyperedges that reference the same set of nodes.
@@ -336,7 +337,7 @@ class HData:
     def enrich_node_features(
         self,
         enricher: NodeEnricher,
-        enrichment_mode: Optional[EnrichmentMode] = None,
+        enrichment_mode: EnrichmentMode | None = None,
     ) -> "HData":
         """
         Enrich node features using the provided node feature enricher.
@@ -370,7 +371,7 @@ class HData:
         self,
         hdata_with_features: "HData",
         node_space_setting: NodeSpaceSetting = "transductive",
-        fill_value: Optional[NodeSpaceFiller] = None,
+        fill_value: NodeSpaceFiller | None = None,
     ) -> "HData":
         """
         Copy node features from another :class:`HData` by aligning features by ``global_node_ids``.
@@ -484,7 +485,7 @@ class HData:
     def enrich_hyperedge_weights(
         self,
         enricher: HyperedgeEnricher,
-        enrichment_mode: Optional[EnrichmentMode] = None,
+        enrichment_mode: EnrichmentMode | None = None,
     ) -> "HData":
         """Enrich hyperedge weights using the provided hyperedge weight enricher.
         Args:
@@ -519,7 +520,7 @@ class HData:
     def enrich_hyperedge_attr(
         self,
         enricher: HyperedgeEnricher,
-        enrichment_mode: Optional[EnrichmentMode] = None,
+        enrichment_mode: EnrichmentMode | None = None,
     ) -> "HData":
         """
         Enrich hyperedge features using the provided hyperedge feature enricher.
@@ -606,7 +607,7 @@ class HData:
             y=y,
         )
 
-    def shuffle(self, seed: Optional[int] = None) -> "HData":
+    def shuffle(self, seed: int | None = None) -> "HData":
         """
         Return a new :class:`HData` instance with hyperedge IDs randomly reassigned.
 
@@ -764,7 +765,7 @@ class HData:
         """Return a copy of this instance with a y attribute of all zeros."""
         return self.with_y_to(0.0)
 
-    def stats(self) -> Dict[str, Any]:
+    def stats(self) -> dict[str, Any]:
         """
         Compute statistics for the hypergraph data.
         The fields returned in the dictionary include:
@@ -867,7 +868,7 @@ class HData:
 
     def __to_fill_features(
         self,
-        fill_value: Optional[NodeSpaceFiller],
+        fill_value: NodeSpaceFiller | None,
         num_features: int,
         dtype: torch.dtype,
         device: torch.device,
@@ -900,7 +901,7 @@ class HData:
     def __validate_node_space_setting(
         self,
         node_space_setting: NodeSpaceSetting,
-        fill_value: Optional[NodeSpaceFiller],
+        fill_value: NodeSpaceFiller | None,
     ) -> None:
         if is_transductive_setting(node_space_setting) and fill_value is not None:
             raise ValueError(

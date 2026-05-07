@@ -1,4 +1,4 @@
-.PHONY: all build setup setup-tensorboard check format typecheck test stest run docs docs-build docs-serve loc clean destroy help
+.PHONY: all build setup setup-tensorboard check format typecheck lint lint-fix lint-rule lint-rule-fix test stest run docs docs-build docs-serve loc clean destroy help
 
 PROJECT_NAME=hyperbench
 UV=uv
@@ -30,6 +30,22 @@ format:
 typecheck:
 	@echo '=== Type checker ==='
 	$(UV) run $(TYPECHECKER) check
+
+lint:
+	@echo '=== Linting ==='
+	$(UV) run $(LINTER) check
+
+lint-fix:
+	@echo '=== Linting ==='
+	$(UV) run $(LINTER) check --fix
+
+lint-rule:
+	@echo '=== Linting a single rule ==='
+	$(UV) run $(LINTER) check --select $(R)
+
+lint-rule-fix:
+	@echo '=== Linting a single rule ==='
+	$(UV) run $(LINTER) check --select $(R) --fix
 
 test:
 	@echo '=== Tests ==='
@@ -79,19 +95,23 @@ destroy: clean
 help:
 	@echo "Usage: make [target]"
 	@echo "Targets:"
-	@echo "  all                  - Clean, setup, lint, typecheck, test"
-	@echo "  build                - Clean and setup"
-	@echo "  setup                - Install dependencies"
-	@echo "  setup-tensorboard    - Install optional TensorBoard dependency"
-	@echo "  format               - Run linter and formatter"
-	@echo "  typecheck            - Run type checker"
-	@echo "  test                 - Run all tests"
-	@echo "  stest T=<test_name>  - Run a single test"
-	@echo "  run <file.py>        - Run a single file"
-	@echo "  check                - Run lint and typecheck"
-	@echo "  docs                 - Build and serve documentation"
-	@echo "  docs-build           - Build documentation without serving"
-	@echo "  docs-serve           - Serve built documentation locally at $(MKDOCS_URL)"
-	@echo "  loc                  - Count lines of code"
-	@echo "  clean                - Remove build/test artifacts"
-	@echo "  destroy              - Destroy the environment"
+	@echo "  all                     - Clean, setup, lint, typecheck, test"
+	@echo "  build                   - Clean and setup"
+	@echo "  setup                   - Install dependencies"
+	@echo "  setup-tensorboard       - Install optional TensorBoard dependency"
+	@echo "  format                  - Run linter and formatter"
+	@echo "  typecheck               - Run type checker"
+	@echo "  lint                    - Run linter"
+	@echo "  lint-fix                - Run linter and fix issues"
+	@echo "  lint-rule R=<rule>      - Run linter for a specific rule (e.g., R=E501)"
+	@echo "  lint-rule-fix R=<rule>  - Run linter for a specific rule and fix issues"
+	@echo "  test                    - Run all tests"
+	@echo "  stest T=<test_name>     - Run a single test"
+	@echo "  run <file.py>           - Run a single file"
+	@echo "  check                   - Run lint and typecheck"
+	@echo "  docs                    - Build and serve documentation"
+	@echo "  docs-build              - Build documentation without serving"
+	@echo "  docs-serve              - Serve built documentation locally at $(MKDOCS_URL)"
+	@echo "  loc                     - Count lines of code"
+	@echo "  clean                   - Remove build/test artifacts"
+	@echo "  destroy                 - Destroy the environment"

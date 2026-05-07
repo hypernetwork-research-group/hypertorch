@@ -1,5 +1,5 @@
 from torch import Tensor, nn, optim
-from typing import Literal, Optional, TypedDict
+from typing import Literal, TypedDict
 from typing_extensions import NotRequired
 from torchmetrics import MetricCollection
 from hyperbench.models import GCN, Node2VecGCN, Node2VecConfig, SLP
@@ -62,10 +62,10 @@ class Node2VecGCNHlpModule(HlpModule):
         self,
         encoder_config: Node2VecGCNEncoderConfig,
         aggregation: Literal["mean", "max", "min", "sum"] = "mean",
-        loss_fn: Optional[nn.Module] = None,
+        loss_fn: nn.Module | None = None,
         lr: float = 0.001,
         weight_decay: float = 0.0,
-        metrics: Optional[MetricCollection] = None,
+        metrics: MetricCollection | None = None,
     ):
         self.mode = encoder_config.get("mode", NODE2VEC_JOINT_MODE)
         self.embedding_dim = encoder_config["num_features"]
@@ -111,7 +111,7 @@ class Node2VecGCNHlpModule(HlpModule):
         self,
         x: Tensor,
         hyperedge_index: Tensor,
-        global_node_ids: Optional[Tensor] = None,
+        global_node_ids: Tensor | None = None,
     ) -> Tensor:
         gcn_edge_index = self.__to_gcn_edge_index(hyperedge_index)
 

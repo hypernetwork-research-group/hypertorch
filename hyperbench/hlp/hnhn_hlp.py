@@ -1,4 +1,4 @@
-from typing import Literal, Optional, TypedDict
+from typing import Literal, TypedDict
 from torch import Tensor, nn, optim
 from torchmetrics import MetricCollection
 from typing_extensions import NotRequired
@@ -54,12 +54,12 @@ class HNHNHlpModule(HlpModule):
         self,
         encoder_config: HNHNEncoderConfig,
         aggregation: Literal["mean", "max", "min", "sum"] = "mean",
-        loss_fn: Optional[nn.Module] = None,
+        loss_fn: nn.Module | None = None,
         lr: float = 0.01,
         weight_decay: float = 5e-4,
         scheduler_step_size: int = 100,
         scheduler_gamma: float = 0.51,
-        metrics: Optional[MetricCollection] = None,
+        metrics: MetricCollection | None = None,
     ):
         encoder = HNHN(
             in_channels=encoder_config["in_channels"],

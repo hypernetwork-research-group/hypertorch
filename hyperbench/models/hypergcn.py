@@ -1,4 +1,3 @@
-from typing import Optional
 from torch import Tensor, nn
 from hyperbench.nn import HyperGCNConv
 from hyperbench.types import EdgeIndex, HyperedgeIndex
@@ -37,7 +36,7 @@ class HyperGCN(nn.Module):
         super().__init__()
         self.fast = fast
         self.use_mediator = use_mediator
-        self.cached_gcn_laplacian_matrix: Optional[Tensor] = None
+        self.cached_gcn_laplacian_matrix: Tensor | None = None
 
         self.layers = nn.ModuleList(
             [

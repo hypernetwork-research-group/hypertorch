@@ -2,7 +2,7 @@ import torch
 import warnings
 
 from torch import Tensor, nn
-from typing import Literal, Optional
+from typing import Literal
 from torchmetrics import MetricCollection
 from hyperbench.models import CommonNeighbors
 from hyperbench.types import HData, Hypergraph
@@ -26,9 +26,9 @@ class CommonNeighborsHlpModule(HlpModule):
         self,
         train_hyperedge_index: Tensor,
         aggregation: Literal["mean", "min", "sum"] = "mean",
-        decoder: Optional[nn.Module] = None,
-        loss_fn: Optional[nn.Module] = None,
-        metrics: Optional[MetricCollection] = None,
+        decoder: nn.Module | None = None,
+        loss_fn: nn.Module | None = None,
+        metrics: MetricCollection | None = None,
     ):
         super().__init__(
             decoder=decoder if decoder is not None else CommonNeighbors(aggregation),

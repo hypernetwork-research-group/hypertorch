@@ -3,7 +3,7 @@ import torch
 import torch.nn.functional as F
 
 from torch import Tensor, nn
-from typing import Literal, Optional, Tuple
+from typing import Literal
 from hyperbench.nn import HyperedgeAggregator, NodeAggregator, VilLainLoss, VilLainLossParts
 from hyperbench.types import HyperedgeIndex
 
@@ -75,9 +75,9 @@ class VilLain(nn.Module):
     def forward(
         self,
         hyperedge_index: Tensor,
-        node_ids: Optional[Tensor] = None,
-        num_hyperedges: Optional[int] = None,
-    ) -> Tuple[Tensor, VilLainLossParts]:
+        node_ids: Tensor | None = None,
+        num_hyperedges: int | None = None,
+    ) -> tuple[Tensor, VilLainLossParts]:
         """
         Compute the self-supervised VilLain objective.
         Use ``hyperedge_embeddings`` or ``node_embeddings`` to generate final embeddings for inference after training.
@@ -102,9 +102,9 @@ class VilLain(nn.Module):
     def loss(
         self,
         hyperedge_index: Tensor,
-        node_ids: Optional[Tensor] = None,
-        num_hyperedges: Optional[int] = None,
-    ) -> Tuple[Tensor, VilLainLossParts]:
+        node_ids: Tensor | None = None,
+        num_hyperedges: int | None = None,
+    ) -> tuple[Tensor, VilLainLossParts]:
         """
         Compute the self-supervised VilLain objective.
 
@@ -143,8 +143,8 @@ class VilLain(nn.Module):
     def hyperedge_embeddings(
         self,
         hyperedge_index: Tensor,
-        node_ids: Optional[Tensor] = None,
-        num_hyperedges: Optional[int] = None,
+        node_ids: Tensor | None = None,
+        num_hyperedges: int | None = None,
     ) -> Tensor:
         """
         Generate hyperedge embeddings by averaging propagated hyperedge states.
@@ -171,8 +171,8 @@ class VilLain(nn.Module):
     def node_embeddings(
         self,
         hyperedge_index: Tensor,
-        node_ids: Optional[Tensor] = None,
-        num_hyperedges: Optional[int] = None,
+        node_ids: Tensor | None = None,
+        num_hyperedges: int | None = None,
     ) -> Tensor:
         """
         Generate node embeddings by averaging propagated node states.
@@ -202,8 +202,8 @@ class VilLain(nn.Module):
     def __embeddings(
         self,
         hyperedge_index: Tensor,
-        node_ids: Optional[Tensor],
-        num_hyperedges: Optional[int],
+        node_ids: Tensor | None,
+        num_hyperedges: int | None,
         mode: Literal["node", "hyperedge"] = "node",
     ) -> Tensor:
         """
@@ -248,7 +248,7 @@ class VilLain(nn.Module):
             #             as it takes the first 4 channels of the raw embedding as the final embedding.
             return final_embeddings[:, : self.embedding_dim]
 
-    def __get_initial_virtual_node_features(self, node_ids: Optional[Tensor] = None) -> Tensor:
+    def __get_initial_virtual_node_features(self, node_ids: Tensor | None = None) -> Tensor:
         """
         Convert trainable node logits into flattened virtual-label probabilities.
 
@@ -288,7 +288,7 @@ class VilLain(nn.Module):
         x: Tensor,
         hyperedge_index: Tensor,
         num_hyperedges: int,
-    ) -> Tuple[Tensor, Tensor]:
+    ) -> tuple[Tensor, Tensor]:
         """
         One round of message passing, where nodes send messages to hyperedges and then hyperedges send messages back to nodes.
 
@@ -317,7 +317,7 @@ class VilLain(nn.Module):
     def __resolve_num_hyperedges(
         self,
         hyperedge_index: Tensor,
-        num_hyperedges: Optional[int],
+        num_hyperedges: int | None,
     ) -> int:
         """
         Return the explicit hyperedge count or infer it from the ``hyperedge_index``, if not provided.
