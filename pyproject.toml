@@ -89,3 +89,9 @@ directory = "htmlcov"
 
 [tool.ruff]
 line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "I",  # isort (https://docs.astral.sh/ruff/rules/#isort-i)
+]
+ignore = ["I001"]
