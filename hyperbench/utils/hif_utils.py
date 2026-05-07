@@ -28,12 +28,14 @@ def validate_hif_json(filename: str) -> bool:
         with resources.files("hyperbench.utils.schema").joinpath("hif_schema.json").open("r") as f:
             schema = json.load(f)
     validator = fastjsonschema.compile(schema)
-    hiftext = json.load(open(filename, "r"))
-    try:
-        validator(hiftext)
-        return True
-    except Exception:
-        return False
+
+    with open(filename, "r") as f:
+        hiftext = json.load(f)
+        try:
+            validator(hiftext)
+            return True
+        except Exception:
+            return False
 
 
 def get_hf_datasets_shas(
