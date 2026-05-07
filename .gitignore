@@ -98,8 +98,7 @@ env.bak/
 venv.bak/
 
 # Documentation build output (Zensical)
-/site
-.github/site
+/docs/site
 
 # Pyre type checker
 .pyre/

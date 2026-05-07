@@ -8,10 +8,12 @@
 
 [project]
 
+docs_dir = "docs"
+site_dir = "docs/site"
 # The site_name is shown in the page header and the browser window title
 #
 # Read more: https://zensical.org/docs/setup/basics/#site_name
-site_name = "Hyperbench Documentation"
+site_name = "©Hyperbench Documentation"
 
 # The site_description is included in the HTML head and should contain a
 # meaningful description of the site content for use by search engines.
@@ -50,15 +52,20 @@ nav = [
     { "Overview" = "user-guide/user.md" },
   ] },
   { "API Reference" = [
-    { "API" = "api/reference.md" },
+    { "Overview" = "api/reference.md" },
+    { "Data" = "api/data.md" },
+    { "HLP" = "api/hlp.md" },
+    { "Models" = "api/models.md" },
+    { "NN" = "api/nn.md" },
+    { "Train" = "api/train.md" },
+    { "Types" = "api/types.md" },
+    { "Utils" = "api/utils.md" },
   ] },
   { "Contributing" = "contributing.md" },
 ]
 
 # Additional CSS files, relative to docs/.
 extra_css = ["stylesheets/extra.css"]
-
-[project.extra]
 
 [[project.extra.social]]
 icon = "fontawesome/brands/github"
@@ -148,6 +155,8 @@ features = [
   "toc.integrate",
   "search.highlight",
   "content.code.copy",
+  "content.code.select",
+
 ]
 
 # ----------------------------------------------------------------------------

@@ -1,34 +1,16 @@
 # API Reference
 
-Complete API documentation for all Hyperbench modules.
+Complete API documentation for Hyperbench modules.
 
 Developer note: rendering is configured in `zensical.toml` under
 `[project.plugins.mkdocstrings]` (handler options, source paths, docstring style).
 
-## Data Module
+## Modules
 
-::: hyperbench.data
-
-## HLP Module
-
-::: hyperbench.hlp
-
-## Models Module
-
-::: hyperbench.models
-
-## NN Module
-
-::: hyperbench.nn
-
-## Train Module
-
-::: hyperbench.train
-
-## Types Module
-
-::: hyperbench.types
-
-## Utils Module
-
-::: hyperbench.utils
+- [Data](data.md)
+- [HLP](hlp.md)
+- [Models](models.md)
+- [NN](nn.md)
+- [Train](train.md)
+- [Types](types.md)
+- [Utils](utils.md)

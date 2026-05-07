@@ -162,7 +162,7 @@ class MarkdownTableLogger(Logger):
     ) -> str:
         """Build a markdown comparison table from model results.
 
-        Example:
+        Examples:
             Input:
 
             ```python

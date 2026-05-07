@@ -374,7 +374,7 @@ class HyperedgeIndex:
     Each column in the tensor represents an incidence between a node and a hyperedge, with the first row containing node indices
     and the second row containing corresponding hyperedge indices.
 
-    Example:
+    Examples:
         >>> hyperedge_index = [[0, 1, 2, 0],
         ...                    [0, 0, 0, 1]]
 
@@ -534,7 +534,7 @@ class HyperedgeIndex:
         Returns:
             The sparse diagonal matrix D_n^-1 of shape ``(num_nodes, num_nodes)``.
         """
-        # Example: hyperedge_index = [[0, 1, 2, 0],
+        # Examples: hyperedge_index = [[0, 1, 2, 0],
         #                             [0, 0, 0, 1]]
         #                         hyperedges 0  1
         #          -> incidence_matrix H = [[1, 1], node 0
@@ -566,7 +566,7 @@ class HyperedgeIndex:
         Returns:
             The sparse diagonal matrix D_n^-1/2 of shape ``(num_nodes, num_nodes)``.
         """
-        # Example: hyperedge_index = [[0, 1, 2, 0],
+        # Examples: hyperedge_index = [[0, 1, 2, 0],
         #                             [0, 0, 0, 1]]
         #                         hyperedges 0  1
         #          -> incidence_matrix H = [[1, 1], node 0
@@ -602,7 +602,7 @@ class HyperedgeIndex:
         device = self.__hyperedge_index.device
         num_hyperedges = num_hyperedges if num_hyperedges is not None else self.num_hyperedges
 
-        # Example: hyperedge_index = [[0, 1, 2, 0],
+        # Examples: hyperedge_index = [[0, 1, 2, 0],
         #                             [0, 0, 0, 1]]
         #                         hyperedges 0  1
         #          -> incidence_matrix H = [[1, 1], node 0
@@ -611,13 +611,13 @@ class HyperedgeIndex:
         #          -> column-sum gives hyperedge degrees: d_e = [3, 1], shape (num_hyperedges,)
         degrees = torch.sparse.sum(incidence_matrix, dim=0).to_dense()
 
-        # Example: d_e = [3, 1]
+        # Examples: d_e = [3, 1]
         #          -> degree_inv = [1/3, 1]
         degree_inv = degrees.pow(-1)
         degree_inv[degree_inv == float("inf")] = 0
 
         # Construct the sparse diagonal matrix D_e^{-1}
-        # Example: degree_inv = [1/3, 1] as the diagonal values,
+        # Examples: degree_inv = [1/3, 1] as the diagonal values,
         #          diagonal_indices = [[0, 0],
         #                              [1, 1]]
         #               hyperedges 0  1
@@ -751,7 +751,7 @@ class HyperedgeIndex:
         incidence_matrix = self.get_sparse_incidence_matrix()
 
         # A = H @ H^T gives adjacency with self-loops on diagonal
-        # Example: For hyperedge_index = [[0, 1, 2, 0],
+        # Examples: For hyperedge_index = [[0, 1, 2, 0],
         #                                 [0, 0, 0, 1]]
         #                         hyperedges 0  1
         #          -> incidence_matrix H = [[1, 1], node 0
@@ -850,7 +850,7 @@ class HyperedgeIndex:
 
     def remove_duplicate_edges(self) -> "HyperedgeIndex":
         """Remove duplicate edges from the hyperedge index. Keeps the tensor contiguous in memory."""
-        # Example: hyperedge_index = [[0, 1, 2, 2, 0, 3, 2],
+        # Examples: hyperedge_index = [[0, 1, 2, 2, 0, 3, 2],
         #                             [3, 4, 4, 3, 4, 3, 3]], shape (2, 7)
         #          -> after torch.unique(..., dim=1):
         #             hyperedge_index = [[0, 1, 2, 2, 0, 3],
@@ -865,7 +865,7 @@ class HyperedgeIndex:
         """
         Remove hyperedges that contain fewer than k nodes.
 
-        Example:
+        Examples:
             >>> hyperedge_index = [[0, 1, 2, 3, 5, 4],
             ...                    [0, 0, 1, 1, 2, 1]], shape (2, |E| = 6)
 
@@ -915,14 +915,14 @@ class HyperedgeIndex:
         Returns:
             A new :class:`HyperedgeIndex` instance with the hyperedge index converted to 0-based format.
         """
-        # Example: hyperedge_index after sorting: [[0, 0, 1, 2, 3, 4],
+        # Examples: hyperedge_index after sorting: [[0, 0, 1, 2, 3, 4],
         #                                          [3, 4, 4, 3, 4, 3]]
         #          node_ids_to_rebase = [0, 1, 2, 3, 4]
         #          -> hyperedge_index after remapping: [[0, 0, 1, 2, 3, 4],
         #                                               [3, 4, 4, 3, 4, 3]]
         self.__hyperedge_index[0] = to_0based_ids(self.all_node_ids, node_ids_to_rebase)
 
-        # Example: hyperedge_index after remapping nodes: [[0, 0, 1, 2, 3, 4],
+        # Examples: hyperedge_index after remapping nodes: [[0, 0, 1, 2, 3, 4],
         #                                                  [3, 4, 4, 3, 4, 3]]
         #          hyperedge_ids_to_rebase = [3, 4]
         #          -> hyperedge_index after remapping hyperedges: [[0, 0, 1, 2, 3, 4],

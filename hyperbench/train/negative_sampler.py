@@ -268,7 +268,7 @@ class RandomNegativeSampler(SameNodeSpaceNegativeSampler):
         The resulting negative samples are returned as a new :class:`HData` object with remapped 0-based node and hyperedge IDs, if ``self.return_0based_negatives == True``.
         Otherwise, the negative samples retain their original global node and hyperedge IDs from the input data.
 
-        Example:
+        Examples:
             With ``self.return_0based_negatives = True``:
 
             >>> num_negative_samples = 2
@@ -380,7 +380,7 @@ class RandomNegativeSampler(SameNodeSpaceNegativeSampler):
         for new_hyperedge_id in range(self.num_negative_samples):
             # Sample with multinomial without replacement to ensure unique node ids
             # and assign each node id equal probability of being selected by setting all of them to 1
-            # Example: num_nodes_per_sample=3, max_node_id=5
+            # Examples: num_nodes_per_sample=3, max_node_id=5
             #          -> possible output: [2, 0, 4]
             equal_probabilities = torch.ones(hdata.num_nodes, device=device)
             sampled_node_ids = torch.multinomial(
@@ -390,7 +390,7 @@ class RandomNegativeSampler(SameNodeSpaceNegativeSampler):
                 generator=generator,
             )
 
-            # Example: sampled_node_ids = [2, 0, 4], new_hyperedge_id=0, new_hyperedge_id_offset=3
+            # Examples: sampled_node_ids = [2, 0, 4], new_hyperedge_id=0, new_hyperedge_id_offset=3
             #          -> hyperedge_index = [[2, 0, 4],
             #                                [3, 3, 3]]  # this is sampled_hyperedge_id_tensor
             sampled_hyperedge_id_tensor = torch.full(
@@ -403,7 +403,7 @@ class RandomNegativeSampler(SameNodeSpaceNegativeSampler):
             )
             sampled_hyperedge_indexes.append(sampled_hyperedge_index)
 
-            # Example: nodes = [0, 1, 2],
+            # Examples: nodes = [0, 1, 2],
             #          sampled_node_ids_0 = [0, 1], sampled_node_ids_1 = [1, 2],
             #          -> sampled_negative_node_ids = {0, 1, 2}
             sampled_negative_node_ids.update(sampled_node_ids.tolist())
@@ -417,7 +417,20 @@ class RandomNegativeSampler(SameNodeSpaceNegativeSampler):
                 )
                 sampled_hyperedge_attrs.append(random_hyperedge_attr)
 
-        return (
+        negative_node_ids_tensor = torch.tensor(sorted(negative_node_ids), device=device)
+        new_x, num_negative_nodes = self._new_x(data.x, negative_node_ids_tensor)
+
+        # Examples: new_hyperedge_id_offset = 3 (if data.num_edges was 3)
+        #          num_negative_samples = 2
+        #          -> num_hyperedges_including_negatives = 5
+        num_hyperedges_including_negatives = new_hyperedge_id_offset + self.num_negative_samples
+        negative_hyperedge_ids = torch.arange(
+            new_hyperedge_id_offset,
+            num_hyperedges_including_negatives,
+            device=device,
+        )
+
+        negative_hyperedge_index = self._new_negative_hyperedge_index(
             sampled_hyperedge_indexes,
             sampled_hyperedge_attrs,
             sampled_negative_node_ids,

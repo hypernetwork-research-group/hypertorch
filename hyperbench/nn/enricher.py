@@ -207,7 +207,7 @@ class ABHyperedgeWeightsEnricher(HyperedgeWeightsEnricher):
             Tensor of shape ``(num_hyperedges,)`` containing the weight of each hyperedge.
         """
         # Count the number of nodes in each hyperedge by counting occurrences of each hyperedge index.
-        # Example: if hyperedge_index[1] = [0, 0, 1, 1, 1], then we have 2 nodes in hyperedge 0 and 3 nodes in hyperedge 1.
+        # Examples: if hyperedge_index[1] = [0, 0, 1, 1, 1], then we have 2 nodes in hyperedge 0 and 3 nodes in hyperedge 1.
         num_hyperedges = int(hyperedge_index[1].max().item()) + 1
         weights = torch.bincount(hyperedge_index[1], minlength=num_hyperedges).float()
 
@@ -434,7 +434,7 @@ class LaplacianPositionalEncodingEnricher(NodeEnricher):
         # torch.linalg.eigh returns them sorted in ascending order of eigenvalue.
         # The smallest eigenvalue is ~0 with a constant eigenvector (all entries equal),
         # which carries no positional information and will be skipped.
-        # Example: eigenvalues ~ [0, 1, 2],
+        # Examples: eigenvalues ~ [0, 1, 2],
         #          eigenvectors ~ [[0.577, -0.707, 0.408],
         #                          [0.577,  0.000, -0.816],
         #                          [0.577,  0.707,  0.408]]
@@ -444,13 +444,13 @@ class LaplacianPositionalEncodingEnricher(NodeEnricher):
             _, eigenvectors = torch.linalg.eigh(laplacian_matrix_dense)
 
         # We skip the first (trivial) eigenvector, so at most num_nodes - 1 are usable.
-        # Example: 3 nodes -> 2 available non-trivial eigenvectors
+        # Examples: 3 nodes -> 2 available non-trivial eigenvectors
         num_nodes = int(eigenvectors.size(0))
         num_nontrivial_eigenvectors = num_nodes - 1
 
         # If we have enough eigenvectors, slice columns 1 through num_features (inclusive).
         # Each row will be the positional encoding for that node.
-        # Example: num_features = 2, eigenvectors.shape = (3, 3)
+        # Examples: num_features = 2, eigenvectors.shape = (3, 3)
         #          -> return columns 1 and 2
         #             shape (3, 2)  # (num_nodes, num_features)
         if num_nontrivial_eigenvectors >= self.num_features:
@@ -458,7 +458,7 @@ class LaplacianPositionalEncodingEnricher(NodeEnricher):
 
         # If the graph has fewer usable eigenvectors than requested
         # (e.g., num_features = 5 but only 2 available), we create a zero-padded tensor and fill what we have.
-        # Example: num_nontrivial_eigenvectors = 2, num_features = 5
+        # Examples: num_nontrivial_eigenvectors = 2, num_features = 5
         #          -> shape (3, 5)  # columns 0-1 filled, 2-4 are zeros.
         x = torch.zeros(size=(num_nodes, self.num_features), device=edge_index.device)
         x[:, :num_nontrivial_eigenvectors] = eigenvectors[:, 1:]

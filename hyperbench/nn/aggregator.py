@@ -34,7 +34,7 @@ class HyperedgeAggregator:
         """
         Aggregate node embeddings for each hyperedge.
 
-        Example:
+        Examples:
             >>> hyperedge_index = [[0, 1, 2, 2, 3],
             ...                    [0, 0, 0, 1, 1]]
             >>> node_embeddings = [[1, 10], [2, 20], [3, 30], [4, 40]]
@@ -55,7 +55,7 @@ class HyperedgeAggregator:
         """
         # Gather the embeddings for each incidence.
         # A node appearing in multiple hyperedges is repeated, once per incidence.
-        # Example: node_embeddings = [[1, 10],  # node 0
+        # Examples: node_embeddings = [[1, 10],  # node 0
         #                             [2, 20],  # node 1
         #                             [3, 30],  # node 2
         #                             [4, 40]]  # node 3
@@ -69,7 +69,7 @@ class HyperedgeAggregator:
         incidence_node_embeddings = self.node_embeddings[self.hyperedge_index_wrapper.all_node_ids]
 
         # Scatter-aggregate node embeddings into hyperedge embeddings.
-        # Example: with aggregation="sum":
+        # Examples: with aggregation="sum":
         #          [[1+2+3, 10+20+30],  # hyperedge 0 contains node 0, 1, 2
         #          [3+4, 30+40]]        # hyperedge 1 contains node 2, 3
         #          shape: (num_hyperedges, num_channels)
@@ -127,7 +127,7 @@ class NodeAggregator:
         """
         Aggregate hyperedge embeddings for each node.
 
-        Example:
+        Examples:
             >>> hyperedge_index = [[0, 1, 1, 2],
             ...                    [0, 0, 1, 1]]
             >>> hyperedge_embeddings = [[10, 100], [20, 200]]
@@ -146,7 +146,7 @@ class NodeAggregator:
         """
         # Gather the embeddings for each incidence.
         # A hyperedge appearing in multiple node incidences is repeated, once per incidence.
-        # Example: hyperedge_embeddings = [[10, 100],  # hyperedge 0
+        # Examples: hyperedge_embeddings = [[10, 100],  # hyperedge 0
         #                                  [20, 200]]  # hyperedge 1
         #          -> all_hyperedge_ids = [0, 0, 1, 1]
         #          -> incidence_hyperedge_embeddings = [[10, 100],   # hyperedge 0 for node 0
@@ -170,7 +170,7 @@ class NodeAggregator:
             )
 
         # Scatter-aggregate hyperedge embeddings into node embeddings.
-        # Example: with aggregation="sum":
+        # Examples: with aggregation="sum":
         #          [[10, 100],         # node 0 belongs to hyperedge 0
         #           [10+20, 100+200],  # node 1 belongs to hyperedge 0 and 1
         #           [20, 200]]         # node 2 belongs to hyperedge 1

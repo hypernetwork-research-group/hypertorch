@@ -34,7 +34,7 @@ class NHPRankingLoss(nn.Module):
     """
     Ranking loss that pushes positive hyperedges above sampled negatives.
 
-    Example:
+    Examples:
         >>> logits = [2.0, 1.0, -1.0]
         >>> labels = [1.0, 1.0, 0.0]
         >>> loss = NHPRankingLoss()
@@ -55,7 +55,7 @@ class NHPRankingLoss(nn.Module):
             Scalar loss value.
         """
         # Split logits by label as we need to compare positive scores against negative scores.
-        # Example: logits = [2.0, 1.0, -1.0]
+        # Examples: logits = [2.0, 1.0, -1.0]
         #          labels = [1.0, 1.0, 0.0]
         #          -> positive_logits = [2.0, 1.0]
         #          -> negative_logits = [-1.0]

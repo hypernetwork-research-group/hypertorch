@@ -230,7 +230,7 @@ def test_to_edge_index_is_contiguous(mock_single_edge_graph):
     """
     Test that to_edge_index returns a contiguous tensor.
 
-    Example:
+    Examples:
         If edges = [[0, 1]], then edge_index = [[0], [1]] should be contiguous.
         If edges = [[0, 1], [1, 2], [2, 3]], then edge_index = [[0, 1, 2], [1, 2, 3]] should be contiguous.
     """
@@ -1360,7 +1360,7 @@ def test_to_undirected_edge_index_triangle_directed():
     """
     A directed triangle should become a bidirectional triangle.
 
-    Example:
+    Examples:
         Directed cycle: 0 -> 1 -> 2 -> 0
         Bidirectional traingle: 0 <-> 1 <-> 2 <-> 0
     """

@@ -78,12 +78,12 @@ class BaseSampler(ABC):
         hyperedge_ids = hyperedge_index[1]
 
         # Find incidences where the hyperedge is in our sampled hyperedges
-        # Example: hyperedge_ids = [0, 0, 0, 1, 2, 2], sampled_hyperedge_ids = [0, 2]
+        # Examples: hyperedge_ids = [0, 0, 0, 1, 2, 2], sampled_hyperedge_ids = [0, 2]
         #          -> sampled_hyperedges_mask = [True, True, True, False, True, True]
         sampled_hyperedges_mask = torch.isin(hyperedge_ids, sampled_hyperedge_ids)
 
         # Keep all incidences belonging to the sampled hyperedges
-        # Example: hyperedge_index = [[0, 0, 1, 2, 3, 4],
+        # Examples: hyperedge_index = [[0, 0, 1, 2, 3, 4],
         #                             [0, 0, 0, 1, 2, 2]],
         #          sampled_hyperedges_mask = [True, True, True, False, True, True]
         #          -> sampled_hyperedge_index = [[0, 0, 1, 3, 4],
@@ -113,7 +113,7 @@ class HyperedgeSampler(BaseSampler):
         """
         Sample hyperedges by their IDs and return the sub-hypergraph containing only those hyperedges and their incident nodes.
 
-        Example:
+        Examples:
         >>> hyperedge_index = [[0, 0, 1, 2, 3, 4],
         ...                    [0, 0, 0, 1, 2, 2]]
         >>> hdata = HData.from_hyperedge_index(hyperedge_index)
@@ -141,7 +141,7 @@ class HyperedgeSampler(BaseSampler):
 
         sampled_hyperedge_ids = torch.tensor(ids, device=hyperedge_index.device)
 
-        # Example: sampled_hyperedge_ids = [0, 2],
+        # Examples: sampled_hyperedge_ids = [0, 2],
         #          hyperedge_index = [[0, 0, 1, 2, 3, 4],
         #                             [0, 0, 0, 1, 2, 2]],
         #          -> sampled_hyperedges_mask = [True, True, True, False, True, True]
@@ -171,7 +171,7 @@ class NodeSampler(BaseSampler):
         """
         Sample nodes by their IDs and return the sub-hypergraph containing only those nodes and their incident hyperedges.
 
-        Example:
+        Examples:
         >>> hyperedge_index = [[0, 0, 1, 2, 3, 4],
         ...                    [0, 0, 0, 1, 2, 2]]
         >>> hdata = HData.from_hyperedge_index(hyperedge_index)
@@ -202,16 +202,16 @@ class NodeSampler(BaseSampler):
         sampled_node_ids = torch.tensor(ids, device=node_ids.device)
 
         # Find incidences where the node is in our sampled nodes
-        # Example: node_ids = [0, 0, 1, 2, 3, 4], sampled_node_ids = [0, 3]
+        # Examples: node_ids = [0, 0, 1, 2, 3, 4], sampled_node_ids = [0, 3]
         #          -> sampled_nodes_mask = [True, True, False, False, True, False]
         sampled_nodes_mask = torch.isin(node_ids, sampled_node_ids)
 
         # Get unique hyperedges that have at least one sampled node
-        # Example: hyperedge_ids = [0, 0, 0, 1, 2, 2], sampled_nodes_mask = [True, True, False, False, True, False]
+        # Examples: hyperedge_ids = [0, 0, 0, 1, 2, 2], sampled_nodes_mask = [True, True, False, False, True, False]
         #          -> sampled_hyperedge_ids = [0, 2] as they connect to sampled nodes
         sampled_hyperedge_ids = hyperedge_ids[sampled_nodes_mask].unique()
 
-        # Example: sampled_hyperedge_ids = [0, 2],
+        # Examples: sampled_hyperedge_ids = [0, 2],
         #          hyperedge_index = [[0, 0, 1, 2, 3, 4],
         #                             [0, 0, 0, 1, 2, 2]],
         #          -> sampled_hyperedges_mask = [True, True, True, False, True, True]

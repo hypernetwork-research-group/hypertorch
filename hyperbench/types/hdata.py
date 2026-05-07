@@ -24,7 +24,7 @@ class HData:
     """
     Container for hypergraph data.
 
-    Example:
+    Examples:
         >>> x = torch.randn(10, 16)  # 10 nodes with 16 features each
         >>> hyperedge_index = torch.tensor([[0, 0, 1, 1, 1],  # node IDs
         ...                                 [0, 1, 2, 3, 4]]) # hyperedge IDs
@@ -124,7 +124,7 @@ class HData:
             - ``hyperedge_attr`` is the concatenation of all input hyperedge attributes, if present. If some instances have hyperedge attributes and others do not, the resulting ``hyperedge_attr`` will be set to ``None``.
             - ``y`` is the concatenation of all input labels.
 
-        Example:
+        Examples:
             >>> x = torch.randn(5, 8)
             >>> pos = HData(x=x, hyperedge_index=torch.tensor([[0, 1, 2, 3, 4], [0, 0, 1, 2, 2]]))
             >>> neg = HData(x=x, hyperedge_index=torch.tensor([[0, 2], [3, 3]]))
@@ -223,7 +223,7 @@ class HData:
         - Hyperedge weights are set to ``None``.
         - The number of nodes and hyperedges are inferred from the hyperedge index.
 
-        Example:
+        Examples:
             >>> hyperedge_index = [[0, 0, 1, 2, 3, 4],
             ...                    [0, 0, 0, 1, 2, 2]]
             >>> num_nodes = 5
@@ -257,7 +257,7 @@ class HData:
         """
         Build an :class:`HData` for a single split from the given hyperedge IDs.
 
-        Example:
+        Examples:
             Transductive split (default) preserving the full node space:
             >>> split_hdata = HData.split(hdata, torch.tensor([1]), node_space_setting="transductive")
             >>> split_hdata.x.shape[0] == hdata.x.shape[0]
@@ -280,18 +280,18 @@ class HData:
             The splitted instance with remapped node and hyperedge IDs.
         """
         # Mask to keep only incidences belonging to selected hyperedges
-        # Example: hyperedge_index = [[0, 0, 1, 2, 3, 4],
+        # Examples: hyperedge_index = [[0, 0, 1, 2, 3, 4],
         #                             [0, 0, 0, 1, 2, 2]]
         #          split_hyperedge_ids = [0, 2]
         #          -> mask = [True, True, True, False, True, True]
         keep_mask = torch.isin(hdata.hyperedge_index[1], split_hyperedge_ids)
 
-        # Example: hyperedge_index = [[0, 0, 1, 3, 4],
+        # Examples: hyperedge_index = [[0, 0, 1, 3, 4],
         #                             [0, 0, 0, 2, 2]]
         #          incidence [2, 1] is missing as 1 is not in split_hyperedge_ids = [0, 2]
         split_hyperedge_index = hdata.hyperedge_index[:, keep_mask].clone()
 
-        # Example: split_hyperedge_index = [[2, 3, 4],
+        # Examples: split_hyperedge_index = [[2, 3, 4],
         #                                   [2, 2, 5]]
         #          -> split_unique_hyperedge_ids = [2, 5]
         split_unique_hyperedge_ids = split_hyperedge_index[1].unique()
@@ -308,7 +308,7 @@ class HData:
 
         # We don't need to split nodes, so we split only hyperedges and rebase their IDs to 0-based
         if is_transductive_setting(node_space_setting):
-            # Example: split_unique_hyperedge_ids = [2, 5]
+            # Examples: split_unique_hyperedge_ids = [2, 5]
             #          -> hyperedge 2 -> 0, hyperedge 5 -> 1
             split_hyperedge_index[1] = to_0based_ids(
                 original_ids=split_hyperedge_index[1],
@@ -325,7 +325,7 @@ class HData:
                 y=split_y,
             )
 
-        # Example: split_hyperedge_index = [[0, 0, 1, 3, 4],
+        # Examples: split_hyperedge_index = [[0, 0, 1, 3, 4],
         #                                   [0, 0, 0, 2, 2]]
         #          -> split_unique_node_ids = [0, 1, 3, 4]
         split_unique_node_ids = split_hyperedge_index[0].unique()
@@ -398,7 +398,7 @@ class HData:
         """
         Copy node features from another :class:`HData` by aligning features by ``global_node_ids``.
 
-        Example:
+        Examples:
             Transductive enrichment (default) expecting the same node space in both source and target:
             >>> target = target.enrich_node_features_from(source, node_space_setting="transductive")
 
@@ -466,7 +466,7 @@ class HData:
         for global_node_id in target_global_node_ids:
             source_feature_idx = source_feature_idx_by_global_node_id.get(int(global_node_id))
             if source_feature_idx is None:
-                # Example: global_node_id = 30 is not present in the source
+                # Examples: global_node_id = 30 is not present in the source
                 #          -> strict transductive mode records it as missing and then raises an error
                 #          -> non-transductive mode fills the features with fill_value and continues enriching the other nodes
                 if is_transductive_setting(node_space_setting):
@@ -480,7 +480,7 @@ class HData:
                 continue
 
             # Match the global node IDs in the target to the corresponding feature indices in the source
-            # Example: source_global_node_ids = [10, 20, 30], source_x has shape (3, num_features)
+            # Examples: source_global_node_ids = [10, 20, 30], source_x has shape (3, num_features)
             #          target_global_node_ids = [10, 30]
             #          -> source_feature_idx_by_global_node_id = {10: 0, 20: 1, 30: 2}
             #          -> pick source_x rows 0 and 2 for the target
@@ -637,7 +637,7 @@ class HData:
         ``y`` and ``hyperedge_attr`` are reordered to match, so that ``y[new_id]`` still corresponds to the correct hyperedge.
         Same for ``hyperedge_attr[new_id]`` if hyperedge attributes are present.
 
-        Example:
+        Examples:
             >>> hyperedge_index = torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]])
             >>> y  = torch.tensor([1, 0])
             >>> hdata = HData(x=x, hyperedge_index=hyperedge_index, y=y)
@@ -662,14 +662,14 @@ class HData:
 
         # permutation[new_id] = old_id, so y[permutation] puts old labels into new slots
         # inverse_permutation[old_id] = new_id, used to remap hyperedge IDs in incidences
-        # Example: permutation = [1, 2, 0] means new_id 0 gets old_id 1, new_id 1 gets old_id 2, new_id 2 gets old_id 0
+        # Examples: permutation = [1, 2, 0] means new_id 0 gets old_id 1, new_id 1 gets old_id 2, new_id 2 gets old_id 0
         #          -> inverse_permutation = [2, 0, 1] means old_id 0 gets new_id 2, old_id 1 gets new_id 0, old_id 2 gets new_id 1
         inverse_permutation = torch.empty_like(permutation)
         inverse_permutation[permutation] = torch.arange(self.num_hyperedges, device=self.device)
 
         new_hyperedge_index = self.hyperedge_index.clone()
 
-        # Example: hyperedge_index = [[0, 1, 2, 3, 4],
+        # Examples: hyperedge_index = [[0, 1, 2, 3, 4],
         #                             [0, 0, 1, 1, 2]],
         #          inverse_permutation = [2, 0, 1] (new_id 0 -> old_id 2, new_id 1 -> old_id 0, new_id 2 -> old_id 1)
         #          -> new_hyperedge_index = [[0, 1, 2, 3, 4],
@@ -677,7 +677,7 @@ class HData:
         old_hyperedge_ids = self.hyperedge_index[1]
         new_hyperedge_index[1] = inverse_permutation[old_hyperedge_ids]
 
-        # Example: hyperedge_attr = [attr_0, attr_1, attr_2], permutation = [1, 2, 0]
+        # Examples: hyperedge_attr = [attr_0, attr_1, attr_2], permutation = [1, 2, 0]
         #          -> new_hyperedge_attr = [attr_1  (attr of old_id 1), attr_2 (attr of old_id 2), attr_0 (attr of old_id 0)]
         new_hyperedge_attr = (
             self.hyperedge_attr[permutation] if self.hyperedge_attr is not None else None
@@ -687,7 +687,7 @@ class HData:
             self.hyperedge_weights[permutation] if self.hyperedge_weights is not None else None
         )
 
-        # Example: y = [1, 1, 0], permutation = [1, 2, 0]
+        # Examples: y = [1, 1, 0], permutation = [1, 2, 0]
         #          -> new_y = [y[1], y[2], y[0]] = [1, 0, 1]
         new_y = self.y[permutation]
 
