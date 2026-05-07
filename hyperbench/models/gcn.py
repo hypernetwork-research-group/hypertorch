@@ -137,8 +137,10 @@ class GCN(nn.Module):
             return nn.ModuleList([GCNConv(in_channels, out_channels, **common_kwargs)])
 
         layers = [GCNConv(in_channels, hidden_channels, **common_kwargs)]
-        for _ in range(num_layers - 2):
-            layers.append(GCNConv(hidden_channels, hidden_channels, **common_kwargs))
+        layers.extend(
+            GCNConv(hidden_channels, hidden_channels, **common_kwargs)
+            for _ in range(num_layers - 2)
+        )
         layers.append(GCNConv(hidden_channels, out_channels, **common_kwargs))
 
         return nn.ModuleList(layers)
