@@ -3,11 +3,10 @@
 
 | | |
 | --- | --- |
-| Testing | [![codecov](https://codecov.io/github/hypernetwork-research-group/hyperbench/graph/badge.svg?token=XE0TB5JMOS)](https://codecov.io/github/hypernetwork-research-group/hyperbench) [![CodeFactor](https://www.codefactor.io/repository/github/hypernetwork-research-group/hyperbench/badge)](https://www.codefactor.io/repository/github/hypernetwork-research-group/hyperbench) |
-| Package | :x: |
-| Meta | [![project_license][license-shield]][license-url] ![Discord](https://img.shields.io/discord/693092516286693387)|
+| Testing | [![codecov][codecov-shield]][codecov-url] [![CodeFactor][codefactor-shield]][codefactor-url] |
+| Package | [![License: MIT][license-shield]] |
+| Meta | [license-url] ![Discord](https://img.shields.io/discord/693092516286693387)|
 | Repo | [![Forks][forks-shield]][forks-url] [![Stargazers][stars-shield]][stars-url] [![Contributors][contributors-shield]][contributors-url] [![Issues][issues-shield]][issues-url] |
-
 
 ## About the project
 
@@ -36,14 +35,13 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for details on contributing to the projec
 
 ## License
 
-WIP
+See [LICENSE](LICENSE).
 
 ## Discussion
 
 Most development discussions take place on GitHub in this repo, via the [GitHub issue tracker][issues].
 
 ![Alt](https://repobeats.axiom.co/api/embed/c168082ecb1f9f843c1b170dcfee93542b576f61.svg "Repobeats analytics image")
-## Star History
 
 <a href="https://www.star-history.com/?repos=hypernetwork-research-group%2Fhyperbench&type=date&logscale=&legend=top-left">
  <picture>
@@ -54,15 +52,19 @@ Most development discussions take place on GitHub in this repo, via the [GitHub 
 </a>
 
 <!-- LINKS -->
-[contributors-shield]: https://img.shields.io/github/contributors/hypernetwork-research-group/hyperbench.svg?style=for-the-badge
+[codecov-shield]: https://codecov.io/github/hypernetwork-research-group/hyperbench/graph/badge.svg?token=XE0TB5JMOS
+[codecov-url]: https://codecov.io/github/hypernetwork-research-group/hyperbench
+[codefactor-shield]: https://www.codefactor.io/repository/github/hypernetwork-research-group/hyperbench/badge
+[codefactor-url]: https://www.codefactor.io/repository/github/hypernetwork-research-group/hyperbench
+[contributors-shield]: https://img.shields.io/github/contributors/hypernetwork-research-group/hyperbench.svg?style=flat
 [contributors-url]: https://github.com/hypernetwork-research-group/hyperbench/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/hypernetwork-research-group/hyperbench.svg?style=for-the-badge
+[forks-shield]: https://img.shields.io/github/forks/hypernetwork-research-group/hyperbench.svg?style=flat
 [forks-url]: https://github.com/hypernetwork-research-group/hyperbench/network/members
-[stars-shield]: https://img.shields.io/github/stars/hypernetwork-research-group/hyperbench.svg?style=for-the-badge
+[stars-shield]: https://img.shields.io/github/stars/hypernetwork-research-group/hyperbench.svg?style=flat
 [stars-url]: https://github.com/hypernetwork-research-group/hyperbench/stargazers
-[issues-shield]: https://img.shields.io/github/issues/hypernetwork-research-group/hyperbench.svg?style=for-the-badge
+[issues-shield]: https://img.shields.io/github/issues/hypernetwork-research-group/hyperbench.svg?style=flat
 [issues-url]: https://github.com/hypernetwork-research-group/hyperbench/issues
-[license-shield]: https://img.shields.io/github/license/hypernetwork-research-group/hyperbench.svg?style=for-the-badge
-[license-url]: https://github.com/hypernetwork-research-group/hyperbench/blob/master/LICENSE
+[license-shield]: https://img.shields.io/badge/License-MIT-yellow.svg
+[license-url]: https://opensource.org/licenses/MIT
 [docs]: https://hypernetwork-research-group.github.io/hyperbench/
 [issues]: https://github.com/hypernetwork-research-group/hyperbench/issues
