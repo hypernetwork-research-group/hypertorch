@@ -1,5 +1,6 @@
 import copy
 import importlib.util
+import shutil
 import subprocess
 import warnings
 import lightning as L
@@ -354,14 +355,18 @@ class MultiModelTrainer:
 
     def __start_tensorboard_process(self) -> subprocess.Popen | None:
         try:
+            tensorboard_executable = shutil.which("tensorboard")
+            if tensorboard_executable is None:
+                return None
+
+            log_dir = str(self.log_dir)
+            tensorboard_port = str(self.tensorboard_port)
             process = subprocess.Popen(
-                ["tensorboard", "--logdir", self.log_dir, "--port", str(self.tensorboard_port)],
+                [tensorboard_executable, "--logdir", log_dir, "--port", tensorboard_port],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
             )
-            print(
-                f"TensorBoard started at http://localhost:{self.tensorboard_port} (logdir={self.log_dir})"
-            )
+            print(f"TensorBoard started at http://localhost:{tensorboard_port} (logdir={log_dir})")
             return process
         except Exception as e:
             warnings.warn(

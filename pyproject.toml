@@ -103,7 +103,7 @@ select = [
     "PL",    # pylint-inspired rules (https://docs.astral.sh/ruff/rules/#pylint-pl)
     "Q",     # flake8-quotes: string quote normalization (https://docs.astral.sh/ruff/rules/#flake8-quotes-q)
     "RET",   # flake8-return: return statement simplifications (https://docs.astral.sh/ruff/rules/#flake8-return-ret)
-    "RSE",   # flake8-raise: raise statement improvements (https://docs.astral.sh/ruff/rules/#flake8-raise-rse  )
+    "RSE",   # flake8-raise: raise statement improvements (https://docs.astral.sh/ruff/rules/#flake8-raise-rse)
     "RUF",   # Ruff-specific rules (https://docs.astral.sh/ruff/rules/#ruff-specific-rules-ruf)
     "SIM",   # flake8-simplify: simplify code (https://docs.astral.sh/ruff/rules/#flake8-simplify-sim)
     "T10",   # flake8-debugger (https://docs.astral.sh/ruff/rules/#flake8-debugger-t10)
