@@ -1,6 +1,7 @@
 import pytest
+import torch
 
-from hyperbench.utils import is_layer, is_input_layer, INPUT_LAYER
+from hyperbench.utils import is_layer, is_input_layer, INPUT_LAYER, maxmin_scatter
 
 
 @pytest.mark.parametrize(
@@ -25,3 +26,97 @@ def test_is_layer(layer_idx, desired_layer, expected):
 )
 def test_is_input_layer(layer_idx, expected):
     assert is_input_layer(layer_idx) == expected
+
+
+def test_maxmin_scatter_computes_channelwise_range_by_group():
+    src = torch.tensor(
+        [
+            [1.0, 4.0],
+            [3.0, 1.0],
+            [-2.0, 7.0],
+            [5.0, -1.0],
+            [5.0, 8.0],
+        ]
+    )
+    # index[k] says which output group receives src[k].
+    # Example: index[1] == 0 means src[1] = [3, 1] contributes to output row 0.
+    index = torch.tensor([0, 0, 1, 1, 1])
+
+    # dim=0 scatters rows into grouped output rows, preserving the feature/channel dimension.
+    result = maxmin_scatter(src=src, index=index, dim=0)
+
+    # Group 0 receives [1, 4] and [3, 1], so its per-channel range is
+    # [max(1, 3) - min(1, 3), max(4, 1) - min(4, 1)] = [2, 3].
+    # Group 1 receives [-2, 7], [5, -1], and [5, 8], so its range is
+    # [max(-2, 5, 5) - min(-2, 5, 5), max(7, -1, 8) - min(7, -1, 8)] = [7, 9].
+    expected = torch.tensor(
+        [
+            [2.0, 3.0],
+            [7.0, 9.0],
+        ]
+    )
+    assert torch.allclose(result, expected)
+
+
+def test_maxmin_scatter_respects_explicit_dim_size():
+    src = torch.tensor(
+        [
+            [1.0, 4.0],
+            [3.0, 1.0],
+            [-2.0, 7.0],
+        ]
+    )
+
+    # index[k] says which output group receives src[k].
+    # Example:
+    # - index[1] == 0 means src[1] = [3, 1] contributes to output row 0.
+    # - index[2] == 2 means src[2] = [-2, 7] contributes to output row 2.
+    # Missing group ids indicate that those groups receive no source rows, so group 1 and group 3 are empty.
+    index = torch.tensor([0, 0, 2])
+
+    # dim_size=4 forces four output rows even though max(index) would only imply three rows.
+    result = maxmin_scatter(src=src, index=index, dim=0, dim_size=4)
+
+    # Group 0 receives [1, 4] and [3, 1], so its range is [2, 3].
+    # Group 2 receives only row [-2, 7], so max(-2) - min(-2) and max(7) - min(7) are both 0 and the range is [0, 0].
+    # Empty groups 1 and 3 follow torch_geometric.scatter's neutral empty output,
+    # so max and min both become [0, 0], and max - min is also [0, 0].
+    expected = torch.tensor(
+        [
+            [2.0, 3.0],
+            [0.0, 0.0],
+            [0.0, 0.0],
+            [0.0, 0.0],
+        ]
+    )
+
+    assert torch.allclose(result, expected)
+
+
+def test_maxmin_scatter_supports_nonzero_scatter_dimension():
+    src = torch.tensor(
+        [
+            [1.0, 5.0, 3.0],
+            [4.0, 2.0, 8.0],
+        ]
+    )
+
+    # With dim=1, index[k] says which output column group receives source column k.
+    # Example: index[2] == 0 means the third source column contributes to output column 0.
+    # Source columns 0 and 2 are grouped together, while source column 1 is alone in group 1.
+    index = torch.tensor([0, 1, 0])
+
+    # dim_size=2 keeps exactly two output column groups: group 0 and group 1.
+    result = maxmin_scatter(src=src, index=index, dim=1, dim_size=2)
+
+    # Row 0: group 0 receives 1 and 3, so max(1, 3) - min(1, 3) = 2.
+    # Row 1: group 0 receives 4 and 8, so max(4, 8) - min(4, 8) = 4.
+    # Row 0: group 1 receives only 5, so max(5) - min(5) = 0.
+    # Row 1: group 1 receives only 2, so max(2) - min(2) = 0.
+    expected = torch.tensor(
+        [
+            [2.0, 0.0],
+            [4.0, 0.0],
+        ]
+    )
+    assert torch.allclose(result, expected)

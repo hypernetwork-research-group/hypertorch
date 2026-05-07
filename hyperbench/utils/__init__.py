@@ -19,6 +19,7 @@ from .nn_utils import (
     Stage,
     is_input_layer,
     is_layer,
+    maxmin_scatter,
 )
 from .node_utils import (
     NodeSpaceAssignment,
@@ -64,4 +65,5 @@ __all__ = [
     "get_hf_dataset_sha",
     "get_gh_datasets_shas",
     "get_gh_dataset_sha",
+    "maxmin_scatter",
 ]

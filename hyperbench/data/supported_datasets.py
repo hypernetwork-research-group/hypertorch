@@ -1,4 +1,4 @@
-from hyperbench.data import HIFLoader
+from hyperbench.data.hif import HIFLoader
 from hyperbench.data.dataset import Dataset
 from hyperbench.data.sampling import SamplingStrategy
 

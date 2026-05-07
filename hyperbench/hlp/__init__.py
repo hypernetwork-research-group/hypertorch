@@ -16,6 +16,7 @@ from .node2vec_common import (
 )
 from .node2vecgcn_hlp import Node2VecGCNEncoderConfig, Node2VecGCNHlpModule
 from .node2vecslp_hlp import Node2VecSLPEncoderConfig, Node2VecSLPHlpModule
+from .villain_hlp import VilLainEncoderConfig, VilLainHlpModule
 
 __all__ = [
     "NODE2VEC_JOINT_MODE",
@@ -44,4 +45,6 @@ __all__ = [
     "Node2VecMode",
     "Node2VecSLPEncoderConfig",
     "Node2VecSLPHlpModule",
+    "VilLainEncoderConfig",
+    "VilLainHlpModule",
 ]
