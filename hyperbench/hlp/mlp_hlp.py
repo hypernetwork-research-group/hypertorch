@@ -94,7 +94,7 @@ class MLPHlpModule(HlpModule):
         """
         Encode node features, aggregate per hyperedge via mean pooling, and score.
 
-        Example:
+        Examples:
             Given 4 nodes with 3 features each and 2 hyperedges:
                 >>> x = [[0.1, 0.2, 0.3],   # node 0
                 ...      [0.4, 0.5, 0.6],   # node 1
@@ -128,7 +128,7 @@ class MLPHlpModule(HlpModule):
 
         # Encode: map each node raw features to an embedding vector.
         # x: (num_nodes, in_channels) -> node_embeddings: (num_nodes, out_channels)
-        # Example: in_channels=3, out_channels=2
+        # Examples: in_channels=3, out_channels=2
         #          -> node 0: [0.1, 0.2, 0.3] -> [e00, e01]
         #          -> node 1: [0.4, 0.5, 0.6] -> [e10, e11]
         #          -> node 2: [0.7, 0.8, 0.9] -> [e20, e21]
@@ -136,7 +136,7 @@ class MLPHlpModule(HlpModule):
         node_embeddings: Tensor = self.encoder(x)
 
         # Aggregate: for each hyperedge, aggregate the embeddings of its member nodes.
-        # Example::
+        # Examples::
         # - hyperedge 0 contains node 0, 1, 2 -> aggregate([e00, e01], [e10, e11], [e20, e21]) -> [pooled_0, pooled_1]
         # - hyperedge 1 contains node 2, 3 -> aggregate([e20, e21], [e30, e31]) -> [pooled_0, pooled_1]
         # shape: (num_hyperedges, out_channels)
@@ -145,7 +145,7 @@ class MLPHlpModule(HlpModule):
         )
 
         # Decode: score each hyperedge embedding, producing one scalar per hyperedge.
-        # Example:
+        # Examples:
         # - hyperedge 0: [pooled_0, pooled_1] -> score_0
         # - hyperedge 1: [pooled_0, pooled_1] -> score_1
         # shape: (2,)

@@ -95,7 +95,7 @@ class HyperGCNHlpModule(HlpModule):
                using the configured pooling method (mean/max/min/sum).
             3. Decode: A linear layer scores each hyperedge embedding.
 
-        Example:
+        Examples:
             Given 5 nodes with 3 features and 2 hyperedges::
 
                 >>> x.shape  # (5, 3) — all nodes in the hypergraph
@@ -123,7 +123,7 @@ class HyperGCNHlpModule(HlpModule):
             raise ValueError("Encoder is not defined for this HLP module.")
 
         # Encode: HyperGCN applies Laplacian-based message passing
-        # Example: x: (num_nodes, in_channels)
+        # Examples: x: (num_nodes, in_channels)
         #          -> node_embeddings: (num_nodes, out_channels)
         node_embeddings: Tensor = self.encoder(x, hyperedge_index)
 

@@ -60,7 +60,7 @@ class Graph:
             else None
         )
 
-        # Example: edges = [[0, 1],
+        # Examples: edges = [[0, 1],
         #                   [1, 1],
         #                   [2, 3]] shape (|E|, 2)
         #          -> no_selfloop_mask = [True, False, True]
@@ -69,7 +69,7 @@ class Graph:
         no_selfloop_mask = edges_tensor[:, 0] != edges_tensor[:, 1]
         self.edges = edges_tensor[no_selfloop_mask].tolist()
 
-        # Example: edge_weights = [0.5, 1.0, 0.8], no_selfloop_mask = [True, False, True]
+        # Examples: edge_weights = [0.5, 1.0, 0.8], no_selfloop_mask = [True, False, True]
         #         -> edge_weights without self-loops = [0.5, 0.8]
         if edge_weights_tensor is not None:
             self.__edge_weights = edge_weights_tensor[no_selfloop_mask].tolist()
@@ -86,7 +86,7 @@ class Graph:
         if self.num_edges == 0:
             return torch.empty((2, 0), dtype=torch.long)
 
-        # Example: edges = [[0, 1],
+        # Examples: edges = [[0, 1],
         #                   [1, 2],
         #                   [2, 3]] shape (|E|, 2)
         #          ->  edge_index = [[0, 1, 2],
@@ -132,7 +132,7 @@ class EdgeIndex:
     Edge index is a tensor of shape ``(2, num_edges)`` where the first row contains source node indices
     and the second row contains destination node indices for each edge.
 
-    Example:
+    Examples:
         >>> edge_index = [[0, 1, 2],
         ...               [1, 0, 3]]
 
@@ -195,7 +195,7 @@ class EdgeIndex:
         """
         Add self-loops to each node in the edge index.
 
-        Example:
+        Examples:
             >>> edge_index = [[0, 1, 2],
             ...               [1, 0, 3]]
             >>> edge_index_with_selfloops = [[0, 1, 2, 0, 1, 2, 3],
@@ -230,7 +230,7 @@ class EdgeIndex:
         src, dest = self.__edge_index[0], self.__edge_index[1]
 
         # Add self-loops: A_hat = A + I (works as we assume node indices are in [0, num_nodes-1])
-        # Example: edge_index = [[0, 1, 2],
+        # Examples: edge_index = [[0, 1, 2],
         #                        [1, 0, 3]], num_nodes = None
         #          -> num_selfloop_nodes = 4 (self.num_nodes, as num_nodes is None)
         #          -> selfloop_indices = [0, 1, 2, 3]
@@ -277,7 +277,7 @@ class EdgeIndex:
         Compute the sparse adjacency matrix from a graph edge index.
         To get the normalized adjacency matrix, add self-loops to the edge_index.
 
-        Example:
+        Examples:
             >>> edge_index = [[0, 1, 2],
             ...               [1, 0, 3]]
             >>> num_nodes = 4
@@ -304,7 +304,7 @@ class EdgeIndex:
         src, dest = self.__edge_index
         num_nodes = self.num_nodes if num_nodes is None else num_nodes
 
-        # Example: edge_index = [[0, 1, 2, 3],
+        # Examples: edge_index = [[0, 1, 2, 3],
         #                       [1, 0, 3, 2]]
         #          use_edge_weights = False
         #          -> adj_values = [1, 1, 1, 1]
@@ -332,7 +332,7 @@ class EdgeIndex:
         """
         Compute the sparse identity matrix I of shape (num_nodes, num_nodes).
 
-        Example:
+        Examples:
             >>> num_nodes = 3
             >>> identity_indices = [[0, 1, 2],
             ...                     [0, 1, 2]]
@@ -351,7 +351,7 @@ class EdgeIndex:
         device = self.__edge_index.device
         num_nodes = self.num_nodes if num_nodes is None else num_nodes
 
-        # Example: num_nodes = 3
+        # Examples: num_nodes = 3
         #          -> identity_indices = [[0, 1, 2],
         #                                 [0, 1, 2]]
         #             we use repeat(2, 1) as I is a matrix NxN, so we need indices for both rows and columns
@@ -405,7 +405,7 @@ class EdgeIndex:
         degree_inv_sqrt[degree_inv_sqrt == float("inf")] = 0
 
         # Convert degree vector to a diagonal sparse normalized matrix D
-        # Example: degree_inv_sqrt = [1, 0.707, 1, 0]
+        # Examples: degree_inv_sqrt = [1, 0.707, 1, 0]
         #          -> diagonal_indices = [[0, 1, 2, 3],
         #                                 [0, 1, 2, 3]]
         #                   0  1      2  3
@@ -497,7 +497,7 @@ class EdgeIndex:
 
     def remove_selfloops(self) -> "EdgeIndex":
         """Remove self-loops from the edge index."""
-        # Example: edge_index = [[0, 1, 2, 3],
+        # Examples: edge_index = [[0, 1, 2, 3],
         #                        [1, 1, 3, 2]], shape (2, |E| = 4)
         #          -> keep_mask = [True, False, True, True]
         #          -> edge_index = [[0, 2, 3],
@@ -520,7 +520,7 @@ class EdgeIndex:
         Returns:
             This :class:`EdgeIndex` instance with duplicate edges removed.
         """
-        # Example: edge_index = [[0, 1, 2, 2, 0, 3, 2],
+        # Examples: edge_index = [[0, 1, 2, 2, 0, 3, 2],
         #                        [1, 0, 3, 2, 1, 2, 2]], shape (2, |E| = 7)
         #          -> after torch.unique(..., dim=1):
         #             edge_index = [[0, 1, 2, 2, 3],
@@ -539,7 +539,7 @@ class EdgeIndex:
 
         # When edge weights are present, we need to use torch.sparse_coo_tensor
         # to remove duplicate edges while preserving the weights.
-        # Example: edge_index = [[0, 0, 1],
+        # Examples: edge_index = [[0, 0, 1],
         #                        [1, 1, 2]]
         #          edge_weights = [1.0, 2.0, 3.0]
         #          -> before coalesce, we have duplicate edges (0, 1) with weights 1.0 and 2.0
@@ -580,17 +580,17 @@ class EdgeIndex:
         orig_src, orig_dest = self.__edge_index[0], self.__edge_index[1]
 
         # Encode each directed edge (u, v) as a unique scalar key u * num_nodes + v.
-        # Example: num_nodes = 4, orig_src  = [0, 1, 2], orig_dest = [1, 0, 3]
+        # Examples: num_nodes = 4, orig_src  = [0, 1, 2], orig_dest = [1, 0, 3]
         #          -> edges are [(0,1), (1,0), (2,3)]
         #          -> encoded_edge_ids = [0*4+1, 1*4+0, 2*4+3] = [1, 4, 11]
         encoded_edge_ids = orig_src * num_nodes + orig_dest
 
         # Build the key for the reverse of each existing edge.
-        # Example: reverse edges are [(1,0), (0,1), (3,2)]
+        # Examples: reverse edges are [(1,0), (0,1), (3,2)]
         #          -> reversed_encoded_edge_ids = [1*4+0, 0*4+1, 3*4+2] = [4, 1, 14]
         reversed_encoded_edge_ids = orig_dest * num_nodes + orig_src
 
-        # Example: encoded_edge_ids          = [1, 4, 11],
+        # Examples: encoded_edge_ids          = [1, 4, 11],
         #          reversed_encoded_edge_ids = [4, 1, 14]
         #          -> missing_reverse_mask = [False, False, True]
         #             because 4 and 1 are in both, it means edges (0,1) and (1,0) are already present,
@@ -599,17 +599,17 @@ class EdgeIndex:
         missing_mask = torch.logical_not(torch.isin(reversed_encoded_edge_ids, encoded_edge_ids))
 
         # Keep all original sources and append the destination of each edge whose reverse is missing.
-        # Example: orig_src = [0, 1, 2], orig_dest[missing_mask] = [3]
+        # Examples: orig_src = [0, 1, 2], orig_dest[missing_mask] = [3]
         #          -> src = [0, 1, 2, 3]
         src = torch.cat([orig_src, orig_dest[missing_mask]])
 
         # Keep all original destinations and append the source of each edge whose reverse is missing.
-        # Example: orig_dest = [1, 0, 3], orig_src[missing_mask] = [2]
+        # Examples: orig_dest = [1, 0, 3], orig_src[missing_mask] = [2]
         #          -> dest = [1, 0, 3, 2]
         #          -> final undirected edges: [(0,1), (1,0), (2,3), (3,2)]
         dest = torch.cat([orig_dest, orig_src[missing_mask]])
 
-        # Example: edge_index = [[0, 1, 2],
+        # Examples: edge_index = [[0, 1, 2],
         #                        [1, 0, 3]]
         #          -> after torch.stack([...], dim=0):
         #             undirected_edge_index = [[0, 1, 2, 1, 0, 3],
@@ -620,7 +620,7 @@ class EdgeIndex:
         self.__edge_index = torch.stack([src, dest], dim=0).to(device)
 
         # The new edges have the same weights as the original edges.
-        # Example: edge_index = [[0, 1, 2],
+        # Examples: edge_index = [[0, 1, 2],
         #                        [1, 0, 3]]
         #          edge_weights = [0.5, 1.0, 2.0]
         #          -> after adding reverse edges:

@@ -154,7 +154,7 @@ class Dataset(TorchDataset):
         """
         Enrich node features from another dataset by copying features by ``global_node_ids``.
 
-        Example:
+        Examples:
             In a transductive setting, the full node space is preserved across datasets:
             >>> val_dataset.enrich_node_features_from(train_dataset)
 
@@ -268,7 +268,7 @@ class Dataset(TorchDataset):
         Boundaries are computed using cumulative floor to prevent early splits from
         over-consuming edges. The last split absorbs any rounding remainder.
 
-        Example:
+        Examples:
             Transductive split keeping the full node space only on the first split (default):
             >>> train, test = dataset.split([0.8, 0.2])
             >>> train.hdata.num_nodes == dataset.hdata.num_nodes
@@ -307,7 +307,7 @@ class Dataset(TorchDataset):
             List of Dataset objects, one per split, each with contiguous IDs.
         """
         # Allow small imprecision in sum of ratios, but raise error if it's significant
-        # Example: ratios = [0.8, 0.1, 0.1] -> sum = 1.0 (valid)
+        # Examples: ratios = [0.8, 0.1, 0.1] -> sum = 1.0 (valid)
         #          ratios = [0.8, 0.1, 0.05] -> sum = 0.95 (invalid, raises ValueError)
         #          ratios = [0.8, 0.1, 0.1, 0.0000001] -> sum = 1.0000001 (valid, allows small imprecision)
         if abs(sum(ratios) - 1.0) > 1e-6:
@@ -327,7 +327,7 @@ class Dataset(TorchDataset):
         # Independent rounding (e.g., round(0.5*3)=2, round(0.25*3)=1, round(0.25*3)=1 -> total=4)
         # can over-allocate edges to early splits and starve later ones.
         # Cumulative floor boundaries guarantee monotonically increasing cut points.
-        # Example: ratios = [0.5, 0.25, 0.25], num_hyperedges = 3
+        # Examples: ratios = [0.5, 0.25, 0.25], num_hyperedges = 3
         #          cumulative_ratios = [0.5, 0.75, 1.0]
         cumulative_ratios = []
         cumsum = 0.0
@@ -340,15 +340,15 @@ class Dataset(TorchDataset):
         for i in range(len(ratios)):
             if i == len(ratios) - 1:
                 # Last split gets everything remaining, absorbing any rounding remainder
-                # Example: start = 2, end = 3 -> permutation[2:3] = [2] (1 edge)
+                # Examples: start = 2, end = 3 -> permutation[2:3] = [2] (1 edge)
                 end = num_hyperedges
             else:
                 # Floor of cumulative boundary ensures early splits don't over-consume
-                # Example: i=0 -> int(0.5 * 3) = int(1.5) = 1, end = 1
+                # Examples: i=0 -> int(0.5 * 3) = int(1.5) = 1, end = 1
                 #          i=1 -> int(0.75 * 3) = int(2.25) = 2, end = 2
                 end = int(cumulative_ratios[i] * num_hyperedges)
 
-            # Example: i=0 -> permutation[0:1] = [0] (1 edge)
+            # Examples: i=0 -> permutation[0:1] = [0] (1 edge)
             #          i=1 -> permutation[1:2] = [1] (1 edge)
             #          i=2 -> permutation[2:3] = [2] (1 edge)
             split_hyperedge_ids = hyperedge_ids_permutation[start:end]

@@ -95,7 +95,7 @@ class HGNNHlpModule(HlpModule):
            scalar score representing the likelihood that the hyperedge is a real (positive)
            hyperedge. Shape: ``(num_hyperedges,)``.
 
-        Example:
+        Examples:
             Given 5 nodes with 8 features and 2 hyperedges::
 
                 >>> x.shape  # (5, 8) - all nodes in the hypergraph
@@ -125,7 +125,7 @@ class HGNNHlpModule(HlpModule):
             raise ValueError("Encoder is not defined for this HLP module.")
 
         # Encode: two-hop HGNN smoothing (nodes -> hyperedges -> nodes), no graph reduction
-        # Example: x: (num_nodes, in_channels)
+        # Examples: x: (num_nodes, in_channels)
         #          -> node_embeddings: (num_nodes, out_channels)
         node_embeddings: Tensor = self.encoder(x, hyperedge_index)
 

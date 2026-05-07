@@ -106,7 +106,7 @@ class HGNNPHlpModule(HlpModule):
             raise ValueError("Encoder is not defined for this HLP module.")
 
         # Encode: produce node embeddings using HGNN+, no graph reduction is applied
-        # Example: x: (num_nodes, in_channels)
+        # Examples: x: (num_nodes, in_channels)
         #          -> node_embeddings: (num_nodes, out_channels), out_channels)
         node_embeddings: Tensor = self.encoder(x, hyperedge_index)
 
