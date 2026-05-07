@@ -3,65 +3,43 @@ import torch
 import torch.nn.functional as F
 
 from torch import Tensor, nn
-from typing import Literal, Optional, Tuple, TypedDict
-from typing_extensions import NotRequired
+from typing import Literal, Optional, Tuple
 from hyperbench.nn import HyperedgeAggregator, NodeAggregator, VilLainLoss, VilLainLossParts
 from hyperbench.types import HyperedgeIndex
 
 
-class VilLainConfig(TypedDict):
-    """
-    Configuration for the feature-free VilLain encoder.
-
-    Args:
-        num_nodes: Total number of trainable nodes.
-        embedding_dim: Returned embedding dimension.
-        labels_per_subspace: Number of virtual labels per subspace. Defaults to ``2``.
-        training_steps: Propagation steps used for self-supervised loss. Defaults to ``4``.
-        generation_steps: Propagation steps averaged for final embeddings. Defaults to ``100``.
-        tau: Gumbel-Softmax temperature. Defaults to ``1.0``.
-        eps: Numerical stability constant. Defaults to ``1e-12``.
-    """
-
-    num_nodes: int
-    embedding_dim: int
-    labels_per_subspace: NotRequired[int]
-    training_steps: NotRequired[int]
-    generation_steps: NotRequired[int]
-    tau: NotRequired[float]
-    eps: NotRequired[float]
-
-
 class VilLain(nn.Module):
     """
-    Feature-free VilLain encoder for homogeneous hypergraphs.
+    VilLain learns node-specific virtual-label logits instead of consuming existing node features.
+    The model is transductive: rows in ``node_embedding`` correspond to the fixed global node space used during training.
+    - Proposed in `VilLain: Self-Supervised Learning on Homogeneous Hypergraphs without Features via Virtual Label Propagation <https://dl.acm.org/doi/pdf/10.1145/3589334.3645454>`_ paper (WWW 2024).
+    - Reference implementation: `source <https://github.com/geon0325/VilLain/>`_.
 
-    VilLain learns node-specific virtual-label logits instead of consuming
-    ``HData.x``. Each forward pass samples differentiable virtual-label
-    assignments with Gumbel-Softmax, propagates them over the incidence
-    structure, and returns averaged propagated node embeddings. The model is
-    transductive: rows in ``node_embedding`` correspond to the fixed global
-    node space used during training.
+    Each forward pass:
+    1. Samples differentiable virtual-label assignments with Gumbel-Softmax.
+    2. Propagates them over the incidence structure.
+    3. Returns averaged propagated node embeddings.
+
 
     Args:
         num_nodes: Total number of trainable nodes.
-        embedding_dim: Returned embedding dimension.
+        embedding_dim: Returned embedding dimension. Defaults to ``128``.
         labels_per_subspace: Number of virtual labels per subspace. Defaults to ``2``.
         training_steps: Propagation steps used for self-supervised loss. Defaults to ``4``.
         generation_steps: Propagation steps averaged for final embeddings. Defaults to ``100``.
         tau: Gumbel-Softmax temperature. Defaults to ``1.0``.
-        eps: Numerical stability constant. Defaults to ``1e-12``.
+        eps: Numerical stability constant. Defaults to ``1e-10``.
     """
 
     def __init__(
         self,
         num_nodes: int,
-        embedding_dim: int,
+        embedding_dim: int = 128,
         labels_per_subspace: int = 2,
         training_steps: int = 4,
         generation_steps: int = 100,
         tau: float = 1.0,
-        eps: float = 1e-12,
+        eps: float = 1e-10,
     ):
         super().__init__()
         self.__validate_args(
@@ -99,9 +77,10 @@ class VilLain(nn.Module):
         hyperedge_index: Tensor,
         node_ids: Optional[Tensor] = None,
         num_hyperedges: Optional[int] = None,
-    ) -> Tensor:
+    ) -> Tuple[Tensor, VilLainLossParts]:
         """
-        Generate node embeddings.
+        Compute the self-supervised VilLain objective.
+        Use ``hyperedge_embeddings`` or ``node_embeddings`` to generate final embeddings for inference after training.
 
         Args:
             hyperedge_index: Incidence tensor of shape ``(2, num_incidences)``.
@@ -114,7 +93,7 @@ class VilLain(nn.Module):
         Returns:
             Node embeddings of shape ``(num_local_nodes, embedding_dim)``.
         """
-        return self.node_embeddings(
+        return self.loss(
             hyperedge_index=hyperedge_index,
             node_ids=node_ids,
             num_hyperedges=num_hyperedges,
@@ -140,19 +119,21 @@ class VilLain(nn.Module):
         Returns:
             A tuple ``(total_loss, loss_parts)`` where ``loss_parts`` contains ``local_loss`` and ``global_loss`` scalar tensors.
         """
-        x = self.__get_initial_virtual_node_features(node_ids=node_ids)
+        node_embeddings = self.__get_initial_virtual_node_features(node_ids=node_ids)
         actual_num_hyperedges = self.__resolve_num_hyperedges(hyperedge_index, num_hyperedges)
 
-        local_loss = x.new_zeros(size=())
-        global_loss = x.new_zeros(size=())
+        local_loss = node_embeddings.new_zeros(size=())
+        global_loss = node_embeddings.new_zeros(size=())
         for _ in range(self.training_steps):
-            x, hyperedge_embeddings = self.__message_passing(
-                x=x,
+            node_embeddings, hyperedge_embeddings = self.__message_passing(
+                x=node_embeddings,
                 hyperedge_index=hyperedge_index,
                 num_hyperedges=actual_num_hyperedges,
             )
-            local_loss = local_loss + self.loss_fn.local_loss(x, hyperedge_embeddings)
-            global_loss = global_loss + self.loss_fn.global_loss(x, hyperedge_embeddings)
+            local_loss = local_loss + self.loss_fn.local_loss(node_embeddings, hyperedge_embeddings)
+            global_loss = global_loss + self.loss_fn.global_loss(
+                node_embeddings, hyperedge_embeddings
+            )
 
         return self.loss_fn.total_loss(local_loss, global_loss), {
             "local_loss": local_loss,
@@ -237,32 +218,35 @@ class VilLain(nn.Module):
         Returns:
             Averaged embeddings truncated to ``embedding_dim``.
         """
-        x = self.__get_initial_virtual_node_features(node_ids=node_ids)
-        actual_num_hyperedges = self.__resolve_num_hyperedges(hyperedge_index, num_hyperedges)
+        with torch.no_grad():
+            x = self.__get_initial_virtual_node_features(node_ids=node_ids)
+            actual_num_hyperedges = self.__resolve_num_hyperedges(hyperedge_index, num_hyperedges)
 
-        final_embeddings_size = (
-            (x.size(0), self.raw_embedding_dim)
-            if mode == "node"
-            else (actual_num_hyperedges, self.raw_embedding_dim)
-        )
-        final_embeddings = x.new_zeros(size=final_embeddings_size)
-        for _ in range(self.generation_steps):
-            x, hyperedge_embeddings = self.__message_passing(
-                x=x,
-                hyperedge_index=hyperedge_index,
-                num_hyperedges=actual_num_hyperedges,
+            final_embeddings_size = (
+                (x.size(0), self.raw_embedding_dim)
+                if mode == "node"
+                else (actual_num_hyperedges, self.raw_embedding_dim)
             )
+            final_embeddings = x.new_zeros(size=final_embeddings_size)
+            for _ in range(self.generation_steps):
+                x, hyperedge_embeddings = self.__message_passing(
+                    x=x,
+                    hyperedge_index=hyperedge_index,
+                    num_hyperedges=actual_num_hyperedges,
+                )
 
-            # Suppose generation_steps = 100.
-            # Average 100 propagated embeddings for each node/hyperedge to get more stable final embeddings.
-            # Sum here and divide by generation_steps later to avoid storing all 100 embeddings in memory at once.
-            final_embeddings = final_embeddings + (x if mode == "node" else hyperedge_embeddings)
-        final_embeddings = final_embeddings / self.generation_steps
+                # Suppose generation_steps = 100.
+                # Average 100 propagated embeddings for each node/hyperedge to get more stable final embeddings.
+                # Sum here and divide by generation_steps later to avoid storing all 100 embeddings in memory at once.
+                final_embeddings = final_embeddings + (
+                    x if mode == "node" else hyperedge_embeddings
+                )
+            final_embeddings = final_embeddings / self.generation_steps
 
-        # Example: final_embeddings.shape = (num_nodes/num_hyperedges, 8) with raw_embedding_dim=8
-        #          -> returned shape = (num_nodes/num_hyperedges, 4) with embedding_dim=4
-        #             as it takes the first 4 channels of the raw embedding as the final embedding.
-        return final_embeddings[:, : self.embedding_dim]
+            # Example: final_embeddings.shape = (num_nodes/num_hyperedges, 8) with raw_embedding_dim=8
+            #          -> returned shape = (num_nodes/num_hyperedges, 4) with embedding_dim=4
+            #             as it takes the first 4 channels of the raw embedding as the final embedding.
+            return final_embeddings[:, : self.embedding_dim]
 
     def __get_initial_virtual_node_features(self, node_ids: Optional[Tensor] = None) -> Tensor:
         """

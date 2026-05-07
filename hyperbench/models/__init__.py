@@ -7,7 +7,7 @@ from .hypergcn import HyperGCN
 from .mlp import MLP, SLP
 from .nhp import NHP
 from .node2vec import Node2Vec, Node2VecConfig, Node2VecGCN
-from .villain import VilLain, VilLainConfig
+from .villain import VilLain
 
 __all__ = [
     "CommonNeighbors",
@@ -25,5 +25,4 @@ __all__ = [
     "Node2VecGCN",
     "SLP",
     "VilLain",
-    "VilLainConfig",
 ]
