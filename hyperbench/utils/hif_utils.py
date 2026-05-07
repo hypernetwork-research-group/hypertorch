@@ -75,16 +75,12 @@ def get_gh_datasets_shas(
 
 
 def get_gh_dataset_sha(dataset_name: str, owner: str, repository: str) -> str | None:
-
-    OWNER = owner
-    REPO = repository
-    FILE_PATH = f"{dataset_name}.json.zst"
-
-    url = f"https://api.github.com/repos/{OWNER}/{REPO}/commits"
+    url = f"https://api.github.com/repos/{owner}/{repository}/commits"
+    file_path = f"{dataset_name}.json.zst"
 
     params = {
-        "path": FILE_PATH,
-        "per_page": 1,  # latest commit only
+        "path": file_path,
+        "per_page": 1,  # Latest commit only
     }
 
     try:
@@ -104,7 +100,7 @@ def get_gh_dataset_sha(dataset_name: str, owner: str, repository: str) -> str | 
         commit_sha = data[0]["sha"]
     else:
         warnings.warn(
-            f"{dataset_name}: no commits found for {FILE_PATH}",
+            f"{dataset_name}: no commits found for {file_path}",
             category=UserWarning,
             stacklevel=2,
         )

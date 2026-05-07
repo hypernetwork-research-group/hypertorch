@@ -364,12 +364,14 @@ class Dataset(TorchDataset):
         return self
 
     def transform_node_attrs(
+        self,
         attrs: dict[str, Any],
         attr_keys: list[str] | None = None,
     ) -> Tensor:
         return HIFProcessor.transform_attrs(attrs, attr_keys)
 
     def transform_hyperedge_attrs(
+        self,
         attrs: dict[str, Any],
         attr_keys: list[str] | None = None,
     ) -> Tensor:

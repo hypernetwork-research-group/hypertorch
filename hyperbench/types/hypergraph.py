@@ -831,7 +831,7 @@ class HyperedgeIndex:
 
             edge_weight = 1.0 / (2 * num_nodes_in_edge - 3)
             for node_idx in range(num_nodes_in_edge):
-                if node_idx != node_max_proj_idx and node_idx != node_min_proj_idx:
+                if node_idx not in {node_max_proj_idx.item(), node_min_proj_idx.item()}:
                     graph_edges.append([edge[node_min_proj_idx], edge[node_idx]])
                     graph_edges.append([edge[node_max_proj_idx], edge[node_idx]])
                     graph_edge_weights.extend([edge_weight, edge_weight])
@@ -930,3 +930,11 @@ class HyperedgeIndex:
         self.__hyperedge_index[1] = to_0based_ids(self.all_hyperedge_ids, hyperedge_ids_to_rebase)
 
         return self
+
+
+if __name__ == "__main__":
+    x = torch.tensor([[1.0, 0.0], [0.0, 1.0], [1.0, 1.0], [0.0, 0.0], [0.5, 0.5]])
+    hyperedge_index = torch.tensor([[0, 1, 2, 3, 0, 2, 4], [0, 0, 0, 0, 1, 1, 1]])
+    edge_index = HyperedgeIndex(hyperedge_index).reduce_to_edge_index_on_random_direction(
+        x, with_mediators=True, return_weights=False
+    )

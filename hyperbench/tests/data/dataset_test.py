@@ -963,61 +963,62 @@ def test_nested_transductive_split_supports_train_feature_reuse():
 
 
 def test_transform_node_attrs_adds_padding_zero_when_attr_keys_padding(mock_hdata):
-
     with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata):
 
         class TestDataset(Dataset):
             DATASET_NAME = "TEST"
 
-        _ = TestDataset()
+        dataset = TestDataset()
 
         # Test with attr_keys - should pad missing attributes with 0.0
         attrs = {"weight": 1.5}
-        result = Dataset.transform_node_attrs(attrs, attr_keys=["score", "weight", "age"])
+        result = dataset.transform_node_attrs(attrs, attr_keys=["score", "weight", "age"])
         assert torch.allclose(
             result, torch.tensor([0.0, 1.5, 0.0])
         )  # score=0.0, weight=1.5, age=0.0
 
         # Test with all attributes present
         attrs = {"weight": 1.5, "score": 0.8, "age": 25.0}
-        result = Dataset.transform_node_attrs(attrs, attr_keys=["age", "score", "weight"])
+        result = dataset.transform_node_attrs(attrs, attr_keys=["age", "score", "weight"])
         assert torch.allclose(
             result, torch.tensor([25.0, 0.8, 1.5])
         )  # age=25.0, score=0.8, weight=1.5
 
         # Test without attr_keys - maintains insertion order
         attrs = {"weight": 1.5, "score": 0.8}
-        result = Dataset.transform_node_attrs(attrs)
+        result = dataset.transform_node_attrs(attrs)
         assert torch.allclose(result, torch.tensor([1.5, 0.8]))  # weight, score (insertion order)
 
 
 def test_transform_hyperedge_attrs_adds_padding_zero_when_attr_keys_padding(mock_hdata):
-
     with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata):
 
         class TestDataset(Dataset):
             DATASET_NAME = "TEST"
 
-        _ = TestDataset()
+        dataset = TestDataset()
+
         # Test with attr_keys - should pad missing attributes with 0.0
         attrs = {"weight": 1.5}
-        result = Dataset.transform_hyperedge_attrs(
+        result = dataset.transform_hyperedge_attrs(
             attrs, attr_keys=["capacity", "weight", "length"]
         )
         assert torch.allclose(
             result, torch.tensor([0.0, 1.5, 0.0])
         )  # capacity=0.0, weight=1.5, length=0.0
+
         # Test with all attributes present
         attrs = {"weight": 1.5, "capacity": 10.0, "length": 5.0}
-        result = Dataset.transform_hyperedge_attrs(
+        result = dataset.transform_hyperedge_attrs(
             attrs, attr_keys=["length", "capacity", "weight"]
         )
         assert torch.allclose(
             result, torch.tensor([5.0, 10.0, 1.5])
         )  # length=5.0, capacity=10.0, weight=1.5
+
         # Test without attr_keys - maintains insertion order
         attrs = {"weight": 1.5, "capacity": 10.0}
-        result = Dataset.transform_hyperedge_attrs(attrs)
+        result = dataset.transform_hyperedge_attrs(attrs)
         assert torch.allclose(
             result, torch.tensor([1.5, 10.0])
         )  # capacity, weight (insertion order)

@@ -15,7 +15,7 @@ def seed():
     torch.manual_seed(42)
 
 
-def test_build_HIFHypergraph_instance():
+def test_build_hifhypergraph_instance():
     with open(f"{MOCK_BASE_PATH}/algebra.hif.json") as f:
         hiftext = json.load(f)
 

@@ -442,7 +442,7 @@ def test_load_skips_download_when_file_exists(tmp_path, mock_hypergraph):
     assert result.num_hyperedges == 1
 
 
-def test_HIFLoader_falls_back_to_hf_hub_download_when_github_raw_download_fails(
+def test_hifloader_falls_back_to_hf_hub_download_when_github_raw_download_fails(
     tmp_path, mock_hypergraph
 ):
     fallback_file = tmp_path / "algebra.json.zst"
@@ -493,7 +493,7 @@ def test_load_saves_downloaded_dataset_on_disk(tmp_path, mock_hypergraph):
     assert result.num_hyperedges == 1
 
 
-def test_HIFLoader_download_raises_when_network_error():
+def test_hifloader_download_raises_when_network_error():
     with (
         patch("hyperbench.data.hif.os.path.exists", return_value=False),
         patch(
@@ -586,7 +586,7 @@ def test_load_by_name_reads_hf_download_and_saves_its_content(tmp_path, mock_hyp
     assert result.num_hyperedges == 1
 
 
-def test_HIFLoader_download_failure_when_hf_fallback_fails():
+def test_hifloader_download_failure_when_hf_fallback_fails():
     hf_sha = "2bb641461e00c103fb5ef4fe6a30aad42500fc21"
     response = requests.Response()
     response.status_code = 404

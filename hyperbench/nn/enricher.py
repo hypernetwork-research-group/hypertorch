@@ -271,11 +271,11 @@ class Node2VecEnricher(NodeEnricher):
 
             # Iterate over batches of positive and negative random walks
             for positive_random_walk, negative_random_walk in data_loader:
-                positive_random_walk = positive_random_walk.to(device)
-                negative_random_walk = negative_random_walk.to(device)
+                positive_random_walk_on_device = positive_random_walk.to(device)
+                negative_random_walk_on_device = negative_random_walk.to(device)
 
                 optimizer.zero_grad()
-                loss = model.loss(positive_random_walk, negative_random_walk)
+                loss = model.loss(positive_random_walk_on_device, negative_random_walk_on_device)
                 loss.backward()
                 optimizer.step()
 

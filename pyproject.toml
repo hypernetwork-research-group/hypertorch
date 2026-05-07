@@ -93,13 +93,20 @@ line-length = 100
 [tool.ruff.lint]
 select = [
     "B",     # flake8-bugbear: bugs / bad practices (https://docs.astral.sh/ruff/rules/#flake8-bugbear-b)
+    "C4",    # flake8-comprehensions (https://docs.astral.sh/ruff/rules/#flake8-comprehensions-c4)
     "E",     # pycodestyle (https://docs.astral.sh/ruff/rules/#pycodestyle-e-w)
     "F",     # pyflakes: undefined names, unused imports, etc. (https://docs.astral.sh/ruff/rules/#pyflakes-f)
     "FURB",  # refurb: modern/simpler code improvements (https://docs.astral.sh/ruff/rules/#refurb-furb)
     "I",     # isort (https://docs.astral.sh/ruff/rules/#isort-i)
+    "N",     # pep8-naming (https://docs.astral.sh/ruff/rules/#pep8-naming-n)
     "PERF",  # perflint: performance suggestions (https://docs.astral.sh/ruff/rules/#perflint-perf)
-    "SIM",   # flake8-simplify: simplify code (https://docs.astral.sh/ruff/rules/#flake8-simplify-sim)
+    "PL",    # pylint-inspired rules (https://docs.astral.sh/ruff/rules/#pylint-pl)
+    "Q",     # flake8-quotes: string quote normalization (https://docs.astral.sh/ruff/rules/#flake8-quotes-q)
+    "RET",   # flake8-return: return statement simplifications (https://docs.astral.sh/ruff/rules/#flake8-return-ret)
+    "RSE",   # flake8-raise: raise statement improvements (https://docs.astral.sh/ruff/rules/#flake8-raise-rse  )
     "RUF",   # Ruff-specific rules (https://docs.astral.sh/ruff/rules/#ruff-specific-rules-ruf)
+    "SIM",   # flake8-simplify: simplify code (https://docs.astral.sh/ruff/rules/#flake8-simplify-sim)
+    "T10",   # flake8-debugger (https://docs.astral.sh/ruff/rules/#flake8-debugger-t10)
     "UP",    # pyupgrade: modern Python syntax (https://docs.astral.sh/ruff/rules/#pyupgrade-up)
 ]
-ignore = ["E501", "I001"]
+ignore = ["E501", "I001", "N812", "PLC0415", "PLR0913", "PLR2004", "RET504"]

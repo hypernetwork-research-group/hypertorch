@@ -186,7 +186,7 @@ def test_model_returns_model_when_correct_name_and_no_version(
 @patch("hyperbench.train.trainer.CSVLogger")
 @patch("hyperbench.train.trainer.MarkdownTableLogger")
 @patch("hyperbench.train.trainer.LaTexTableLogger")
-def test_model_returns_None_when_incorrect_name_and_no_version(
+def test_model_returns_none_when_incorrect_name_and_no_version(
     mock_latex_logger_cls,
     mock_md_logger_cls,
     mock_csv_logger_cls,
@@ -222,7 +222,7 @@ def test_model_returns_model_when_correct_name_and_version(
 @patch("hyperbench.train.trainer.CSVLogger")
 @patch("hyperbench.train.trainer.MarkdownTableLogger")
 @patch("hyperbench.train.trainer.LaTexTableLogger")
-def test_model_returns_None_when_incorrect_name_and_version(
+def test_model_returns_none_when_incorrect_name_and_version(
     mock_latex_logger_cls,
     mock_md_logger_cls,
     mock_csv_logger_cls,
@@ -239,7 +239,7 @@ def test_model_returns_None_when_incorrect_name_and_version(
 @patch("hyperbench.train.trainer.CSVLogger")
 @patch("hyperbench.train.trainer.MarkdownTableLogger")
 @patch("hyperbench.train.trainer.LaTexTableLogger")
-def test_model_returns_None_when_incorrect_name_and_correct_version(
+def test_model_returns_none_when_incorrect_name_and_correct_version(
     mock_latex_logger_cls,
     mock_md_logger_cls,
     mock_csv_logger_cls,
@@ -293,7 +293,7 @@ def test_fit_all_with_no_models(
 @patch("hyperbench.train.trainer.CSVLogger")
 @patch("hyperbench.train.trainer.MarkdownTableLogger")
 @patch("hyperbench.train.trainer.LaTexTableLogger")
-def test_fit_all_raises_when_None_trainer(
+def test_fit_all_raises_when_none_trainer(
     mock_latex_logger_cls,
     mock_md_logger_cls,
     mock_csv_logger_cls,
@@ -444,7 +444,7 @@ def test_test_all_with_no_models(
 @patch("hyperbench.train.trainer.CSVLogger")
 @patch("hyperbench.train.trainer.MarkdownTableLogger")
 @patch("hyperbench.train.trainer.LaTexTableLogger")
-def test_test_all_raises_when_None_trainer(
+def test_test_all_raises_when_none_trainer(
     mock_latex_logger_cls,
     mock_md_logger_cls,
     mock_csv_logger_cls,

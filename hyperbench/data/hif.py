@@ -122,7 +122,8 @@ class HIFProcessor:
             num_hyperedges=num_hyperedges,
         )
 
-    def __collect_attr_keys(attr_keys: list[dict[str, Any]]) -> list[str]:
+    @classmethod
+    def __collect_attr_keys(cls, attr_keys: list[dict[str, Any]]) -> list[str]:
         """
         Collect unique numeric attribute keys from a list of attribute dictionaries.
 
@@ -305,7 +306,10 @@ class HIFLoader:
 
     @classmethod
     def load_by_name(
-        cls, dataset_name: str, hf_sha: str | None = None, save_on_disk: bool = False
+        cls,
+        dataset_name: str,
+        hf_sha: str | None = None,
+        save_on_disk: bool = False,
     ) -> HData:
         current_dir = os.path.dirname(os.path.abspath(__file__))
         zst_filename = os.path.join(current_dir, "datasets", f"{dataset_name}.json.zst")
@@ -321,17 +325,14 @@ class HIFLoader:
                     stacklevel=2,
                 )
 
-                REPO_ID = f"HypernetworkRG/{dataset_name}"
-                FILENAME = f"{dataset_name}.json.zst"
-
                 with tempfile.NamedTemporaryFile(
                     mode="wb", suffix=".json.zst", delete=False
                 ) as tmp_hf_file:
                     if hf_sha is not None:
                         try:
                             downloaded_path = hf_hub_download(
-                                repo_id=REPO_ID,
-                                filename=FILENAME,
+                                repo_id=f"HypernetworkRG/{dataset_name}",
+                                filename=f"{dataset_name}.json.zst",
                                 repo_type="dataset",
                                 revision=hf_sha,
                             )

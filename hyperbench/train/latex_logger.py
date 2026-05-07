@@ -249,101 +249,6 @@ class LaTexTableLogger(Logger):
         if not sections_data:
             return ""
 
-        def esc(value: str) -> str:
-            return (
-                value.replace("\\", "\\textbackslash{}")
-                .replace("&", "\\&")
-                .replace("%", "\\%")
-                .replace("$", "\\$")
-                .replace("#", "\\#")
-                .replace("_", "\\_")
-                .replace("{", "\\{")
-                .replace("}", "\\}")
-                .replace("~", "\\textasciitilde{}")
-                .replace("^", "\\textasciicircum{}")
-            )
-
-        def section_lines(
-            title: str,
-            results: Mapping[str, Mapping[str, Any]],
-            total_cols: int,
-        ) -> list[str]:
-            metrics = sorted({m for mm in results.values() for m in mm})
-            sort_orders = sort_by or ["asc"]
-
-            normalized_orders: list[str] = []
-            for order in sort_orders:
-                normalized = order.lower()
-                if normalized not in ("asc", "des"):
-                    raise ValueError(f"Invalid sort_by value: {order}. Use 'asc' or 'des'.")
-                normalized_orders.append(normalized)
-
-            metric_sort: dict[str, str] = {}
-            for idx, metric in enumerate(metrics):
-                metric_sort[metric] = (
-                    normalized_orders[idx]
-                    if idx < len(normalized_orders)
-                    else normalized_orders[-1]
-                )
-
-            metric_bounds = collect_metric_bounds(results, metrics)
-
-            best_by_metric: dict[str, float] = {}
-
-            for metric in metrics:
-                vals = [
-                    metric_value
-                    for model_metrics in results.values()
-                    for metric_name, metric_value in model_metrics.items()
-                    if metric_name == metric and isinstance(metric_value, (int, float))
-                ]
-                if vals:
-                    best_by_metric[metric] = (
-                        min(vals) if metric_sort.get(metric, "asc") == "asc" else max(vals)
-                    )
-
-            header_cells = ["Model", *[esc(metric) for metric in metrics]]
-            while len(header_cells) < total_cols:
-                header_cells.append("")
-
-            lines = [
-                r"\addlinespace[3pt]",
-                rf"\multicolumn{{{total_cols}}}{{c}}{{\textbf{{{esc(title)}}}}} \\",
-                r"\midrule",
-                " & ".join(header_cells) + r" \\",
-            ]
-
-            for model_name in sorted(results):
-                model_metrics = results[model_name]
-                row = [esc(model_name)]
-
-                for metric in metrics:
-                    value = model_metrics.get(metric)
-                    if isinstance(value, (int, float)):
-                        formatted = f"{value:.{precision}f}"
-                        best = best_by_metric.get(metric)
-                        if best is not None and value == best:
-                            formatted = rf"\underline{{{formatted}}}"
-
-                        row.append(
-                            colorize_metric_value(
-                                metric=metric,
-                                value=float(value),
-                                text=formatted,
-                                metric_bounds=metric_bounds,
-                                sort_order=metric_sort.get(metric, "asc"),
-                            )
-                        )
-                    else:
-                        row.append("-")
-
-                while len(row) < total_cols:
-                    row.append("")
-                lines.append(" & ".join(row) + r" \\")
-
-            lines.append(r"\hline" if border else r"\midrule")
-            return lines
-
         # One tabular must have fixed column count; use max needed across sections.
         max_metrics = max(len({m for mm in rs.values() for m in mm}) for _, rs in sections_data)
         total_cols = 1 + max_metrics
@@ -358,7 +263,9 @@ class LaTexTableLogger(Logger):
         ]
 
         for title, results in sections_data:
-            lines.extend(section_lines(title, results, total_cols))
+            lines.extend(
+                self.__get_section_lines(title, results, total_cols, precision, sort_by, border)
+            )
 
         # Replace the last section-ending rule with a final closing \hline.
         last_rule = r"\hline" if border else r"\midrule"
@@ -370,11 +277,108 @@ class LaTexTableLogger(Logger):
         table_lines: list[str] = [r"\begin{table}[htbp]", r"\centering"]
 
         if table_caption:
-            table_lines.append(rf"\caption{{{esc(table_caption)}}}")
+            table_lines.append(rf"\caption{{{self.__escape(table_caption)}}}")
 
         table_lines.extend(lines)
         table_lines.append(r"\end{table}")
         return "\n".join(table_lines) + "\n"
+
+    def __get_section_lines(
+        self,
+        title: str,
+        results: Mapping[str, Mapping[str, Any]],
+        total_cols: int,
+        precision: int,
+        sort_by: list[str] | None,
+        border: bool,
+    ) -> list[str]:
+        metrics = sorted({m for mm in results.values() for m in mm})
+        sort_orders = sort_by or ["asc"]
+
+        normalized_orders: list[str] = []
+        for order in sort_orders:
+            normalized = order.lower()
+            if normalized not in ("asc", "des"):
+                raise ValueError(f"Invalid sort_by value: {order}. Use 'asc' or 'des'.")
+            normalized_orders.append(normalized)
+
+        metric_sort: dict[str, str] = {}
+        for idx, metric in enumerate(metrics):
+            metric_sort[metric] = (
+                normalized_orders[idx] if idx < len(normalized_orders) else normalized_orders[-1]
+            )
+
+        metric_bounds = collect_metric_bounds(results, metrics)
+
+        best_by_metric: dict[str, float] = {}
+
+        for metric in metrics:
+            vals = [
+                metric_value
+                for model_metrics in results.values()
+                for metric_name, metric_value in model_metrics.items()
+                if metric_name == metric and isinstance(metric_value, (int, float))
+            ]
+            if vals:
+                best_by_metric[metric] = (
+                    min(vals) if metric_sort.get(metric, "asc") == "asc" else max(vals)
+                )
+
+        header_cells = ["Model", *[self.__escape(metric) for metric in metrics]]
+        while len(header_cells) < total_cols:
+            header_cells.append("")
+
+        lines = [
+            r"\addlinespace[3pt]",
+            rf"\multicolumn{{{total_cols}}}{{c}}{{\textbf{{{self.__escape(title)}}}}} \\",
+            r"\midrule",
+            " & ".join(header_cells) + r" \\",
+        ]
+
+        for model_name in sorted(results):
+            model_metrics = results[model_name]
+            row = [self.__escape(model_name)]
+
+            for metric in metrics:
+                value = model_metrics.get(metric)
+                if isinstance(value, (int, float)):
+                    formatted = f"{value:.{precision}f}"
+                    best = best_by_metric.get(metric)
+                    if best is not None and value == best:
+                        formatted = rf"\underline{{{formatted}}}"
+
+                    row.append(
+                        colorize_metric_value(
+                            metric=metric,
+                            value=float(value),
+                            text=formatted,
+                            metric_bounds=metric_bounds,
+                            sort_order=metric_sort.get(metric, "asc"),
+                        )
+                    )
+                else:
+                    row.append("-")
+
+            while len(row) < total_cols:
+                row.append("")
+            lines.append(" & ".join(row) + r" \\")
+
+        lines.append(r"\hline" if border else r"\midrule")
+        return lines
+
+    def __escape(self, value: str) -> str:
+        return (
+            value.replace("\\", "\\textbackslash{}")
+            .replace("&", "\\&")
+            .replace("%", "\\%")
+            .replace("$", "\\$")
+            .replace("#", "\\#")
+            .replace("_", "\\_")
+            .replace("{", "\\{")
+            .replace("}", "\\}")
+            .replace("~", "\\textasciitilde{}")
+            .replace("^", "\\textasciicircum{}")
+        )
 
     def __save_comparison_tables(
         self,
