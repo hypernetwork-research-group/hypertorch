@@ -509,7 +509,7 @@ def test_hyperedge_index_nodes_in(hyperedge_index_tensor, hyperedge_id, expected
 
 
 def _edge_index_to_edge_set(edge_index: torch.Tensor) -> set[tuple[int, int]]:
-    return set(zip(edge_index[0].tolist(), edge_index[1].tolist()))
+    return set(zip(edge_index[0].tolist(), edge_index[1].tolist(), strict=True))
 
 
 @pytest.mark.parametrize(
@@ -601,7 +601,7 @@ def test_clique_expansion_overlapping_hyperedges():
     # Two hyperedges sharing node 1: {0,1} and {1,2}
     hyperedge_index = torch.tensor([[0, 1, 1, 2], [0, 0, 1, 1]])
     result = HyperedgeIndex(hyperedge_index).reduce_to_edge_index_on_clique_expansion()
-    edges = set(zip(result[0].tolist(), result[1].tolist()))
+    edges = set(zip(result[0].tolist(), result[1].tolist(), strict=True))
 
     # All pairs connected: 0-1, 1-2, and 0-2 (via node 1 shared in both hyperedges)
     assert (0, 1) in edges

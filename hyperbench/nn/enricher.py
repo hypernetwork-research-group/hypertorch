@@ -2,7 +2,7 @@ import warnings
 import random
 import torch
 
-from abc import ABC
+from abc import ABC, abstractmethod
 from torch import Tensor, optim
 from typing import Literal, Optional, TypeAlias
 from hyperbench.types import EdgeIndex, HyperedgeIndex
@@ -25,6 +25,7 @@ class Enricher(ABC):
     ):
         self.cache_dir = cache_dir
 
+    @abstractmethod
     def enrich(self, hyperedge_index: Tensor) -> Tensor:
         raise NotImplementedError("Subclasses must implement the enrich method.")
 

@@ -338,7 +338,7 @@ class HIFLoader:
                         except Exception as e:
                             raise ValueError(
                                 f"Failed to download dataset '{dataset_name}' from GitHub and Hugging Face Hub. GitHub error: {response.status_code} | Hugging Face error: {str(e)}"
-                            )
+                            ) from e
                     else:
                         raise ValueError(
                             f"Failed to download dataset '{dataset_name}' from GitHub with status code {response.status_code} and no SHA provided for Hugging Face Hub fallback."
