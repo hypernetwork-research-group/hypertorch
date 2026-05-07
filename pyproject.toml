@@ -95,6 +95,7 @@ select = [
     "B",     # flake8-bugbear: bugs / bad practices (https://docs.astral.sh/ruff/rules/#flake8-bugbear-b)
     "E",     # pycodestyle (https://docs.astral.sh/ruff/rules/#pycodestyle-e-w)
     "F",     # pyflakes: undefined names, unused imports, etc. (https://docs.astral.sh/ruff/rules/#pyflakes-f)
+    "FURB",  # refurb: modern/simpler code improvements (https://docs.astral.sh/ruff/rules/#refurb-furb)
     "I",     # isort (https://docs.astral.sh/ruff/rules/#isort-i)
     "PERF",  # perflint: performance suggestions (https://docs.astral.sh/ruff/rules/#perflint-perf)
     "SIM",   # flake8-simplify: simplify code (https://docs.astral.sh/ruff/rules/#flake8-simplify-sim)

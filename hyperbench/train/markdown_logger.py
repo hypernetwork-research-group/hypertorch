@@ -97,8 +97,8 @@ class MarkdownTableLogger(Logger):
         self.__save_comparison_tables(
             test_results=test_results,
             save_dir=comparison_dir,
-            train_results=train_results if train_results else None,
-            val_results=val_results if val_results else None,
+            train_results=train_results or None,
+            val_results=val_results or None,
             precision=self.__precision,
         )
 

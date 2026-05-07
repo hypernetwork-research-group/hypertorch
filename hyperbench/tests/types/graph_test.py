@@ -963,7 +963,7 @@ def test_get_sparse_normalized_laplacian_returns_sparse_tensor():
 def test_get_sparse_normalized_gcn_laplacian_shape(edge_index, num_nodes):
     gcn_laplacian = EdgeIndex(edge_index).get_sparse_normalized_gcn_laplacian(num_nodes=num_nodes)
     unique_nodes = torch.unique(edge_index)
-    expected_num_nodes = num_nodes if num_nodes else len(unique_nodes)
+    expected_num_nodes = num_nodes or len(unique_nodes)
 
     assert gcn_laplacian.shape == (expected_num_nodes, expected_num_nodes)
 

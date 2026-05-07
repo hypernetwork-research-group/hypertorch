@@ -176,8 +176,8 @@ class LaTexTableLogger(Logger):
         self.__save_comparison_tables(
             test_results=test_results,
             save_dir=comparison_dir,
-            train_results=train_results if train_results else None,
-            val_results=val_results if val_results else None,
+            train_results=train_results or None,
+            val_results=val_results or None,
             precision=self.__precision,
             table_caption=table_caption,
             sort_by=sort_by,
@@ -269,7 +269,7 @@ class LaTexTableLogger(Logger):
             total_cols: int,
         ) -> list[str]:
             metrics = sorted({m for mm in results.values() for m in mm})
-            sort_orders = sort_by if sort_by else ["asc"]
+            sort_orders = sort_by or ["asc"]
 
             normalized_orders: list[str] = []
             for order in sort_orders:
