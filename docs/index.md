@@ -7,7 +7,7 @@ Welcome to Hyperbench: A comprehensive benchmarking framework for hypergraph neu
 - [Installation Guide](getting-started/installation.md)
 - [User Guide](user-guide/user.md)
 - [API Reference](api/reference.md)
-- [Contributing](https://github.com/hypernetwork-research-group/hyperbench/blob/main/CONTRIBUTING.md)
+- Check [CONTRIBUTING.md](https://github.com/hypernetwork-research-group/hyperbench/blob/main/CONTRIBUTING.md) for more info on contributing.
 
 ## Overview
 

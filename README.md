@@ -1,14 +1,13 @@
 # HyperBench
 
-[![Forks][forks-shield]][forks-url]
-[![Stargazers][stars-shield]][stars-url]
-[![Contributors][contributors-shield]][contributors-url]
 
-[![Issues][issues-shield]][issues-url]
-[![project_license][license-shield]][license-url]
+| | |
+| --- | --- |
+| Testing | [![codecov](https://codecov.io/github/hypernetwork-research-group/hyperbench/graph/badge.svg?token=XE0TB5JMOS)](https://codecov.io/github/hypernetwork-research-group/hyperbench) [![CodeFactor](https://www.codefactor.io/repository/github/hypernetwork-research-group/hyperbench/badge)](https://www.codefactor.io/repository/github/hypernetwork-research-group/hyperbench) |
+| Package | :x: |
+| Meta | [![project_license][license-shield]][license-url] ![Discord](https://img.shields.io/discord/693092516286693387)|
+| Repo | [![Forks][forks-shield]][forks-url] [![Stargazers][stars-shield]][stars-url] [![Contributors][contributors-shield]][contributors-url] [![Issues][issues-shield]][issues-url] |
 
-[![codecov](https://codecov.io/github/hypernetwork-research-group/hyperbench/graph/badge.svg?token=XE0TB5JMOS)](https://codecov.io/github/hypernetwork-research-group/hyperbench)
-[![CodeFactor](https://www.codefactor.io/repository/github/hypernetwork-research-group/hyperbench/badge)](https://www.codefactor.io/repository/github/hypernetwork-research-group/hyperbench)
 
 ## About the project
 
@@ -64,6 +63,6 @@ Most development discussions take place on GitHub in this repo, via the [GitHub 
 [issues-shield]: https://img.shields.io/github/issues/hypernetwork-research-group/hyperbench.svg?style=for-the-badge
 [issues-url]: https://github.com/hypernetwork-research-group/hyperbench/issues
 [license-shield]: https://img.shields.io/github/license/hypernetwork-research-group/hyperbench.svg?style=for-the-badge
-[license-url]: https://github.com/hypernetwork-research-group/hyperbench/blob/master/LICENSE.txt
+[license-url]: https://github.com/hypernetwork-research-group/hyperbench/blob/master/LICENSE
 [docs]: https://hypernetwork-research-group.github.io/hyperbench/
 [issues]: https://github.com/hypernetwork-research-group/hyperbench/issues

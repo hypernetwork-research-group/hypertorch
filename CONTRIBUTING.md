@@ -4,10 +4,16 @@ The project main language is English.
 
 ## Quickstart for contributors
 
+We use different tools to make our life easier.
+Altough they are not mandatory, we have several configuration to help you build the project:
+
+- [uv](https://github.com/astral-sh/uv)
+- [make](https://www.gnu.org/software/make/)
+- [pre-commit](https://pre-commit.com)
+
 ```bash
 git clone https://github.com/hypernetwork-research-group/hyperbench.git
 cd hyperbench
-make build
 
 # install pre-commit to setup automatic local check
 # This will ensure that your code adheres to the project's coding standards before each commit.
@@ -16,10 +22,13 @@ pre-commit install \
     --install-hooks \
     --overwrite
 
-# To build the project and run tests, use the following command:
+# too see all the available commands already mapped in Makefile
+make help
+
+# install dependencies with uv
+make build
+# or run the full suite, which include building + test
 make
-
-
 ```
 
 ## Contribution types + expectations
@@ -29,7 +38,7 @@ make
 ### Feature
 
 ### Docs
-Check [Docs Contribution](#docs-contribution) for more details
+Check [Docs Contribution](#docs-contribution) for more details.
 
 ## Workflow
 
