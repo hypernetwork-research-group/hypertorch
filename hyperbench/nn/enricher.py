@@ -67,11 +67,12 @@ class HyperedgeAttrsEnricher(HyperedgeEnricher):
             hyperedge_index: Hyperedge index tensor of shape ``(2, num_hyperedges)``.
 
         Returns:
-            Tensor of shape ``(num_hyperedges,)`` containing the generated attribute for each hyperedge.
+            Tensor of shape ``(num_hyperedges, 1)`` containing the generated attribute for each hyperedge.
         """
         # Add a feature of 1.0 for each hyperedge, which can be used
         # as a baseline or for methods that require hyperedge features.
-        hyperedge_attrs = torch.ones(size=(hyperedge_index.size(1),), device=hyperedge_index.device)
+        num_hyperedges = HyperedgeIndex(hyperedge_index).num_hyperedges
+        hyperedge_attrs = torch.ones(size=(num_hyperedges, 1), device=hyperedge_index.device)
         return hyperedge_attrs
 
 

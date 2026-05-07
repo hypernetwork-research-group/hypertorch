@@ -54,6 +54,7 @@ addopts = [
 ]
 testpaths = ["hyperbench/tests"]
 filterwarnings = [
+    "ignore:.*torch.jit.script.*deprecated.*",
     "ignore:.*torch.jit.script.*is not supported in Python 3.14.*",
     "ignore:`torch_geometric.distributed` has been deprecated",
     "ignore:.*isinstance.*LeafSpec.*is deprecated.*",
