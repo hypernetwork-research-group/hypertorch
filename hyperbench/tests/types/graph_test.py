@@ -956,7 +956,7 @@ def test_get_sparse_normalized_laplacian_returns_sparse_tensor():
         pytest.param(torch.tensor([[0, 1], [1, 0]]), None, id="2_nodes_inferred"),
     ],
 )
-def test_get_sparse_normalized_laplacian_shape(edge_index, num_nodes):
+def test_get_sparse_normalized_gcn_laplacian_shape(edge_index, num_nodes):
     gcn_laplacian = EdgeIndex(edge_index).get_sparse_normalized_gcn_laplacian(num_nodes=num_nodes)
     unique_nodes = torch.unique(edge_index)
     expected_num_nodes = num_nodes if num_nodes else len(unique_nodes)
@@ -964,7 +964,7 @@ def test_get_sparse_normalized_laplacian_shape(edge_index, num_nodes):
     assert gcn_laplacian.shape == (expected_num_nodes, expected_num_nodes)
 
 
-def test_get_sparse_normalized_laplacian_is_symmetric():
+def test_get_sparse_normalized_gcn_laplacian_is_symmetric():
     """GCN Laplacian L = D^-1/2 * A * D^-1/2 is symmetric."""
     edge_index = torch.tensor([[0, 1, 2], [1, 2, 0]])
 
@@ -1250,7 +1250,7 @@ def test_get_sparse_normalized_laplacian_when_single_edge():
     assert torch.allclose(dense_laplacian, expected, atol=1e-6)
 
 
-def test_remove_duplicate_edges():
+def test_remove_duplicate_edges_removes_duplicates():
     edge_index = EdgeIndex(torch.tensor([[0, 0, 1], [1, 1, 2]]))
     edge_index.remove_duplicate_edges()
 

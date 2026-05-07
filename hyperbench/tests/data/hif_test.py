@@ -2,7 +2,6 @@ import pytest
 import requests
 import torch
 import json
-import os
 
 from unittest.mock import patch, MagicMock
 
@@ -448,21 +447,6 @@ def test_load_skips_download_when_file_exists(tmp_path, mock_hypergraph):
     assert result.num_hyperedges == 1
 
 
-def test_HIFLoader_download_failure_when_hf_fallback_fails():
-    with (
-        patch("hyperbench.data.hif.os.path.exists", return_value=False),
-        patch("hyperbench.data.hif.requests.get") as mock_get,
-        patch("hyperbench.data.hif.hf_hub_download", side_effect=Exception("HFHub failed")),
-    ):
-        mock_response = mock_get.return_value
-        mock_response.status_code = 404
-        mock_response.content = b""
-
-        with pytest.warns(UserWarning, match="GitHub raw download failed"):
-            with pytest.raises(ValueError, match="Failed to download dataset 'algebra'"):
-                HIFLoader.load_by_name("algebra")
-
-
 def test_HIFLoader_falls_back_to_hf_hub_download_when_github_raw_download_fails(
     tmp_path, mock_hypergraph
 ):
@@ -473,9 +457,7 @@ def test_HIFLoader_falls_back_to_hf_hub_download_when_github_raw_download_fails(
     with (
         patch("hyperbench.data.hif.os.path.exists", return_value=False),
         patch("hyperbench.data.hif.requests.get") as mock_get,
-        patch(
-            "hyperbench.data.hif.hf_hub_download", return_value=str(fallback_file)
-        ) as mock_hf_hub_download,
+        patch("hyperbench.data.hif.hf_hub_download", return_value=str(fallback_file)) as _,
         patch("hyperbench.data.hif.decompress_zst", return_value=json_path),
         patch("hyperbench.data.hif.validate_hif_json", return_value=True),
     ):
@@ -488,7 +470,7 @@ def test_HIFLoader_falls_back_to_hf_hub_download_when_github_raw_download_fails(
                 ValueError,
                 match="Failed to download dataset 'algebra' from GitHub with status code 404 and no SHA provided for Hugging Face Hub fallback.",
             ):
-                result = HIFLoader.load_by_name("algebra", save_on_disk=False)
+                _ = HIFLoader.load_by_name("algebra", save_on_disk=False)
 
 
 def test_load_saves_downloaded_dataset_on_disk(tmp_path, mock_hypergraph):

@@ -438,7 +438,7 @@ class MultiModelTrainer:
                 model_name=model_config.full_model_name(),
                 experiment_name=experiment_name,
                 options={
-                    "table_caption": f"Results for Experiments",
+                    "table_caption": "Results for Experiments",
                     "sort_by": ["des", "asc"],
                     "border": False,
                 },

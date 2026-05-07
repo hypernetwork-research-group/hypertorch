@@ -92,7 +92,8 @@ line-length = 100
 
 [tool.ruff.lint]
 select = [
-    "E",  # pycodestyle errors (https://docs.astral.sh/ruff/rules/#pycodestyle-e-w)
+    "E",  # pycodestyle (https://docs.astral.sh/ruff/rules/#pycodestyle-e-w)
+    "F",  # Pyflakes: undefined names, unused imports, etc. (https://docs.astral.sh/ruff/rules/#pyflakes-f)
     "I",  # isort (https://docs.astral.sh/ruff/rules/#isort-i)
 ]
 ignore = ["E501", "I001"]

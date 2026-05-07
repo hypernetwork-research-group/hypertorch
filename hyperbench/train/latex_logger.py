@@ -3,9 +3,6 @@ from typing import Any, ClassVar, Dict, Optional, Tuple, TypedDict, Mapping, Uni
 from typing_extensions import NotRequired
 
 from lightning.pytorch.loggers import Logger
-from torch_geometric import metrics
-
-from hyperbench import train
 
 
 def collect_metric_bounds(
@@ -187,7 +184,7 @@ class LaTexTableLogger(Logger):
             train_results=None,
             val_results=None,
             precision=self.__precision,
-            filename=f"test.tex",
+            filename="test.tex",
             table_caption=table_caption,
             sort_by=sort_by,
             border=border,

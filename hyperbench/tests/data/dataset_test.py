@@ -4,8 +4,7 @@ import torch
 from unittest.mock import patch, MagicMock
 from hyperbench.data import AlgebraDataset, Dataset, HIFLoader, SamplingStrategy
 from hyperbench.nn import NodeEnricher, HyperedgeEnricher
-from hyperbench.types import HData, HIFHypergraph
-from hyperbench.data.supported_datasets import PreloadedDataset
+from hyperbench.types import HData
 
 
 @pytest.fixture
@@ -101,14 +100,6 @@ def mock_hdata_random_ids() -> HData:
     x = torch.ones((3, 1), dtype=torch.float)
     hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 1]], dtype=torch.long)
     return HData(x=x, hyperedge_index=hyperedge_index)
-
-
-def test_preloaded_dataset_init():
-    mock_hdata = MagicMock(spec=HData)
-    dataset = PreloadedDataset(hdata=mock_hdata)
-
-    assert dataset.hdata == mock_hdata
-    assert dataset.sampling_strategy is SamplingStrategy.HYPEREDGE
 
 
 def test_preloaded_dataset_loads_hdata_when_hdata_is_none():
@@ -975,7 +966,7 @@ def test_transform_node_attrs_adds_padding_zero_when_attr_keys_padding(mock_hdat
         class TestDataset(Dataset):
             DATASET_NAME = "TEST"
 
-        dataset = TestDataset()
+        _ = TestDataset()
 
         # Test with attr_keys - should pad missing attributes with 0.0
         attrs = {"weight": 1.5}
@@ -1004,7 +995,7 @@ def test_transform_hyperedge_attrs_adds_padding_zero_when_attr_keys_padding(mock
         class TestDataset(Dataset):
             DATASET_NAME = "TEST"
 
-        dataset = TestDataset()
+        _ = TestDataset()
         # Test with attr_keys - should pad missing attributes with 0.0
         attrs = {"weight": 1.5}
         result = Dataset.transform_hyperedge_attrs(

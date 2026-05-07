@@ -1,11 +1,6 @@
-from pathlib import Path
 from textwrap import dedent
-from griffe import logger
 import pytest
 
-import hyperbench
-from hyperbench import train
-from hyperbench.train import negative_sampler
 from hyperbench.train.markdown_logger import MarkdownTableLogger
 
 

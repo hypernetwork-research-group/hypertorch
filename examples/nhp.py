@@ -1,4 +1,3 @@
-from torch import nn
 from torchmetrics import MetricCollection
 from torchmetrics.classification import (
     BinaryAUROC,

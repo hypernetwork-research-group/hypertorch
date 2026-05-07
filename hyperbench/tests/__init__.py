@@ -1,1 +1,3 @@
-from .mock import *
+from .mock import MOCK_BASE_PATH, new_mock_trainer
+
+__all__ = ["MOCK_BASE_PATH", "new_mock_trainer"]

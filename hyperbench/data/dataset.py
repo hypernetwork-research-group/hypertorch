@@ -15,7 +15,6 @@ from hyperbench.utils import (
 
 from hyperbench.data.sampling import SamplingStrategy, create_sampler_from_strategy
 from hyperbench.data.hif import HIFLoader, HIFProcessor
-from hyperbench.nn.enricher import EnrichmentMode, NodeEnricher, HyperedgeEnricher
 
 
 class Dataset(TorchDataset):

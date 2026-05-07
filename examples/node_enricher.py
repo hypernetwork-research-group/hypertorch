@@ -8,13 +8,13 @@ if __name__ == "__main__":
     print("Loading and preparing dataset...")
 
     dataset = AlgebraDataset(sampling_strategy=SamplingStrategy.HYPEREDGE)
-    # NodeEnricher adds features for each node.
+
     dataset.enrich_node_features(
         enricher=LaplacianPositionalEncodingEnricher(num_features=num_features),
         enrichment_mode="replace",
     )
 
-    print(f"Dataset after Laplacian Positional Encoding (LPE) enrichment:")
+    print("Dataset after Laplacian Positional Encoding (LPE) enrichment:")
     if dataset.hdata.x is not None:
         print(f"- Node features shape: {dataset.hdata.x.shape}")
         print(f"- First 5 node features:\n {dataset.hdata.x[:5]}\n")
@@ -37,7 +37,7 @@ if __name__ == "__main__":
         enrichment_mode="replace",
     )
 
-    print(f"Dataset after Node2Vec enrichment:")
+    print("Dataset after Node2Vec enrichment:")
     if dataset.hdata.x is not None:
         print(f"- Node features shape: {dataset.hdata.x.shape}")
         print(f"- First 5 node features:\n {dataset.hdata.x[:5]}")

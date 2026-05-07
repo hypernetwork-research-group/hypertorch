@@ -4,10 +4,7 @@ import copy
 
 from lightning.pytorch.loggers import Logger
 
-from pathlib import Path
 from typing import Mapping, Union
-
-from hyperbench import train
 
 
 class MarkdownTableLogger(Logger):
