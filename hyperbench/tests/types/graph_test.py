@@ -1,3 +1,5 @@
+import re
+
 import pytest
 import torch
 
@@ -57,7 +59,7 @@ def test_graph_without_edge_weights_returns_empty_edge_weights_tensor():
 def test_graph_raises_for_misaligned_edge_weights():
     with pytest.raises(
         ValueError,
-        match="edge_weights must have the same number of entries as edges.",
+        match=re.escape("edge_weights must have the same number of entries as edges."),
     ):
         Graph([[0, 1], [1, 2]], edge_weights=[0.25])
 
@@ -499,7 +501,7 @@ def test_edge_index_raises_for_wrong_edge_weights_shape():
 
     with pytest.raises(
         ValueError,
-        match="edge_weights must be a 1D tensor.",
+        match=re.escape("edge_weights must be a 1D tensor."),
     ):
         EdgeIndex(edge_index_tensor, edge_weights=edge_weights)
 
@@ -510,7 +512,7 @@ def test_edge_index_raises_for_misaligned_edge_weights():
 
     with pytest.raises(
         ValueError,
-        match="edge_weights must have the same number of entries as edge_index columns.",
+        match=re.escape("edge_weights must have the same number of entries as edge_index columns."),
     ):
         EdgeIndex(edge_index_tensor, edge_weights=edge_weights)
 

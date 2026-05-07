@@ -11,15 +11,15 @@ def collect_metric_bounds(
 ) -> dict[str, tuple[float, float]]:
     metric_bounds: dict[str, tuple[float, float]] = {}
 
-    for metric in metric_names:
+    for metric_name in metric_names:
         values = [
-            float(value)
+            float(orther_metric_value)
             for model_metrics in results.values()
-            for key, value in model_metrics.items()
-            if key == metric and isinstance(value, (int, float))
+            for other_metric_name, orther_metric_value in model_metrics.items()
+            if other_metric_name == metric_name and isinstance(orther_metric_value, (int, float))
         ]
         if values:
-            metric_bounds[metric] = (min(values), max(values))
+            metric_bounds[metric_name] = (min(values), max(values))
 
     return metric_bounds
 
@@ -35,22 +35,27 @@ def colorize_metric_value(
     if bounds is None:
         return text
 
-    v_min, v_max = bounds
-
-    if v_max == v_min:
+    min_metric_value, max_metric_value = bounds
+    if max_metric_value == min_metric_value:
         quality = 1.0
     else:
-        t = (value - v_min) / (v_max - v_min)  # 0..1, low->high
-        quality = (1.0 - t) if sort_order.lower() == "asc" else t
+        normalized_metric_value = (value - min_metric_value) / (
+            max_metric_value - min_metric_value
+        )  # 0..1, low->high
+        quality = (
+            (1.0 - normalized_metric_value)
+            if sort_order.lower() == "asc"
+            else normalized_metric_value
+        )
 
-    red = int(round((1.0 - quality) * 100))
-    green = int(round(quality * 100))
+    red = round((1.0 - quality) * 100)
+    green = round(quality * 100)
 
     # Blend toward white to keep the gradient readable but less bright.
     soften = 0.35
-    red_chan = int(round(((red / 100) * (1.0 - soften) + soften) * 255))
-    green_chan = int(round(((green / 100) * (1.0 - soften) + soften) * 255))
-    blue_chan = int(round(soften * 255))
+    red_chan = round(((red / 100) * (1.0 - soften) + soften) * 255)
+    green_chan = round(((green / 100) * (1.0 - soften) + soften) * 255)
+    blue_chan = round(soften * 255)
 
     return rf"\cellcolor[HTML]{{{red_chan:02X}{green_chan:02X}{blue_chan:02X}}}{text}"
 
@@ -71,8 +76,7 @@ class LaTexTableConfig(TypedDict):
 
 
 class LaTexTableLogger(Logger):
-    # TODO
-    # - settings has to be configurable in Trainer
+    # TODO: settings has to be configurable in Trainer
 
     """A Lightning Logger that accumulates metrics and writes a LaTex comparison table.
 
@@ -107,8 +111,10 @@ class LaTexTableLogger(Logger):
         self.__model_name = model_name
         self.__experiment_name = experiment_name
         self.__precision = precision
-        d: LaTexTableConfig = {}
-        self.__options = options if options is not None else d
+
+        default_empty_options: LaTexTableConfig = {}
+        self.__options = options if options is not None else default_empty_options
+
         if experiment_name not in self.__shared_stores:
             self.__shared_stores[experiment_name] = {}
 
@@ -155,7 +161,6 @@ class LaTexTableLogger(Logger):
         accumulated up to that point. The file grows more complete over time.
         """
         test_results, train_results, val_results = self.__split_results()
-
         if not test_results and not train_results and not val_results:
             return
 
@@ -193,7 +198,8 @@ class LaTexTableLogger(Logger):
     def __split_results(
         self,
     ) -> Tuple[Dict[str, Dict[str, Any]], Dict[str, Dict[str, Any]], Dict[str, Dict[str, Any]]]:
-        """Split all accumulated metrics into test vs train/val groups.
+        """
+        Split all accumulated metrics into test vs train/val groups.
 
         Metrics are classified by their name prefix:
         - "test_*"  --> test_results
@@ -286,17 +292,17 @@ class LaTexTableLogger(Logger):
 
             for metric in metrics:
                 vals = [
-                    v
+                    metric_value
                     for model_metrics in results.values()
-                    for k, v in model_metrics.items()
-                    if k == metric and isinstance(v, (int, float))
+                    for metric_name, metric_value in model_metrics.items()
+                    if metric_name == metric and isinstance(metric_value, (int, float))
                 ]
                 if vals:
                     best_by_metric[metric] = (
                         min(vals) if metric_sort.get(metric, "asc") == "asc" else max(vals)
                     )
 
-            header_cells = ["Model", *[esc(m) for m in metrics]]
+            header_cells = ["Model", *[esc(metric) for metric in metrics]]
             while len(header_cells) < total_cols:
                 header_cells.append("")
 
@@ -358,7 +364,7 @@ class LaTexTableLogger(Logger):
         last_rule = r"\hline" if border else r"\midrule"
         final_rule = r"\hline"
         lines and lines[-1] == last_rule and lines.pop()
-        lines and lines[-1] == final_rule or lines.append(final_rule)
+        (lines and lines[-1] == final_rule) or lines.append(final_rule)
 
         lines.append(r"\end{tabular}")
         table_lines: list[str] = [r"\begin{table}[htbp]", r"\centering"]

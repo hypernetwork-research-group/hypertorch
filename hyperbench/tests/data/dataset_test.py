@@ -1,3 +1,4 @@
+import re
 import pytest
 import torch
 
@@ -197,7 +198,7 @@ def test_getitem_index_list_empty(mock_hdata_simple_hypergraph, strategy):
     with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_simple_hypergraph):
         dataset = AlgebraDataset(sampling_strategy=strategy)
 
-    with pytest.raises(ValueError, match="Index list cannot be empty."):
+    with pytest.raises(ValueError, match=re.escape("Index list cannot be empty.")):
         dataset[[]]
 
 
@@ -594,7 +595,7 @@ def test_split_raises_when_ratios_do_not_sum_to_one(mock_hdata_four_node_hypergr
     with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_four_node_hypergraph):
         dataset = AlgebraDataset()
 
-    with pytest.raises(ValueError, match="Split ratios must sum to 1.0"):
+    with pytest.raises(ValueError, match=re.escape("Split ratios must sum to 1.0")):
         dataset.split([0.8, 0.1, 0.05])
 
 
@@ -846,7 +847,7 @@ def test_enrich_node_features_from_propagates_hdata_validation_errors():
 
     with pytest.raises(
         ValueError,
-        match="Both HData instances must define global_node_ids to align node features.",
+        match=re.escape("Both HData instances must define global_node_ids to align node features."),
     ):
         target_dataset.enrich_node_features_from(source_dataset)
 
@@ -921,7 +922,9 @@ def test_split_raises_when_node_space_provided_with_transductive_disabled():
 
     with pytest.raises(
         ValueError,
-        match="assign_node_space_to can only be provided when node_space_setting='transductive'.",
+        match=re.escape(
+            "assign_node_space_to can only be provided when node_space_setting='transductive'."
+        ),
     ):
         dataset.split(
             [0.75, 0.25],

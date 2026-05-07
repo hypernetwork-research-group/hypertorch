@@ -9,11 +9,11 @@ from .trainer import MultiModelTrainer
 logging.getLogger("lightning.pytorch").setLevel(logging.ERROR)
 
 __all__ = [
+    "LaTexTableLogger",
+    "MarkdownTableLogger",
+    "MultiModelTrainer",
     "NegativeSampler",
     "NegativeSamplingSchedule",
     "NegativeSamplingScheduler",
     "RandomNegativeSampler",
-    "MultiModelTrainer",
-    "LaTexTableLogger",
-    "MarkdownTableLogger",
 ]

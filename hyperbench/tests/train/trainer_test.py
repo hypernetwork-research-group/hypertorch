@@ -1,3 +1,4 @@
+import re
 import pytest
 
 from unittest.mock import MagicMock, patch
@@ -284,7 +285,7 @@ def test_fit_all_with_no_models(
 ):
     multi_model_trainer = MultiModelTrainer([])
 
-    with pytest.raises(ValueError, match="No models to fit."):
+    with pytest.raises(ValueError, match=re.escape("No models to fit.")):
         multi_model_trainer.fit_all(verbose=False)
 
 
@@ -435,7 +436,7 @@ def test_test_all_with_no_models(
 ):
     multi_model_trainer = MultiModelTrainer([])
 
-    with pytest.raises(ValueError, match="No models to test."):
+    with pytest.raises(ValueError, match=re.escape("No models to test.")):
         multi_model_trainer.test_all(verbose=False)
 
 

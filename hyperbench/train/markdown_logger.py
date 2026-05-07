@@ -216,7 +216,7 @@ class MarkdownTableLogger(Logger):
                     cells.append("-")
             rows.append(f"| {model_name} | " + " | ".join(cells) + " |")
 
-        return "\n".join([header, separator] + rows)
+        return "\n".join([header, separator, *rows])
 
     def __save_comparison_tables(
         self,

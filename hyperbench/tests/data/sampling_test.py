@@ -1,5 +1,6 @@
-import torch
+import re
 import pytest
+import torch
 
 from hyperbench.data import (
     BaseSampler,
@@ -118,7 +119,7 @@ def test_node_sampling_len(mock_four_node_two_hyperedge_hdata):
     ],
 )
 def test_sample_empty_index_raises(mock_four_node_two_hyperedge_hdata, sampler):
-    with pytest.raises(ValueError, match="Index list cannot be empty."):
+    with pytest.raises(ValueError, match=re.escape("Index list cannot be empty.")):
         sampler.sample([], mock_four_node_two_hyperedge_hdata)
 
 
@@ -150,7 +151,7 @@ def test_sample_index_out_of_bounds_raises(mock_four_node_two_hyperedge_hdata, s
 def test_sample_index_list_too_large_raises(
     mock_four_node_two_hyperedge_hdata, sampler, index_list
 ):
-    with pytest.raises(ValueError, match="Index list length .* cannot exceed"):
+    with pytest.raises(ValueError, match=r"Index list length .* cannot exceed"):
         sampler.sample(index_list, mock_four_node_two_hyperedge_hdata)
 
 
@@ -229,5 +230,5 @@ def test_sample_empty_hyperedge_index_len(mock_empty_hdata, sampler):
     ],
 )
 def test_sample_empty_hyperedge_index_empty_list_raises(mock_empty_hdata, sampler):
-    with pytest.raises(ValueError, match="Index list cannot be empty."):
+    with pytest.raises(ValueError, match=re.escape("Index list cannot be empty.")):
         sampler.sample([], mock_empty_hdata)

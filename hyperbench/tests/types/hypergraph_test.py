@@ -1,5 +1,7 @@
-import pytest
 import json
+import re
+
+import pytest
 import torch
 
 from unittest.mock import patch
@@ -776,7 +778,10 @@ def test_reduce_to_graph_raises_on_single_node_hyperedge():
     x = torch.tensor([[1.0, 0.0], [0.0, 1.0]])
     hyperedge_index = torch.tensor([[0], [0]])
 
-    with pytest.raises(ValueError, match="The number of vertices in an hyperedge must be >= 2."):
+    with pytest.raises(
+        ValueError,
+        match=re.escape("The number of vertices in an hyperedge must be >= 2."),
+    ):
         HyperedgeIndex(hyperedge_index).reduce_to_edge_index_on_random_direction(x)
 
 

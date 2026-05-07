@@ -10,19 +10,19 @@ from .node2vec import Node2Vec, Node2VecConfig, Node2VecGCN
 from .villain import VilLain
 
 __all__ = [
-    "CommonNeighbors",
     "GCN",
-    "GCNConfig",
     "HGNN",
     "HGNNP",
     "HNHN",
-    "HyperGCN",
     "MLP",
     "NHP",
+    "SLP",
+    "CommonNeighbors",
+    "GCNConfig",
+    "HyperGCN",
     "NHPAggregation",
     "Node2Vec",
     "Node2VecConfig",
     "Node2VecGCN",
-    "SLP",
     "VilLain",
 ]

@@ -1,10 +1,10 @@
+import json
+import re
 import pytest
 import requests
 import torch
-import json
 
 from unittest.mock import patch
-
 from hyperbench.data import HIFLoader, HIFProcessor
 from hyperbench.types import HData, HIFHypergraph
 from hyperbench.tests import new_mock_named_temporary_file
@@ -458,7 +458,9 @@ def test_HIFLoader_falls_back_to_hf_hub_download_when_github_raw_download_fails(
         pytest.warns(UserWarning, match="GitHub raw download failed"),
         pytest.raises(
             ValueError,
-            match="Failed to download dataset 'algebra' from GitHub with status code 404 and no SHA provided for Hugging Face Hub fallback.",
+            match=re.escape(
+                "Failed to download dataset 'algebra' from GitHub with status code 404 and no SHA provided for Hugging Face Hub fallback."
+            ),
         ),
     ):
         mock_response = mock_get.return_value
