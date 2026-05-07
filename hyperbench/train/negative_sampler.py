@@ -276,6 +276,7 @@ class RandomNegativeSampler(SameNodeSpaceNegativeSampler):
         Otherwise, the negative samples retain their original global node and hyperedge IDs from the input data.
 
         Examples:
+        Examples:
             With ``self.return_0based_negatives = True``:
 
             >>> num_negative_samples = 2

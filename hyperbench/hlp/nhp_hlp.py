@@ -30,6 +30,58 @@ class NHPEncoderConfig(TypedDict):
     bias: NotRequired[bool]
 
 
+class NHPRankingLoss(nn.Module):
+    """
+    Ranking loss that pushes positive hyperedges above sampled negatives.
+
+    Examples:
+        >>> logits = [2.0, 1.0, -1.0]
+        >>> labels = [1.0, 1.0, 0.0]
+        >>> loss = NHPRankingLoss()
+        >>> loss(logits, labels)
+        >>> loss.ndim
+        ... 0
+    """
+
+    def forward(self, logits: Tensor, labels: Tensor) -> Tensor:
+        """
+        Compute the ranking loss.
+
+        Args:
+            logits: Logit scores for each candidate hyperedge, of shape ``(num_hyperedges,)``.
+            labels: Binary labels indicating positive (1) and negative (0) hyperedges, of shape ``(num_hyperedges,)``.
+
+        Returns:
+            Scalar loss value.
+        """
+        # Split logits by label as we need to compare positive scores against negative scores.
+        # Examples: logits = [2.0, 1.0, -1.0]
+        #          labels = [1.0, 1.0, 0.0]
+        #          -> positive_logits = [2.0, 1.0]
+        #          -> negative_logits = [-1.0]
+        positive_logits = logits[labels == 1]
+        negative_logits = logits[labels == 0]
+
+        positive_scores = torch.sigmoid(positive_logits)
+        negative_scores = torch.sigmoid(negative_logits)
+        if positive_scores.numel() == 0 or negative_scores.numel() == 0:
+            raise ValueError("NHPRankingLoss requires both positive and negative hyperedges.")
+
+        # Objective: enforce that each positive score is higher than the average negative score.
+        # For each positive score pos_i:
+        #   margin_i = mean(negative_scores) - pos_i
+        # We interpret margin_i as follows:
+        # - If pos_i > mean(negatives), then margin_i < 0    -> desirable
+        # - If pos_i <= mean(negatives), then margin_i >= 0  -> violation
+        margins = negative_scores.mean() - positive_scores
+
+        # Then softplus(margin_i):
+        # - Is ~0 when margin_i is strongly negative (good ranking).
+        # - Grows smoothly when margin_i > 0 (penalizing violations).
+        # Final loss is the average over all positive samples.
+        return F.softplus(margins).mean()
+
+
 class NHPHlpModule(HlpModule):
     """
     A LightningModule for undirected NHP hyperedge link prediction.
