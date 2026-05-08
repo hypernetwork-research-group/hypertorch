@@ -4,6 +4,10 @@ version = "0.1.0"
 description = ""
 readme = "README.md"
 requires-python = ">=3.10"
+authors = [
+    { name = "Tiziano Citro", email = "tcitro@unisa.it" },
+    { name = "Daniele De Vinco", email = "ddevinco@unisa.it"}
+]
 dependencies = [
     "fastjsonschema==2.21.2",
     "huggingface-hub==1.11.0",
