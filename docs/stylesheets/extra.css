@@ -1,8 +1,3 @@
-/* Ensure anchors don’t hide under the fixed header */
-.md-typeset .doc.doc-heading {
-  scroll-margin-top: 5rem;
-}
-
 /* Make mkdocstrings objects read as “cards” */
 .md-typeset .doc.doc-object {
   margin: 1.25em 0;
@@ -32,6 +27,7 @@
   align-items: baseline;
   gap: 0.5rem;
   flex-wrap: wrap;
+  scroll-margin-top: 5rem;
 }
 
 /* Signature code in headings (mkdocstrings renders it as inline highlighted code) */

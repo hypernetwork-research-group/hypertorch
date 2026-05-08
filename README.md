@@ -1,12 +1,11 @@
 # HyperBench
 
-
 | | |
 | --- | --- |
-| Testing | [![codecov][codecov-shield]][codecov-url] [![CodeFactor][codefactor-shield]][codefactor-url] |
-| Package | [![License: MIT][license-shield]][license-url] |
-| Meta | ![Discord](https://img.shields.io/discord/693092516286693387)|
 | Repo | [![Forks][forks-shield]][forks-url] [![Stargazers][stars-shield]][stars-url] [![Contributors][contributors-shield]][contributors-url] [![Issues][issues-shield]][issues-url] |
+| Package | [![License: MIT][license-shield]][license-url] |
+| Testing | [![codecov][codecov-shield]][codecov-url] [![CodeFactor][codefactor-shield]][codefactor-url] |
+| Contact | ![Discord](https://img.shields.io/discord/693092516286693387)|
 
 ## About the project
 
