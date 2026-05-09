@@ -348,18 +348,20 @@ class HIFLoader:
                         hf_content = hf_file.read()
                     tmp_hf_file.write(hf_content)
 
-                response._content = hf_content
+                content_for_write = hf_content
+            else:
+                content_for_write = response.content
 
             if save_on_disk:
                 os.makedirs(os.path.join(current_dir, "datasets"), exist_ok=True)
                 with open(zst_filename, "wb") as f:
-                    f.write(response.content)
+                    f.write(content_for_write)
             else:
                 # Create temporary file for downloaded zst content
                 with tempfile.NamedTemporaryFile(
                     mode="wb", suffix=".json.zst", delete=False
                 ) as tmp_zst_file:
-                    tmp_zst_file.write(response.content)
+                    tmp_zst_file.write(content_for_write)
                     zst_filename = tmp_zst_file.name
 
         output = decompress_zst(zst_filename)
