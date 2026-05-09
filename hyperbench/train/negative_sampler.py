@@ -142,16 +142,20 @@ class RandomNegativeSampler(NegativeSampler):
         self,
         num_negative_samples: int,
         num_nodes_per_sample: int,
+        max_retries: int = 10,
         return_0based_negatives: bool = False,
     ):
         if num_negative_samples <= 0:
             raise ValueError(f"num_negative_samples must be positive, got {num_negative_samples}.")
         if num_nodes_per_sample <= 0:
             raise ValueError(f"num_nodes_per_sample must be positive, got {num_nodes_per_sample}.")
+        if max_retries <= 0:
+            raise ValueError(f"max_retries must be positive, got {max_retries}.")
 
         super().__init__(return_0based_negatives=return_0based_negatives)
         self.num_negative_samples = num_negative_samples
         self.num_nodes_per_sample = num_nodes_per_sample
+        self.max_retries = max_retries
 
     def sample(self, data: HData) -> HData:
         """
@@ -206,8 +210,27 @@ class RandomNegativeSampler(NegativeSampler):
         sampled_hyperedge_indexes: List[Tensor] = []
         sampled_hyperedge_attrs: List[Tensor] = []
 
+        # Build a set of existing positive hyperedges for dedup check
+        # Each hyperedge is represented as a frozenset of node IDs
+        positive_hyperedge_set: Set[frozenset] = set()
+        he_index = data.hyperedge_index
+        num_hyperedges = data.num_hyperedges
+        for he_id in range(num_hyperedges):
+            mask = he_index[1] == he_id
+            nodes = frozenset(he_index[0, mask].tolist())
+            positive_hyperedge_set.add(nodes)
+
+        # Track sampled negatives to avoid duplicates
+        sampled_negative_set: Set[frozenset] = set()
+
         new_hyperedge_id_offset = data.num_hyperedges
-        for new_hyperedge_id in range(self.num_negative_samples):
+        generated_count = 0
+        max_iterations = self.num_negative_samples * (1 + self.max_retries)
+
+        for _ in range(max_iterations):
+            if generated_count >= self.num_negative_samples:
+                break
+
             # Sample with multinomial without replacement to ensure unique node ids
             # and assign each node id equal probability of being selected by setting all of them to 1
             # Example: num_nodes_per_sample=3, max_node_id=5
@@ -219,12 +242,20 @@ class RandomNegativeSampler(NegativeSampler):
                 replacement=False,
             )
 
+            # Check if this hyperedge is already a positive hyperedge
+            sampled_set = frozenset(sampled_node_ids.tolist())
+            if sampled_set in positive_hyperedge_set or sampled_set in sampled_negative_set:
+                continue  # Skip: already exists as positive or duplicate negative
+
+            sampled_negative_set.add(sampled_set)
+
             # Example: sampled_node_ids = [2, 0, 4], new_hyperedge_id=0, new_hyperedge_id_offset=3
             #          -> hyperedge_index = [[2, 0, 4],
             #                                [3, 3, 3]]  # this is sampled_hyperedge_id_tensor
+            new_hyperedge_id = generated_count + new_hyperedge_id_offset
             sampled_hyperedge_id_tensor = torch.full(
                 (self.num_nodes_per_sample,),
-                new_hyperedge_id + new_hyperedge_id_offset,
+                new_hyperedge_id,
                 device=device,
             )
             sampled_hyperedge_index = torch.stack(
@@ -240,6 +271,17 @@ class RandomNegativeSampler(NegativeSampler):
             if data.hyperedge_attr is not None:
                 random_hyperedge_attr = torch.randn_like(data.hyperedge_attr[0], device=device)
                 sampled_hyperedge_attrs.append(random_hyperedge_attr)
+
+            generated_count += 1
+
+        if generated_count < self.num_negative_samples:
+            raise ValueError(
+                f"Could only generate {generated_count} unique negative samples "
+                f"out of {self.num_negative_samples} requested after "
+                f"{max_iterations} attempts. "
+                f"Try reducing num_negative_samples or num_nodes_per_sample, "
+                f"or increasing max_retries (current: {self.max_retries})."
+            )
 
         negative_node_ids_tensor = torch.tensor(sorted(negative_node_ids), device=device)
         new_x, num_negative_nodes = self._new_x(data.x, negative_node_ids_tensor)
