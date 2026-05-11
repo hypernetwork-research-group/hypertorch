@@ -25,7 +25,7 @@ setup-tensorboard:
 	@echo '=== Setup TensorBoard ==='
 	$(UV) pip install -e ".[tensorboard]"
 
-check: lint-fix format typecheck
+check: lint format typecheck
 
 format:
 	@echo '=== Formatting ==='

@@ -109,4 +109,12 @@ select = [
     "T10",   # flake8-debugger (https://docs.astral.sh/ruff/rules/#flake8-debugger-t10)
     "UP",    # pyupgrade: modern Python syntax (https://docs.astral.sh/ruff/rules/#pyupgrade-up)
 ]
-ignore = ["E501", "I001", "N812", "PLC0415", "PLR0913", "PLR2004", "RET504"]
+ignore = [
+  "E501",     # line too long (https://docs.astral.sh/ruff/rules/line-too-long)
+  "I001",     # unsorted imports (https://docs.astral.sh/ruff/rules/unsorted-imports)
+  "N812",     # lowercase imported as non lowercase (https://docs.astral.sh/ruff/rules/lowercase-imported-as-non-lowercase)
+  "PLC0415",  # import outside top-level (https://docs.astral.sh/ruff/rules/import-outside-top-level)
+  "PLR0913",  # too many arguments (https://docs.astral.sh/ruff/rules/too-many-arguments)
+  "PLR2004",  # magic numbers (https://docs.astral.sh/ruff/rules/magic-value-comparison)
+  "RET504",   # unnecessary assignment (https://docs.astral.sh/ruff/rules/unnecessary-assign)
+]
