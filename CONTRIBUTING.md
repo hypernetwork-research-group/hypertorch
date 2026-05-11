@@ -47,6 +47,14 @@ Expectations:
 - Include tests for the new behavior.
 - Update docs (or docstrings) if user-facing behavior changes.
 
+### Fix
+Best for: incorrect outputs, crashes, regressions, or broken docs/examples.
+
+Expectations:
+- Include a minimal reproduction (or a failing test) and a clear fix.
+- Add a regression test when feasible.
+- Keep the PR small and focused on the root cause.
+
 Best for: new capabilities (models, datasets, training features, utilities).
 
 Expectations:
