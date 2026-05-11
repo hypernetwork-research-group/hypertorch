@@ -1,7 +1,5 @@
-import os
-
 from hyperbench.utils import write_to_disk
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 
 def test_write_to_disk_writes_file_default_output_dir(tmp_path):

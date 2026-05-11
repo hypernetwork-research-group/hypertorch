@@ -1,3 +1,4 @@
+import re
 import pytest
 
 from unittest.mock import MagicMock, patch
@@ -185,7 +186,7 @@ def test_model_returns_model_when_correct_name_and_no_version(
 @patch("hyperbench.train.trainer.CSVLogger")
 @patch("hyperbench.train.trainer.MarkdownTableLogger")
 @patch("hyperbench.train.trainer.LaTexTableLogger")
-def test_model_returns_None_when_incorrect_name_and_no_version(
+def test_model_returns_none_when_incorrect_name_and_no_version(
     mock_latex_logger_cls,
     mock_md_logger_cls,
     mock_csv_logger_cls,
@@ -221,7 +222,7 @@ def test_model_returns_model_when_correct_name_and_version(
 @patch("hyperbench.train.trainer.CSVLogger")
 @patch("hyperbench.train.trainer.MarkdownTableLogger")
 @patch("hyperbench.train.trainer.LaTexTableLogger")
-def test_model_returns_None_when_incorrect_name_and_version(
+def test_model_returns_none_when_incorrect_name_and_version(
     mock_latex_logger_cls,
     mock_md_logger_cls,
     mock_csv_logger_cls,
@@ -238,7 +239,7 @@ def test_model_returns_None_when_incorrect_name_and_version(
 @patch("hyperbench.train.trainer.CSVLogger")
 @patch("hyperbench.train.trainer.MarkdownTableLogger")
 @patch("hyperbench.train.trainer.LaTexTableLogger")
-def test_model_returns_None_when_incorrect_name_and_correct_version(
+def test_model_returns_none_when_incorrect_name_and_correct_version(
     mock_latex_logger_cls,
     mock_md_logger_cls,
     mock_csv_logger_cls,
@@ -284,7 +285,7 @@ def test_fit_all_with_no_models(
 ):
     multi_model_trainer = MultiModelTrainer([])
 
-    with pytest.raises(ValueError, match="No models to fit."):
+    with pytest.raises(ValueError, match=re.escape("No models to fit.")):
         multi_model_trainer.fit_all(verbose=False)
 
 
@@ -292,7 +293,7 @@ def test_fit_all_with_no_models(
 @patch("hyperbench.train.trainer.CSVLogger")
 @patch("hyperbench.train.trainer.MarkdownTableLogger")
 @patch("hyperbench.train.trainer.LaTexTableLogger")
-def test_fit_all_raises_when_None_trainer(
+def test_fit_all_raises_when_none_trainer(
     mock_latex_logger_cls,
     mock_md_logger_cls,
     mock_csv_logger_cls,
@@ -435,7 +436,7 @@ def test_test_all_with_no_models(
 ):
     multi_model_trainer = MultiModelTrainer([])
 
-    with pytest.raises(ValueError, match="No models to test."):
+    with pytest.raises(ValueError, match=re.escape("No models to test.")):
         multi_model_trainer.test_all(verbose=False)
 
 
@@ -443,7 +444,7 @@ def test_test_all_with_no_models(
 @patch("hyperbench.train.trainer.CSVLogger")
 @patch("hyperbench.train.trainer.MarkdownTableLogger")
 @patch("hyperbench.train.trainer.LaTexTableLogger")
-def test_test_all_raises_when_None_trainer(
+def test_test_all_raises_when_none_trainer(
     mock_latex_logger_cls,
     mock_md_logger_cls,
     mock_csv_logger_cls,
@@ -774,7 +775,9 @@ def test_tensorboard_logger_matches_csv_logger_organization(
 @patch("hyperbench.train.trainer.CSVLogger")
 @patch("hyperbench.train.trainer.MarkdownTableLogger")
 @patch("hyperbench.train.trainer.LaTexTableLogger")
+@patch("shutil.which", return_value="tensorboard")
 def test_init_starts_tensorboard_when_auto_start_tensorboard_true(
+    shutil_which,
     mock_latex_logger_cls,
     mock_md_logger_cls,
     mock_csv_logger_cls,
@@ -869,7 +872,9 @@ def test_init_does_not_start_tensorboard_when_auto_start_tensorboard_false(
 @patch("hyperbench.train.trainer.CSVLogger")
 @patch("hyperbench.train.trainer.MarkdownTableLogger")
 @patch("hyperbench.train.trainer.LaTexTableLogger")
+@patch("shutil.which", return_value="tensorboard")
 def test_start_tensorboard_warns_and_returns_none_on_failure(
+    shutil_which,
     mock_latex_logger_cls,
     mock_md_logger_cls,
     mock_csv_logger_cls,
@@ -899,7 +904,9 @@ def test_start_tensorboard_warns_and_returns_none_on_failure(
 @patch("hyperbench.train.trainer.CSVLogger")
 @patch("hyperbench.train.trainer.MarkdownTableLogger")
 @patch("hyperbench.train.trainer.LaTexTableLogger")
+@patch("shutil.which", return_value="tensorboard")
 def test_finalize_terminates_tensorboard_process(
+    shutil_which,
     mock_latex_logger_cls,
     mock_md_logger_cls,
     mock_csv_logger_cls,
@@ -950,9 +957,11 @@ def test_wait_does_nothing_when_no_tensorboard_process(
 @patch("hyperbench.train.trainer.CSVLogger")
 @patch("hyperbench.train.trainer.MarkdownTableLogger")
 @patch("hyperbench.train.trainer.LaTexTableLogger")
+@patch("shutil.which", return_value="tensorboard")
 @patch("builtins.input", return_value="")  # Simulate user pressing Enter
 def test_wait_prompts_user_when_tensorboard_process_is_running(
     mock_builtins_input,
+    shutil_which,
     mock_latex_logger_cls,
     mock_md_logger_cls,
     mock_csv_logger_cls,
@@ -984,9 +993,11 @@ def test_wait_prompts_user_when_tensorboard_process_is_running(
 @patch("hyperbench.train.trainer.CSVLogger")
 @patch("hyperbench.train.trainer.MarkdownTableLogger")
 @patch("hyperbench.train.trainer.LaTexTableLogger")
+@patch("shutil.which", return_value="tensorboard")
 @patch("builtins.input", return_value="")  # Simulate user pressing Enter
 def test_finalize_calls_wait_when_auto_wait_true(
     mock_builtins_input,
+    shutil_which,
     mock_latex_logger_cls,
     mock_md_logger_cls,
     mock_csv_logger_cls,
@@ -1061,7 +1072,9 @@ def test_finalize_does_not_call_wait_when_auto_wait_false(
 @patch("hyperbench.train.trainer.CSVLogger")
 @patch("hyperbench.train.trainer.MarkdownTableLogger")
 @patch("hyperbench.train.trainer.LaTexTableLogger")
+@patch("shutil.which", return_value="tensorboard")
 def test_finalize_handles_input_interrupts(
+    shutil_which,
     mock_latex_logger_cls,
     mock_md_logger_cls,
     mock_csv_logger_cls,

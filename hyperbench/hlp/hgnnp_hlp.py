@@ -1,5 +1,5 @@
 from torch import Tensor, nn, optim
-from typing import Literal, Optional, TypedDict
+from typing import Literal, TypedDict
 from torchmetrics import MetricCollection
 from typing_extensions import NotRequired
 from hyperbench.models import HGNNP, SLP
@@ -52,10 +52,10 @@ class HGNNPHlpModule(HlpModule):
         self,
         encoder_config: HGNNPEncoderConfig,
         aggregation: Literal["mean", "max", "min", "sum"] = "mean",
-        loss_fn: Optional[nn.Module] = None,
+        loss_fn: nn.Module | None = None,
         lr: float = 0.01,
         weight_decay: float = 5e-4,
-        metrics: Optional[MetricCollection] = None,
+        metrics: MetricCollection | None = None,
     ):
         encoder = HGNNP(
             in_channels=encoder_config["in_channels"],

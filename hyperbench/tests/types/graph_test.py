@@ -1,3 +1,5 @@
+import re
+
 import pytest
 import torch
 
@@ -57,7 +59,7 @@ def test_graph_without_edge_weights_returns_empty_edge_weights_tensor():
 def test_graph_raises_for_misaligned_edge_weights():
     with pytest.raises(
         ValueError,
-        match="edge_weights must have the same number of entries as edges.",
+        match=re.escape("edge_weights must have the same number of entries as edges."),
     ):
         Graph([[0, 1], [1, 2]], edge_weights=[0.25])
 
@@ -499,7 +501,7 @@ def test_edge_index_raises_for_wrong_edge_weights_shape():
 
     with pytest.raises(
         ValueError,
-        match="edge_weights must be a 1D tensor.",
+        match=re.escape("edge_weights must be a 1D tensor."),
     ):
         EdgeIndex(edge_index_tensor, edge_weights=edge_weights)
 
@@ -510,7 +512,7 @@ def test_edge_index_raises_for_misaligned_edge_weights():
 
     with pytest.raises(
         ValueError,
-        match="edge_weights must have the same number of entries as edge_index columns.",
+        match=re.escape("edge_weights must have the same number of entries as edge_index columns."),
     ):
         EdgeIndex(edge_index_tensor, edge_weights=edge_weights)
 
@@ -567,7 +569,7 @@ def test_add_selfloops_returns_correct_edges():
     edge_index = EdgeIndex(torch.tensor([[0, 1], [1, 2]]))
     edge_index.add_selfloops()
 
-    edges = set(zip(edge_index.item[0].tolist(), edge_index.item[1].tolist()))
+    edges = set(zip(edge_index.item[0].tolist(), edge_index.item[1].tolist(), strict=True))
 
     # Original edges should still be present
     assert (0, 1) in edges
@@ -590,7 +592,9 @@ def test_add_selfloops_adds_unit_edge_weights():
 
     weighted_edges = {
         tuple(edge): weight
-        for edge, weight in zip(edge_index.item.t().tolist(), edge_index.edge_weights.tolist())
+        for edge, weight in zip(
+            edge_index.item.t().tolist(), edge_index.edge_weights.tolist(), strict=True
+        )
     }
     expected_weighted_edges = {
         (0, 1): 0.25,
@@ -613,7 +617,7 @@ def test_add_selfloops_does_not_duplicate_selfloops():
     edge_index = EdgeIndex(torch.tensor([[0, 1, 1], [1, 2, 1]]))
     edge_index.add_selfloops()
 
-    edges = list(zip(edge_index.item[0].tolist(), edge_index.item[1].tolist()))
+    edges = list(zip(edge_index.item[0].tolist(), edge_index.item[1].tolist(), strict=True))
 
     # (1, 1) should appear only once after duplicate removal
     assert edges.count((1, 1)) == 1
@@ -623,7 +627,7 @@ def test_add_selfloops_without_duplicate_removal():
     edge_index = EdgeIndex(torch.tensor([[0, 1, 0], [1, 2, 0]]))
     edge_index.add_selfloops(with_duplicate_removal=False)
 
-    edges = list(zip(edge_index.item[0].tolist(), edge_index.item[1].tolist()))
+    edges = list(zip(edge_index.item[0].tolist(), edge_index.item[1].tolist(), strict=True))
 
     # (0, 0) should appear twice: once from original, once from self-loop addition
     assert edges.count((0, 0)) == 2
@@ -956,15 +960,15 @@ def test_get_sparse_normalized_laplacian_returns_sparse_tensor():
         pytest.param(torch.tensor([[0, 1], [1, 0]]), None, id="2_nodes_inferred"),
     ],
 )
-def test_get_sparse_normalized_laplacian_shape(edge_index, num_nodes):
+def test_get_sparse_normalized_gcn_laplacian_shape(edge_index, num_nodes):
     gcn_laplacian = EdgeIndex(edge_index).get_sparse_normalized_gcn_laplacian(num_nodes=num_nodes)
     unique_nodes = torch.unique(edge_index)
-    expected_num_nodes = num_nodes if num_nodes else len(unique_nodes)
+    expected_num_nodes = num_nodes or len(unique_nodes)
 
     assert gcn_laplacian.shape == (expected_num_nodes, expected_num_nodes)
 
 
-def test_get_sparse_normalized_laplacian_is_symmetric():
+def test_get_sparse_normalized_gcn_laplacian_is_symmetric():
     """GCN Laplacian L = D^-1/2 * A * D^-1/2 is symmetric."""
     edge_index = torch.tensor([[0, 1, 2], [1, 2, 0]])
 
@@ -1119,7 +1123,7 @@ def test_get_sparse_identity_matrix_is_sparse():
 def test_edge_index_remove_selfloops():
     edge_index = EdgeIndex(torch.tensor([[0, 1, 2, 3], [1, 1, 3, 2]]))
     edge_index.remove_selfloops()
-    edges = set(zip(edge_index.item[0].tolist(), edge_index.item[1].tolist()))
+    edges = set(zip(edge_index.item[0].tolist(), edge_index.item[1].tolist(), strict=True))
 
     assert (1, 1) not in edges
     assert (0, 1) in edges
@@ -1250,11 +1254,11 @@ def test_get_sparse_normalized_laplacian_when_single_edge():
     assert torch.allclose(dense_laplacian, expected, atol=1e-6)
 
 
-def test_remove_duplicate_edges():
+def test_remove_duplicate_edges_removes_duplicates():
     edge_index = EdgeIndex(torch.tensor([[0, 0, 1], [1, 1, 2]]))
     edge_index.remove_duplicate_edges()
 
-    edges = list(zip(edge_index.item[0].tolist(), edge_index.item[1].tolist()))
+    edges = list(zip(edge_index.item[0].tolist(), edge_index.item[1].tolist(), strict=True))
 
     assert len(edges) == 2
     # (0, 1) should appear only once
@@ -1263,11 +1267,11 @@ def test_remove_duplicate_edges():
 
 def test_remove_duplicate_edges_when_no_duplicates():
     edge_index = EdgeIndex(torch.tensor([[0, 1, 2], [1, 2, 3]]))
-    original_edges = set(zip(edge_index.item[0].tolist(), edge_index.item[1].tolist()))
+    original_edges = set(zip(edge_index.item[0].tolist(), edge_index.item[1].tolist(), strict=True))
 
     edge_index.remove_duplicate_edges()
 
-    new_edges = set(zip(edge_index.item[0].tolist(), edge_index.item[1].tolist()))
+    new_edges = set(zip(edge_index.item[0].tolist(), edge_index.item[1].tolist(), strict=True))
     assert original_edges == new_edges
 
 
@@ -1325,7 +1329,7 @@ def test_to_undirected_edge_index_single_directed_edge():
     """A single directed edge (0 -> 1) should produce bidirectional edges."""
     edge_index = EdgeIndex(torch.tensor([[0], [1]]))
     edge_index.to_undirected()
-    edges = set(zip(edge_index.item[0].tolist(), edge_index.item[1].tolist()))
+    edges = set(zip(edge_index.item[0].tolist(), edge_index.item[1].tolist(), strict=True))
 
     # Should contain both (0, 1) and (1, 0)
     assert (0, 1) in edges
@@ -1336,7 +1340,7 @@ def test_to_undirected_edge_index_single_directed_edge():
 def test_to_undirected_edge_index_already_undirected_does_not_create_duplicates():
     edge_index = EdgeIndex(torch.tensor([[0, 1], [1, 0]]))
     edge_index.to_undirected()
-    edges = set(zip(edge_index.item[0].tolist(), edge_index.item[1].tolist()))
+    edges = set(zip(edge_index.item[0].tolist(), edge_index.item[1].tolist(), strict=True))
 
     # (0, 1) and (1, 0) should still be present, but no duplicates
     expected_edges = {(0, 1), (1, 0)}
@@ -1346,7 +1350,7 @@ def test_to_undirected_edge_index_already_undirected_does_not_create_duplicates(
 def test_to_undirected_edge_index_removes_duplicate_edges():
     edge_index = EdgeIndex(torch.tensor([[0, 0, 1], [1, 1, 0]]))
     edge_index.to_undirected()
-    edges = set(zip(edge_index.item[0].tolist(), edge_index.item[1].tolist()))
+    edges = set(zip(edge_index.item[0].tolist(), edge_index.item[1].tolist(), strict=True))
 
     expected_edges = {(0, 1), (1, 0)}  # Duplicates should be removed
     assert edges == expected_edges
@@ -1362,7 +1366,7 @@ def test_to_undirected_edge_index_triangle_directed():
     """
     edge_index = EdgeIndex(torch.tensor([[0, 1, 2], [1, 2, 0]]))
     edge_index.to_undirected()
-    edges = set(zip(edge_index.item[0].tolist(), edge_index.item[1].tolist()))
+    edges = set(zip(edge_index.item[0].tolist(), edge_index.item[1].tolist(), strict=True))
 
     bidirectional_triangle = {(0, 1), (1, 0), (1, 2), (2, 1), (2, 0), (0, 2)}
     assert edges == bidirectional_triangle
@@ -1378,7 +1382,7 @@ def test_to_undirected_edge_index_empty_edge_index_returns_empty_tensor():
 def test_to_undirected_edge_index_with_selfloops_adds_all_selfloops():
     edge_index = EdgeIndex(torch.tensor([[0, 1], [1, 2]]))
     edge_index.to_undirected(with_selfloops=True)
-    edges = set(zip(edge_index.item[0].tolist(), edge_index.item[1].tolist()))
+    edges = set(zip(edge_index.item[0].tolist(), edge_index.item[1].tolist(), strict=True))
 
     # Should have self-loops for nodes 0, 1, 2 (inferred from max index)
     assert (0, 0) in edges
@@ -1390,7 +1394,7 @@ def test_to_undirected_edge_index_preserves_selfloops_in_input():
     # (1, 1) is a self-loop in the input, so it should still be present
     edge_index = EdgeIndex(torch.tensor([[0, 1, 1], [1, 0, 1]]))
     edge_index.to_undirected()
-    edges = set(zip(edge_index.item[0].tolist(), edge_index.item[1].tolist()))
+    edges = set(zip(edge_index.item[0].tolist(), edge_index.item[1].tolist(), strict=True))
 
     assert (1, 1) in edges
 
@@ -1399,7 +1403,7 @@ def test_to_undirected_edge_index_with_selfloops_does_not_duplicate_selfloops():
     # (1, 1) is already a self-loop
     edge_index = EdgeIndex(torch.tensor([[0, 1], [1, 1]]))
     edge_index.to_undirected(with_selfloops=True)
-    edges = list(zip(edge_index.item[0].tolist(), edge_index.item[1].tolist()))
+    edges = list(zip(edge_index.item[0].tolist(), edge_index.item[1].tolist(), strict=True))
 
     assert (0, 0) in edges
     assert (1, 1) in edges
@@ -1423,7 +1427,7 @@ def test_to_undirected_edge_index_disconnected_components():
     # Two disconnected components: (0, 1) and (2, 3)
     edge_index = EdgeIndex(torch.tensor([[0, 2], [1, 3]]))
     edge_index.to_undirected()
-    edges = set(zip(edge_index.item[0].tolist(), edge_index.item[1].tolist()))
+    edges = set(zip(edge_index.item[0].tolist(), edge_index.item[1].tolist(), strict=True))
 
     expected_edges = {(0, 1), (1, 0), (2, 3), (3, 2)}
     assert edges == expected_edges

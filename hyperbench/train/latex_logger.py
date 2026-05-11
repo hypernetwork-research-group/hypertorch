@@ -1,11 +1,8 @@
 from pathlib import Path
-from typing import Any, ClassVar, Dict, Optional, Tuple, TypedDict, Mapping, Union
+from typing import Any, ClassVar, TypedDict
+from collections.abc import Mapping
 from typing_extensions import NotRequired
-
 from lightning.pytorch.loggers import Logger
-from torch_geometric import metrics
-
-from hyperbench import train
 
 
 def collect_metric_bounds(
@@ -14,15 +11,15 @@ def collect_metric_bounds(
 ) -> dict[str, tuple[float, float]]:
     metric_bounds: dict[str, tuple[float, float]] = {}
 
-    for metric in metric_names:
+    for metric_name in metric_names:
         values = [
-            float(value)
+            float(orther_metric_value)
             for model_metrics in results.values()
-            for key, value in model_metrics.items()
-            if key == metric and isinstance(value, (int, float))
+            for other_metric_name, orther_metric_value in model_metrics.items()
+            if other_metric_name == metric_name and isinstance(orther_metric_value, (int, float))
         ]
         if values:
-            metric_bounds[metric] = (min(values), max(values))
+            metric_bounds[metric_name] = (min(values), max(values))
 
     return metric_bounds
 
@@ -38,22 +35,27 @@ def colorize_metric_value(
     if bounds is None:
         return text
 
-    v_min, v_max = bounds
-
-    if v_max == v_min:
+    min_metric_value, max_metric_value = bounds
+    if max_metric_value == min_metric_value:
         quality = 1.0
     else:
-        t = (value - v_min) / (v_max - v_min)  # 0..1, low->high
-        quality = (1.0 - t) if sort_order.lower() == "asc" else t
+        normalized_metric_value = (value - min_metric_value) / (
+            max_metric_value - min_metric_value
+        )  # 0..1, low->high
+        quality = (
+            (1.0 - normalized_metric_value)
+            if sort_order.lower() == "asc"
+            else normalized_metric_value
+        )
 
-    red = int(round((1.0 - quality) * 100))
-    green = int(round(quality * 100))
+    red = round((1.0 - quality) * 100)
+    green = round(quality * 100)
 
     # Blend toward white to keep the gradient readable but less bright.
     soften = 0.35
-    red_chan = int(round(((red / 100) * (1.0 - soften) + soften) * 255))
-    green_chan = int(round(((green / 100) * (1.0 - soften) + soften) * 255))
-    blue_chan = int(round(soften * 255))
+    red_chan = round(((red / 100) * (1.0 - soften) + soften) * 255)
+    green_chan = round(((green / 100) * (1.0 - soften) + soften) * 255)
+    blue_chan = round(soften * 255)
 
     return rf"\cellcolor[HTML]{{{red_chan:02X}{green_chan:02X}{blue_chan:02X}}}{text}"
 
@@ -74,8 +76,7 @@ class LaTexTableConfig(TypedDict):
 
 
 class LaTexTableLogger(Logger):
-    # TODO
-    # - settings has to be configurable in Trainer
+    # TODO: settings has to be configurable in Trainer
 
     """A Lightning Logger that accumulates metrics and writes a LaTex comparison table.
 
@@ -95,7 +96,7 @@ class LaTexTableLogger(Logger):
     """
 
     # Class-level shared store: {experiment_name: {model_name: {metric_name: value}}}
-    __shared_stores: ClassVar[Dict[str, Dict[str, Dict[str, Any]]]] = {}
+    __shared_stores: ClassVar[dict[str, dict[str, dict[str, Any]]]] = {}
 
     def __init__(
         self,
@@ -110,8 +111,10 @@ class LaTexTableLogger(Logger):
         self.__model_name = model_name
         self.__experiment_name = experiment_name
         self.__precision = precision
-        d: LaTexTableConfig = {}
-        self.__options = options if options is not None else d
+
+        default_empty_options: LaTexTableConfig = {}
+        self.__options = options if options is not None else default_empty_options
+
         if experiment_name not in self.__shared_stores:
             self.__shared_stores[experiment_name] = {}
 
@@ -124,19 +127,19 @@ class LaTexTableLogger(Logger):
         return self.__model_name
 
     @property
-    def store(self) -> Dict[str, Dict[str, Any]]:
+    def store(self) -> dict[str, dict[str, Any]]:
         """Access the shared store for the current experiment."""
         return dict(self.__shared_stores.get(self.__experiment_name, {}))
 
     @property
-    def save_dir(self) -> Union[str, Path]:
+    def save_dir(self) -> str | Path:
         return self.__save_dir
 
     @property
-    def experiment_name(self) -> Union[str, Path]:
+    def experiment_name(self) -> str | Path:
         return self.__experiment_name
 
-    def log_metrics(self, metrics: Dict[str, Any], step: Optional[int] = None) -> None:
+    def log_metrics(self, metrics: dict[str, Any], step: int | None = None) -> None:
         """Accumulate metrics for this model. Called by Lightning on every log step.
 
         Keeps only the latest value for each metric name. For example, if
@@ -158,7 +161,6 @@ class LaTexTableLogger(Logger):
         accumulated up to that point. The file grows more complete over time.
         """
         test_results, train_results, val_results = self.__split_results()
-
         if not test_results and not train_results and not val_results:
             return
 
@@ -174,8 +176,8 @@ class LaTexTableLogger(Logger):
         self.__save_comparison_tables(
             test_results=test_results,
             save_dir=comparison_dir,
-            train_results=train_results if train_results else None,
-            val_results=val_results if val_results else None,
+            train_results=train_results or None,
+            val_results=val_results or None,
             precision=self.__precision,
             table_caption=table_caption,
             sort_by=sort_by,
@@ -187,7 +189,7 @@ class LaTexTableLogger(Logger):
             train_results=None,
             val_results=None,
             precision=self.__precision,
-            filename=f"test.tex",
+            filename="test.tex",
             table_caption=table_caption,
             sort_by=sort_by,
             border=border,
@@ -195,8 +197,9 @@ class LaTexTableLogger(Logger):
 
     def __split_results(
         self,
-    ) -> Tuple[Dict[str, Dict[str, Any]], Dict[str, Dict[str, Any]], Dict[str, Dict[str, Any]]]:
-        """Split all accumulated metrics into test vs train/val groups.
+    ) -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, Any]], dict[str, dict[str, Any]]]:
+        """
+        Split all accumulated metrics into test vs train/val groups.
 
         Metrics are classified by their name prefix:
         - "test_*"  --> test_results
@@ -205,14 +208,14 @@ class LaTexTableLogger(Logger):
         - anything else (e.g., "epoch") --> ignored
         """
         store = self.__shared_stores.get(self.__experiment_name, {})
-        test_results: Dict[str, Dict[str, Any]] = {}
-        train_results: Dict[str, Dict[str, Any]] = {}
-        val_results: Dict[str, Dict[str, Any]] = {}
+        test_results: dict[str, dict[str, Any]] = {}
+        train_results: dict[str, dict[str, Any]] = {}
+        val_results: dict[str, dict[str, Any]] = {}
 
         for model_name, metrics in store.items():
-            test_metrics: Dict[str, Any] = {}
-            train_metrics: Dict[str, Any] = {}
-            val_metrics: Dict[str, Any] = {}
+            test_metrics: dict[str, Any] = {}
+            train_metrics: dict[str, Any] = {}
+            val_metrics: dict[str, Any] = {}
 
             for metric_name, value in metrics.items():
                 if metric_name.startswith("test"):
@@ -239,107 +242,12 @@ class LaTexTableLogger(Logger):
         self,
         sections_data: list[tuple[str, Mapping[str, Mapping[str, Any]]]],
         precision: int = 4,
-        table_caption: Optional[str] = None,
+        table_caption: str | None = None,
         sort_by: list[str] | None = None,
         border: bool = True,
     ) -> str:
         if not sections_data:
             return ""
-
-        def esc(value: str) -> str:
-            return (
-                value.replace("\\", "\\textbackslash{}")
-                .replace("&", "\\&")
-                .replace("%", "\\%")
-                .replace("$", "\\$")
-                .replace("#", "\\#")
-                .replace("_", "\\_")
-                .replace("{", "\\{")
-                .replace("}", "\\}")
-                .replace("~", "\\textasciitilde{}")
-                .replace("^", "\\textasciicircum{}")
-            )
-
-        def section_lines(
-            title: str,
-            results: Mapping[str, Mapping[str, Any]],
-            total_cols: int,
-        ) -> list[str]:
-            metrics = sorted({m for mm in results.values() for m in mm})
-            sort_orders = sort_by if sort_by else ["asc"]
-
-            normalized_orders: list[str] = []
-            for order in sort_orders:
-                normalized = order.lower()
-                if normalized not in ("asc", "des"):
-                    raise ValueError(f"Invalid sort_by value: {order}. Use 'asc' or 'des'.")
-                normalized_orders.append(normalized)
-
-            metric_sort: dict[str, str] = {}
-            for idx, metric in enumerate(metrics):
-                metric_sort[metric] = (
-                    normalized_orders[idx]
-                    if idx < len(normalized_orders)
-                    else normalized_orders[-1]
-                )
-
-            metric_bounds = collect_metric_bounds(results, metrics)
-
-            best_by_metric: dict[str, float] = {}
-
-            for metric in metrics:
-                vals = [
-                    v
-                    for model_metrics in results.values()
-                    for k, v in model_metrics.items()
-                    if k == metric and isinstance(v, (int, float))
-                ]
-                if vals:
-                    best_by_metric[metric] = (
-                        min(vals) if metric_sort.get(metric, "asc") == "asc" else max(vals)
-                    )
-
-            header_cells = ["Model", *[esc(m) for m in metrics]]
-            while len(header_cells) < total_cols:
-                header_cells.append("")
-
-            lines = [
-                r"\addlinespace[3pt]",
-                rf"\multicolumn{{{total_cols}}}{{c}}{{\textbf{{{esc(title)}}}}} \\",
-                r"\midrule",
-                " & ".join(header_cells) + r" \\",
-            ]
-
-            for model_name in sorted(results):
-                model_metrics = results[model_name]
-                row = [esc(model_name)]
-
-                for metric in metrics:
-                    value = model_metrics.get(metric)
-                    if isinstance(value, (int, float)):
-                        formatted = f"{value:.{precision}f}"
-                        best = best_by_metric.get(metric)
-                        if best is not None and value == best:
-                            formatted = rf"\underline{{{formatted}}}"
-
-                        row.append(
-                            colorize_metric_value(
-                                metric=metric,
-                                value=float(value),
-                                text=formatted,
-                                metric_bounds=metric_bounds,
-                                sort_order=metric_sort.get(metric, "asc"),
-                            )
-                        )
-                    else:
-                        row.append("-")
-
-                while len(row) < total_cols:
-                    row.append("")
-                lines.append(" & ".join(row) + r" \\")
-
-            lines.append(r"\hline" if border else r"\midrule")
-            return lines
 
         # One tabular must have fixed column count; use max needed across sections.
         max_metrics = max(len({m for mm in rs.values() for m in mm}) for _, rs in sections_data)
@@ -355,28 +263,127 @@ class LaTexTableLogger(Logger):
         ]
 
         for title, results in sections_data:
-            lines.extend(section_lines(title, results, total_cols))
+            lines.extend(
+                self.__get_section_lines(title, results, total_cols, precision, sort_by, border)
+            )
 
         # Replace the last section-ending rule with a final closing \hline.
         last_rule = r"\hline" if border else r"\midrule"
         final_rule = r"\hline"
         lines and lines[-1] == last_rule and lines.pop()
-        lines and lines[-1] == final_rule or lines.append(final_rule)
+        (lines and lines[-1] == final_rule) or lines.append(final_rule)
 
         lines.append(r"\end{tabular}")
         table_lines: list[str] = [r"\begin{table}[htbp]", r"\centering"]
 
         if table_caption:
-            table_lines.append(rf"\caption{{{esc(table_caption)}}}")
+            table_lines.append(rf"\caption{{{self.__escape(table_caption)}}}")
 
         table_lines.extend(lines)
         table_lines.append(r"\end{table}")
         return "\n".join(table_lines) + "\n"
 
+    def __get_section_lines(
+        self,
+        title: str,
+        results: Mapping[str, Mapping[str, Any]],
+        total_cols: int,
+        precision: int,
+        sort_by: list[str] | None,
+        border: bool,
+    ) -> list[str]:
+        metrics = sorted({m for mm in results.values() for m in mm})
+        sort_orders = sort_by or ["asc"]
+
+        normalized_orders: list[str] = []
+        for order in sort_orders:
+            normalized = order.lower()
+            if normalized not in ("asc", "des"):
+                raise ValueError(f"Invalid sort_by value: {order}. Use 'asc' or 'des'.")
+            normalized_orders.append(normalized)
+
+        metric_sort: dict[str, str] = {}
+        for idx, metric in enumerate(metrics):
+            metric_sort[metric] = (
+                normalized_orders[idx] if idx < len(normalized_orders) else normalized_orders[-1]
+            )
+
+        metric_bounds = collect_metric_bounds(results, metrics)
+
+        best_by_metric: dict[str, float] = {}
+
+        for metric in metrics:
+            vals = [
+                metric_value
+                for model_metrics in results.values()
+                for metric_name, metric_value in model_metrics.items()
+                if metric_name == metric and isinstance(metric_value, (int, float))
+            ]
+            if vals:
+                best_by_metric[metric] = (
+                    min(vals) if metric_sort.get(metric, "asc") == "asc" else max(vals)
+                )
+
+        header_cells = ["Model", *[self.__escape(metric) for metric in metrics]]
+        while len(header_cells) < total_cols:
+            header_cells.append("")
+
+        lines = [
+            r"\addlinespace[3pt]",
+            rf"\multicolumn{{{total_cols}}}{{c}}{{\textbf{{{self.__escape(title)}}}}} \\",
+            r"\midrule",
+            " & ".join(header_cells) + r" \\",
+        ]
+
+        for model_name in sorted(results):
+            model_metrics = results[model_name]
+            row = [self.__escape(model_name)]
+
+            for metric in metrics:
+                value = model_metrics.get(metric)
+                if isinstance(value, (int, float)):
+                    formatted = f"{value:.{precision}f}"
+                    best = best_by_metric.get(metric)
+                    if best is not None and value == best:
+                        formatted = rf"\underline{{{formatted}}}"
+
+                    row.append(
+                        colorize_metric_value(
+                            metric=metric,
+                            value=float(value),
+                            text=formatted,
+                            metric_bounds=metric_bounds,
+                            sort_order=metric_sort.get(metric, "asc"),
+                        )
+                    )
+                else:
+                    row.append("-")
+
+            while len(row) < total_cols:
+                row.append("")
+            lines.append(" & ".join(row) + r" \\")
+
+        lines.append(r"\hline" if border else r"\midrule")
+        return lines
+
+    def __escape(self, value: str) -> str:
+        return (
+            value.replace("\\", "\\textbackslash{}")
+            .replace("&", "\\&")
+            .replace("%", "\\%")
+            .replace("$", "\\$")
+            .replace("#", "\\#")
+            .replace("_", "\\_")
+            .replace("{", "\\{")
+            .replace("}", "\\}")
+            .replace("~", "\\textasciitilde{}")
+            .replace("^", "\\textasciicircum{}")
+        )
+
     def __save_comparison_tables(
         self,
         test_results: Mapping[str, Mapping[str, Any]],
-        save_dir: Union[str, Path],
+        save_dir: str | Path,
         train_results: Mapping[str, Mapping[str, Any]] | None = None,
         val_results: Mapping[str, Mapping[str, Any]] | None = None,
         filename: str = "overall.tex",

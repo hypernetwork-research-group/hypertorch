@@ -1,4 +1,4 @@
-from typing import Literal, Optional
+from typing import Literal
 from torch import Tensor, nn
 from hyperbench.nn.aggregator import HyperedgeAggregator, NodeAggregator
 from hyperbench.types import EdgeIndex, Graph, HyperedgeIndex, Hypergraph
@@ -44,7 +44,7 @@ class HyperGCNConv(nn.Module):
         self,
         x: Tensor,
         hyperedge_index: Tensor,
-        gcn_laplacian_matrix: Optional[Tensor] = None,
+        gcn_laplacian_matrix: Tensor | None = None,
     ) -> Tensor:
         """
         The forward function.

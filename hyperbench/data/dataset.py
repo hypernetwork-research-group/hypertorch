@@ -1,6 +1,6 @@
 import torch
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 from torch import Tensor
 from torch.utils.data import Dataset as TorchDataset
 from hyperbench.nn import EnrichmentMode, NodeEnricher, HyperedgeEnricher
@@ -15,7 +15,6 @@ from hyperbench.utils import (
 
 from hyperbench.data.sampling import SamplingStrategy, create_sampler_from_strategy
 from hyperbench.data.hif import HIFLoader, HIFProcessor
-from hyperbench.nn.enricher import EnrichmentMode, NodeEnricher, HyperedgeEnricher
 
 
 class Dataset(TorchDataset):
@@ -32,7 +31,7 @@ class Dataset(TorchDataset):
 
     def __init__(
         self,
-        hdata: Optional[HData] = None,
+        hdata: HData | None = None,
         sampling_strategy: SamplingStrategy = SamplingStrategy.HYPEREDGE,
     ) -> None:
         """
@@ -51,7 +50,7 @@ class Dataset(TorchDataset):
     def __len__(self) -> int:
         return self.__sampler.len(self.hdata)
 
-    def __getitem__(self, index: int | List[int]) -> HData:
+    def __getitem__(self, index: int | list[int]) -> HData:
         """
         Sample a sub-hypergraph based on the sampling strategy and return it as HData.
         If:
@@ -133,7 +132,7 @@ class Dataset(TorchDataset):
     def enrich_node_features(
         self,
         enricher: NodeEnricher,
-        enrichment_mode: Optional[EnrichmentMode] = None,
+        enrichment_mode: EnrichmentMode | None = None,
     ) -> None:
         """
         Enrich node features using the provided node feature enricher.
@@ -150,7 +149,7 @@ class Dataset(TorchDataset):
         self,
         dataset_with_features: "Dataset",
         node_space_setting: NodeSpaceSetting = "transductive",
-        fill_value: Optional[NodeSpaceFiller] = None,
+        fill_value: NodeSpaceFiller | None = None,
     ) -> None:
         """
         Enrich node features from another dataset by copying features by ``global_node_ids``.
@@ -185,7 +184,7 @@ class Dataset(TorchDataset):
     def enrich_hyperedge_attr(
         self,
         enricher: HyperedgeEnricher,
-        enrichment_mode: Optional[EnrichmentMode] = None,
+        enrichment_mode: EnrichmentMode | None = None,
     ) -> None:
         """Enrich hyperedge features using the provided hyperedge feature enricher.
 
@@ -200,7 +199,7 @@ class Dataset(TorchDataset):
     def enrich_hyperedge_weights(
         self,
         enricher: HyperedgeEnricher,
-        enrichment_mode: Optional[EnrichmentMode] = None,
+        enrichment_mode: EnrichmentMode | None = None,
     ) -> None:
         """Enrich hyperedge weights using the provided hyperedge weight enricher.
 
@@ -235,12 +234,12 @@ class Dataset(TorchDataset):
 
     def split(
         self,
-        ratios: List[float],
-        shuffle: Optional[bool] = False,
-        seed: Optional[int] = None,
+        ratios: list[float],
+        shuffle: bool | None = False,
+        seed: int | None = None,
         node_space_setting: NodeSpaceSetting = "transductive",
-        assign_node_space_to: Optional[NodeSpaceAssignment] = "first",
-    ) -> List["Dataset"]:
+        assign_node_space_to: NodeSpaceAssignment | None = "first",
+    ) -> list["Dataset"]:
         """
         Split the dataset by hyperedges into partitions with contiguous 0-based hyperedge IDs.
 
@@ -365,18 +364,20 @@ class Dataset(TorchDataset):
         return self
 
     def transform_node_attrs(
-        attrs: Dict[str, Any],
-        attr_keys: Optional[List[str]] = None,
+        self,
+        attrs: dict[str, Any],
+        attr_keys: list[str] | None = None,
     ) -> Tensor:
         return HIFProcessor.transform_attrs(attrs, attr_keys)
 
     def transform_hyperedge_attrs(
-        attrs: Dict[str, Any],
-        attr_keys: Optional[List[str]] = None,
+        self,
+        attrs: dict[str, Any],
+        attr_keys: list[str] | None = None,
     ) -> Tensor:
         return HIFProcessor.transform_attrs(attrs, attr_keys)
 
-    def stats(self) -> Dict[str, Any]:
+    def stats(self) -> dict[str, Any]:
         """
         Compute statistics for the dataset.
         This method currently delegates to the underlying HData's stats method.
@@ -407,8 +408,8 @@ class Dataset(TorchDataset):
     def __get_hyperedge_ids_permutation(
         self,
         num_hyperedges: int,
-        shuffle: Optional[bool],
-        seed: Optional[int],
+        shuffle: bool | None,
+        seed: int | None,
     ) -> Tensor:
         device = self.hdata.device
 

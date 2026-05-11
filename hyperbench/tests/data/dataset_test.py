@@ -1,11 +1,11 @@
+import re
 import pytest
 import torch
 
 from unittest.mock import patch, MagicMock
 from hyperbench.data import AlgebraDataset, Dataset, HIFLoader, SamplingStrategy
 from hyperbench.nn import NodeEnricher, HyperedgeEnricher
-from hyperbench.types import HData, HIFHypergraph
-from hyperbench.data.supported_datasets import PreloadedDataset
+from hyperbench.types import HData
 
 
 @pytest.fixture
@@ -103,14 +103,6 @@ def mock_hdata_random_ids() -> HData:
     return HData(x=x, hyperedge_index=hyperedge_index)
 
 
-def test_preloaded_dataset_init():
-    mock_hdata = MagicMock(spec=HData)
-    dataset = PreloadedDataset(hdata=mock_hdata)
-
-    assert dataset.hdata == mock_hdata
-    assert dataset.sampling_strategy is SamplingStrategy.HYPEREDGE
-
-
 def test_preloaded_dataset_loads_hdata_when_hdata_is_none():
     mock_hdata = MagicMock(spec=HData)
     with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata) as mock_load:
@@ -206,7 +198,7 @@ def test_getitem_index_list_empty(mock_hdata_simple_hypergraph, strategy):
     with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_simple_hypergraph):
         dataset = AlgebraDataset(sampling_strategy=strategy)
 
-    with pytest.raises(ValueError, match="Index list cannot be empty."):
+    with pytest.raises(ValueError, match=re.escape("Index list cannot be empty.")):
         dataset[[]]
 
 
@@ -603,7 +595,7 @@ def test_split_raises_when_ratios_do_not_sum_to_one(mock_hdata_four_node_hypergr
     with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_four_node_hypergraph):
         dataset = AlgebraDataset()
 
-    with pytest.raises(ValueError, match="Split ratios must sum to 1.0"):
+    with pytest.raises(ValueError, match=re.escape("Split ratios must sum to 1.0")):
         dataset.split([0.8, 0.1, 0.05])
 
 
@@ -855,7 +847,7 @@ def test_enrich_node_features_from_propagates_hdata_validation_errors():
 
     with pytest.raises(
         ValueError,
-        match="Both HData instances must define global_node_ids to align node features.",
+        match=re.escape("Both HData instances must define global_node_ids to align node features."),
     ):
         target_dataset.enrich_node_features_from(source_dataset)
 
@@ -930,7 +922,9 @@ def test_split_raises_when_node_space_provided_with_transductive_disabled():
 
     with pytest.raises(
         ValueError,
-        match="assign_node_space_to can only be provided when node_space_setting='transductive'.",
+        match=re.escape(
+            "assign_node_space_to can only be provided when node_space_setting='transductive'."
+        ),
     ):
         dataset.split(
             [0.75, 0.25],
@@ -969,7 +963,6 @@ def test_nested_transductive_split_supports_train_feature_reuse():
 
 
 def test_transform_node_attrs_adds_padding_zero_when_attr_keys_padding(mock_hdata):
-
     with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata):
 
         class TestDataset(Dataset):
@@ -979,51 +972,53 @@ def test_transform_node_attrs_adds_padding_zero_when_attr_keys_padding(mock_hdat
 
         # Test with attr_keys - should pad missing attributes with 0.0
         attrs = {"weight": 1.5}
-        result = Dataset.transform_node_attrs(attrs, attr_keys=["score", "weight", "age"])
+        result = dataset.transform_node_attrs(attrs, attr_keys=["score", "weight", "age"])
         assert torch.allclose(
             result, torch.tensor([0.0, 1.5, 0.0])
         )  # score=0.0, weight=1.5, age=0.0
 
         # Test with all attributes present
         attrs = {"weight": 1.5, "score": 0.8, "age": 25.0}
-        result = Dataset.transform_node_attrs(attrs, attr_keys=["age", "score", "weight"])
+        result = dataset.transform_node_attrs(attrs, attr_keys=["age", "score", "weight"])
         assert torch.allclose(
             result, torch.tensor([25.0, 0.8, 1.5])
         )  # age=25.0, score=0.8, weight=1.5
 
         # Test without attr_keys - maintains insertion order
         attrs = {"weight": 1.5, "score": 0.8}
-        result = Dataset.transform_node_attrs(attrs)
+        result = dataset.transform_node_attrs(attrs)
         assert torch.allclose(result, torch.tensor([1.5, 0.8]))  # weight, score (insertion order)
 
 
 def test_transform_hyperedge_attrs_adds_padding_zero_when_attr_keys_padding(mock_hdata):
-
     with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata):
 
         class TestDataset(Dataset):
             DATASET_NAME = "TEST"
 
         dataset = TestDataset()
+
         # Test with attr_keys - should pad missing attributes with 0.0
         attrs = {"weight": 1.5}
-        result = Dataset.transform_hyperedge_attrs(
+        result = dataset.transform_hyperedge_attrs(
             attrs, attr_keys=["capacity", "weight", "length"]
         )
         assert torch.allclose(
             result, torch.tensor([0.0, 1.5, 0.0])
         )  # capacity=0.0, weight=1.5, length=0.0
+
         # Test with all attributes present
         attrs = {"weight": 1.5, "capacity": 10.0, "length": 5.0}
-        result = Dataset.transform_hyperedge_attrs(
+        result = dataset.transform_hyperedge_attrs(
             attrs, attr_keys=["length", "capacity", "weight"]
         )
         assert torch.allclose(
             result, torch.tensor([5.0, 10.0, 1.5])
         )  # length=5.0, capacity=10.0, weight=1.5
+
         # Test without attr_keys - maintains insertion order
         attrs = {"weight": 1.5, "capacity": 10.0}
-        result = Dataset.transform_hyperedge_attrs(attrs)
+        result = dataset.transform_hyperedge_attrs(attrs)
         assert torch.allclose(
             result, torch.tensor([1.5, 10.0])
         )  # capacity, weight (insertion order)

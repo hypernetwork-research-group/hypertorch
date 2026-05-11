@@ -1,5 +1,4 @@
 from torch import nn, Tensor
-from typing import Dict, Optional
 from hyperbench.utils import (
     ActivationFn,
     NormalizationFn,
@@ -53,12 +52,12 @@ class MLP(nn.Module):
         self,
         in_channels: int,
         out_channels: int,
-        hidden_channels: Optional[int] = None,
+        hidden_channels: int | None = None,
         num_layers: int = 1,
-        activation_fn: Optional[ActivationFn] = None,
-        activation_fn_kwargs: Optional[Dict] = None,
-        normalization_fn: Optional[NormalizationFn] = None,
-        normalization_fn_kwargs: Optional[Dict] = None,
+        activation_fn: ActivationFn | None = None,
+        activation_fn_kwargs: dict | None = None,
+        normalization_fn: NormalizationFn | None = None,
+        normalization_fn_kwargs: dict | None = None,
         bias: bool = True,
         drop_rate: float = 0.0,
     ):
@@ -97,7 +96,7 @@ class MLP(nn.Module):
     def forward(self, x) -> Tensor:
         return self.layers(x)
 
-    def __validate_num_layers(self, num_layers: int, hidden_channels: Optional[int]) -> None:
+    def __validate_num_layers(self, num_layers: int, hidden_channels: int | None) -> None:
         if num_layers < 1:
             raise ValueError("At least one layer is required for MLP.")
         if num_layers > 1 and hidden_channels is None:

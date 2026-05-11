@@ -2,17 +2,16 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
   pull_request:
-    branches: [main]
 
 jobs:
   test:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
+        python-version: [ "3.10", "3.11", "3.12", "3.13", "3.14" ]
 
     steps:
       - uses: actions/checkout@v6
@@ -24,12 +23,18 @@ jobs:
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
+
       - name: Install dependencies
         run: |
           uv venv
           uv pip install -e .
 
-      - name: Lint with ruff
+      - name: Lint code with ruff
+        uses: astral-sh/ruff-action@v3
+        with:
+          args: "check --output-format=github"
+
+      - name: Format code with ruff
         uses: astral-sh/ruff-action@v3
         with:
           args: "format --check --diff"

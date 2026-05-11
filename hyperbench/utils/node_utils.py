@@ -1,5 +1,6 @@
 from torch import Tensor
-from typing import Literal, Optional, Sequence, TypeAlias
+from typing import Literal, TypeAlias
+from collections.abc import Sequence
 
 
 NodeSpaceAssignment: TypeAlias = Literal["first", "all"]
@@ -7,25 +8,25 @@ NodeSpaceFiller: TypeAlias = float | int | Sequence[float] | Tensor
 NodeSpaceSetting: TypeAlias = Literal["inductive", "transductive"]
 
 
-def is_assigned_to_all(node_space_assignment: Optional[NodeSpaceAssignment]) -> bool:
+def is_assigned_to_all(node_space_assignment: NodeSpaceAssignment | None) -> bool:
     return node_space_assignment == "all"
 
 
-def is_assigned_to_first(node_space_assignment: Optional[NodeSpaceAssignment]) -> bool:
+def is_assigned_to_first(node_space_assignment: NodeSpaceAssignment | None) -> bool:
     return node_space_assignment == "first"
 
 
-def is_inductive_setting(node_space_setting: Optional[NodeSpaceSetting]) -> bool:
+def is_inductive_setting(node_space_setting: NodeSpaceSetting | None) -> bool:
     return node_space_setting == "inductive"
 
 
-def is_transductive_setting(node_space_setting: Optional[NodeSpaceSetting]) -> bool:
+def is_transductive_setting(node_space_setting: NodeSpaceSetting | None) -> bool:
     return node_space_setting == "transductive"
 
 
 def is_transductive_split(
-    node_space_setting: Optional[NodeSpaceSetting],
-    assign_node_space_to: Optional[NodeSpaceAssignment],
+    node_space_setting: NodeSpaceSetting | None,
+    assign_node_space_to: NodeSpaceAssignment | None,
     split_num: int,
 ) -> bool:
     if not is_transductive_setting(node_space_setting):

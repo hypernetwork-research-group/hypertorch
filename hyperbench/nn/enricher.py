@@ -2,9 +2,9 @@ import warnings
 import random
 import torch
 
-from abc import ABC
+from abc import ABC, abstractmethod
 from torch import Tensor, optim
-from typing import Literal, Optional, TypeAlias
+from typing import Literal, TypeAlias
 from hyperbench.types import EdgeIndex, HyperedgeIndex
 from torch_geometric.nn import Node2Vec as PyGNode2Vec
 
@@ -21,10 +21,11 @@ class Enricher(ABC):
 
     def __init__(
         self,
-        cache_dir: Optional[str] = None,
+        cache_dir: str | None = None,
     ):
         self.cache_dir = cache_dir
 
+    @abstractmethod
     def enrich(self, hyperedge_index: Tensor) -> Tensor:
         raise NotImplementedError("Subclasses must implement the enrich method.")
 
@@ -55,7 +56,7 @@ class HyperedgeAttrsEnricher(HyperedgeEnricher):
 
     def __init__(
         self,
-        cache_dir: Optional[str] = None,
+        cache_dir: str | None = None,
     ):
         super().__init__(cache_dir=cache_dir)
 
@@ -88,9 +89,9 @@ class HyperedgeWeightsEnricher(HyperedgeEnricher):
 
     def __init__(
         self,
-        cache_dir: Optional[str] = None,
+        cache_dir: str | None = None,
         alpha: float = 1.0,
-        beta: Optional[float] = None,
+        beta: float | None = None,
     ):
         super().__init__(cache_dir=cache_dir)
         if alpha < 0.0 or alpha > 1.0:
@@ -138,7 +139,7 @@ class Node2VecEnricher(NodeEnricher):
         learning_rate: float = 0.01,
         batch_size: int = 128,
         sparse: bool = True,
-        cache_dir: Optional[str] = None,
+        cache_dir: str | None = None,
         verbose: bool = False,
     ):
         """
@@ -270,11 +271,11 @@ class Node2VecEnricher(NodeEnricher):
 
             # Iterate over batches of positive and negative random walks
             for positive_random_walk, negative_random_walk in data_loader:
-                positive_random_walk = positive_random_walk.to(device)
-                negative_random_walk = negative_random_walk.to(device)
+                positive_random_walk_on_device = positive_random_walk.to(device)
+                negative_random_walk_on_device = negative_random_walk.to(device)
 
                 optimizer.zero_grad()
-                loss = model.loss(positive_random_walk, negative_random_walk)
+                loss = model.loss(positive_random_walk_on_device, negative_random_walk_on_device)
                 loss.backward()
                 optimizer.step()
 
@@ -306,7 +307,7 @@ class LaplacianPositionalEncodingEnricher(NodeEnricher):
         self,
         num_features: int,
         num_nodes: int = 0,
-        cache_dir: Optional[str] = None,
+        cache_dir: str | None = None,
     ):
         super().__init__(cache_dir=cache_dir)
         self.num_features = num_features

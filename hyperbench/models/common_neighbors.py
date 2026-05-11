@@ -1,7 +1,7 @@
 import torch
 
 from torch import Tensor, nn
-from typing import Dict, Literal, Optional
+from typing import Literal
 from hyperbench.nn import CommonNeighborsScorer, NeighborScorer
 from hyperbench.types import Neighborhood
 
@@ -10,7 +10,7 @@ class CommonNeighbors(nn.Module):
     def __init__(
         self,
         aggregation: Literal["mean", "min", "sum"],
-        scorer: Optional[NeighborScorer] = None,
+        scorer: NeighborScorer | None = None,
     ) -> None:
         super().__init__()
         self.scorer = scorer if scorer is not None else CommonNeighborsScorer(aggregation)
@@ -18,7 +18,7 @@ class CommonNeighbors(nn.Module):
     def forward(
         self,
         hyperedge_index: Tensor,
-        node_to_neighbors: Optional[Dict[int, Neighborhood]] = None,
+        node_to_neighbors: dict[int, Neighborhood] | None = None,
     ) -> Tensor:
         """
         Compute CN scores for all hyperedges in the batch.

@@ -1,5 +1,5 @@
 from torch import Tensor, nn
-from typing import Optional, TypedDict
+from typing import TypedDict
 from typing_extensions import NotRequired
 from torch_geometric.nn import Node2Vec as PyGNode2Vec
 
@@ -73,7 +73,7 @@ class Node2Vec(nn.Module):
             sparse=sparse,
         )
 
-    def forward(self, batch: Optional[Tensor] = None) -> Tensor:
+    def forward(self, batch: Tensor | None = None) -> Tensor:
         return self.model(batch)
 
     @property
@@ -153,8 +153,8 @@ class Node2VecGCN(nn.Module):
 
     def forward(
         self,
-        batch: Optional[Tensor] = None,
-        edge_index: Optional[Tensor] = None,
+        batch: Tensor | None = None,
+        edge_index: Tensor | None = None,
     ) -> Tensor:
         if edge_index is None:
             raise ValueError("Node2VecGCN requires edge_index in forward().")

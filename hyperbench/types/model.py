@@ -1,6 +1,7 @@
 import lightning as L
 
-from typing import Literal, Mapping, Optional, TypeAlias
+from typing import Literal, TypeAlias
+from collections.abc import Mapping
 from torch.utils.data import DataLoader
 
 
@@ -32,10 +33,10 @@ class ModelConfig:
         model: L.LightningModule,
         version: str = "default",
         is_trainable: bool = True,
-        trainer: Optional[L.Trainer] = None,
-        train_dataloader: Optional[DataLoader] = None,
-        val_dataloader: Optional[DataLoader] = None,
-        test_dataloader: Optional[DataLoader] = None,
+        trainer: L.Trainer | None = None,
+        train_dataloader: DataLoader | None = None,
+        val_dataloader: DataLoader | None = None,
+        test_dataloader: DataLoader | None = None,
     ) -> None:
         self.name = name
         self.version = version

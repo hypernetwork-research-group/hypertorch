@@ -1,6 +1,7 @@
 from torch import Tensor, nn
 from torch.utils.data import DataLoader
-from typing import Dict, Iterator, Literal, Optional, Tuple, TypeAlias, TypedDict
+from typing import Literal, TypeAlias, TypedDict
+from collections.abc import Iterator
 from typing_extensions import NotRequired
 from hyperbench.models import GCNConfig, Node2Vec, Node2VecGCN
 from hyperbench.types import EdgeIndex, HyperedgeIndex
@@ -44,7 +45,7 @@ class Node2VecGCNHlpConfig(TypedDict):
     cached: NotRequired[bool]
     graph_reduction_strategy: NotRequired[Literal["clique_expansion"]]
     activation_fn: NotRequired[ActivationFn]
-    activation_fn_kwargs: NotRequired[Dict]
+    activation_fn_kwargs: NotRequired[dict]
 
 
 class Node2VecHlpConfig(TypedDict):
@@ -108,8 +109,8 @@ class Node2VecWalkLoaderState:
             fetching the next batch of walks at each training step without reinitializing.
     """
 
-    walk_loader: Optional[DataLoader] = None
-    cached_walk_loader_iterator: Optional[Iterator] = None
+    walk_loader: DataLoader | None = None
+    cached_walk_loader_iterator: Iterator | None = None
 
 
 Node2VecEncoder: TypeAlias = Node2Vec | Node2VecGCN
@@ -117,10 +118,10 @@ Node2VecEncoder: TypeAlias = Node2Vec | Node2VecGCN
 
 def _get_walk_loader(
     mode: Node2VecMode,
-    encoder: Optional[nn.Module],
+    encoder: nn.Module | None,
     batch_size: int,
     state: Node2VecWalkLoaderState,
-) -> Optional[DataLoader]:
+) -> DataLoader | None:
     if mode != NODE2VEC_JOINT_MODE:
         return None
 
@@ -136,7 +137,7 @@ def _get_walk_loader(
 
 def _next_walk_batch(
     mode: Node2VecMode,
-    encoder: Optional[nn.Module],
+    encoder: nn.Module | None,
     batch_size: int,
     state: Node2VecWalkLoaderState,
 ):
@@ -154,7 +155,7 @@ def _next_walk_batch(
 def _to_node2vec_edge_index(
     node2vec_config: Node2VecHlpConfig,
     mode: Node2VecMode,
-) -> Tuple[Tensor, int]:
+) -> tuple[Tensor, int]:
     if "train_hyperedge_index" not in node2vec_config:
         raise ValueError(f"Node2Vec in mode {mode} requires train_hyperedge_index.")
 
@@ -186,7 +187,7 @@ def _to_gcn_config(embedding_dim: int, gcn_hlp_config: Node2VecGCNHlpConfig) -> 
     return gcn_config
 
 
-def _to_node2vec_encoder(encoder: Optional[nn.Module], mode: Node2VecMode) -> Node2VecEncoder:
+def _to_node2vec_encoder(encoder: nn.Module | None, mode: Node2VecMode) -> Node2VecEncoder:
     if encoder is None or not isinstance(encoder, (Node2Vec, Node2VecGCN)):
         raise ValueError(
             f"Node2Vec in mode {mode} requires a Node2Vec encoder, but none was provided."
@@ -196,7 +197,7 @@ def _to_node2vec_encoder(encoder: Optional[nn.Module], mode: Node2VecMode) -> No
 
 def _validate_global_node_ids(
     num_embeddings: int,
-    global_node_ids: Optional[Tensor],
+    global_node_ids: Tensor | None,
     mode: Node2VecMode,
 ) -> None:
     if global_node_ids is None or len(global_node_ids) < 1:

@@ -2,7 +2,6 @@ import torch
 
 from abc import ABC, abstractmethod
 from torch import Tensor
-from typing import List, Optional, Set, Tuple
 from hyperbench.types import HData, HyperedgeIndex
 
 
@@ -38,7 +37,7 @@ class NegativeSampler(ABC):
 
     def _new_negative_hyperedge_index(
         self,
-        sampled_hyperedge_indexes: List[Tensor],
+        sampled_hyperedge_indexes: list[Tensor],
         negative_node_ids: Tensor,
         negative_hyperedge_ids: Tensor,
     ) -> Tensor:
@@ -68,9 +67,9 @@ class NegativeSampler(ABC):
 
     def _new_global_node_ids(
         self,
-        global_node_ids: Optional[Tensor],
+        global_node_ids: Tensor | None,
         negative_node_ids: Tensor,
-    ) -> Optional[Tensor]:
+    ) -> Tensor | None:
         """
         Get the global node IDs for the negative samples.
 
@@ -87,9 +86,9 @@ class NegativeSampler(ABC):
 
     def _new_hyperedge_attr(
         self,
-        sampled_hyperedge_attrs: List[Tensor],
-        hyperedge_attr: Optional[Tensor] = None,
-    ) -> Optional[Tensor]:
+        sampled_hyperedge_attrs: list[Tensor],
+        hyperedge_attr: Tensor | None = None,
+    ) -> Tensor | None:
         """
         Concatenate the hyperedge attributes for the negative samples.
 
@@ -106,7 +105,7 @@ class NegativeSampler(ABC):
         negative_hyperedge_attr = torch.stack(sampled_hyperedge_attrs, dim=0)
         return negative_hyperedge_attr
 
-    def _new_x(self, x: Tensor, negative_node_ids: Tensor) -> Tuple[Tensor, int]:
+    def _new_x(self, x: Tensor, negative_node_ids: Tensor) -> tuple[Tensor, int]:
         """
         Get the node feature matrix for the negative samples.
 
@@ -202,9 +201,9 @@ class RandomNegativeSampler(NegativeSampler):
 
         device = data.device
 
-        negative_node_ids: Set[int] = set()
-        sampled_hyperedge_indexes: List[Tensor] = []
-        sampled_hyperedge_attrs: List[Tensor] = []
+        negative_node_ids: set[int] = set()
+        sampled_hyperedge_indexes: list[Tensor] = []
+        sampled_hyperedge_attrs: list[Tensor] = []
 
         new_hyperedge_id_offset = data.num_hyperedges
         for new_hyperedge_id in range(self.num_negative_samples):

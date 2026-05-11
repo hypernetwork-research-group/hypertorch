@@ -1,13 +1,13 @@
+import json
+import re
 import pytest
 import requests
 import torch
-import json
-import os
 
-from unittest.mock import patch, MagicMock
-
+from unittest.mock import patch
 from hyperbench.data import HIFLoader, HIFProcessor
 from hyperbench.types import HData, HIFHypergraph
+from hyperbench.tests import new_mock_named_temporary_file
 
 
 @pytest.fixture
@@ -158,14 +158,6 @@ def _write_hif_json(tmp_path, hypergraph: HIFHypergraph, filename: str = "sample
     return str(path)
 
 
-def _mock_named_temporary_file(path):
-    file_handle = open(path, "wb")
-    mocked_cm = MagicMock()
-    mocked_cm.__enter__.return_value = file_handle
-    mocked_cm.__exit__.side_effect = lambda exc_type, exc, tb: file_handle.close()
-    return mocked_cm
-
-
 def test_transform_attrs_empty_attrs():
     result = HIFProcessor.transform_attrs({})
     assert len(result) == 0
@@ -280,9 +272,11 @@ def test_load_from_path_zst_uses_decompress(tmp_path, mock_hypergraph):
 def test_load_from_path_raises_for_non_hif_compliant_json(tmp_path, mock_hypergraph):
     json_path = _write_hif_json(tmp_path, mock_hypergraph)
 
-    with patch("hyperbench.data.hif.validate_hif_json", return_value=False):
-        with pytest.raises(ValueError, match="is not HIF-compliant"):
-            HIFLoader.load_from_path(json_path)
+    with (
+        patch("hyperbench.data.hif.validate_hif_json", return_value=False),
+        pytest.raises(ValueError, match="is not HIF-compliant"),
+    ):
+        HIFLoader.load_from_path(json_path)
 
 
 def test_load_from_url_processes_zst_and_saves_to_disk(tmp_path, mock_hypergraph):
@@ -322,7 +316,7 @@ def test_load_from_url_processes_json_and_saves_compressed_copy(tmp_path, mock_h
         patch("hyperbench.data.hif.requests.get") as mock_get,
         patch(
             "hyperbench.data.hif.tempfile.NamedTemporaryFile",
-            return_value=_mock_named_temporary_file(tmp_path / "downloaded.json"),
+            return_value=new_mock_named_temporary_file(tmp_path / "downloaded.json"),
         ),
         patch("hyperbench.data.hif.compress_to_zst", return_value=b"compressed") as mock_compress,
         patch("hyperbench.data.hif.validate_hif_json", return_value=True),
@@ -378,7 +372,7 @@ def test_load_from_url_processes_json_without_saving_to_disk(tmp_path, mock_hype
         patch("hyperbench.data.hif.requests.get") as mock_get,
         patch(
             "hyperbench.data.hif.tempfile.NamedTemporaryFile",
-            return_value=_mock_named_temporary_file(tmp_path / "downloaded_no_save.json"),
+            return_value=new_mock_named_temporary_file(tmp_path / "downloaded_no_save.json"),
         ),
         patch("hyperbench.data.hif.compress_to_zst") as mock_compress,
         patch("hyperbench.data.hif.validate_hif_json", return_value=True),
@@ -421,7 +415,7 @@ def test_load_from_url_raises_for_unsupported_temp_extension(tmp_path):
         patch("hyperbench.data.hif.requests.get") as mock_get,
         patch(
             "hyperbench.data.hif.tempfile.NamedTemporaryFile",
-            return_value=_mock_named_temporary_file(tmp_path / "downloaded.bin"),
+            return_value=new_mock_named_temporary_file(tmp_path / "downloaded.bin"),
         ),
     ):
         mock_response = mock_get.return_value
@@ -448,22 +442,7 @@ def test_load_skips_download_when_file_exists(tmp_path, mock_hypergraph):
     assert result.num_hyperedges == 1
 
 
-def test_HIFLoader_download_failure_when_hf_fallback_fails():
-    with (
-        patch("hyperbench.data.hif.os.path.exists", return_value=False),
-        patch("hyperbench.data.hif.requests.get") as mock_get,
-        patch("hyperbench.data.hif.hf_hub_download", side_effect=Exception("HFHub failed")),
-    ):
-        mock_response = mock_get.return_value
-        mock_response.status_code = 404
-        mock_response.content = b""
-
-        with pytest.warns(UserWarning, match="GitHub raw download failed"):
-            with pytest.raises(ValueError, match="Failed to download dataset 'algebra'"):
-                HIFLoader.load_by_name("algebra")
-
-
-def test_HIFLoader_falls_back_to_hf_hub_download_when_github_raw_download_fails(
+def test_hifloader_falls_back_to_hf_hub_download_when_github_raw_download_fails(
     tmp_path, mock_hypergraph
 ):
     fallback_file = tmp_path / "algebra.json.zst"
@@ -473,22 +452,22 @@ def test_HIFLoader_falls_back_to_hf_hub_download_when_github_raw_download_fails(
     with (
         patch("hyperbench.data.hif.os.path.exists", return_value=False),
         patch("hyperbench.data.hif.requests.get") as mock_get,
-        patch(
-            "hyperbench.data.hif.hf_hub_download", return_value=str(fallback_file)
-        ) as mock_hf_hub_download,
+        patch("hyperbench.data.hif.hf_hub_download", return_value=str(fallback_file)) as _,
         patch("hyperbench.data.hif.decompress_zst", return_value=json_path),
         patch("hyperbench.data.hif.validate_hif_json", return_value=True),
+        pytest.warns(UserWarning, match="GitHub raw download failed"),
+        pytest.raises(
+            ValueError,
+            match=re.escape(
+                "Failed to download dataset 'algebra' from GitHub with status code 404 and no SHA provided for Hugging Face Hub fallback."
+            ),
+        ),
     ):
         mock_response = mock_get.return_value
         mock_response.status_code = 404
         mock_response.content = b""
 
-        with pytest.warns(UserWarning, match="GitHub raw download failed"):
-            with pytest.raises(
-                ValueError,
-                match="Failed to download dataset 'algebra' from GitHub with status code 404 and no SHA provided for Hugging Face Hub fallback.",
-            ):
-                result = HIFLoader.load_by_name("algebra", save_on_disk=False)
+        _ = HIFLoader.load_by_name("algebra", save_on_disk=False)
 
 
 def test_load_saves_downloaded_dataset_on_disk(tmp_path, mock_hypergraph):
@@ -514,16 +493,16 @@ def test_load_saves_downloaded_dataset_on_disk(tmp_path, mock_hypergraph):
     assert result.num_hyperedges == 1
 
 
-def test_HIFLoader_download_raises_when_network_error():
+def test_hifloader_download_raises_when_network_error():
     with (
         patch("hyperbench.data.hif.os.path.exists", return_value=False),
         patch(
             "hyperbench.data.hif.requests.get",
             side_effect=requests.RequestException("Network error"),
         ),
+        pytest.raises(requests.RequestException, match="Network error"),
     ):
-        with pytest.raises(requests.RequestException, match="Network error"):
-            HIFLoader.load_by_name("algebra")
+        HIFLoader.load_by_name("algebra")
 
 
 def test_load_by_name_uses_hf_revision_when_github_download_fails(tmp_path, mock_hypergraph):
@@ -544,9 +523,9 @@ def test_load_by_name_uses_hf_revision_when_github_download_fails(tmp_path, mock
         ) as mock_hf_hub_download,
         patch("hyperbench.data.hif.decompress_zst", return_value=json_path),
         patch("hyperbench.data.hif.validate_hif_json", return_value=True),
+        pytest.warns(UserWarning, match="GitHub raw download failed"),
     ):
-        with pytest.warns(UserWarning, match="GitHub raw download failed"):
-            result = HIFLoader.load_by_name("algebra", hf_sha=hf_sha, save_on_disk=False)
+        result = HIFLoader.load_by_name("algebra", hf_sha=hf_sha, save_on_disk=False)
 
     mock_hf_hub_download.assert_called_once_with(
         repo_id="HypernetworkRG/algebra",
@@ -567,13 +546,13 @@ def test_load_by_name_raises_when_hf_sha_is_missing_on_fallback():
         patch("hyperbench.data.hif.os.path.exists", return_value=False),
         patch("hyperbench.data.hif.requests.get", return_value=response),
         patch("hyperbench.data.hif.hf_hub_download") as mock_hf_hub_download,
+        pytest.warns(UserWarning, match="GitHub raw download failed"),
+        pytest.raises(
+            ValueError,
+            match="no SHA provided for Hugging Face Hub fallback",
+        ),
     ):
-        with pytest.warns(UserWarning, match="GitHub raw download failed"):
-            with pytest.raises(
-                ValueError,
-                match="no SHA provided for Hugging Face Hub fallback",
-            ):
-                HIFLoader.load_by_name("algebra", save_on_disk=False)
+        HIFLoader.load_by_name("algebra", save_on_disk=False)
 
     mock_hf_hub_download.assert_not_called()
 
@@ -596,9 +575,9 @@ def test_load_by_name_reads_hf_download_and_saves_its_content(tmp_path, mock_hyp
         patch("hyperbench.data.hif.decompress_zst", return_value=json_path),
         patch("hyperbench.data.hif.validate_hif_json", return_value=True),
         patch("hyperbench.data.hif.__file__", str(tmp_path / "hif.py")),
+        pytest.warns(UserWarning, match="GitHub raw download failed"),
     ):
-        with pytest.warns(UserWarning, match="GitHub raw download failed"):
-            result = HIFLoader.load_by_name("algebra", hf_sha=hf_sha, save_on_disk=True)
+        result = HIFLoader.load_by_name("algebra", hf_sha=hf_sha, save_on_disk=True)
 
     saved = tmp_path / "datasets" / "algebra.json.zst"
     assert saved.exists()
@@ -607,7 +586,7 @@ def test_load_by_name_reads_hf_download_and_saves_its_content(tmp_path, mock_hyp
     assert result.num_hyperedges == 1
 
 
-def test_HIFLoader_download_failure_when_hf_fallback_fails():
+def test_hifloader_download_failure_when_hf_fallback_fails():
     hf_sha = "2bb641461e00c103fb5ef4fe6a30aad42500fc21"
     response = requests.Response()
     response.status_code = 404
@@ -620,16 +599,16 @@ def test_HIFLoader_download_failure_when_hf_fallback_fails():
             "hyperbench.data.hif.hf_hub_download",
             side_effect=Exception("HFHub failed"),
         ) as mock_hf_hub_download,
+        pytest.warns(UserWarning, match="GitHub raw download failed"),
+        pytest.raises(
+            ValueError,
+            match=(
+                r"Failed to download dataset 'algebra' from GitHub and Hugging Face Hub\. "
+                r"GitHub error: 404 \| Hugging Face error: HFHub failed"
+            ),
+        ),
     ):
-        with pytest.warns(UserWarning, match="GitHub raw download failed"):
-            with pytest.raises(
-                ValueError,
-                match=(
-                    r"Failed to download dataset 'algebra' from GitHub and Hugging Face Hub\. "
-                    r"GitHub error: 404 \| Hugging Face error: HFHub failed"
-                ),
-            ):
-                HIFLoader.load_by_name("algebra", hf_sha=hf_sha)
+        HIFLoader.load_by_name("algebra", hf_sha=hf_sha)
 
     mock_hf_hub_download.assert_called_once_with(
         repo_id="HypernetworkRG/algebra",

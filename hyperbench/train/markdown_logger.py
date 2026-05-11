@@ -1,13 +1,9 @@
-from pathlib import Path
-from typing import Any, ClassVar, Dict, Optional, Tuple
 import copy
 
-from lightning.pytorch.loggers import Logger
-
 from pathlib import Path
-from typing import Mapping, Union
-
-from hyperbench import train
+from typing import Any, ClassVar
+from lightning.pytorch.loggers import Logger
+from collections.abc import Mapping
 
 
 class MarkdownTableLogger(Logger):
@@ -29,7 +25,7 @@ class MarkdownTableLogger(Logger):
     """
 
     # Class-level shared store: {experiment_name: {model_name: {metric_name: value}}}
-    __shared_stores: ClassVar[Dict[str, Dict[str, Dict[str, float]]]] = {}
+    __shared_stores: ClassVar[dict[str, dict[str, dict[str, float]]]] = {}
 
     def __init__(
         self,
@@ -56,19 +52,19 @@ class MarkdownTableLogger(Logger):
         return self.__model_name
 
     @property
-    def store(self) -> Dict[str, Dict[str, float]]:
+    def store(self) -> dict[str, dict[str, float]]:
         """Access the shared store for the current experiment."""
         return copy.deepcopy(self.__shared_stores.get(self.__experiment_name, {}))
 
     @property
-    def save_dir(self) -> Union[str, Path]:
+    def save_dir(self) -> str | Path:
         return self.__save_dir
 
     @property
-    def experiment_name(self) -> Union[str, Path]:
+    def experiment_name(self) -> str | Path:
         return self.__experiment_name
 
-    def log_metrics(self, metrics: Dict[str, float], step: Optional[int] = None) -> None:
+    def log_metrics(self, metrics: dict[str, float], step: int | None = None) -> None:
         """Accumulate metrics for this model. Called by Lightning on every log step.
 
         Keeps only the latest value for each metric name. For example, if
@@ -101,15 +97,15 @@ class MarkdownTableLogger(Logger):
         self.__save_comparison_tables(
             test_results=test_results,
             save_dir=comparison_dir,
-            train_results=train_results if train_results else None,
-            val_results=val_results if val_results else None,
+            train_results=train_results or None,
+            val_results=val_results or None,
             precision=self.__precision,
         )
 
     def __split_results(
         self,
-    ) -> Tuple[
-        Dict[str, Dict[str, float]], Dict[str, Dict[str, float]], Dict[str, Dict[str, float]]
+    ) -> tuple[
+        dict[str, dict[str, float]], dict[str, dict[str, float]], dict[str, dict[str, float]]
     ]:
         """Split all accumulated metrics into test vs train/val groups.
 
@@ -125,14 +121,14 @@ class MarkdownTableLogger(Logger):
             in a category are excluded from that category's dict.
         """
         store = self.__shared_stores.get(self.__experiment_name, {})
-        test_results: Dict[str, Dict[str, float]] = {}
-        train_results: Dict[str, Dict[str, float]] = {}
-        val_results: Dict[str, Dict[str, float]] = {}
+        test_results: dict[str, dict[str, float]] = {}
+        train_results: dict[str, dict[str, float]] = {}
+        val_results: dict[str, dict[str, float]] = {}
 
         for model_name, metrics in store.items():
-            test_metrics: Dict[str, float] = {}
-            train_metrics: Dict[str, float] = {}
-            val_metrics: Dict[str, float] = {}
+            test_metrics: dict[str, float] = {}
+            train_metrics: dict[str, float] = {}
+            val_metrics: dict[str, float] = {}
 
             for metric_name, value in metrics.items():
                 if metric_name.startswith("test"):
@@ -219,12 +215,12 @@ class MarkdownTableLogger(Logger):
                     cells.append("-")
             rows.append(f"| {model_name} | " + " | ".join(cells) + " |")
 
-        return "\n".join([header, separator] + rows)
+        return "\n".join([header, separator, *rows])
 
     def __save_comparison_tables(
         self,
         test_results: Mapping[str, Mapping[str, float]],
-        save_dir: Union[str, Path],
+        save_dir: str | Path,
         train_results: Mapping[str, Mapping[str, float]] | None = None,
         val_results: Mapping[str, Mapping[str, float]] | None = None,
         filename: str = "results.md",

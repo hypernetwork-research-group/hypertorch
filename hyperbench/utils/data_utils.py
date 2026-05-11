@@ -1,7 +1,6 @@
 import torch
 
 from torch import Tensor
-from typing import Optional
 
 
 def empty_nodefeatures() -> Tensor:
@@ -21,7 +20,7 @@ def to_non_empty_edgeattr(edge_attr: Tensor | None) -> Tensor:
     return empty_edgeattr(num_edges) if edge_attr is None else edge_attr
 
 
-def to_0based_ids(original_ids: Tensor, ids_to_rebase: Optional[Tensor] = None) -> Tensor:
+def to_0based_ids(original_ids: Tensor, ids_to_rebase: Tensor | None = None) -> Tensor:
     """
     Remap IDs to contiguous 0-based indices.
 

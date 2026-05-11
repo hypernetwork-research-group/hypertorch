@@ -1,5 +1,5 @@
 from torch import Tensor
-from typing import Literal, Optional
+from typing import Literal
 from torch_geometric.utils import scatter
 
 from hyperbench.types import HyperedgeIndex
@@ -24,7 +24,7 @@ class HyperedgeAggregator:
         self,
         hyperedge_index: Tensor,
         node_embeddings: Tensor,
-        num_hyperedges: Optional[int] = None,
+        num_hyperedges: int | None = None,
     ):
         self.hyperedge_index_wrapper = HyperedgeIndex(hyperedge_index)
         self.node_embeddings = node_embeddings
@@ -129,7 +129,7 @@ class NodeAggregator:
         self,
         hyperedge_index: Tensor,
         hyperedge_embeddings: Tensor,
-        num_nodes: Optional[int] = None,
+        num_nodes: int | None = None,
     ):
         self.hyperedge_index_wrapper = HyperedgeIndex(hyperedge_index)
         self.hyperedge_embeddings = hyperedge_embeddings

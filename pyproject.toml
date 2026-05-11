@@ -89,3 +89,32 @@ directory = "htmlcov"
 
 [tool.ruff]
 line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "B",     # flake8-bugbear: bugs / bad practices (https://docs.astral.sh/ruff/rules/#flake8-bugbear-b)
+    "C4",    # flake8-comprehensions (https://docs.astral.sh/ruff/rules/#flake8-comprehensions-c4)
+    "E",     # pycodestyle (https://docs.astral.sh/ruff/rules/#pycodestyle-e-w)
+    "F",     # pyflakes: undefined names, unused imports, etc. (https://docs.astral.sh/ruff/rules/#pyflakes-f)
+    "FURB",  # refurb: modern/simpler code improvements (https://docs.astral.sh/ruff/rules/#refurb-furb)
+    "I",     # isort (https://docs.astral.sh/ruff/rules/#isort-i)
+    "N",     # pep8-naming (https://docs.astral.sh/ruff/rules/#pep8-naming-n)
+    "PERF",  # perflint: performance suggestions (https://docs.astral.sh/ruff/rules/#perflint-perf)
+    "PL",    # pylint-inspired rules (https://docs.astral.sh/ruff/rules/#pylint-pl)
+    "Q",     # flake8-quotes: string quote normalization (https://docs.astral.sh/ruff/rules/#flake8-quotes-q)
+    "RET",   # flake8-return: return statement simplifications (https://docs.astral.sh/ruff/rules/#flake8-return-ret)
+    "RSE",   # flake8-raise: raise statement improvements (https://docs.astral.sh/ruff/rules/#flake8-raise-rse)
+    "RUF",   # Ruff-specific rules (https://docs.astral.sh/ruff/rules/#ruff-specific-rules-ruf)
+    "SIM",   # flake8-simplify: simplify code (https://docs.astral.sh/ruff/rules/#flake8-simplify-sim)
+    "T10",   # flake8-debugger (https://docs.astral.sh/ruff/rules/#flake8-debugger-t10)
+    "UP",    # pyupgrade: modern Python syntax (https://docs.astral.sh/ruff/rules/#pyupgrade-up)
+]
+ignore = [
+  "E501",     # line too long (https://docs.astral.sh/ruff/rules/line-too-long)
+  "I001",     # unsorted imports (https://docs.astral.sh/ruff/rules/unsorted-imports)
+  "N812",     # lowercase imported as non lowercase (https://docs.astral.sh/ruff/rules/lowercase-imported-as-non-lowercase)
+  "PLC0415",  # import outside top-level (https://docs.astral.sh/ruff/rules/import-outside-top-level)
+  "PLR0913",  # too many arguments (https://docs.astral.sh/ruff/rules/too-many-arguments)
+  "PLR2004",  # magic numbers (https://docs.astral.sh/ruff/rules/magic-value-comparison)
+  "RET504",   # unnecessary assignment (https://docs.astral.sh/ruff/rules/unnecessary-assign)
+]

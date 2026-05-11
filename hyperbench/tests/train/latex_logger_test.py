@@ -1,10 +1,6 @@
 import pytest
 from textwrap import dedent
 
-from unittest.mock import MagicMock, patch
-from hyperbench.train import MultiModelTrainer
-from hyperbench.types import ModelConfig
-from hyperbench.tests import new_mock_trainer
 
 from hyperbench.train.latex_logger import (
     LaTexTableConfig,

@@ -5,7 +5,6 @@ import warnings
 
 from huggingface_hub import HfApi
 from importlib import resources
-from typing import Dict, Optional
 
 
 HIF_SCHEMA_COMMIT_SHA = "b691a3d2ec32100c0229ebe1151e9afad015c356"
@@ -28,25 +27,27 @@ def validate_hif_json(filename: str) -> bool:
         with resources.files("hyperbench.utils.schema").joinpath("hif_schema.json").open("r") as f:
             schema = json.load(f)
     validator = fastjsonschema.compile(schema)
-    hiftext = json.load(open(filename, "r"))
-    try:
-        validator(hiftext)
-        return True
-    except Exception:
-        return False
+
+    with open(filename) as f:
+        hiftext = json.load(f)
+        try:
+            validator(hiftext)
+            return True
+        except Exception:
+            return False
 
 
 def get_hf_datasets_shas(
     dataset_names: list[str], namespace: str = "HypernetworkRG"
-) -> Dict[str, Optional[str]]:
-    shas: Dict[str, Optional[str]] = {}
+) -> dict[str, str | None]:
+    shas: dict[str, str | None] = {}
 
     for dataset_name in dataset_names:
         shas[dataset_name] = get_hf_dataset_sha(dataset_name, namespace)
     return shas
 
 
-def get_hf_dataset_sha(dataset_name: str, namespace: str = "HypernetworkRG") -> Optional[str]:
+def get_hf_dataset_sha(dataset_name: str, namespace: str = "HypernetworkRG") -> str | None:
     api = HfApi()
     repo_id = f"{namespace}/{dataset_name}"
     try:
@@ -65,25 +66,21 @@ def get_gh_datasets_shas(
     dataset_names: list[str],
     owner: str = "hypernetwork-research-group",
     repository: str = "datasets",
-) -> Dict[str, Optional[str]]:
-    shas: Dict[str, Optional[str]] = {}
+) -> dict[str, str | None]:
+    shas: dict[str, str | None] = {}
 
     for dataset_name in dataset_names:
         shas[dataset_name] = get_gh_dataset_sha(dataset_name, owner, repository)
     return shas
 
 
-def get_gh_dataset_sha(dataset_name: str, owner: str, repository: str) -> Optional[str]:
-
-    OWNER = owner
-    REPO = repository
-    FILE_PATH = f"{dataset_name}.json.zst"
-
-    url = f"https://api.github.com/repos/{OWNER}/{REPO}/commits"
+def get_gh_dataset_sha(dataset_name: str, owner: str, repository: str) -> str | None:
+    url = f"https://api.github.com/repos/{owner}/{repository}/commits"
+    file_path = f"{dataset_name}.json.zst"
 
     params = {
-        "path": FILE_PATH,
-        "per_page": 1,  # latest commit only
+        "path": file_path,
+        "per_page": 1,  # Latest commit only
     }
 
     try:
@@ -103,7 +100,7 @@ def get_gh_dataset_sha(dataset_name: str, owner: str, repository: str) -> Option
         commit_sha = data[0]["sha"]
     else:
         warnings.warn(
-            f"{dataset_name}: no commits found for {FILE_PATH}",
+            f"{dataset_name}: no commits found for {file_path}",
             category=UserWarning,
             stacklevel=2,
         )

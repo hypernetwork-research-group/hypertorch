@@ -1,5 +1,5 @@
 from torch import Tensor, nn, optim
-from typing import Literal, Optional, TypedDict
+from typing import Literal, TypedDict
 from typing_extensions import NotRequired
 from torchmetrics import MetricCollection
 from hyperbench.models import SLP, VilLain
@@ -55,10 +55,10 @@ class VilLainHlpModule(HlpModule):
         encoder_config: VilLainEncoderConfig,
         embedding_mode: Literal["node", "hyperedge"] = "node",
         aggregation: Literal["mean", "max", "min", "maxmin", "sum"] = "maxmin",
-        loss_fn: Optional[nn.Module] = None,
+        loss_fn: nn.Module | None = None,
         lr: float = 0.01,
         weight_decay: float = 0.0,
-        metrics: Optional[MetricCollection] = None,
+        metrics: MetricCollection | None = None,
     ):
         self.embedding_dim = encoder_config.get("embedding_dim", 128)
         self.aggregation = aggregation
@@ -88,8 +88,8 @@ class VilLainHlpModule(HlpModule):
     def forward(
         self,
         hyperedge_index: Tensor,
-        global_node_ids: Optional[Tensor] = None,
-        num_hyperedges: Optional[int] = None,
+        global_node_ids: Tensor | None = None,
+        num_hyperedges: int | None = None,
     ) -> Tensor:
         encoder = self.__to_villain_encoder()
 

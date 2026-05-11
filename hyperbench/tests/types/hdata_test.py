@@ -1,3 +1,5 @@
+import re
+
 import pytest
 import torch
 
@@ -331,7 +333,7 @@ def test_hdata_to_mps_handles_none_hyperedge_attr(mock_hdata):
 
 
 def test_cat_same_node_space_raises_on_empty_list():
-    with pytest.raises(ValueError, match="At least one instance is required."):
+    with pytest.raises(ValueError, match=re.escape("At least one instance is required.")):
         HData.cat_same_node_space([])
 
 
@@ -342,7 +344,9 @@ def test_cat_same_node_space_raises_on_overlapping_hyperedge_ids():
 
     with pytest.raises(
         ValueError,
-        match="Overlapping hyperedge IDs found across instances. Ensure each instance uses distinct hyperedge IDs.",
+        match=re.escape(
+            "Overlapping hyperedge IDs found across instances. Ensure each instance uses distinct hyperedge IDs."
+        ),
     ):
         HData.cat_same_node_space([hdata1, hdata2])
 
@@ -831,7 +835,7 @@ def test_enrich_node_features_from_raises_without_global_node_ids(missing_side):
 
     with pytest.raises(
         ValueError,
-        match="Both HData instances must define global_node_ids to align node features.",
+        match=re.escape("Both HData instances must define global_node_ids to align node features."),
     ):
         target_hdata.enrich_node_features_from(source_hdata)
 
@@ -849,7 +853,9 @@ def test_enrich_node_features_from_raises_when_source_rows_do_not_match_global_n
 
     with pytest.raises(
         ValueError,
-        match="Expected hdata_with_features.x rows to align with hdata_with_features.global_node_ids.",
+        match=re.escape(
+            "Expected hdata_with_features.x rows to align with hdata_with_features.global_node_ids."
+        ),
     ):
         target_hdata.enrich_node_features_from(source_hdata)
 
@@ -934,7 +940,7 @@ def test_enrich_node_features_from_inductive_raises_without_fill_value():
 
     with pytest.raises(
         ValueError,
-        match="fill_value must be provided when node_space_setting='inductive'.",
+        match=re.escape("fill_value must be provided when node_space_setting='inductive'."),
     ):
         target_hdata.enrich_node_features_from(
             source_hdata,
@@ -956,7 +962,7 @@ def test_enrich_node_features_from_transductive_raises_when_fill_value_provided(
 
     with pytest.raises(
         ValueError,
-        match="fill_value cannot be provided when node_space_setting='transductive'.",
+        match=re.escape("fill_value cannot be provided when node_space_setting='transductive'."),
     ):
         target_hdata.enrich_node_features_from(
             source_hdata,

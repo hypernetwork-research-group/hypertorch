@@ -1,5 +1,7 @@
-import pytest
 import json
+import re
+
+import pytest
 import torch
 
 from unittest.mock import patch
@@ -13,8 +15,8 @@ def seed():
     torch.manual_seed(42)
 
 
-def test_build_HIFHypergraph_instance():
-    with open(f"{MOCK_BASE_PATH}/algebra.hif.json", "r") as f:
+def test_build_hifhypergraph_instance():
+    with open(f"{MOCK_BASE_PATH}/algebra.hif.json") as f:
         hiftext = json.load(f)
 
     hypergraph = HIFHypergraph.from_hif(hiftext)
@@ -471,7 +473,7 @@ def test_hifhypergraph_stats_returns_correct_statistics():
         "distribution_hyperedge_size_hist": {3: 1, 2: 1},
     }
 
-    with open(f"{MOCK_BASE_PATH}/hif_stats.hif.json", "r") as f:
+    with open(f"{MOCK_BASE_PATH}/hif_stats.hif.json") as f:
         hiftext = json.load(f)
 
     hypergraph = HIFHypergraph.from_hif(hiftext)
@@ -509,7 +511,7 @@ def test_hyperedge_index_nodes_in(hyperedge_index_tensor, hyperedge_id, expected
 
 
 def _edge_index_to_edge_set(edge_index: torch.Tensor) -> set[tuple[int, int]]:
-    return set(zip(edge_index[0].tolist(), edge_index[1].tolist()))
+    return set(zip(edge_index[0].tolist(), edge_index[1].tolist(), strict=True))
 
 
 @pytest.mark.parametrize(
@@ -601,7 +603,7 @@ def test_clique_expansion_overlapping_hyperedges():
     # Two hyperedges sharing node 1: {0,1} and {1,2}
     hyperedge_index = torch.tensor([[0, 1, 1, 2], [0, 0, 1, 1]])
     result = HyperedgeIndex(hyperedge_index).reduce_to_edge_index_on_clique_expansion()
-    edges = set(zip(result[0].tolist(), result[1].tolist()))
+    edges = set(zip(result[0].tolist(), result[1].tolist(), strict=True))
 
     # All pairs connected: 0-1, 1-2, and 0-2 (via node 1 shared in both hyperedges)
     assert (0, 1) in edges
@@ -776,7 +778,10 @@ def test_reduce_to_graph_raises_on_single_node_hyperedge():
     x = torch.tensor([[1.0, 0.0], [0.0, 1.0]])
     hyperedge_index = torch.tensor([[0], [0]])
 
-    with pytest.raises(ValueError, match="The number of vertices in an hyperedge must be >= 2."):
+    with pytest.raises(
+        ValueError,
+        match=re.escape("The number of vertices in an hyperedge must be >= 2."),
+    ):
         HyperedgeIndex(hyperedge_index).reduce_to_edge_index_on_random_direction(x)
 
 

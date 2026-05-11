@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Optional, Type, TypeAlias
+from typing import TypeAlias
 from torch.nn import Module
 from torch import Tensor
 from torch_geometric.utils import scatter
@@ -8,8 +8,8 @@ from torch_geometric.utils import scatter
 INPUT_LAYER = 0
 
 
-ActivationFn: TypeAlias = Type[Module]
-NormalizationFn: TypeAlias = Type[Module]
+ActivationFn: TypeAlias = type[Module]
+NormalizationFn: TypeAlias = type[Module]
 
 
 class Stage(Enum):
@@ -30,7 +30,7 @@ def maxmin_scatter(
     src: Tensor,
     index: Tensor,
     dim: int,
-    dim_size: Optional[int] = None,
+    dim_size: int | None = None,
 ) -> Tensor:
     """
     Performs a scatter reduction that computes the channel-wise range (max - min) for each index group.
