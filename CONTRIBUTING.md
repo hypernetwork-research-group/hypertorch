@@ -40,6 +40,12 @@ For a full explanation of the project structure, commands, and development guide
 ## Contribution types and expectations
 
 ### Feature
+Best for: new capabilities (models, datasets, training features, utilities).
+
+Expectations:
+- Prefer opening an issue first to discuss scope and API impact.
+- Include tests for the new behavior.
+- Update docs (or docstrings) if user-facing behavior changes.
 
 Best for: new capabilities (models, datasets, training features, utilities).
 
