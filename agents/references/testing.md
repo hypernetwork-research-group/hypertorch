@@ -1,4 +1,4 @@
-# Testing with Pytest
+# Testing with pytest
 
 ## HyperBench specifics
 
@@ -10,7 +10,7 @@
 
 ## Generic reference (not HyperBench-specific)
 
-## Basic Pytest Structure
+## Basic pytest structure
 
 ```python
 # test_user.py
@@ -41,7 +41,7 @@ class TestUserService:
         assert user.id > 0
 ```
 
-## Fixtures for Setup/Teardown
+## Fixtures for setup/teardown
 
 ```python
 # conftest.py - shared fixtures
@@ -97,7 +97,7 @@ def reset_state() -> Iterator[None]:
     cleanup_temp_files()
 ```
 
-## Parametrize for Multiple Cases
+## Parametrize for multiple cases
 
 ```python
 import pytest
@@ -149,7 +149,7 @@ def test_user_names(user_factory, name: str) -> None:
     assert user.name == name
 ```
 
-## Mocking and Patching
+## Mocking and patching
 
 ```python
 from unittest.mock import Mock, MagicMock, patch, AsyncMock, call
@@ -225,7 +225,7 @@ async def test_async_function() -> None:
     assert user.name == "Alice"
 ```
 
-## Async Testing
+## Async testing
 
 ```python
 import pytest

@@ -1,4 +1,4 @@
-# Packaging and Project Setup
+# Packaging and project setup
 
 ## HyperBench specifics
 
