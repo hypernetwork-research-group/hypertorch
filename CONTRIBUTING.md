@@ -29,18 +29,45 @@ make help
 make build
 # or run the full suite, which include building + test
 make
+
+# to run an existing example
+make run examples/mlp_common_neighbors.py
 ```
 
 ## Contribution types + expectations
 
 ### Bugfix
+Best for: incorrect outputs, crashes, regressions, or broken docs/examples.
+
+Expectations:
+- Include a minimal reproduction (or a failing test) and a clear fix.
+- Add a regression test when feasible.
+- Keep the PR small and focused on the root cause.
 
 ### Feature
+Best for: new capabilities (models, datasets, training features, utilities).
+
+Expectations:
+- Prefer opening an issue first to discuss scope and API impact.
+- Include tests for the new behavior.
+- Update docs (or docstrings) if user-facing behavior changes.
 
 ### Docs
 Check [Docs Contribution](#docs-contribution) for more details.
 
+Best for: docs pages, API docs clarity, examples, READMEs, contributor docs.
+
+Expectations:
+- Ensure docs build cleanly (make docs-build).
+- Keep examples deterministic and copy-paste runnable when possible.
+
 ## Workflow
+
+1. Fork the repo and create a branch (see [Branch naming](#branch-naming)).
+2. Make changes with tests/docs as needed.
+3. Run local quality gates (see [Quality gates](#quality-gates)).
+4. Open a PR and fill in the PR template.
+5. Address review feedback; keep rebases/force-pushes reasonable.
 
 ### Commit message style
 
@@ -81,6 +108,12 @@ git rev-parse --abbrev-ref HEAD | grep -Eq '^(feat|fix|chore|refactor|docs)\/[a-
 
 ## Quality gates
 
+- If you have pre-commit installed, it will automatically check your code before each commit. You can also run it manually with `pre-commit run --all-files`.
+- For manual checks, you can use the following commands:
+  - Linting and formatting: `make check` (which runs `ruff format` and `ty check`).
+  - Running tests: `make test` (or `make stest <path>` for specific tests).
+
+
 ## AI-assisted contributions policy
 
 AI tools (for example, LLMs/code assistants) may be used to help prepare contributions.
@@ -100,9 +133,24 @@ Maintainers may:
 
 ## Docs Contribution
 
+```bash
+# to build the docs locally
+make docs-build
+# to serve the docs locally (after building)
+make docs-serve
+# or for a one-off command
+make docs
+```
+### Configuration
+- Docs are built with zensical, which uses a custom theme and configuration (see [zensical.toml](./zensical.toml)).
+- API reference is generated with [mkdocstrings](https://mkdocstrings.github.io/) from docstrings in the codebase.
 
-<!--  -->
-<!--  -->
-<!--  -->
-<!--  -->
-<!--  -->
+
+### Docstring conventions
+- Use Google-style docstrings with sections like `Args:`, `Returns:`, and `Examples:`.
+- Prefer fenced code blocks with syntax highlighting for examples.
+- Use type formatting conventions (e.g., `list[str]` instead of `List[str]`).
+
+### API reference
+
+Each API reference is generated with `mkdocstrings` and lives under `docs/api/`. Each module should have a corresponding markdown file (e.g., `data.md` for `hyperbench.data`) with an overview and the `::: module` directive.
