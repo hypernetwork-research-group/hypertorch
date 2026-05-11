@@ -510,9 +510,9 @@ def test_add_negative_samples_combines_positive_and_negative_hyperedges(mock_neg
     assert assign_hyperedge_label_to_nodes(
         result.hyperedge_index, result.y, result.num_hyperedges
     ) == {
-        frozenset({0, 1}): 1.0,
-        frozenset({2, 3}): 1.0,
-        frozenset({0, 2}): 0.0,
+        frozenset({0, 1}): 1,
+        frozenset({2, 3}): 1,
+        frozenset({0, 2}): 0,
     }
     sampler_mock.sample.assert_called_once_with(hdata, seed=42)
 

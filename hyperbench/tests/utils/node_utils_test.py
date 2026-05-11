@@ -18,7 +18,7 @@ def test_assign_hyperedge_label_to_nodes_maps_labels_to_node_sets():
             [1, 0, 0, 2, 2, 1],
         ]
     )
-    y = torch.tensor([0.25, 1.5, -2.0])
+    y = torch.tensor([1, 0, 1])
 
     labels_by_nodes = assign_hyperedge_label_to_nodes(
         hyperedge_index=hyperedge_index,
@@ -27,9 +27,9 @@ def test_assign_hyperedge_label_to_nodes_maps_labels_to_node_sets():
     )
 
     expected: dict[frozenset[int], float] = {
-        frozenset({0, 1}): 0.25,
-        frozenset({2}): 1.5,
-        frozenset({3, 4}): -2.0,
+        frozenset({0, 1}): 1,
+        frozenset({2}): 0,
+        frozenset({3, 4}): 1,
     }
 
     assert labels_by_nodes.keys() == expected.keys()
@@ -39,7 +39,7 @@ def test_assign_hyperedge_label_to_nodes_maps_labels_to_node_sets():
 
 def test_assign_hyperedge_label_to_nodes_includes_empty_hyperedge_slots():
     hyperedge_index = torch.tensor([[0, 1], [0, 0]])
-    y = torch.tensor([1.0, 0.0])
+    y = torch.tensor([1, 0])
 
     labels_by_nodes = assign_hyperedge_label_to_nodes(
         hyperedge_index=hyperedge_index,
@@ -48,8 +48,8 @@ def test_assign_hyperedge_label_to_nodes_includes_empty_hyperedge_slots():
     )
 
     expected: dict[frozenset[int], float] = {
-        frozenset({0, 1}): 1.0,
-        frozenset(): 0.0,
+        frozenset({0, 1}): 1,
+        frozenset(): 0,
     }
 
     assert labels_by_nodes.keys() == expected.keys()
