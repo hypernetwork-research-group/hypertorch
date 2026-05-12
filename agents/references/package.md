@@ -19,130 +19,35 @@ HyperBench uses a “flat” package layout: the `hyperbench/` package lives at 
 ## Project structure
 
 ```
-.
-├── CITATION.cff
-├── CODE_OF_CONDUCT.md
-├── CONTRIBUTING.md
-├── LICENSE
-├── Makefile
-├── README.md
-├── SECURITY.md
-├── agents
+. # repo
+├── .github # GitHub workflows and templates
+├── Makefile # convenience build/run targets
+├── agents # agent docs and references
 │   ├── SKILLS.md
 │   └── references
-│       ├── package.md
-│       ├── standard-lib.md
-│       ├── testing.md
-│       └── type-system.md
-├── configs
-├── docs
-│   ├── api
-│   │   ├── data.md
-│   │   ├── hlp.md
-│   │   ├── models.md
-│   │   ├── nn.md
-│   │   ├── reference.md
-│   │   ├── train.md
-│   │   ├── types.md
-│   │   └── utils.md
-│   ├── assets
-│   │   ├── data_design.excalidraw
-│   │   ├── deprecated_design.excalidraw
-│   │   └── design.png
-│   ├── getting-started
-│   │   └── installation.md
-│   ├── index.md
-│   ├── stylesheets
-│   │   └── extra.css
-│   └── user-guide
-│       └── user.md
-├── examples
+├── configs # project configuration files
+├── docs # documentation sources and site output
+├── examples # runnable examples and demos
 │   ├── early_stopping.py
 |   ├── ...
 │   └── villain.py
-├── hyperbench
-│   ├── __init__.py
-│   ├── data
-│   │   ├── __init__.py
-│   │   ├── __pycache__
-│   │   ├── dataset.py
-│   │   ├── datasets
-│   │   ├── hif.py
-│   │   ├── loader.py
-│   │   ├── sampling.py
-│   │   └── supported_datasets.py
-│   ├── hlp
-│   │   ├── __init__.py
-│   │   ├── common.py
-│   │   ├── common_neighbors_hlp.py
-│   │   ├── gcn_hlp.py
-│   │   ├── hgnn_hlp.py
-│   │   ├── hgnnp_hlp.py
-│   │   ├── hnhn_hlp.py
-│   │   ├── hypergcn_hlp.py
-│   │   ├── mlp_hlp.py
-│   │   ├── nhp_hlp.py
-│   │   ├── node2vec_common.py
-│   │   ├── node2vecgcn_hlp.py
-│   │   ├── node2vecslp_hlp.py
-│   │   └── villain_hlp.py
-│   ├── models
-│   │   ├── __init__.py
-│   │   ├── common_neighbors.py
-│   │   ├── gcn.py
-│   │   ├── hgnn.py
-│   │   ├── hgnnp.py
-│   │   ├── hnhn.py
-│   │   ├── hypergcn.py
-│   │   ├── mlp.py
-│   │   ├── nhp.py
-│   │   ├── node2vec.py
-│   │   └── villain.py
-│   ├── nn
-│   │   ├── __init__.py
-│   │   ├── aggregator.py
-│   │   ├── conv.py
-│   │   ├── enricher.py
-│   │   ├── loss.py
-│   │   └── scorer.py
-│   ├── tests
-│   │   ├── __init__.py
-│   │   ├── data
-│   │   ├── mock
-│   │   ├── train
-│   │   ├── types
-│   │   └── utils
-│   ├── train
-│   │   ├── __init__.py
-│   │   ├── latex_logger.py
-│   │   ├── markdown_logger.py
-│   │   ├── negative_sampler.py
-│   │   ├── negative_sampling_scheduler.py
-│   │   └── trainer.py
-│   ├── types
-│   │   ├── __init__.py
-│   │   ├── graph.py
-│   │   ├── hdata.py
-│   │   ├── hypergraph.py
-│   │   └── model.py
-│   └── utils
-│       ├── __init__.py
-│       ├── data_utils.py
-│       ├── file_utils.py
-│       ├── hif_utils.py
-│       ├── nn_utils.py
-│       ├── node_utils.py
-│       ├── schema
-│       ├── sparse_utils.py
-│       └── url_utils.py
-├── hyperbench_logs
+├── hyperbench # core Python package
+│   ├── data # datasets, loaders, and sampling
+│   ├── hlp # HLP task helpers and pipelines
+│   ├── models # model implementations
+│   ├── nn # neural network building blocks
+│   ├── tests # test utilities
+│   ├── train # training loops and loggers
+│   ├── types # shared type definitions
+│   └── utils # reusable helpers
+├── hyperbench_logs # local experiment outputs
 │   └── experiment_0
 │       ├── common_neighbors
 │       ├── comparison
 │       └── mlp
-├── pyproject.toml
-├── uv.lock
-└── zensical.toml
+├── pyproject.toml # package metadata and dependencies
+├── uv.lock # pinned dependency lockfile
+└── zensical.toml # zensical config for docs
 ```
 
 ## Project metadata
