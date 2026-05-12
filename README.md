@@ -12,7 +12,7 @@
 HyperBench is a benchmarking framework for hypergraphs, designed to provide a standardized and comprehensive evaluation of hypernetwork models across various tasks and datasets.
 You can use it as plug-and-play for your dataset with all the models and training pipelines already implemented, or you can easily extend it with your own models and training pipelines.
 
-## Table of contents
+## Table of contents
 
 - [Main features](#main-features)
 - [Getting started](#getting-started)
@@ -72,7 +72,7 @@ uv run examples/early_stopping.py
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for details on contributing to the project.
 
-## Documentation
+## Documentation
 
 You can find the extensive documentation [here][docs].
 Alternatively, you can build the documentation locally with the following commands:
