@@ -34,7 +34,7 @@ from .node_utils import (
 )
 from .sparse_utils import sparse_dropout
 from .url_utils import validate_http_url
-from .file_utils import decompress_zst, compress_to_zst, write_to_disk
+from .file_utils import decompress_zst, compress_to_zst, write_to_disk, named_temporary_file
 
 __all__ = [
     "INPUT_LAYER",
@@ -62,6 +62,7 @@ __all__ = [
     "is_transductive_setting",
     "is_transductive_split",
     "maxmin_scatter",
+    "named_temporary_file",
     "sparse_dropout",
     "to_0based_ids",
     "to_non_empty_edgeattr",
