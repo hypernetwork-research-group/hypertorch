@@ -19,7 +19,7 @@ HyperBench uses a “flat” package layout: the `hyperbench/` package lives at 
 ## Project structure
 
 ```
-. # repo
+.
 ├── .github # GitHub workflows and templates
 ├── Makefile # convenience build/run targets
 ├── agents # agent docs and references
