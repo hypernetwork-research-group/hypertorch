@@ -35,8 +35,8 @@ __all__ = [
     "Node2VecEnricher",
     "NodeAggregator",
     "NodeEnricher",
+    "VilLainEnricher",
     "VilLainHyperedgeAttrsEnricher",
     "VilLainLoss",
     "VilLainLossParts",
-    "VilLainEnricher",
 ]
