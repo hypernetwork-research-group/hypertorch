@@ -1,7 +1,13 @@
 import pytest
 import torch
 
-from hyperbench.train import RandomNegativeSampler
+from unittest.mock import MagicMock
+from hyperbench.nn import HyperedgeAttrsEnricher, HyperedgeWeightsEnricher, NodeEnricher
+from hyperbench.train import (
+    GeneratedNodesNegativeSampler,
+    RandomNegativeSampler,
+    SameNodeSpaceNegativeSampler,
+)
 from hyperbench.types import HData
 
 
@@ -33,6 +39,34 @@ def test_random_negative_sampler_invalid_args():
 
     with pytest.raises(ValueError, match="num_nodes_per_sample must be positive, got 0"):
         RandomNegativeSampler(num_negative_samples=2, num_nodes_per_sample=0)
+
+
+def test_random_negative_sampler_is_same_node_space_negative_sampler():
+    sampler = RandomNegativeSampler(num_negative_samples=1, num_nodes_per_sample=1)
+
+    assert isinstance(sampler, SameNodeSpaceNegativeSampler)
+
+
+def test_generated_nodes_negative_sampler_initializes_enrichers():
+    class DummyGeneratedNodesNegativeSampler(GeneratedNodesNegativeSampler):
+        def sample(self, hdata: HData, seed: int | None = None) -> HData:
+            return hdata
+
+    node_feature_enricher = MagicMock(spec=NodeEnricher)
+    hyperedge_attr_enricher = MagicMock(spec=HyperedgeAttrsEnricher)
+    hyperedge_weights_enricher = MagicMock(spec=HyperedgeWeightsEnricher)
+
+    sampler = DummyGeneratedNodesNegativeSampler(
+        node_feature_enricher=node_feature_enricher,
+        hyperedge_attr_enricher=hyperedge_attr_enricher,
+        hyperedge_weights_enricher=hyperedge_weights_enricher,
+        return_0based_negatives=True,
+    )
+
+    assert sampler.return_0based_negatives is True
+    assert sampler.node_feature_enricher is node_feature_enricher
+    assert sampler.hyperedge_attr_enricher is hyperedge_attr_enricher
+    assert sampler.hyperedge_weights_enricher is hyperedge_weights_enricher
 
 
 def test_random_negative_sampler_sample_too_many_nodes(mock_hdata_with_attr):
@@ -169,3 +203,32 @@ def test_random_negative_sampler_sample_depends_on_return_0based_negatives(
     if return_0based_negatives:
         for hyperedge_id in range(max(hyperedge_ids) + 1):
             assert hyperedge_id in hyperedge_ids
+
+
+def test_random_negative_sampler_uses_hyperedge_enrichers(mock_hdata_no_attr):
+    hyperedge_attr = torch.tensor([[10.0, 11.0], [12.0, 13.0]])
+    hyperedge_weights = torch.tensor([0.2, 0.3])
+    hyperedge_attr_enricher = MagicMock(spec=HyperedgeAttrsEnricher)
+    hyperedge_weights_enricher = MagicMock(spec=HyperedgeWeightsEnricher)
+    hyperedge_attr_enricher.enrich.return_value = hyperedge_attr
+    hyperedge_weights_enricher.enrich.return_value = hyperedge_weights
+
+    sampler = RandomNegativeSampler(
+        num_negative_samples=2,
+        num_nodes_per_sample=2,
+        hyperedge_attr_enricher=hyperedge_attr_enricher,
+        hyperedge_weights_enricher=hyperedge_weights_enricher,
+    )
+    result = sampler.sample(mock_hdata_no_attr)
+
+    assert result.hyperedge_attr is not None
+    assert result.hyperedge_weights is not None
+    assert torch.equal(result.hyperedge_attr, hyperedge_attr)
+    assert torch.equal(result.hyperedge_weights, hyperedge_weights)
+
+    attr_enricher_index = hyperedge_attr_enricher.enrich.call_args.args[0]
+    weights_enricher_index = hyperedge_weights_enricher.enrich.call_args.args[0]
+    assert torch.equal(attr_enricher_index, weights_enricher_index)
+    assert torch.equal(attr_enricher_index[1].unique(sorted=True), torch.arange(2))
+    for node_id in range(int(attr_enricher_index[0].max().item()) + 1):
+        assert node_id in attr_enricher_index[0]

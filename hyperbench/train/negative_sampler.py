@@ -2,6 +2,8 @@ import torch
 
 from abc import ABC, abstractmethod
 from torch import Tensor
+from hyperbench.nn import NodeEnricher
+from hyperbench.nn.enricher import HyperedgeAttrsEnricher, HyperedgeWeightsEnricher
 from hyperbench.types import HData, HyperedgeIndex
 
 
@@ -20,12 +22,12 @@ class NegativeSampler(ABC):
         self.return_0based_negatives: bool = return_0based_negatives
 
     @abstractmethod
-    def sample(self, data: HData, seed: int | None = None) -> HData:
+    def sample(self, hdata: HData, seed: int | None = None) -> HData:
         """
         Abstract method for negative sampling.
 
         Args:
-            data: The input data object containing graph or hypergraph information.
+            hdata: The input data object containing graph or hypergraph information.
             seed: Optional random seed for reproducible negative sampling.
 
         Returns:
@@ -106,6 +108,52 @@ class NegativeSampler(ABC):
         negative_hyperedge_attr = torch.stack(sampled_hyperedge_attrs, dim=0)
         return negative_hyperedge_attr
 
+    def _new_enriched_hyperedge_attr(
+        self,
+        hyperedge_attr_enricher: HyperedgeAttrsEnricher | None,
+        negative_hyperedge_index: Tensor,
+    ) -> Tensor | None:
+        """
+        Generate enriched hyperedge attributes for the negative samples.
+
+        Args:
+            hyperedge_attr_enricher: An optional :class:`HyperedgeAttrsEnricher` to generate attributes for the new hyperedges.
+            negative_hyperedge_index: The index tensor for the negative hyperedges.
+
+        Returns:
+            The enriched hyperedge attribute tensor for the negative samples, or ``None`` if the enricher is not provided.
+        """
+        if hyperedge_attr_enricher is None:
+            return None
+
+        negative_hyperedge_index_0based = (
+            HyperedgeIndex(negative_hyperedge_index.clone()).to_0based().item
+        )
+        return hyperedge_attr_enricher.enrich(negative_hyperedge_index_0based)
+
+    def _new_enriched_hyperedge_weights(
+        self,
+        hyperedge_weights_enricher: HyperedgeWeightsEnricher | None,
+        negative_hyperedge_index: Tensor,
+    ) -> Tensor | None:
+        """
+        Generate enriched hyperedge weights for the negative samples.
+
+        Args:
+            hyperedge_weights_enricher: An optional :class:`HyperedgeWeightsEnricher` to generate weights for the new hyperedges.
+            negative_hyperedge_index: The index tensor for the negative hyperedges.
+
+        Returns:
+            The enriched hyperedge weight tensor for the negative samples, or ``None`` if the enricher is not provided.
+        """
+        if hyperedge_weights_enricher is None:
+            return None
+
+        negative_hyperedge_index_0based = (
+            HyperedgeIndex(negative_hyperedge_index.clone()).to_0based().item
+        )
+        return hyperedge_weights_enricher.enrich(negative_hyperedge_index_0based)
+
     def _new_x(self, x: Tensor, negative_node_ids: Tensor) -> tuple[Tensor, int]:
         """
         Get the node feature matrix for the negative samples.
@@ -120,7 +168,56 @@ class NegativeSampler(ABC):
         return x[negative_node_ids], len(negative_node_ids)
 
 
-class RandomNegativeSampler(NegativeSampler):
+class SameNodeSpaceNegativeSampler(NegativeSampler, ABC):
+    """
+    Base class for negative samplers that sample only from existing nodes.
+
+    Args:
+        hyperedge_attr_enricher: An optional :class:`HyperedgeAttrsEnricher` to generate attributes for the new hyperedges.
+        hyperedge_weights_enricher: An optional :class:`HyperedgeWeightsEnricher` to generate weights for the new hyperedges.
+        return_0based_negatives:
+            - If ``True``, the negative samples returned by the ``sample`` method will have 0-based node and hyperedge IDs.
+            - If ``False``, the negative samples will retain the original global node and hyperedge IDs from the input data.
+    """
+
+    def __init__(
+        self,
+        hyperedge_attr_enricher: HyperedgeAttrsEnricher | None = None,
+        hyperedge_weights_enricher: HyperedgeWeightsEnricher | None = None,
+        return_0based_negatives: bool = False,
+    ):
+        super().__init__(return_0based_negatives=return_0based_negatives)
+        self.hyperedge_attr_enricher = hyperedge_attr_enricher
+        self.hyperedge_weights_enricher = hyperedge_weights_enricher
+
+
+class GeneratedNodesNegativeSampler(NegativeSampler, ABC):
+    """
+    Base class for negative samplers that generate new nodes instead of sampling from existing ones.
+
+    Args:
+        node_feature_enricher: A :class:`NodeEnricher` to generate features for the new nodes.
+        hyperedge_attr_enricher: An optional :class:`HyperedgeAttrsEnricher` to generate attributes for the new hyperedges.
+        hyperedge_weights_enricher: An optional :class:`HyperedgeWeightsEnricher` to generate weights for the new hyperedges.
+        return_0based_negatives:
+            - If ``True``, the negative samples returned by the ``sample`` method will have 0-based node and hyperedge IDs.
+            - If ``False``, the negative samples will retain the original global node and hyperedge IDs from the input data.
+    """
+
+    def __init__(
+        self,
+        node_feature_enricher: NodeEnricher,
+        hyperedge_attr_enricher: HyperedgeAttrsEnricher | None = None,
+        hyperedge_weights_enricher: HyperedgeWeightsEnricher | None = None,
+        return_0based_negatives: bool = False,
+    ):
+        super().__init__(return_0based_negatives=return_0based_negatives)
+        self.node_feature_enricher = node_feature_enricher
+        self.hyperedge_attr_enricher = hyperedge_attr_enricher
+        self.hyperedge_weights_enricher = hyperedge_weights_enricher
+
+
+class RandomNegativeSampler(SameNodeSpaceNegativeSampler):
     """
     A random negative sampler. Negatives generated with ``return_0based_negatives = False`` aren't usable standalone
     as they have global node and hyperedge IDs. They must be concatenated with the original :class:`HData` object
@@ -130,6 +227,10 @@ class RandomNegativeSampler(NegativeSampler):
     Args:
         num_negative_samples: Number of negative hyperedges to generate.
         num_nodes_per_sample: Number of nodes per negative hyperedge.
+        hyperedge_attr_enricher: An optional :class:`HyperedgeAttrsEnricher` to generate attributes for the new hyperedges.
+            If not provided, random attributes will be generated for the negative hyperedges if the input data has hyperedge attributes.
+        hyperedge_weights_enricher: An optional :class:`HyperedgeEnricher` to generate weights for the new hyperedges.
+            If not provided, the negative hyperedges will not have weights.
         return_0based_negatives:
             - If ``True``, the negative samples returned by the ``sample`` method will have 0-based node and hyperedge IDs.
             - If ``False``, the negative samples will retain the original global node and hyperedge IDs from the input data.
@@ -142,6 +243,8 @@ class RandomNegativeSampler(NegativeSampler):
         self,
         num_negative_samples: int,
         num_nodes_per_sample: int,
+        hyperedge_attr_enricher: HyperedgeAttrsEnricher | None = None,
+        hyperedge_weights_enricher: HyperedgeWeightsEnricher | None = None,
         return_0based_negatives: bool = False,
     ):
         if num_negative_samples <= 0:
@@ -149,11 +252,15 @@ class RandomNegativeSampler(NegativeSampler):
         if num_nodes_per_sample <= 0:
             raise ValueError(f"num_nodes_per_sample must be positive, got {num_nodes_per_sample}.")
 
-        super().__init__(return_0based_negatives=return_0based_negatives)
+        super().__init__(
+            hyperedge_attr_enricher=hyperedge_attr_enricher,
+            hyperedge_weights_enricher=hyperedge_weights_enricher,
+            return_0based_negatives=return_0based_negatives,
+        )
         self.num_negative_samples = num_negative_samples
         self.num_nodes_per_sample = num_nodes_per_sample
 
-    def sample(self, data: HData, seed: int | None = None) -> HData:
+    def sample(self, hdata: HData, seed: int | None = None) -> HData:
         """
         Generate negative hyperedges by randomly sampling unique node IDs.
         Node IDs are sampled from the same node space as the input data, and the new negative hyperedge IDs
@@ -187,7 +294,7 @@ class RandomNegativeSampler(NegativeSampler):
             >>> negative_x = data.x
 
         Args:
-            data: The input data object containing node and hyperedge information.
+            hdata: The input data object containing node and hyperedge information.
             seed: Optional random seed for reproducible negative sampling.
 
         Returns:
@@ -196,28 +303,86 @@ class RandomNegativeSampler(NegativeSampler):
         Raises:
             ValueError: If ``num_nodes_per_sample`` is greater than the number of available nodes.
         """
-        if self.num_nodes_per_sample > data.num_nodes:
+        if self.num_nodes_per_sample > hdata.num_nodes:
             raise ValueError(
-                f"Asked to create samples with {self.num_nodes_per_sample} nodes, but only {data.num_nodes} nodes are available."
+                f"Asked to create samples with {self.num_nodes_per_sample} nodes, but only {hdata.num_nodes} nodes are available."
             )
 
-        device = data.device
+        device = hdata.device
+
+        (
+            sampled_hyperedge_indexes,
+            sampled_hyperedge_attrs,
+            sampled_negative_node_ids,
+            new_hyperedge_id_offset,
+        ) = self.__sample_loop(hdata=hdata, device=device, seed=seed)
+
+        negative_node_ids_tensor = torch.tensor(sorted(sampled_negative_node_ids), device=device)
+        new_x, num_negative_nodes = self._new_x(hdata.x, negative_node_ids_tensor)
+
+        # Example: new_hyperedge_id_offset = 3 (if hdata.num_hyperedges was 3)
+        #          num_negative_samples = 2
+        #          -> num_hyperedges_including_negatives = 5
+        num_hyperedges_including_negatives = new_hyperedge_id_offset + self.num_negative_samples
+        negative_hyperedge_ids = torch.arange(
+            new_hyperedge_id_offset,
+            num_hyperedges_including_negatives,
+            device=device,
+        )
+
+        negative_hyperedge_index = self._new_negative_hyperedge_index(
+            sampled_hyperedge_indexes,
+            negative_node_ids_tensor,
+            negative_hyperedge_ids,
+        )
+
+        negative_hyperedge_attr = self._new_enriched_hyperedge_attr(
+            hyperedge_attr_enricher=self.hyperedge_attr_enricher,
+            negative_hyperedge_index=negative_hyperedge_index,
+        )
+        # Default to the random attributes if no enricher is provided and the input data has hyperedge attributes
+        if negative_hyperedge_attr is None:
+            negative_hyperedge_attr = self._new_hyperedge_attr(
+                sampled_hyperedge_attrs=sampled_hyperedge_attrs, hyperedge_attr=hdata.hyperedge_attr
+            )
+
+        return HData(
+            x=new_x,
+            hyperedge_index=negative_hyperedge_index,
+            hyperedge_weights=self._new_enriched_hyperedge_weights(
+                hyperedge_weights_enricher=self.hyperedge_weights_enricher,
+                negative_hyperedge_index=negative_hyperedge_index,
+            ),
+            hyperedge_attr=negative_hyperedge_attr,
+            num_nodes=num_negative_nodes,
+            num_hyperedges=self.num_negative_samples,
+            global_node_ids=self._new_global_node_ids(
+                global_node_ids=hdata.global_node_ids, negative_node_ids=negative_node_ids_tensor
+            ),
+        ).with_y_zeros()
+
+    def __sample_loop(
+        self,
+        hdata: HData,
+        device: torch.device,
+        seed: int | None = None,
+    ) -> tuple[list[Tensor], list[Tensor], set[int], int]:
         generator = None
         if seed is not None:
             generator = torch.Generator(device=device)
             generator.manual_seed(seed)
 
-        negative_node_ids: set[int] = set()
+        sampled_negative_node_ids: set[int] = set()
         sampled_hyperedge_indexes: list[Tensor] = []
         sampled_hyperedge_attrs: list[Tensor] = []
 
-        new_hyperedge_id_offset = data.num_hyperedges
+        new_hyperedge_id_offset = hdata.num_hyperedges
         for new_hyperedge_id in range(self.num_negative_samples):
             # Sample with multinomial without replacement to ensure unique node ids
             # and assign each node id equal probability of being selected by setting all of them to 1
             # Example: num_nodes_per_sample=3, max_node_id=5
             #          -> possible output: [2, 0, 4]
-            equal_probabilities = torch.ones(data.num_nodes, device=device)
+            equal_probabilities = torch.ones(hdata.num_nodes, device=device)
             sampled_node_ids = torch.multinomial(
                 input=equal_probabilities,
                 num_samples=self.num_nodes_per_sample,
@@ -240,44 +405,21 @@ class RandomNegativeSampler(NegativeSampler):
 
             # Example: nodes = [0, 1, 2],
             #          sampled_node_ids_0 = [0, 1], sampled_node_ids_1 = [1, 2],
-            #          -> negative_node_ids = {0, 1, 2}
-            negative_node_ids.update(sampled_node_ids.tolist())
+            #          -> sampled_negative_node_ids = {0, 1, 2}
+            sampled_negative_node_ids.update(sampled_node_ids.tolist())
 
-            if data.hyperedge_attr is not None:
+            if hdata.hyperedge_attr is not None:
                 random_hyperedge_attr = torch.randn(
-                    data.hyperedge_attr[0].shape,
-                    dtype=data.hyperedge_attr.dtype,
+                    hdata.hyperedge_attr[0].shape,
+                    dtype=hdata.hyperedge_attr.dtype,
                     device=device,
                     generator=generator,
                 )
                 sampled_hyperedge_attrs.append(random_hyperedge_attr)
 
-        negative_node_ids_tensor = torch.tensor(sorted(negative_node_ids), device=device)
-        new_x, num_negative_nodes = self._new_x(data.x, negative_node_ids_tensor)
-
-        # Example: new_hyperedge_id_offset = 3 (if data.num_edges was 3)
-        #          num_negative_samples = 2
-        #          -> num_hyperedges_including_negatives = 5
-        num_hyperedges_including_negatives = new_hyperedge_id_offset + self.num_negative_samples
-        negative_hyperedge_ids = torch.arange(
-            new_hyperedge_id_offset,
-            num_hyperedges_including_negatives,
-            device=device,
-        )
-
-        negative_hyperedge_index = self._new_negative_hyperedge_index(
+        return (
             sampled_hyperedge_indexes,
-            negative_node_ids_tensor,
-            negative_hyperedge_ids,
+            sampled_hyperedge_attrs,
+            sampled_negative_node_ids,
+            new_hyperedge_id_offset,
         )
-
-        return HData(
-            x=new_x,
-            hyperedge_index=negative_hyperedge_index,
-            hyperedge_attr=self._new_hyperedge_attr(sampled_hyperedge_attrs, data.hyperedge_attr),
-            num_nodes=num_negative_nodes,
-            num_hyperedges=self.num_negative_samples,
-            global_node_ids=self._new_global_node_ids(
-                data.global_node_ids, negative_node_ids_tensor
-            ),
-        ).with_y_zeros()
