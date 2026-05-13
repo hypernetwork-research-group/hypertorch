@@ -163,7 +163,7 @@ class VilLainHyperedgeAttrsEnricher(_VilLainTrainer, HyperedgeAttrsEnricher):
 
         model = self._train(hyperedge_index)
         model.eval()
-        with torch.inference_mode():
+        with torch.no_grad():
             hyperedge_attr = model.hyperedge_embeddings(
                 hyperedge_index=hyperedge_index,
                 num_hyperedges=num_hyperedges,
@@ -378,7 +378,7 @@ class Node2VecEnricher(NodeEnricher):
             print("Training complete. Generating node embeddings...")
 
         model.eval()
-        with torch.inference_mode():
+        with torch.no_grad():
             x: Tensor = model()  # shape (num_nodes, num_features)
 
         # Detach node embeddings from computation graph and return them
@@ -539,7 +539,7 @@ class VilLainEnricher(_VilLainTrainer, NodeEnricher):
 
         model = self._train(hyperedge_index)
         model.eval()
-        with torch.inference_mode():
+        with torch.no_grad():
             x = model.node_embeddings(
                 hyperedge_index=hyperedge_index,
                 num_hyperedges=self._num_hyperedges(hyperedge_index),
