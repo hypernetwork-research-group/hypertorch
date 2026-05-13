@@ -32,9 +32,9 @@ jobs:
           uv pip install -e .
 
       - name: Check docstrings
-        continued-on-error: true # TODO: remove when all docstring issues are fixed
+        continue-on-error: true # TODO: remove when all docstring issues are fixed
         run: |
-          uv run scripts/validate_docstrings.py
+          uv run ./scripts/validate_docstrings.py
 
   deploy:
     needs: docstring-check
