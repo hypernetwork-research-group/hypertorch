@@ -4,6 +4,10 @@ on:
   create:
     branches:
       - '**'
+
+permissions:
+  contents: read
+
 jobs:
   branch-naming-rules:
     runs-on: ubuntu-latest
