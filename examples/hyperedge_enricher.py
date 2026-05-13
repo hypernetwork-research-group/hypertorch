@@ -1,7 +1,7 @@
 from hyperbench.nn import (
     ABHyperedgeWeightsEnricher,
     FillValueHyperedgeAttrsEnricher,
-    VilLainHyperedgeAttrEnricher,
+    VilLainHyperedgeAttrsEnricher,
 )
 from hyperbench.data import AlgebraDataset, SamplingStrategy
 
@@ -42,7 +42,7 @@ if __name__ == "__main__":
     print("Enriching hyperedge attributes with VilLain...")
 
     dataset.enrich_hyperedge_attr(
-        enricher=VilLainHyperedgeAttrEnricher(
+        enricher=VilLainHyperedgeAttrsEnricher(
             num_features=32,
             num_nodes=dataset.hdata.num_nodes,
             num_hyperedges=dataset.hdata.num_hyperedges,

@@ -1,7 +1,7 @@
 from hyperbench.nn import (
     LaplacianPositionalEncodingEnricher,
     Node2VecEnricher,
-    VilLainNodeFeatureEnricher,
+    VilLainEnricher,
 )
 from hyperbench.data import AlgebraDataset, SamplingStrategy
 
@@ -46,7 +46,7 @@ if __name__ == "__main__":
         print(f"- Node features shape: {dataset.hdata.x.shape}")
         print(f"- First 5 node features:\n {dataset.hdata.x[:5]}\n")
 
-    villain_enricher = VilLainNodeFeatureEnricher(
+    villain_enricher = VilLainEnricher(
         num_features=num_features,
         num_nodes=dataset.hdata.num_nodes,
         num_hyperedges=dataset.hdata.num_hyperedges,

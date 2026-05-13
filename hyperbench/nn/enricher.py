@@ -89,7 +89,7 @@ class FillValueHyperedgeAttrsEnricher(HyperedgeAttrsEnricher):
         return hyperedge_attrs
 
 
-class VilLainHyperedgeAttrEnricher(_VilLainTrainer, HyperedgeAttrsEnricher):
+class VilLainHyperedgeAttrsEnricher(_VilLainTrainer, HyperedgeAttrsEnricher):
     """
     Enrich hyperedge attributes with VilLain embeddings learned from hypergraph topology.
 
@@ -465,7 +465,7 @@ class LaplacianPositionalEncodingEnricher(NodeEnricher):
         return x
 
 
-class VilLainNodeFeatureEnricher(_VilLainTrainer, NodeEnricher):
+class VilLainEnricher(_VilLainTrainer, NodeEnricher):
     """
     Enrich node features with VilLain embeddings learned from hypergraph topology.
 
