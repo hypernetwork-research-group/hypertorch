@@ -1,4 +1,4 @@
-from hyperbench.nn import HyperedgeWeightsEnricher, HyperedgeAttrsEnricher
+from hyperbench.nn import ABHyperedgeWeightsEnricher, FillValueHyperedgeAttrsEnricher
 from hyperbench.data import AlgebraDataset, SamplingStrategy
 
 
@@ -9,12 +9,11 @@ if __name__ == "__main__":
 
     print("Enriching hyperedge weights...")
 
-    # HyperedgeWeightsEnricher enriches hyperedges with their degree (number of nodes in each hyperedge) as weights.
-    # It optionally applies scaling and adds a constant to the weights.
     dataset.enrich_hyperedge_weights(
-        enricher=HyperedgeWeightsEnricher(
-            alpha=0.9, beta=None
-        ),  # No scaling, no additional constant
+        enricher=ABHyperedgeWeightsEnricher(
+            alpha=0.9,  # Percentage of beta to add to the scaled degree.
+            beta=None,  # If beta were set, it would be added to the scaled degree, scaled by alpha.
+        ),
         enrichment_mode="replace",
     )
 
@@ -25,10 +24,9 @@ if __name__ == "__main__":
 
     print("Enriching hyperedge attributes...")
 
-    # HyperedgeAttrsEnricher adds a feature of 1.0 to each hyperedge,
-    # which can be used for methods that require hyperedge features.
+    # Fill hyperedge attributes with a constant value of 1.0
     dataset.enrich_hyperedge_attr(
-        enricher=HyperedgeAttrsEnricher(),
+        enricher=FillValueHyperedgeAttrsEnricher(fill_value=1.0),
         enrichment_mode="replace",
     )
 

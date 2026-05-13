@@ -30,14 +30,6 @@ class Enricher(ABC):
         raise NotImplementedError("Subclasses must implement the enrich method.")
 
 
-class NodeEnricher(Enricher, ABC):
-    """
-    Base class for node enrichers.
-    """
-
-    pass
-
-
 class HyperedgeEnricher(Enricher, ABC):
     """
     Base class for hyperedge enrichers.
@@ -46,23 +38,38 @@ class HyperedgeEnricher(Enricher, ABC):
     pass
 
 
-class HyperedgeAttrsEnricher(HyperedgeEnricher):
+HyperedgeAttrsEnricher: TypeAlias = HyperedgeEnricher
+HyperedgeWeightsEnricher: TypeAlias = HyperedgeEnricher
+
+
+class NodeEnricher(Enricher, ABC):
     """
-    Base class for enrichers that generate hyperedge attributes (features).
+    Base class for node enrichers.
+    """
+
+    pass
+
+
+class FillValueHyperedgeAttrsEnricher(HyperedgeAttrsEnricher):
+    """
+    Generates simple hyperedge attributes by filling them with a constant value.
 
     Args:
         cache_dir: Directory for saving/loading cached features. If ``None``, caching is disabled.
+        fill_value: The constant value to fill the hyperedge attributes with. Defaults to ``1.0``.
     """
 
     def __init__(
         self,
         cache_dir: str | None = None,
+        fill_value: float = 1.0,
     ):
         super().__init__(cache_dir=cache_dir)
+        self.fill_value = fill_value
 
     def enrich(self, hyperedge_index: Tensor) -> Tensor:
         """
-        Generate hyperedge attributes. By default, this method creates a simple feature of 1.0 for each hyperedge.
+        Generate hyperedge attributes.
 
         Args:
             hyperedge_index: Hyperedge index tensor of shape ``(2, num_hyperedges)``.
@@ -70,14 +77,16 @@ class HyperedgeAttrsEnricher(HyperedgeEnricher):
         Returns:
             Tensor of shape ``(num_hyperedges, 1)`` containing the generated attribute for each hyperedge.
         """
-        # Add a feature of 1.0 for each hyperedge, which can be used
-        # as a baseline or for methods that require hyperedge features.
         num_hyperedges = HyperedgeIndex(hyperedge_index).num_hyperedges
-        hyperedge_attrs = torch.ones(size=(num_hyperedges, 1), device=hyperedge_index.device)
+        hyperedge_attrs = torch.full(
+            size=(num_hyperedges, 1),
+            fill_value=self.fill_value,
+            device=hyperedge_index.device,
+        )
         return hyperedge_attrs
 
 
-class HyperedgeWeightsEnricher(HyperedgeEnricher):
+class ABHyperedgeWeightsEnricher(HyperedgeWeightsEnricher):
     """
     Generates hyperedge weights based on the number of nodes in each hyperedge.
 
