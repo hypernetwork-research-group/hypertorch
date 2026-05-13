@@ -1,4 +1,8 @@
-from hyperbench.nn import ABHyperedgeWeightsEnricher, FillValueHyperedgeAttrsEnricher
+from hyperbench.nn import (
+    ABHyperedgeWeightsEnricher,
+    FillValueHyperedgeAttrsEnricher,
+    VilLainHyperedgeAttrEnricher,
+)
 from hyperbench.data import AlgebraDataset, SamplingStrategy
 
 
@@ -33,4 +37,27 @@ if __name__ == "__main__":
     print("Dataset after enriching hyperedge attributes:")
     hyperedge_attr = dataset.hdata.hyperedge_attr
     if hyperedge_attr is not None:
+        print(f"- First 10 hyperedge attributes:\n {hyperedge_attr[:10]}\n")
+
+    print("Enriching hyperedge attributes with VilLain...")
+
+    dataset.enrich_hyperedge_attr(
+        enricher=VilLainHyperedgeAttrEnricher(
+            num_features=32,
+            num_nodes=dataset.hdata.num_nodes,
+            num_hyperedges=dataset.hdata.num_hyperedges,
+            labels_per_subspace=8,
+            training_steps=4,
+            generation_steps=32,
+            num_epochs=10,
+            learning_rate=0.01,
+            verbose=True,
+        ),
+        enrichment_mode="replace",
+    )
+
+    print("Dataset after VilLain hyperedge attribute enrichment:")
+    hyperedge_attr = dataset.hdata.hyperedge_attr
+    if hyperedge_attr is not None:
+        print(f"- Hyperedge attributes shape: {hyperedge_attr.shape}")
         print(f"- First 10 hyperedge attributes:\n {hyperedge_attr[:10]}")

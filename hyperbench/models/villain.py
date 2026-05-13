@@ -120,7 +120,7 @@ class VilLain(nn.Module):
             A tuple ``(total_loss, loss_parts)`` where ``loss_parts`` contains ``local_loss`` and ``global_loss`` scalar tensors.
         """
         node_embeddings = self.__get_initial_virtual_node_features(node_ids=node_ids)
-        actual_num_hyperedges = self.__resolve_num_hyperedges(hyperedge_index, num_hyperedges)
+        actual_num_hyperedges = self.__num_hyperedges(hyperedge_index, num_hyperedges)
 
         local_loss = node_embeddings.new_zeros(size=())
         global_loss = node_embeddings.new_zeros(size=())
@@ -220,7 +220,7 @@ class VilLain(nn.Module):
         """
         with torch.no_grad():
             x = self.__get_initial_virtual_node_features(node_ids=node_ids)
-            actual_num_hyperedges = self.__resolve_num_hyperedges(hyperedge_index, num_hyperedges)
+            actual_num_hyperedges = self.__num_hyperedges(hyperedge_index, num_hyperedges)
 
             final_embeddings_size = (
                 (x.size(0), self.raw_embedding_dim)
@@ -314,7 +314,7 @@ class VilLain(nn.Module):
 
         return node_embeddings, hyperedge_embeddings
 
-    def __resolve_num_hyperedges(
+    def __num_hyperedges(
         self,
         hyperedge_index: Tensor,
         num_hyperedges: int | None,
