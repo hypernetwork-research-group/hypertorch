@@ -33,7 +33,7 @@ jobs:
 
       - name: Check docstrings
         run: |
-          uv run .github/scripts/validate_docstrings.py
+          uv run scripts/validate_docstrings.py
 
   deploy:
     needs: docstring-check
