@@ -53,12 +53,14 @@ If you’re interested in contributing, please visit the [contributing guide](ht
 
 The core development team includes:
 
-- @ddevin96 - ddevinco@unisa.it - Daniele De Vinco
-- @tizianocitro - tcitro@unisa.it - Tiziano Citro
+| GitHub handle | Mail | Full Name |
+| --- | --- | --- |
+| @ddevin96 | ddevinco@unisa.it | Daniele De Vinco |
+| @tizianocitro | tcitro@unisa.it | Tiziano Citro |
 
 ## Institutional partners
 
-University of Salerno
+<img src="../assets/logo_unisa.png" alt="University of Salerno" width="200" />
 
 <!-- TODO logo -->
 ## License

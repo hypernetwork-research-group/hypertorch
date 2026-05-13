@@ -21,7 +21,14 @@ nav = [
     { "Tutorials" = "getting-started/tutorials.md" },
   ] },
   { "User Guide" = [
-    { "Overview" = "user-guide/user.md" },
+    { "Overview" = "user-guide/overview.md" },
+    { "1 minute to hyperbench" = "user-guide/1-minute-to-hyperbench.md" },
+    { "HIF integration" = "user-guide/hif-integration.md" },
+    { "Models" = "user-guide/models.md" },
+    { "Training" = "user-guide/training.md" },
+    { "Benchmarking" = "user-guide/benchmarking.md" },
+    { "Loggers" = "user-guide/loggers.md" },
+    { "TensorBoard" = "user-guide/tensorboard.md" },
   ] },
   { "Development" = [
     { "Overview" = "development/development.md" },
