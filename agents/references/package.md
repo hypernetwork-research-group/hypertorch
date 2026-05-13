@@ -18,36 +18,36 @@ HyperBench uses a “flat” package layout: the `hyperbench/` package lives at 
 
 ## Project structure
 
-```
+```bash
 .
-├── .github # GitHub workflows and templates
-├── Makefile # convenience build/run targets
-├── agents # agent docs and references
+├── .github                 # GitHub workflows and templates
+├── Makefile                # convenience build/run targets
+├── agents                  # agent docs and references
 │   ├── SKILLS.md
 │   └── references
-├── configs # project configuration files
-├── docs # documentation sources and site output
-├── examples # runnable examples and demos
-│   ├── early_stopping.py
+├── configs                 # project configuration files
+├── docs                    # documentation sources and site output
+├── examples                # runnable examples and demos
+│   ├── hgnn.py
 |   ├── ...
 │   └── villain.py
-├── hyperbench # core Python package
-│   ├── data # datasets, loaders, and sampling
-│   ├── hlp # HLP task helpers and pipelines
-│   ├── models # model implementations
-│   ├── nn # neural network building blocks
-│   ├── tests # test utilities
-│   ├── train # training loops and loggers
-│   ├── types # shared type definitions
-│   └── utils # reusable helpers
-├── hyperbench_logs # local experiment outputs
+├── hyperbench              # core Python package
+│   ├── data                # datasets, loaders, and sampling
+│   ├── hlp                 # HLP task helpers and pipelines
+│   ├── models              # model implementations
+│   ├── nn                  # neural network building blocks
+│   ├── tests               # test utilities
+│   ├── train               # training loops and loggers
+│   ├── types               # shared type definitions
+│   └── utils               # reusable helpers
+├── hyperbench_logs         # local experiment outputs
 │   └── experiment_0
 │       ├── common_neighbors
 │       ├── comparison
 │       └── mlp
-├── pyproject.toml # package metadata and dependencies
-├── uv.lock # pinned dependency lockfile
-└── zensical.toml # zensical config for docs
+├── pyproject.toml          # package metadata and dependencies
+├── uv.lock                 # pinned dependency lockfile
+└── zensical.toml           # zensical config for docs
 ```
 
 ## Project metadata

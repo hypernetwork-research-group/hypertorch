@@ -57,6 +57,7 @@ The core development team includes:
 
 <img src="../assets/logo_unisa.png" alt="University of Salerno" width="200" />
 
+<!-- TODO logo -->
 ## License
 
 This project is under the MIT license. See [LICENSE](https://github.com/hypernetwork-research-group/hyperbench/blob/main/LICENSE).
