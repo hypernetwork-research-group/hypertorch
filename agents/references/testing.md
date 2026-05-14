@@ -91,34 +91,41 @@ import pytest
 
 # Parametrize test function
 @pytest.mark.parametrize(
-    "input,expected",
+    ("value", "expected"),
     [
-        (2, 4),
-        (3, 9),
-        (4, 16),
-        (-2, 4),
-    ]
+        pytest.param(2, 4, id="2^2"),
+        pytest.param(3, 9, id="3^2"),
+        pytest.param(4, 16, id="4^2"),
+        pytest.param(-2, 4, id="-2^2"),
+    ],
 )
-def test_square(input: int, expected: int) -> None:
-    assert square(input) == expected
+def test_square(value: int, expected: int) -> None:
+    assert square(value) == expected
 
-# Multiple parameters
-@pytest.mark.parametrize("base", [2, 10])
-@pytest.mark.parametrize("exponent", [0, 1, 2])
-def test_power(base: int, exponent: int) -> None:
-    result = base ** exponent
-    assert result >= 0
+# Multiple parameters (single table is usually clearer than stacked decorators)
+@pytest.mark.parametrize(
+    ("base", "exponent", "expected"),
+    [
+        pytest.param(2, 0, 1, id="2^0"),
+        pytest.param(2, 1, 2, id="2^1"),
+        pytest.param(2, 2, 4, id="2^2"),
+        pytest.param(10, 0, 1, id="10^0"),
+        pytest.param(10, 1, 10, id="10^1"),
+        pytest.param(10, 2, 100, id="10^2"),
+    ],
+)
+def test_power(base: int, exponent: int, expected: int) -> None:
+    assert base**exponent == expected
 
 # Parametrize with IDs
 @pytest.mark.parametrize(
-    "email,valid",
+    ("email", "valid"),
     [
-        ("user@example.com", True),
-        ("invalid", False),
-        ("@example.com", False),
-        ("user@", False),
+        pytest.param("user@example.com", True, id="valid"),
+        pytest.param("invalid", False, id="no_at"),
+        pytest.param("@example.com", False, id="no_user"),
+        pytest.param("user@", False, id="no_domain"),
     ],
-    ids=["valid", "no_at", "no_user", "no_domain"]
 )
 def test_email_validation(email: str, valid: bool) -> None:
     assert is_valid_email(email) == valid
