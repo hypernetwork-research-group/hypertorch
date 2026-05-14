@@ -10,13 +10,14 @@ all contribution guidelines when participating with hyperbench.
 ## Starting out
 
 If you are brand new to open-source development, we recommend searching
-the `GitHub "issues" tab <https://github.com/hypernetwork-research-group/hyperbench/issues>`_
+the [GitHub "issues" tab](https://github.com/hypernetwork-research-group/hyperbench/issues)
 to find issues that interest you and are available to work on. Issues available to work on are:
 
-* Issues without the label ``Needs Triage`` or ``Needs Discussion``. These issues require clarification and confirmation
+* Issues without the label `needs-discussion`. These issues require clarification and confirmation
   from a maintainer before proceeding.
 * Issues that have not been started by another contributor. Please check that another contributor has not commented their intent
   to work on the issue or already submitted an open pull request to address the issue before proceeding.
+* Issues that are labeled `good first issue` are often a good place to start, but they are not the only options. If you find an issue that interests you and is available to work on, feel free to jump in!
 
 Once you've found an interesting, available issue, leave a comment with your intention
 to start working on it. If somebody else has
@@ -30,42 +31,41 @@ leave a comment on an issue, so other people know it's available again.
 
 ### Version control, Git, and GitHub
 
-hyperbench is hosted on `GitHub <https://www.github.com/hypernetwork-research-group/hyperbench>`_, and to
-contribute, you will need to sign up for a `free GitHub account
-<https://github.com/signup/free>`_. We use `Git <https://git-scm.com/>`_ for
+hyperbench is hosted on [GitHub](https://www.github.com/hypernetwork-research-group/hyperbench), and to
+contribute, you will need to sign up for a [free GitHub account](https://github.com/signup/free). We use [Git](https://git-scm.com/) for
 version control to allow many people to work together on the project.
 
 If you are new to Git, you can reference some of these resources for learning Git. Feel free to reach out
-to the :ref:`contributor community <community>` for help if needed:
+to the [contributor community](../getting-started/package.md#community) for help if needed:
 
-* `Git documentation <https://git-scm.com/doc>`_.
+* [Git documentation](https://git-scm.com/doc).
 
 Also, the project follows a forking workflow further described on this page whereby
 contributors fork the repository, make changes and then create a pull request.
 So please be sure to read and follow all the instructions in this guide.
 
 If you are new to contributing to projects through forking on GitHub,
-take a look at the `GitHub documentation for contributing to projects <https://docs.github.com/en/get-started/quickstart/contributing-to-projects>`_.
+take a look at the [GitHub documentation for contributing to projects](https://docs.github.com/en/get-started/quickstart/contributing-to-projects).
 GitHub provides a quick tutorial using a test repository that may help you become more familiar
 with forking a repository, cloning a fork, creating a feature branch, pushing changes and
 making pull requests.
 
 Below are some useful resources for learning more about forking and pull requests on GitHub:
 
-* the `GitHub documentation for forking a repo <https://docs.github.com/en/get-started/quickstart/fork-a-repo>`_.
-* the `GitHub documentation for collaborating with pull requests <https://docs.github.com/en/pull-requests/collaborating-with-pull-requests>`_.
-* the `GitHub documentation for working with forks <https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks>`_.
+* the [GitHub documentation for forking a repo](https://docs.github.com/en/get-started/quickstart/fork-a-repo).
+* the [GitHub documentation for collaborating with pull requests](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests).
+* the [GitHub documentation for working with forks](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks).
 
 ### Getting started with Git
 
-`GitHub has instructions <https://docs.github.com/en/get-started/quickstart/set-up-git>`__ for installing git,
+[GitHub has instructions](https://docs.github.com/en/get-started/quickstart/set-up-git) for installing git,
 setting up your SSH key, and configuring git.  All these steps need to be completed before
 you can work seamlessly between your local repository and GitHub.
 
 ### Create a fork of hyperbench
 
 You will need your own copy of hyperbench (aka fork) to work on the code. Go to the `hyperbench project
-page <https://github.com/hypernetwork-research-group/hyperbench>`_ and hit the ``Fork`` button. Please uncheck the box to copy only the main branch before selecting ``Create Fork``.
+page <https://github.com/hypernetwork-research-group/hyperbench>` and hit the ``Fork`` button. Please uncheck the box to copy only the main branch before selecting ``Create Fork``.
 You will want to clone your fork to your machine
 
 ```bash
@@ -78,11 +78,6 @@ You will want to clone your fork to your machine
 This creates the directory ``hyperbench-yourname`` and connects your repository to
 the upstream (main project) *hyperbench* repository.
 
-> Notes
->
->    Performing a shallow clone (with ``--depth==N``, for some ``N`` greater
->    or equal to 1) might break some tests and features as ``pd.show_versions()``
->    as the version number cannot be computed anymore.
 
 ### Creating a feature branch
 
@@ -97,7 +92,7 @@ First ensure it's up-to-date with the main hyperbench repository.
 Then, create a feature branch for making your changes. For example
 
 ```bash
-    git checkout -b shiny-new-feature
+    git checkout -b feat/shiny-new-feature
 ```
 
 This changes your working branch from ``main`` to the ``shiny-new-feature`` branch.  Keep any
@@ -107,12 +102,12 @@ and switch in between them using the ``git checkout`` command.
 
 When you want to update the feature branch with changes in main after
 you created the branch, check the section on
-:ref:`updating a PR <contributing.update-pr>`.
+[updating a PR](#updating-your-pull-request).
 
 
 ### Making code changes
 
-Before modifying any code, ensure you follow the :ref:`contributing environment <contributing_environment>`
+Before modifying any code, ensure you follow the [contributing environment](development.md#creating-a-development-environment)
 guidelines to set up an appropriate development environment.
 
 Then once you have made code changes, you can see all the changes you've currently made by running.
@@ -146,10 +141,10 @@ message
 ### Pushing your changes
 
 When you want your changes to appear publicly on your GitHub page, push your
-forked feature branch's commits
+forked feature branch's commits while adhering to the repository's commit message guidelines (see [contributing guidelines](development.md#contributing-to-the-code-base)).
 
 ```bash
-    git push origin shiny-new-feature
+    git push origin feat/shiny-new-feature
 ```
 
 Here ``origin`` is the default name given to your remote repository on GitHub.
@@ -174,7 +169,7 @@ happen, a pull request needs to be submitted on GitHub.
 ### Making a pull request
 
 Once you have finished your code changes, your code change will need to follow the
-:ref:`hyperbench contribution guidelines <contributing_codebase>` to be successfully accepted.
+[hyperbench contribution guidelines](development.md#contributing-to-the-code-base) to be successfully accepted.
 
 If everything looks good, you are ready to make a pull request. A pull request is how
 code from your local repository becomes available to the GitHub community to review
@@ -210,7 +205,7 @@ the code.
 ### Updating your pull request
 
 Based on the review you get on your pull request, you will probably need to make
-some changes to the code. You can follow the :ref:`code committing steps <contributing.commit-code>`
+some changes to the code. You can follow the [code committing steps](#making-code-changes)
 again to address any feedback and update your pull request.
 
 It is also important that updates in the hyperbench ``main`` branch are reflected in your pull request.
@@ -240,22 +235,22 @@ git commit # to finish the merge.
 >
 >    If you have uncommitted changes at the moment you want to update the branch with
 >    ``main``, you will need to ``stash`` them prior to updating (see the
->    `stash docs <https://git-scm.com/book/en/v2/Git-Tools-Stashing-and-Cleaning>`__).
+>    [stash docs](https://git-scm.com/book/en/v2/Git-Tools-Stashing-and-Cleaning)).
 >    This will effectively store your changes and they can be reapplied after updating.
 
 After the feature branch has been updated locally, you can now update your pull
 request by pushing to the branch on GitHub:
 
 ```bash
-    git push origin shiny-new-feature
+    git push origin feat/shiny-new-feature
 ```
 
 Any ``git push`` will automatically update your pull request with your branch's changes
-and restart the :ref:`Continuous Integration <contributing.ci>` checks.
+and restart the [Continuous Integration](ci.md) checks.
 
 ### Tips for a successful pull request
 
-If you have made it to the `Making a pull request`_ phase, one of the core contributors may
+If you have made it to the `Making a pull request` phase, one of the core contributors may
 take a look. Please note however that a handful of people are responsible for reviewing
 all of the contributions, which can often lead to bottlenecks.
 
@@ -265,4 +260,4 @@ To improve the chances of your pull request being reviewed, you should:
 - **Ensure you have appropriate tests**. These should be the first part of any PR
 - **Keep your pull requests as simple as possible**. Larger PRs take longer to review
 - **Ensure that CI is in a green state**. Reviewers may not even look otherwise (See [CI documentation](../development/ci.md) for more info on CI checks).
-- **Keep** `Updating your pull request`_, either by request or every few days
+- **Keep** `Updating your pull request`, either by request or every few days
