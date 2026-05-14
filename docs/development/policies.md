@@ -17,4 +17,4 @@ If you hit install issues, ensure your `torch` / `torch-geometric` / `torch-clus
 
 If you believe you’ve found a security vulnerability, please **do not open a public issue**.
 
-- Follow the reporting instructions in [SECURITY.md](https://github.com/hypernetwork-research-group/hyperbench/blob/main/SECURITY.md)
+- Follow the reporting instructions in [SECURITY.md](https://github.com/hypernetwork-research-group/hyperbench/blob/main/SECURITY.md).

@@ -1,6 +1,6 @@
 # Loggers
 
-HyperBench uses Lightning loggers and adds a few convenience loggers to make benchmarking easier.
+HyperBench has a few convenient loggers to make benchmarking easier.
 
 ## Default logging behavior
 

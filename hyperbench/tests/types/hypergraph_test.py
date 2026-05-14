@@ -752,7 +752,7 @@ def test_reduce_to_graph_removes_selfloops():
     # Either zero or one edge remains, the reason why one edge may remain is that
     # after removing self-loops, there could be multiple hyperedges projecting to
     # the same graph edge, which would be kept as a single edge
-    # Examples: hyperedges [[0,1,1],[0,0,2]] both project to graph edge [0,2]
+    # Example: hyperedges [[0,1,1],[0,0,2]] both project to graph edge [0,2]
     assert edge_index.shape[1] <= 1
     assert edge_weights is None
 
@@ -1246,7 +1246,7 @@ def test_get_sparse_symnormalized_node_degree_matrix_is_expected_diagonal():
         num_nodes=3,
     )
 
-    # Examples: node degrees: [2,1,1]
+    # Example: node degrees: [2,1,1]
     #          -> inv sqrt: [1/sqrt(2),1,1]
     expected_diagonal = torch.tensor([1 / torch.sqrt(torch.tensor(2.0)), 1.0, 1.0])
 
@@ -1349,7 +1349,7 @@ def test_get_sparse_normalized_hyperedge_degree_matrix_is_expected_diagonal():
         num_hyperedges=2,
     )
 
-    # Examples: hyperedge degrees: [2, 2]
+    # Example: hyperedge degrees: [2, 2]
     #          -> inv: [0.5, 0.5]
     expected_diagonal = torch.diag(torch.tensor([0.5, 0.5]))
 

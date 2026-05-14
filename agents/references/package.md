@@ -36,7 +36,7 @@ HyperBench uses a “flat” package layout: the `hyperbench/` package lives at 
 │   ├── hlp                 # HLP task helpers and pipelines
 │   ├── models              # model implementations
 │   ├── nn                  # neural network building blocks
-│   ├── tests               # test utilities
+│   ├── tests               # unit tests
 │   ├── train               # training loops and loggers
 │   ├── types               # shared type definitions
 │   └── utils               # reusable helpers
@@ -64,7 +64,7 @@ Look at [pyproject.toml](../../pyproject.toml) for the actual dependencies, opti
 
 If you need a one-off command without Makefile sugar, prefer `uv run ...` (example: `uv run ruff check`).
 
-## Docs
+## Documentation
 
 - Build: `make docs-build`
 - Serve: `make docs-serve` (defaults to `127.0.0.1:8000`)

@@ -22,17 +22,17 @@ Preferred: open a **private** GitHub Security Advisory:
 
 - https://github.com/hypernetwork-research-group/hyperbench/security/advisories/new
 
-If you cannot use GitHub Security Advisories, contact the maintainers privately (add a contact method here if you want one, e.g., a security email).
+If you cannot use GitHub Security Advisories, contact the maintainers privately (you can find the project team contacts in [pyproject.toml](pyproject.toml)).
 
 ### What to include
 
 To help us triage quickly, include:
 
-- A clear description of the issue and the potential impact
-- Steps to reproduce (ideally a minimal PoC)
-- Affected versions/commit SHA(s)
-- Your environment (OS, Python version, install method)
-- Any relevant logs, stack traces, or screenshots
+- A clear description of the issue and the potential impact.
+- Steps to reproduce (ideally a minimal PoC).
+- Affected versions/commit SHA(s).
+- Your environment (OS, Python version, install method).
+- Any relevant logs, stack traces, or screenshots.
 
 ## Disclosure process
 
@@ -42,17 +42,17 @@ This repo follows coordinated disclosure, but timelines can vary depending on ma
 
 In scope:
 
-- The `hyperbench` Python package and repository code
-- Documentation build tooling in this repo (if it can impact users)
+- The `hyperbench` Python package and repository code.
+- Documentation build tooling in this repo (if it can impact users).
 
 Out of scope:
 
 - Vulnerabilities in upstream dependencies (e.g., PyTorch, PyG, NumPy). Please report those to the upstream project.
-- Vulnerabilities requiring a fully compromised environment (unless there is an additional HyperBench-specific escalation)
+- Vulnerabilities requiring a fully compromised environment (unless there is an additional HyperBench-specific escalation).
 
 ## Security updates
 
 When a fix is available, we will typically communicate via one or more of:
 
-- A GitHub Security Advisory
-- GitHub releases / release notes (if the project is releasing versions)
+- A GitHub Security Advisory.
+- GitHub releases / release notes (if the project is releasing versions).

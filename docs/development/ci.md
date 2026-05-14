@@ -39,8 +39,27 @@ Check [Troubleshooting](../development/ci.md#troubleshooting) for common failure
 	make lint
 	```
 
+- If you want to fix lint error, you can try:
+
+	```bash
+	make lint-fix
+	```
+
+- If you have any issue with type checking, run:
+
+	```bash
+	make typecheck
+	```
+
+
 - If a CI failure is in tests, run:
 
 	```bash
 	make test
+	```
+
+- If you want to run a specific test file or folder, run:
+
+	```bash
+	make stest T=<path>
 	```

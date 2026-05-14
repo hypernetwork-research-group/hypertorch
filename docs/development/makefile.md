@@ -131,7 +131,7 @@ You can always run `make help` to see the latest list.
 	uv run python3 <file.py>
 	```
 
-### Docs (split targets)
+### Documentation
 
 - `make docs-build` — Build documentation without serving
 

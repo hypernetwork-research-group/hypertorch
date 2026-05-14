@@ -26,6 +26,8 @@ keywords:
   - benchmarking
   - machine-learning
   - python
+  - hypergraph-learning
+  - hyperlink-prediction
 
 preferred-citation:
   type: software

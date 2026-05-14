@@ -1,24 +1,29 @@
 # Models
 
-HyperBench provides **HLP (Hypergraph Link Prediction)** modules built on Lightning.
-
+HyperBench provides ready-to-use built-in models inspired by the existing literature.
 At a high level:
 
-- `hyperbench.hlp.*` contains ready-to-train Lightning modules (recommended starting point).
-- `hyperbench.models.*` contains lower-level building blocks (encoders/decoders).
+- `hyperbench.hlp.*` contains ready-to-train hyperlink prediction (HLP) modules (recommended starting point).
+
+- `hyperbench.models.*` contains actual models like Node2Vec, GCN, etc.
+
 - `hyperbench.nn.*` contains layers, enrichers, aggregators, and losses.
 
 ## Built-in HLP modules
 
-Common options include:
+Supported models include:
 
-- `MLPHlpModule`
-- `GCNHlpModule`
-- `HGNNHlpModule`, `HGNNPHlpModule`, `HNHNHlpModule`, `HyperGCNHlpModule`
-- `NHPHlpModule`
-- `Node2VecGCNHlpModule`, `Node2VecSLPHlpModule`
-- `CommonNeighborsHlpModule` (non-trainable baseline)
-- `VilLainHlpModule`
+- `MLP`
+- `GCN`
+- `HGNN`
+- `HGNNP`
+- `HNHN`
+- `HyperGCN`
+- `NHP`
+- `Node2VecGCN`
+- `Node2VecSLP`
+- `CommonNeighbors` (non-trainable baseline)
+- `VilLain`
 
 ## Minimal example: an MLP baseline
 

@@ -1,7 +1,7 @@
 # Installation
 
 
-## Install with uv
+## Install with pip or uv
 
 For users working with the pip package manager, hyperbench can be installed from PyPI.
 
@@ -47,11 +47,11 @@ Hyperbench has the following required dependencies:
 | torch-geometric | 2.7.0 |  |
 | zstandard | 0.25.0 |  |
 
-## Optional dependencies (extras)
+## Optional dependencies
 
-| Extra | Dependency | Version | Notes |
-| --- | --- | --- | --- |
-| tensorboard | tensorboard | 2.20.0 | See [TensorBoard Integration](../development/development.md#tensorboard-support) |
+| Dependency | Version | Notes |
+| --- | --- | --- |
+| tensorboard | 2.20.0 | See [TensorBoard Integration](../development/development.md#tensorboard-support) |
 
 ## Development dependencies
 

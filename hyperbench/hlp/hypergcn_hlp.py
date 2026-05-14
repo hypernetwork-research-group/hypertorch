@@ -123,7 +123,7 @@ class HyperGCNHlpModule(HlpModule):
             raise ValueError("Encoder is not defined for this HLP module.")
 
         # Encode: HyperGCN applies Laplacian-based message passing
-        # Examples: x: (num_nodes, in_channels)
+        # Example: x: (num_nodes, in_channels)
         #          -> node_embeddings: (num_nodes, out_channels)
         node_embeddings: Tensor = self.encoder(x, hyperedge_index)
 

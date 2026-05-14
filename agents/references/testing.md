@@ -8,8 +8,6 @@
     - `make stest T=<test_file_or_path>` (single test or folder)
 - If you need a one-off command, prefer `uv run pytest`.
 
-## Generic reference (not HyperBench-specific)
-
 ## Basic pytest structure
 
 ```python
@@ -28,20 +26,9 @@ def test_user_validation() -> None:
     with pytest.raises(ValueError, match="Invalid email"):
         User(id=1, name="Alice", email="invalid")
 
-# Test class for grouping
-class TestUserService:
-    def test_find_user(self) -> None:
-        service = UserService()
-        user = service.find(1)
-        assert user is not None
-
-    def test_create_user(self) -> None:
-        service = UserService()
-        user = service.create(name="Bob", email="bob@example.com")
-        assert user.id > 0
 ```
 
-## Fixtures for setup/teardown
+## Fixtures for setup/teardown and shared mocks
 
 ```python
 # conftest.py - shared fixtures
@@ -295,26 +282,18 @@ def test_integration() -> None:
 
 ```python
 # Run with coverage
-# pytest --cov=myapp --cov-report=html --cov-report=term
-
-# conftest.py - coverage configuration
-def pytest_configure(config):
-    config.addinivalue_line(
-        "markers", "unit: mark test as unit test"
-    )
+# uv run pytest --cov --cov-branch --cov-report=xml
 
 # pytest.ini or pyproject.toml
 """
 [tool.pytest.ini_options]
-minversion = "7.0"
 addopts = [
-    "--cov=myapp",
-    "--cov-report=term-missing",
-    "--cov-fail-under=90",
-    "-ra",
+    "--color=yes",
+    "--verbose",
+    "--tb=short",
     "--strict-markers",
 ]
-testpaths = ["tests"]
+testpaths = ["hyperbench/tests"]
 """
 ```
 
@@ -357,58 +336,4 @@ def users(draw) -> User:
 def test_user_creation(user: User) -> None:
     assert user.age >= 18
     assert len(user.name) > 0
-```
-
-## Test Organization
-
-```python
-# tests/
-#   conftest.py          - Shared fixtures
-#   test_user.py         - User tests
-#   test_api.py          - API tests
-#   integration/
-#     test_workflow.py   - Integration tests
-#   unit/
-#     test_models.py     - Unit tests
-
-# Fixture factory pattern
-@pytest.fixture
-def user_factory(db_session: Session):
-    created_users: list[User] = []
-
-    def _create_user(
-        name: str = "Test User",
-        email: str | None = None,
-        **kwargs
-    ) -> User:
-        if email is None:
-            email = f"{name.lower().replace(' ', '.')}@example.com"
-
-        user = User(name=name, email=email, **kwargs)
-        db_session.add(user)
-        db_session.commit()
-        created_users.append(user)
-        return user
-
-    yield _create_user
-
-    # Cleanup
-    for user in created_users:
-        db_session.delete(user)
-    db_session.commit()
-```
-
-## Snapshot Testing
-
-```python
-import pytest
-from syrupy.assertion import SnapshotAssertion
-
-def test_api_response(snapshot: SnapshotAssertion) -> None:
-    response = api.get_user(1)
-    assert response == snapshot
-
-def test_rendered_template(snapshot: SnapshotAssertion) -> None:
-    html = render_template("user.html", user=get_user(1))
-    assert html == snapshot
 ```

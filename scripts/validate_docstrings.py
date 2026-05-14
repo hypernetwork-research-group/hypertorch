@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import logging
+import griffe
+
 from dataclasses import dataclass
 from pathlib import Path
 from collections.abc import Iterable, Sequence
-
-import griffe
 
 
 DOCSTRING_STYLE = "google"
@@ -49,12 +49,6 @@ def iter_docstrings(obj: griffe.Object) -> Iterable[griffe.Docstring]:
             yield from walk(member)
 
     yield from walk(obj)
-
-
-def _ensure_object(root: griffe.Object | griffe.Alias) -> griffe.Object:
-    if isinstance(root, griffe.Alias):
-        return root.final_target
-    return root
 
 
 def validate_docstrings(
@@ -111,6 +105,12 @@ def main() -> int:
     issues = validate_docstrings()
     print(format_issues(issues))
     return 1 if issues else 0
+
+
+def _ensure_object(root: griffe.Object | griffe.Alias) -> griffe.Object:
+    if isinstance(root, griffe.Alias):
+        return root.final_target
+    return root
 
 
 if __name__ == "__main__":

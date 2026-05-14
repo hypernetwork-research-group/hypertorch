@@ -1,6 +1,6 @@
 # HIF integration
 
-HyperBench uses **HIF (Hypergraph Interchange Format)** to represent hypergraphs.
+HyperBench uses [**HIF (Hypergraph Interchange Format)**](https://github.com/HIF-org/HIF-standard) to represent hypergraphs.
 
 Supported inputs:
 
@@ -15,7 +15,7 @@ Many datasets are available as built-ins (downloaded and cached automatically):
 from hyperbench.data import AlgebraDataset, SamplingStrategy
 
 dataset = AlgebraDataset(sampling_strategy=SamplingStrategy.HYPEREDGE)
-print(dataset.hdata)
+print(dataset.stats())
 ```
 
 ## Load a dataset from a local file
@@ -24,7 +24,7 @@ print(dataset.hdata)
 from hyperbench.data import Dataset
 
 dataset = Dataset.from_path("path/to/hypergraph.json.zst")
-print(dataset.hdata)
+print(dataset.stats())
 ```
 
 ## Load a dataset from a URL
@@ -33,7 +33,7 @@ print(dataset.hdata)
 from hyperbench.data import Dataset
 
 dataset = Dataset.from_url("https://example.com/hypergraph.json.zst")
-print(dataset.hdata)
+print(dataset.stats())
 ```
 
 ## Validate HIF files
@@ -49,11 +49,7 @@ print(is_valid)
 
 ## How HIF maps into HyperBench
 
-When loaded, HIF data is processed into an `HData` object with tensors such as:
-
-- `x`: node features (auto-generated if missing)
-- `hyperedge_index`: incidence list with shape `(2, num_incidences)`
-- optional `hyperedge_attr` and `hyperedge_weights`
+When loaded, HIF data is processed into an `HData` object (see [HData API reference](../api/types.md#hyperbench.types.HData) for details).
 
 ## Next steps
 

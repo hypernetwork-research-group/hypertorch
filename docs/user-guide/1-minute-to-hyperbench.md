@@ -16,7 +16,7 @@ make setup
 make run examples/gcn.py
 ```
 
-Other good starting points are localte in `examples/` (e.g. `hgnn.py`, `villain.py`).
+Other good starting points are located in `examples/` (e.g. `hgnn.py`, `villain.py`).
 
 
 ## What happens when you run an example

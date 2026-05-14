@@ -96,7 +96,7 @@ This will ensure that your code adheres to the project's coding standards before
 ## Contributing to the documentation
 
 
-The hyperbench documentation constist of two parts: the docstrings in the code itself and the docs in the folder doc/.
+The hyperbench documentation constists of two parts: the docstrings in the code itself and the docs in the folder doc/.
 
 The docstrings provide a clear explanation of the usage of the individual functions, while the documentation in this folder consists of tutorial-like overviews per topic together with some other information (what’s new, installation, etc).
 

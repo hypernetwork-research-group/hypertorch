@@ -2,8 +2,8 @@
 
 Benchmarking in HyperBench typically means:
 
-- running multiple models on the same dataset split,
-- using the same negative sampling and feature enrichment,
+- running multiple models on the same dataset split.
+- using the same negative sampling and feature enrichment.
 - producing comparable metrics and summary tables.
 
 ## Comparing multiple models

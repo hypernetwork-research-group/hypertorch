@@ -147,7 +147,7 @@ make docs
 
 ### Docstring conventions
 References:
-- [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings)
+- [Google Python style guidelines](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings)
 - [Zensical docs conventions](https://zensical.org/docs/get-started/)
 
 - Use Google-style docstrings with sections like `Args:`, `Returns:`, and `Examples:`.

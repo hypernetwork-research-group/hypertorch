@@ -1,11 +1,6 @@
-# Package structure
-
-Hyperbench organization.
-
 ## Package structures
 
 Hyperbench is organized as a Python package with the following structure:
-<!-- todo: check other type file -> format # -->
 ```bash
 .
 ├── .github                 # GitHub workflows and templates
@@ -24,7 +19,7 @@ Hyperbench is organized as a Python package with the following structure:
 │   ├── hlp                 # HLP task helpers and pipelines
 │   ├── models              # model implementations
 │   ├── nn                  # neural network building blocks
-│   ├── tests               # test utilities
+│   ├── tests               # unit tests
 │   ├── train               # training loops and loggers
 │   ├── types               # shared type definitions
 │   └── utils               # reusable helpers
@@ -39,7 +34,7 @@ Hyperbench is organized as a Python package with the following structure:
 ```
 
 ## Getting support
-If you need help with using hyperbench, please check out the following resources:
+If you need help with using Hyperbench, please check out the following resources:
 
 - [GitHub Discussions](https://www.github.com/hypernetwork-research-group/hyperbench/discussions): ask questions, share ideas, and connect with the community.
 - [GitHub Issues](https://www.github.com/hypernetwork-research-group/hyperbench/issues): report bugs or request features (please check existing issues first).
@@ -62,7 +57,6 @@ The core development team includes:
 
 <img src="../assets/logo_unisa.png" alt="University of Salerno" width="200" />
 
-<!-- TODO logo -->
 ## License
 
-MIT license. See [LICENSE](https://github.com/hypernetwork-research-group/hyperbench/blob/main/LICENSE)
+This project is under the MIT license. See [LICENSE](https://github.com/hypernetwork-research-group/hyperbench/blob/main/LICENSE)
