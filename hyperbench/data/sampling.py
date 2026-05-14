@@ -78,12 +78,12 @@ class BaseSampler(ABC):
         hyperedge_ids = hyperedge_index[1]
 
         # Find incidences where the hyperedge is in our sampled hyperedges
-        # Examples: hyperedge_ids = [0, 0, 0, 1, 2, 2], sampled_hyperedge_ids = [0, 2]
+        # Example: hyperedge_ids = [0, 0, 0, 1, 2, 2], sampled_hyperedge_ids = [0, 2]
         #          -> sampled_hyperedges_mask = [True, True, True, False, True, True]
         sampled_hyperedges_mask = torch.isin(hyperedge_ids, sampled_hyperedge_ids)
 
         # Keep all incidences belonging to the sampled hyperedges
-        # Examples: hyperedge_index = [[0, 0, 1, 2, 3, 4],
+        # Example: hyperedge_index = [[0, 0, 1, 2, 3, 4],
         #                             [0, 0, 0, 1, 2, 2]],
         #          sampled_hyperedges_mask = [True, True, True, False, True, True]
         #          -> sampled_hyperedge_index = [[0, 0, 1, 3, 4],
@@ -141,7 +141,7 @@ class HyperedgeSampler(BaseSampler):
 
         sampled_hyperedge_ids = torch.tensor(ids, device=hyperedge_index.device)
 
-        # Examples: sampled_hyperedge_ids = [0, 2],
+        # Example: sampled_hyperedge_ids = [0, 2],
         #          hyperedge_index = [[0, 0, 1, 2, 3, 4],
         #                             [0, 0, 0, 1, 2, 2]],
         #          -> sampled_hyperedges_mask = [True, True, True, False, True, True]
@@ -202,16 +202,16 @@ class NodeSampler(BaseSampler):
         sampled_node_ids = torch.tensor(ids, device=node_ids.device)
 
         # Find incidences where the node is in our sampled nodes
-        # Examples: node_ids = [0, 0, 1, 2, 3, 4], sampled_node_ids = [0, 3]
+        # Example: node_ids = [0, 0, 1, 2, 3, 4], sampled_node_ids = [0, 3]
         #          -> sampled_nodes_mask = [True, True, False, False, True, False]
         sampled_nodes_mask = torch.isin(node_ids, sampled_node_ids)
 
         # Get unique hyperedges that have at least one sampled node
-        # Examples: hyperedge_ids = [0, 0, 0, 1, 2, 2], sampled_nodes_mask = [True, True, False, False, True, False]
+        # Example: hyperedge_ids = [0, 0, 0, 1, 2, 2], sampled_nodes_mask = [True, True, False, False, True, False]
         #          -> sampled_hyperedge_ids = [0, 2] as they connect to sampled nodes
         sampled_hyperedge_ids = hyperedge_ids[sampled_nodes_mask].unique()
 
-        # Examples: sampled_hyperedge_ids = [0, 2],
+        # Example: sampled_hyperedge_ids = [0, 2],
         #          hyperedge_index = [[0, 0, 1, 2, 3, 4],
         #                             [0, 0, 0, 1, 2, 2]],
         #          -> sampled_hyperedges_mask = [True, True, True, False, True, True]

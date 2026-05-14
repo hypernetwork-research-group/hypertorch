@@ -6,8 +6,6 @@
 - Prefer builtin generics (`list[str]`, `dict[str, int]`) and `X | None` unions.
 - HyperBench uses `ty` for type checking via `make check`.
 
-## Generic reference (language-level)
-
 ## Basic type annotations
 
 ```python

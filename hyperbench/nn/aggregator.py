@@ -34,6 +34,18 @@ class HyperedgeAggregator:
         """
         Aggregate node embeddings for each hyperedge.
 
+        ``hyperedge_index`` is the COO encoding of the nonzero entries of ``H``,
+        so ``hyperedge_index[0, k] = v`` and ``hyperedge_index[1, k] = e`` means ``H[v, e] = 1`` for incidence ``k``.
+
+        Let ``H`` be the binary incidence matrix of shape ``(num_nodes, num_hyperedges)``
+        and let ``X`` be the node embedding matrix of shape ``(num_nodes, num_channels)``.
+        This method pools node features into hyperedge features using the incidence pattern in ``H``:
+        - ``aggregation="sum"`` computes the equivalent of the standard sparse matrix product ``H^T X``.
+        - ``aggregation="mean"`` computes ``D_e^{-1} H^T X``, where ``D_e[e, e] = sum_v H[v, e]`` is the hyperedge cardinality matrix.
+        - ``aggregation in {"max", "min", "mul"}`` uses the same sparsity pattern as ``H^T X``,
+          but replaces the summation over incident nodes with a channel-wise ``max``, ``min``, or product reduction.
+        - ``aggregation="maxmin"`` computes the channel-wise range ``max - min`` for each hyperedge.
+
         Examples:
             >>> hyperedge_index = [[0, 1, 2, 2, 3],
             ...                    [0, 0, 0, 1, 1]]
@@ -55,7 +67,7 @@ class HyperedgeAggregator:
         """
         # Gather the embeddings for each incidence.
         # A node appearing in multiple hyperedges is repeated, once per incidence.
-        # Examples: node_embeddings = [[1, 10],  # node 0
+        # Example: node_embeddings = [[1, 10],  # node 0
         #                             [2, 20],  # node 1
         #                             [3, 30],  # node 2
         #                             [4, 40]]  # node 3
@@ -69,7 +81,7 @@ class HyperedgeAggregator:
         incidence_node_embeddings = self.node_embeddings[self.hyperedge_index_wrapper.all_node_ids]
 
         # Scatter-aggregate node embeddings into hyperedge embeddings.
-        # Examples: with aggregation="sum":
+        # Example: with aggregation="sum":
         #          [[1+2+3, 10+20+30],  # hyperedge 0 contains node 0, 1, 2
         #          [3+4, 30+40]]        # hyperedge 1 contains node 2, 3
         #          shape: (num_hyperedges, num_channels)
@@ -127,6 +139,17 @@ class NodeAggregator:
         """
         Aggregate hyperedge embeddings for each node.
 
+        ``hyperedge_index`` is the COO encoding of the nonzero entries of ``H``,
+        so ``hyperedge_index[0, k] = v`` and ``hyperedge_index[1, k] = e`` means ``H[v, e] = 1`` for incidence ``k``.
+
+        Let ``H`` be the incidence matrix of shape ``(num_nodes, num_hyperedges)``
+        and let ``E`` be the hyperedge embedding matrix of shape ``(num_hyperedges, num_channels)``.
+        This method pools hyperedge features into node features using the incidence pattern in ``H``:
+        - ``aggregation="sum"`` computes the equivalent of the standard sparse matrix product ``H E``.
+        - ``aggregation="mean"`` computes ``D_v^{-1} H E``, where ``D_v[v, v] = sum_e H[v, e]`` is the node degree matrix.
+        - ``aggregation in {"max", "min", "mul"}`` uses the same sparsity pattern as ``H E``,
+          but replaces the summation over incident hyperedges with a channel-wise ``max``, ``min``, or product reduction.
+
         Examples:
             >>> hyperedge_index = [[0, 1, 1, 2],
             ...                    [0, 0, 1, 1]]
@@ -146,7 +169,7 @@ class NodeAggregator:
         """
         # Gather the embeddings for each incidence.
         # A hyperedge appearing in multiple node incidences is repeated, once per incidence.
-        # Examples: hyperedge_embeddings = [[10, 100],  # hyperedge 0
+        # Example: hyperedge_embeddings = [[10, 100],  # hyperedge 0
         #                                  [20, 200]]  # hyperedge 1
         #          -> all_hyperedge_ids = [0, 0, 1, 1]
         #          -> incidence_hyperedge_embeddings = [[10, 100],   # hyperedge 0 for node 0
@@ -170,7 +193,7 @@ class NodeAggregator:
             )
 
         # Scatter-aggregate hyperedge embeddings into node embeddings.
-        # Examples: with aggregation="sum":
+        # Example: with aggregation="sum":
         #          [[10, 100],         # node 0 belongs to hyperedge 0
         #           [10+20, 100+200],  # node 1 belongs to hyperedge 0 and 1
         #           [20, 200]]         # node 2 belongs to hyperedge 1

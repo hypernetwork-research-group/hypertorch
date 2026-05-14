@@ -81,13 +81,13 @@ class NHP(nn.Module):
         if hyperedge_index.numel() == 0:
             return x.new_empty((0,))
 
-        # Examples: hyperedge_index = [[0, 1, 1, 2, 3],  == node_ids
+        # Example: hyperedge_index = [[0, 1, 1, 2, 3],  == node_ids
         #                             [0, 0, 1, 1, 1]]  == hyperedge_ids
         node_ids = hyperedge_index[0]
         hyperedge_ids = hyperedge_index[1]
 
         # Gather the node features for each incidence
-        # Examples: x = [[1, 0],  # node 0
+        # Example: x = [[1, 0],  # node 0
         #               [0, 1],  # node 1
         #               [1, 1],  # node 2
         #               [1, 0]]  # node 3
@@ -102,7 +102,7 @@ class NHP(nn.Module):
 
         # Do one local message-passing step to sum original node features per hyperedge to get hyperedge features.
         # that are aware of all nodes in the candidate hyperedge.
-        # Examples: hyperedge 0 contains nodes (0, 1)    -> [1, 0] + [0, 1] = [1, 1]
+        # Example: hyperedge 0 contains nodes (0, 1)    -> [1, 0] + [0, 1] = [1, 1]
         #          hyperedge 1 contains nodes (1, 2, 3) -> [0, 1] + [1, 1] + [1, 0] = [2, 2]
         #          -> hyperedge_features = [[1, 1],  # sum for hyperedge 0
         #                                   [2, 2]]  # sum for hyperedge 1
@@ -115,7 +115,7 @@ class NHP(nn.Module):
         # Broadcast hyperedge features back to each of their incidences,
         # and remove the current node feature to give to each incidence
         # the features of its neighboring nodes in the candidate hyperedge.
-        # Examples: hyperedge_features = [[1, 1],  # sum for hyperedge 0
+        # Example: hyperedge_features = [[1, 1],  # sum for hyperedge 0
         #                                [2, 2]]  # sum for hyperedge 1
         #                               shape (num_hyperedges, in_channels),
         #          hyperedge_ids = [0, 0, 1, 1, 1],
@@ -156,7 +156,7 @@ class NHP(nn.Module):
         # Treat each incidence embedding as a separately aggregatable set of features.
         # This is required because incidence embeddings are not global node embeddings:
         # node 1 may appear twice with two different embeddings as it participates in two different candidate hyperedges.
-        # Examples: incidence_ids = [0, 1, 2, 3, 4],
+        # Example: incidence_ids = [0, 1, 2, 3, 4],
         #          hyperedge_ids = [0, 0, 1, 1, 1]
         #          -> incidence_hyperedge_index = [[0, 1, 2, 3, 4],
         #                                          [0, 0, 1, 1, 1]]
@@ -164,7 +164,7 @@ class NHP(nn.Module):
         incidence_ids = torch.arange(num_incidences, device=hyperedge_index.device)
         incidence_hyperedge_index = torch.stack([incidence_ids, hyperedge_ids], dim=0)
 
-        # Examples: incidence_embeddings = [[1, 2],  # features 0, node 0 in hyperedge 0
+        # Example: incidence_embeddings = [[1, 2],  # features 0, node 0 in hyperedge 0
         #                                  [3, 4],  # features 1, node 1 in hyperedge 0
         #                                  [5, 6],  # features 2, node 1 in hyperedge 1
         #                                  [7, 8],  # features 3, node 2 in hyperedge 1

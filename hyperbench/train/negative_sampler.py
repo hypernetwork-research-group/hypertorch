@@ -428,7 +428,7 @@ class RandomNegativeSampler(SameNodeSpaceNegativeSampler):
 
             # Sample with multinomial without replacement to ensure unique node ids
             # and assign each node id equal probability of being selected by setting all of them to 1
-            # Examples: num_nodes_per_sample=3, max_node_id=5
+            # Example: num_nodes_per_sample=3, max_node_id=5
             #          -> possible output: [2, 0, 4]
             equal_probabilities = torch.ones(hdata.num_nodes, device=device)
             sampled_node_ids = torch.multinomial(
@@ -472,7 +472,7 @@ class RandomNegativeSampler(SameNodeSpaceNegativeSampler):
             )
             sampled_hyperedge_indexes.append(sampled_hyperedge_index)
 
-            # Examples: nodes = [0, 1, 2],
+            # Example: nodes = [0, 1, 2],
             #          sampled_node_ids_0 = [0, 1], sampled_node_ids_1 = [1, 2],
             #          -> sampled_negative_node_ids = {0, 1, 2}
             sampled_negative_node_ids.update(sampled_node_ids.tolist())

@@ -113,5 +113,11 @@ def main() -> int:
     return 1 if issues else 0
 
 
+def _ensure_object(root: griffe.Object | griffe.Alias) -> griffe.Object:
+    if isinstance(root, griffe.Alias):
+        return root.final_target
+    return root
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

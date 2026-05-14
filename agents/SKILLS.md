@@ -1,6 +1,6 @@
 ---
 name: hyperbench
-description: Use when contributing to HyperBench (a research-focused hypergraph learning benchmark toolkit). Generates small, reviewable changes and validates them with the repo tooling (uv + Makefile, ruff, ty, pytest, docs).
+description: HyperBench is a library for hypergraph learning and benchmarking. It provides a standardized workflow for loading hypergraph datasets, training models, evaluating them under comparable settings, and reporting results. The current release focuses on Hyperlink Prediction, with ready-to-run pipelines for established hypergraph baselines.
 license: MIT
 metadata:
   author: https://github.com/hypernetwork-research-group
@@ -20,10 +20,9 @@ Repo-specific guidance for making safe changes in HyperBench.
 
 ## When to use this skill
 
-- Editing or adding HyperBench Python code (models, loaders, training)
-- Fixing bugs with minimal API surface change
-- Adding/adjusting tests under `hyperbench/tests`
-- Updating docs under `docs/` (mkdocs + mkdocstrings)
+- Fixing bugs with minimal API surface change.
+- Adding/adjusting tests under `hyperbench/tests`.
+- Updating docs under `docs/` (mkdocs + mkdocstrings).
 
 ## Core workflow
 
@@ -34,7 +33,7 @@ Repo-specific guidance for making safe changes in HyperBench.
    - `make check` (lint/typecheck)
    - `make test` (full suite)
    - `make stest T=<path>` (single test)
-5. **Docs (if needed)** — Build/serve docs with `make docs-build` / `make docs-serve`.
+5. **Docs (always needed)** — Build/serve docs with `make docs-build` / `make docs-serve`.
 
 ## Tooling expectations
 

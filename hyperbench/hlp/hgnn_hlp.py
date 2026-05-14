@@ -125,7 +125,7 @@ class HGNNHlpModule(HlpModule):
             raise ValueError("Encoder is not defined for this HLP module.")
 
         # Encode: two-hop HGNN smoothing (nodes -> hyperedges -> nodes), no graph reduction
-        # Examples: x: (num_nodes, in_channels)
+        # Example: x: (num_nodes, in_channels)
         #          -> node_embeddings: (num_nodes, out_channels)
         node_embeddings: Tensor = self.encoder(x, hyperedge_index)
 

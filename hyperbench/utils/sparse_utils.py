@@ -41,20 +41,20 @@ def sparse_dropout(
 
     # Generate a binary mask matching the shape of values for elements to keep
     # 'torch.bernoulli()' samples 1 with probability keep_prob and 0 with probability dropout_prob
-    # Examples: values = [0.5, 1.2, 3.4], keep_prob = 0.8
+    # Example: values = [0.5, 1.2, 3.4], keep_prob = 0.8
     #          -> keep_mask might be [1, 0, 1], meaning we keep the 1st and 3rd elements, drop the 2nd
     keep_mask = torch.bernoulli(torch.full_like(values, keep_prob)).to(device)
 
     if fill_value == 0.0:
         # If fill_value is 0, just zero out the dropped elements,
         # as keep_mask will be 0 for dropped elements and 1 for kept elements
-        # Examples: values = [0.5, 1.2, 3.4], keep_mask = [1, 0, 1], fill_value = 0.0
+        # Example: values = [0.5, 1.2, 3.4], keep_mask = [1, 0, 1], fill_value = 0.0
         #          -> new_values = [0.5*1, 1.2*0, 3.4*1] = [0.5, 0.0, 3.4]
         new_values = values * keep_mask
     else:
         # If fill_value is non-zero, we must fill the dropped elements with the specified fill_value instead of zero
         # 'torch.logical_not(keep_mask)' identifies dropped elements where mask is 0 and
-        # Examples: values = [0.5, 1.2, 3.4], keep_mask = [1, 0, 1], fill_value = 9.9
+        # Example: values = [0.5, 1.2, 3.4], keep_mask = [1, 0, 1], fill_value = 9.9
         #          -> values_to_fill_mask = [0, 1, 0]
         #          -> fill_values = [0*9.9, 1*9.9, 0*9.9] = [0.0, 9.9, 0.0]
         #          -> new_values = [0.5*1 + 0.0, 1.2*0 + 9.9, 3.4*1 + 0.0] = [0.5, 9.9, 3.4]
