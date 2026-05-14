@@ -32,14 +32,9 @@ if __name__ == "__main__":
     if verbose:
         print(f"Dataset:\n {dataset.hdata}\n")
 
-    train_dataset, test_dataset = dataset.split(
-        ratios=[0.8, 0.2],
-        shuffle=True,
-        seed=42,
-        node_space_setting="transductive",
-    )
-    train_dataset, val_dataset = train_dataset.split(
-        ratios=[0.875, 0.125],
+    # Split dataset into train, val and test (70/10/20)
+    train_dataset, val_dataset, test_dataset = dataset.split(
+        ratios=[0.7, 0.1, 0.2],
         shuffle=True,
         seed=42,
         node_space_setting="transductive",
