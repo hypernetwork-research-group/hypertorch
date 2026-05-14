@@ -1,82 +1,85 @@
----
-name: hyperbench
-description: HyperBench is a library for hypergraph learning and benchmarking. It provides a standardized workflow for loading hypergraph datasets, training models, evaluating them under comparable settings, and reporting results. The current release focuses on Hyperlink Prediction, with ready-to-run pipelines for established hypergraph baselines.
-license: MIT
-metadata:
-  author: https://github.com/hypernetwork-research-group
-  version: "0.1.0"
-  domain: project
-  triggers: HyperBench, hypergraph, benchmarking, uv, make, ruff, ty, pytest, mkdocs, mkdocstrings
-  role: specialist
-  scope: implementation
-  output-format: code
----
+# AGENTS instructions
 
-# HyperBench
+## Naming
 
-Based on [Python-pro skill](https://github.com/Jeffallan/claude-skills/tree/main/skills/python-pro).
+Write hyperbench lowercase when in hyperbench core (writing functions or classes) and HyperBench when referring to the organization or project as a whole (e.g. "HyperBench is an open-source project for benchmarking hypergraph learning algorithms").
 
-Repo-specific guidance for making safe changes in HyperBench.
+## Environment Setup
 
-## When to use this skill
+- install `uv` and `make`
+- run `make` to set up the environment and install dependencies
 
-- Fixing bugs with minimal API surface change.
-- Adding/adjusting tests under `hyperbench/tests`.
-- Updating docs under `docs/` (mkdocs + mkdocstrings).
+## Commands
 
-## Core workflow
+- `make test` to run the full test suite
+- `make stest T=<test_file_or_path>` to run a specific test or folder
+- `uv run pytest` to run pytest directly (not recommended for regular use)
 
-1. **Orient** — Find the smallest relevant module(s) under `hyperbench/` and the matching tests.
-2. **Implement** — Keep changes scoped; preserve public APIs unless explicitly requested.
-3. **Test** — Add/adjust pytest coverage for behavior changes.
-4. **Validate** — Prefer repo targets:
-   - `make check` (lint/typecheck)
-   - `make test` (full suite)
-   - `make stest T=<path>` (single test)
-5. **Docs (always needed)** — Build/serve docs with `make docs-build` / `make docs-serve`.
+- `make lint` to run linters and formatters
+- `make typecheck` to run type checkers
+- `make docs` to build documentation
+- `make build` to build the package
+- `make clean` to clean up generated files
 
-## Tooling expectations
+- `make run T=<example_file>` to run a training script (e.g. `make run T=examples/gcn.py`)
 
-- Python requirement: `>=3.10`
-- Environment runner: `uv` (via `make` targets)
-- Linting/formatting: `ruff`
-- Type checking: `ty`
-- Tests: `pytest`
+## Repository Structure
 
-Docs deployment is handled by GitHub Actions in [.github/workflows/docs.yaml](.github/workflows/docs.yaml).
-If you need a one-off command, prefer `uv run ...` (e.g., `uv run pytest`).
+- `hyperbench/` - core codebase
+  - `data/` - data loading and processing utilities
+  - `hlp/` - hyperlink prediction modules
+  - `models/` - actual models like GCN, Node2Vec, etc.
+  - `nn/` - layers, enrichers, aggregators, and losses
+  - `train/` - training utilities and modules
+  - `tests/` - unit test
+  - `types/` - type definitions and type system utilities
+  - `utils/` - general utilities and helpers
+- `docs/` - documentation
+- `examples/` - example scripts for training and evaluation
+- `agents/` - agent code and references
+- `.github/` - GitHub configuration (workflows, issue templates, etc.)
+- `CONTRIBUTING.md` - contribution guidelines
+- `README.md` - project overview and quickstart guide
+- `Makefile` - commands for setup, testing, linting, etc.
+- `pyproject.toml` - package configuration and dependencies
 
-## Constraints
 
-### MUST DO
+## Architecture Boundaries
 
-- Use straightforward, explicit code and typing (prefer builtin generics like `list[str]`).
-- Keep changes reviewable; avoid drive-by refactors.
-- Add or update pytest tests for behavior changes.
-- Run the relevant `make` targets before considering work complete.
+## Security Model
 
-### MUST NOT DO
+## Shared libraries
 
-- Introduce new dependencies without a clear need.
-- Change public APIs silently.
-- Add non-deterministic tests (timing- or network-dependent).
+## Coding Standards
 
-## Reference guide
+## Testing Standards
 
-Load these when you need extra detail:
+## Conventions
 
-- Follow the repository's contributor guidance:
-  - [CONTRIBUTING.md](CONTRIBUTING.md)
-  - [docs/contributing.md](docs/contributing.md)
+Git remote, commits and PRs should follow the repository's contribution guidelines:
+  - CONTRIBUTING.md
+  - docs/contributing.md
 
-| Topic | Reference | Load When |
-|-------|-----------|-----------|
-| Packaging & tooling | `references/package.md` | `uv`, dependency groups, `pyproject.toml`, make targets |
-| Testing | `references/testing.md` | pytest patterns, fixtures, selecting/running tests |
-| Type system | `references/type-system.md` | typing patterns, Protocols, TypedDict, structural typing |
-| Standard library | `references/standard-lib.md` | pathlib, dataclasses, functools, itertools |
+## Creating Pull Requests
 
-## Additional links
-- Code: https://github.com/hypernetwork-research-group/hyperbench
-- Docs: https://hypernetwork-research-group.github.io/hyperbench/
-- Issues: https://github.com/hypernetwork-research-group/hyperbench/issues
+## Tracking issues for deferred work
+
+## GitHub messages drafted by agents
+
+## Boundaries
+
+- Ask first
+  - Large cross-package refactors.
+- New dependencies with broad impact.
+- Destructive data or migration changes.
+- Never
+  - Commit secrets, credentials, or tokens.
+  - Edit generated files by hand when a generation workflow exists.
+  - Use destructive git operations unless explicitly requested.
+
+## Specific agents references
+
+- docs/agents/references/testing.md
+- docs/agents/references/package.md
+- docs/agents/references/type-system.md
+- docs/agents/references/standard-lib.md
