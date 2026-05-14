@@ -6,7 +6,6 @@ HyperBench has a few convenient loggers to make benchmarking easier.
 
 When you create a `MultiModelTrainer` without specifying `logger=...`, HyperBench configures:
 
-- A Lightning `CSVLogger` per model.
 - A `MarkdownTableLogger` that writes a comparison table.
 - A `LaTexTableLogger` that writes a LaTeX comparison table.
 - A `TensorBoardLogger` (only if TensorBoard is installed).

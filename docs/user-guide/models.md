@@ -48,7 +48,7 @@ gcn_config: Node2VecGCNHlpConfig = {
     "graph_reduction_strategy": "clique_expansion",
 }
 
-precomputed_node2vecgcn_module = Node2VecGCNHlpModule(
+node2vecgcn = Node2VecGCNHlpModule(
         encoder_config={
             "mode": "precomputed",
             "num_features": num_features,

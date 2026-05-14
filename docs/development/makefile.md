@@ -36,7 +36,7 @@ You can always run `make help` to see the latest list.
 
 ### Setup
 
-- `make setup` — Install dependencies (via `uv`) and install HyperBench in editable mode
+- `make setup` : Install dependencies (via `uv`) and install HyperBench in editable mode
 
 	CLI:
 
@@ -45,7 +45,7 @@ You can always run `make help` to see the latest list.
 	uv pip install -e .
 	```
 
-- `make setup-tensorboard` — Install optional TensorBoard extra
+- `make setup-tensorboard` : Install optional TensorBoard extra
 
 	CLI:
 
@@ -55,7 +55,7 @@ You can always run `make help` to see the latest list.
 
 ### Lint / format / typecheck
 
-- `make lint` — Run the linter (`ruff check`)
+- `make lint` : Run the linter (`ruff check`)
 
 	CLI:
 
@@ -63,7 +63,7 @@ You can always run `make help` to see the latest list.
 	uv run ruff check
 	```
 
-- `make lint-fix` — Run the linter with auto-fix
+- `make lint-fix` : Run the linter with auto-fix
 
 	CLI:
 
@@ -71,7 +71,7 @@ You can always run `make help` to see the latest list.
 	uv run ruff check --fix
 	```
 
-- `make lint-rule R=<RULE>` — Lint a single Ruff rule
+- `make lint-rule R=<RULE>` : Lint a single Ruff rule
 
 	CLI:
 
@@ -79,7 +79,7 @@ You can always run `make help` to see the latest list.
 	uv run ruff check --select <RULE>
 	```
 
-- `make lint-rule-fix R=<RULE>` — Lint a single Ruff rule with auto-fix
+- `make lint-rule-fix R=<RULE>` : Lint a single Ruff rule with auto-fix
 
 	CLI:
 
@@ -87,7 +87,7 @@ You can always run `make help` to see the latest list.
 	uv run ruff check --select <RULE> --fix
 	```
 
-- `make format` — Run the formatter (`ruff format`)
+- `make format` : Run the formatter (`ruff format`)
 
 	CLI:
 
@@ -95,7 +95,7 @@ You can always run `make help` to see the latest list.
 	uv run ruff format
 	```
 
-- `make typecheck` — Run the type checker (`ty check`)
+- `make typecheck` : Run the type checker (`ty check`)
 
 	CLI:
 
@@ -105,7 +105,7 @@ You can always run `make help` to see the latest list.
 
 ### Tests
 
-- `make test` — Run all tests (with coverage)
+- `make test` : Run all tests (with coverage)
 
 	CLI:
 
@@ -113,7 +113,7 @@ You can always run `make help` to see the latest list.
 	uv run pytest --cov=hyperbench --cov-report=term-missing
 	```
 
-- `make stest T=<test_name>` — Run a single test file or folder under `hyperbench/tests/`
+- `make stest T=<test_name>` : Run a single test file or folder under `hyperbench/tests/`
 
 	CLI:
 
@@ -123,7 +123,7 @@ You can always run `make help` to see the latest list.
 
 ### Run scripts
 
-- `make run <file.py>` — Run a single Python file
+- `make run <file.py>` : Run a single Python file
 
 	CLI:
 
@@ -133,7 +133,7 @@ You can always run `make help` to see the latest list.
 
 ### Documentation
 
-- `make docs-build` — Build documentation without serving
+- `make docs-build` : Build documentation without serving
 
 	CLI:
 
@@ -141,7 +141,7 @@ You can always run `make help` to see the latest list.
 	uv run zensical build --clean -f zensical.toml
 	```
 
-- `make docs-serve` — Serve built documentation locally (default: `http://127.0.0.1:8000`)
+- `make docs-serve` : Serve built documentation locally (default: `http://127.0.0.1:8000`)
 
 	CLI:
 
@@ -151,7 +151,7 @@ You can always run `make help` to see the latest list.
 
 ### Maintenance
 
-- `make loc` — Count lines of Python code
+- `make loc` : Count lines of Python code
 
 	CLI:
 
@@ -159,7 +159,7 @@ You can always run `make help` to see the latest list.
 	find . -type f -name "*.py" -not -path "*/.venv/*" | xargs wc -l
 	```
 
-- `make clean` — Remove build/test artifacts
+- `make clean` : Remove build/test artifacts
 
 	CLI:
 
@@ -169,7 +169,7 @@ You can always run `make help` to see the latest list.
 	rm -rf hyperbench.egg-info .pytest_cache .coverage .ruff_cache site docs/site
 	```
 
-- `make destroy` — Destroy the environment (removes `.venv`, lockfile, logs)
+- `make destroy` : Destroy the environment (removes `.venv`, lockfile, logs)
 
 	CLI:
 
@@ -188,7 +188,7 @@ You can always run `make help` to see the latest list.
 
 Utility targets that run multiple steps in sequence.
 
-- `make all` — Clean, setup, check, test
-- `make build` — Clean and setup
-- `make check` — Run lint + format + typecheck
-- `make docs` — Build and serve documentation
+- `make all` : Clean, setup, check, test
+- `make build` : Clean and setup
+- `make check` : Run lint + format + typecheck
+- `make docs` : Build and serve documentation

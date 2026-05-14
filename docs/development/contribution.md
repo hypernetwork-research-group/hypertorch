@@ -96,7 +96,7 @@ Then, create a feature branch for making your changes. For example
     git checkout -b feat/shiny-new-feature
 ```
 
-This changes your working branch from ``main`` to the ``shiny-new-feature`` branch.  Keep any
+This changes your working branch from ``main`` to the ``feat/shiny-new-feature`` branch.  Keep any
 changes in this branch specific to one bug or feature so it is clear
 what the branch brings to HyperBench. You can have many feature branches
 and switch in between them using the ``git checkout`` command.
@@ -135,7 +135,7 @@ Finally, commit your changes to your local repository with an explanatory commit
 message
 
 ```bash
-    git commit -m "your commit message goes here"
+    git commit -m "feat: your commit message goes here"
 ```
 
 
@@ -183,12 +183,12 @@ and merged into the project to appear in the next release. To submit a pull requ
 - Write a descriptive title that includes prefixes. HyperBench uses a convention for title
    prefixes. Here are some common ones along with general guidelines for when to use them:
 
-    - `feat:` — A new feature or enhancement to an existing feature.
-    - `fix:` — A bug fix or patch to existing code.
-    - `chore:` — Routine tasks, maintenance, or non-code changes (e.g
+    - `feat:` : A new feature or enhancement to an existing feature.
+    - `fix:` : A bug fix or patch to existing code.
+    - `chore:` : Routine tasks, maintenance, or non-code changes (e.g
         updating documentation, refactoring without changing functionality).
-    - `refactor:` — A code change that neither fixes a bug nor adds a feature but makes the code cleaner or more efficient.
-    - `docs:` — Changes to documentation only.
+    - `refactor:` : A code change that neither fixes a bug nor adds a feature but makes the code cleaner or more efficient.
+    - `docs:` : Changes to documentation only.
     You can check the [CONTRIBUTING.md](https://github.com/hypernetwork-research-group/hyperbench/blob/main/CONTRIBUTING.md) file for more details on commit message guidelines and title prefixes.
 
 - Complete the checklist template in the body of the pull request and write an additional description below the checklist if necessary.

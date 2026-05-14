@@ -101,16 +101,16 @@ def format_issues(issues: Sequence[DocstringIssue]) -> str:
     return "\n".join(lines)
 
 
-def main() -> int:
-    issues = validate_docstrings()
-    print(format_issues(issues))
-    return 1 if issues else 0
-
-
 def _ensure_object(root: griffe.Object | griffe.Alias) -> griffe.Object:
     if isinstance(root, griffe.Alias):
         return root.final_target
     return root
+
+
+def main() -> int:
+    issues = validate_docstrings()
+    print(format_issues(issues))
+    return 1 if issues else 0
 
 
 if __name__ == "__main__":
