@@ -35,6 +35,10 @@ typecheck:
 	@echo '=== Type checking ==='
 	$(UV) run $(TYPECHECKER) check
 
+docstring-check:
+	@echo '=== Docstring checking ==='
+	$(UV) run ./scripts/validate_docstrings.py
+
 lint:
 	@echo '=== Linting ==='
 	$(UV) run $(LINTER) check
