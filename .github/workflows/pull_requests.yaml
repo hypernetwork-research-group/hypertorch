@@ -18,7 +18,6 @@ jobs:
           sync-labels: true
 
   assignees:
-    if: github.event.action == 'opened' || github.event.action == 'reopened'
     runs-on: ubuntu-latest
     permissions:
       contents: read
