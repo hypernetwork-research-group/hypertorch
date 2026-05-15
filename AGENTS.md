@@ -57,6 +57,22 @@ Write hyperbench lowercase when in hyperbench core (writing functions or classes
 - **Keep public APIs stable:** Avoid changing public-facing function/class signatures without a clear, documented migration path.
 - **Small, focused commits:** Keep commits minimal and focused; prefer multiple small PRs to one large refactor.
 
+### Security model
+
+**When flagging security concerns, distinguish between:**
+
+1. **Actual vulnerabilities** — code that violates the documented security model (e.g., a worker
+   gaining database access it shouldn't have, a Scheduler executing user code, an unauthenticated
+   user accessing protected endpoints).
+2. **Known limitations** — documented gaps where the current implementation doesn't provide full
+   isolation (e.g., DFP/Triggerer database access, shared Execution API resources, multi-team
+   not enforcing task-level isolation). These are tracked for improvement in future versions and
+   should not be reported as new findings.
+3. **Deployment hardening opportunities** — measures a Deployment Manager can take to improve
+   isolation beyond what Airflow enforces natively (e.g., per-component configuration, asymmetric
+   JWT keys, network policies). These belong in deployment guidance, not as code-level issues.
+
+
 ## Testing Standards
 
 - **Tests location:** Tests live under `hyperbench/tests/` and should mirror module locations.
@@ -78,6 +94,42 @@ Write hyperbench lowercase when in hyperbench core (writing functions or classes
 Git remote, commits and PRs should follow the repository's contribution guidelines:
   - CONTRIBUTING.md
   - docs/contributing.md
+
+### GitHub messages drafted by agents
+
+Anything an agent drafts that ends up posted to GitHub on the user's
+account — PR / issue comments, PR-level reviews, line-level review
+comments, discussion replies — must end with an attribution footer.
+The footer is required whether or not a human reviewed the draft
+first; what changes between the two cases is the wording.
+
+Place the footer on its own paragraph at the end of the message,
+separated from the body by a blank line and a horizontal rule. Use
+the same agent name string used in `Generated-by:` on PR bodies (for
+example, `Claude Code (Opus 4.7)`).
+
+- **Agent draft, posted without prior human review** (autonomous /
+routine work, scheduled triage, etc.):
+
+```
+---
+Drafted-by: <Agent Name and Version> (no human review before posting)
+```
+
+- **Agent draft, reviewed and approved by a human maintainer before
+posting:**
+
+```
+---
+Drafted-by: <Agent Name and Version>; reviewed by @<github-handle> before posting
+```
+
+The `@<github-handle>` is the human who actually read the draft
+and said "post it as-is" (or similar). It is not the user the agent
+is "running on behalf of" if no review took place — that case is the
+first form, not this one.
+
+Do not skip the footer to shorten a message — attribution applies regardless of message length.
 
 ## Boundaries
 
