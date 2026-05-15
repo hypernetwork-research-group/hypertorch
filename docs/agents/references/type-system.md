@@ -3,8 +3,30 @@
 ## HyperBench specifics
 
 - Python requirement is `>=3.10`.
+- Use `ty` for type checking via `make check`.
+- Keep public function and method signatures fully annotated.
+- Use `TYPE_CHECKING` guards for type-only or heavyweight imports.
 - Prefer builtin generics (`list[str]`, `dict[str, int]`) and `X | None` unions.
-- HyperBench uses `ty` for type checking via `make check`.
+- Prefer `collections.abc` for interface types such as `Sequence`, `Mapping`, `Iterable`, and `Callable`.
+- Avoid `Any` unless the boundary is truly dynamic or third-party typing is incomplete.
+- Avoid unnecessary `type: ignore`; if one is required, keep it narrow and strongly justified.
+
+## Practical review checklist
+
+Before finishing a typed change, check:
+- Signatures are annotated.
+- New return types are precise.
+- Helper collections use interface types where appropriate.
+- Type-only imports are guarded when needed.
+- `make typecheck` still passes.
+
+## Choosing the right type
+
+- Use `Sequence[T]` when you only read from an ordered collection.
+- Use `Mapping[K, V]` when you only read from a dictionary-like object.
+- Use `list[T]` or `dict[K, V]` only when mutation matters to the API contract.
+- Use `TypedDict` for structured dictionaries passed across module boundaries.
+- Use `Protocol` when behavior matters more than inheritance.
 
 ## Basic type annotations
 

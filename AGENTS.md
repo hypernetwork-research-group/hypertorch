@@ -1,148 +1,136 @@
-# AGENTS instructions
+# AGENTS instructions
 
-## Naming
+## Naming
 
-Write hyperbench lowercase when in hyperbench core (writing functions or classes) and HyperBench when referring to the organization or project as a whole (e.g. "HyperBench is an open-source project for benchmarking hypergraph learning algorithms").
+Write `hyperbench` in lowercase when referring to the Python package, modules, functions, classes, or CLI/package internals.
 
-## Environment Setup
+Write `HyperBench` when referring to the project, repository, organization, or published package in prose.
 
-- install `uv` and `make`
-- run `make` to set up the environment and install dependencies
+## Environment setup
 
-## Commands
+- Install `uv` and `make`.
+- Run `make setup` to install dependencies and the editable package.
+- Run `make` when you want the full local quality flow (`clean`, `setup`, `check`, `test`).
 
-- `make test` to run the full test suite
-- `make stest T=<test_file_or_path>` to run a specific test or folder
-- `uv run pytest` to run pytest directly (not recommended for regular use)
+## Commands
 
-- `make lint` to run linter
-- `make format` to run formatter
-- `make typecheck` to run type checker
-- `make docs` to build documentation
-- `make build` to build the package
-- `make clean` to clean up generated files
+- `make test` to run the full test suite.
+- `make stest T=<path-within-hyperbench/tests>` to run a specific test file or folder.
+- `uv run pytest` for one-off pytest commands (not recommended for regular use).
 
-- `make run T=<example_file>` to run a Python script (e.g. `make run T=examples/gcn.py`)
+- `make lint` to run Ruff checks.
+- `make format` to run Ruff formatting.
+- `make typecheck` to run `ty check`.
+- `make check` to run lint, format, and typecheck together.
 
-## Repository Structure
+- `make docs-build` to build documentation.
+- `make docs-serve` to serve documentation locally.
+- `make docs` to build and then serve the docs.
+- `make build` to clean and set up the package.
+- `make clean` to remove generated artifacts.
 
-- `hyperbench/`: core codebase
-  - `data/`: data loading and processing utilities
+- `make run <python_file>` to run a Python script, for example `make run examples/gcn.py`.
+
+## Repository structure
+
+- `hyperbench/`: core package
+  - `data/`: dataset loading, sampling, and HIF integration
   - `hlp/`: hyperlink prediction modules
-  - `models/`: actual models like GCN, Node2Vec, etc.
+  - `models/`: model implementations (e.g., GCN, Node2Vec, etc.)
   - `nn/`: layers, enrichers, aggregators, and losses
-  - `train/`: training utilities and modules
-  - `tests/`: unit test
-  - `types/`: type definitions and type system utilities
-  - `utils/`: general utilities and helpers
-- `docs/`: documentation
-- `examples/`: example scripts for training and evaluation
-- `agents/`: agent code and references
-- `.github/`: GitHub configuration (workflows, issue templates, etc.)
-- `CONTRIBUTING.md`: contribution guidelines
-- `README.md`: project overview and quickstart guide
-- `Makefile`: commands for setup, testing, linting, etc.
-- `pyproject.toml`: package configuration and dependencies
+  - `train/`: training utilities and trainers
+  - `tests/`: test suite
+  - `types/`: shared type definitions
+  - `utils/`: reusable helpers
+- `docs/`: documentation sources
+- `examples/`: runnable training and evaluation examples
+- `.github/`: workflows, templates, and hooks
+- `CONTRIBUTING.md`: contributor quickstart and workflow expectations
+- `docs/development/contribution.md`: detailed contribution process
+- `README.md`: project overview and installation
+- `Makefile`: supported development commands
+- `pyproject.toml`: package metadata, dependencies, tool configuration
 
+## Coding standards
 
-## Coding Standards
+- **Formatting:** Prefer the Makefile targets:
+  - `make format`
+  - `make lint`
+  - `make check`
+- **Typing:** Add and preserve type annotations. Run `make typecheck` for changes that touch typed code.
+- **Imports:** Keep imports at module top level unless a delayed import is necessary. Use `TYPE_CHECKING` guards for type-only or heavyweight imports.
+- **Runtime checks:** Do not use `assert` for library-facing validation. Raise explicit exceptions instead.
+- **Public APIs:** Avoid changing public signatures without a clear reason and matching docs/tests updates.
+- **Scope:** Keep changes narrow. Do not mix behavioral edits with unrelated refactors.
 
-- **Formatting:** Run the formatter and linter on changed files before committing. Prefer the repository Makefile targets:
-  - `make format` (format code)
-  - `make lint` (lint and style checks)
-  - Use `ruff` for fast linting and formatting checks.
-- **Typing:** Add and preserve type annotations. Use the project's typecheck target (`make typecheck`) during development.
-- **Imports:** Keep imports at the top of the file. Use `TYPE_CHECKING` guards for heavy, optional, or type-only imports.
-- **No asserts in production code:** Avoid `assert` statements for runtime checks in library code — use explicit error handling and exceptions instead.
-- **Keep public APIs stable:** Avoid changing public-facing function/class signatures without a clear, documented migration path.
-- **Small, focused commits:** Keep commits minimal and focused; prefer multiple small PRs to one large refactor.
+## Testing standards
 
-### Security model
+- **Location:** Tests live under `hyperbench/tests/` and should mirror the package layout they exercise.
+- **Execution:** Prefer:
+  - `make test`
+  - `make stest T=<path-within-hyperbench/tests>`
+  - `uv run pytest ...` only for targeted one-off invocations
+- **Style:** Use pytest function tests and fixtures. Prefer `pytest.mark.parametrize` with readable `id=` values in `pytest.param(..., id=...)`.
+- **Determinism:** Avoid network access, sleeps, and external services. Patch HTTP calls, filesystem state, and subprocesses as needed.
+- **Fixtures:** Keep fixture scope as small as practical. Put shared fixtures in `conftest.py`.
+- **Regression coverage:** Add tests for new behavior, edge cases, and failure paths when code changes.
 
-**When flagging security concerns, distinguish between:**
+## Security model
 
-1. **Actual vulnerabilities** — code that violates the documented security model (e.g., a worker
-   gaining database access it shouldn't have, a Scheduler executing user code, an unauthenticated
-   user accessing protected endpoints).
-2. **Known limitations** — documented gaps where the current implementation doesn't provide full
-   isolation (e.g., DFP/Triggerer database access, shared Execution API resources, multi-team
-   not enforcing task-level isolation). These are tracked for improvement in future versions and
-   should not be reported as new findings.
-3. **Deployment hardening opportunities** — measures a Deployment Manager can take to improve
-   isolation beyond what Airflow enforces natively (e.g., per-component configuration, asymmetric
-   JWT keys, network policies). These belong in deployment guidance, not as code-level issues.
+When flagging security concerns, distinguish between:
 
-
-## Testing Standards
-
-- **Tests location:** Tests live under `hyperbench/tests/` and should mirror module locations.
-- **Run tests:** Prefer running tests via Makefile targets:
-  - `make test` for the full suite
-  - `make stest T=<test_file_or_path>` for a single test or folder
-  - For one-off runs use `uv run pytest`.
-- **Pytest style:** Use pytest functions and fixtures (avoid `unittest.TestCase`). Use `@pytest.mark.parametrize` for multiple inputs; prefer `pytest.param(..., id=...)` for readable case ids.
-- **Fixtures:** Put shared fixtures in `conftest.py` and keep fixture scope minimal. Use `autouse` sparingly.
-- **Deterministic tests:** Tests must be deterministic — avoid relying on timing, network, or external services. Use mocks and fixtures for isolation.
-- **Property tests & strategies:** Use Hypothesis for property-based tests where appropriate; keep generated example sizes small in CI.
-- **Mocking:** Use `unittest.mock` with `spec`/`autospec` for safety; prefer `AsyncMock` for async code.
-- **Time-dependent tests:** Use time-freezing helpers (e.g. `time_machine`) rather than sleeping or real clock checks.
-- **Coverage and CI:** Add tests for new behavior, edge cases, and failure modes. Ensure CI stays green before requesting a review.
-
+1. **Actual vulnerabilities**: code that violates the security model and can be exploited in practice.
+   These should be reported immediately and treated as high priority for fixes.
+2. **Known limitations**: documented gaps where the current implementation doesn't provide full
+   isolation. These are tracked for improvement in future versions and should not be reported as new findings.
 
 ## Conventions
 
-Git remote, commits and PRs should follow the repository's contribution guidelines:
-  - CONTRIBUTING.md
-  - docs/contributing.md
+Git remotes, branch names, commit messages, and PRs should follow:
+
+- `CONTRIBUTING.md`
+- `docs/development/contribution.md`
 
 ### GitHub messages drafted by agents
 
 Anything an agent drafts that ends up posted to GitHub on the user's
-account — PR / issue comments, PR-level reviews, line-level review
-comments, discussion replies — must end with an attribution footer.
-The footer is required whether or not a human reviewed the draft
-first; what changes between the two cases is the wording.
+account, including PR comments, reviews, line comments, issue comments,
+or discussion replies, must end with an attribution footer.
 
-Place the footer on its own paragraph at the end of the message,
-separated from the body by a blank line and a horizontal rule. Use
-the same agent name string used in `Generated-by:` on PR bodies (for
-example, `Claude Code (Opus 4.7)`).
+Place the footer in its own paragraph at the end of the message,
+separated from the body by a blank line and a horizontal rule. Use the
+same agent name string used in `Generated-by:` on PR bodies.
 
-- **Agent draft, posted without prior human review** (autonomous /
-routine work, scheduled triage, etc.):
+- Agent draft posted without prior human review:
 
-```
+```text
 ---
 Drafted-by: <Agent Name and Version> (no human review before posting)
 ```
 
-- **Agent draft, reviewed and approved by a human maintainer before
-posting:**
+- Agent draft reviewed and approved by a human maintainer before posting:
 
-```
+```text
 ---
 Drafted-by: <Agent Name and Version>; reviewed by @<github-handle> before posting
 ```
 
-The `@<github-handle>` is the human who actually read the draft
-and said "post it as-is" (or similar). It is not the user the agent
-is "running on behalf of" if no review took place — that case is the
-first form, not this one.
+The `@<github-handle>` is the human who actually read the draft.
 
-Do not skip the footer to shorten a message — attribution applies regardless of message length.
+Do not skip the footer to shorten a message.
 
-## Boundaries
+## Boundaries
 
-- Ask first
+- Ask first:
   - Large cross-package refactors.
-- New dependencies with broad impact.
-- Destructive data or migration changes.
-- Never
+  - New dependencies with broad impact.
+  - Destructive data or migration changes.
+- Never:
   - Commit secrets, credentials, or tokens.
   - Edit generated files by hand when a generation workflow exists.
   - Use destructive git operations unless explicitly requested.
 
-## Specific agents references
+## Specific references
 
 - [Testing](docs/agents/references/testing.md)
 - [Package](docs/agents/references/package.md)
