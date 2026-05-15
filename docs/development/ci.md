@@ -10,10 +10,10 @@ Check [Troubleshooting](../development/ci.md#troubleshooting) for common failure
 | Check | Workflow | When it runs | Platforms | What it does | Local equivalent |
 |---|---|---|---|---|---|
 | Lint (Ruff) | `.github/workflows/ci.yaml` | PRs; pushes to `main` | Ubuntu, macOS, Windows; Python 3.10–3.14 | `ruff check --output-format=github` | `make lint` |
-| Format check (Ruff) | `.github/workflows/ci.yaml` | PRs; pushes to `main` | Ubuntu, macOS, Windows; Python 3.10–3.14 | `ruff format --check --diff` | `uv run ruff format --check --diff` |
+| Format (Ruff) | `.github/workflows/ci.yaml` | PRs; pushes to `main` | Ubuntu, macOS, Windows; Python 3.10–3.14 | `ruff format` | `make format` |
 | Tests (+ coverage in console) | `.github/workflows/ci.yaml` | PRs; pushes to `main` | Ubuntu, macOS, Windows; Python 3.10–3.14 | `pytest --cov=hyperbench --cov-report=term-missing` | `make test` |
 | Coverage upload (Codecov) | `.github/workflows/coverage.yaml` | pushes to `main` | Ubuntu; Python 3.14 | Generates `coverage.xml` and uploads coverage + JUnit test results to Codecov | `uv run pytest --cov --cov-branch --cov-report=xml` |
-| Docs build (deploy) | `.github/workflows/docs.yaml` | pushes to `main`/`docs`; manual dispatch | Ubuntu; Python 3.14 | Installs docs deps and runs `zensical build --clean`, then deploys `docs/site` to GitHub Pages | `make docs-build` |
+| Docs build (deploy) | `.github/workflows/docs.yaml` | pushes to `main`; manual dispatch | Ubuntu; Python 3.14 | Installs docs deps and runs `zensical build --clean`, then deploys `docs/site` to GitHub Pages | `make docs-build` |
 
 ## Notes
 
@@ -50,7 +50,6 @@ Check [Troubleshooting](../development/ci.md#troubleshooting) for common failure
 	```bash
 	make typecheck
 	```
-
 
 - If a CI failure is in tests, run:
 

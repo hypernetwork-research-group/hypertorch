@@ -1,4 +1,4 @@
-# User Guide
+# User guide
 
 | Section | What you will find | Link |
 |---|---|---|

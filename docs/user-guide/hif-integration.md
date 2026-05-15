@@ -3,9 +3,8 @@
 HyperBench uses [**HIF (Hypergraph Interchange Format)**](https://github.com/HIF-org/HIF-standard) to represent hypergraphs.
 
 Supported inputs:
-
-- `.json` (plain HIF)
-- `.json.zst` (Zstandard-compressed HIF)
+- `.json` (plain HIF).
+- `.json.zst` (Zstandard-compressed HIF).
 
 ## Load built-in datasets
 
@@ -17,6 +16,8 @@ from hyperbench.data import AlgebraDataset, SamplingStrategy
 dataset = AlgebraDataset(sampling_strategy=SamplingStrategy.HYPEREDGE)
 print(dataset.stats())
 ```
+
+Built-in dataset classes include `AlgebraDataset`, `AmazonDataset`, `CoraDataset`, `CourseraDataset`, `IMDBDataset`, and more. See the [Data API reference](../api/data.md) for the complete list.
 
 ## Load a dataset from a local file
 
@@ -53,8 +54,8 @@ When loaded, HIF data is processed into an `HData` object (see [HData API refere
 
 ## Next steps
 
-- Model selection/customization: [Models](models.md)
-- Training loop (callbacks, devices, etc.): [Training](training.md)
-- Comparing multiple models consistently: [Benchmarking](benchmarking.md)
-- Outputs and logging: [Loggers](loggers.md)
-- Visualizing runs: [TensorBoard](tensorboard.md)
+- Model selection/customization: [Models](models.md).
+- Training loop (callbacks, devices, etc.): [Training](training.md).
+- Comparing multiple models consistently: [Benchmarking](benchmarking.md).
+- Outputs and logging: [Loggers](loggers.md).
+- Visualizing runs: [TensorBoard](tensorboard.md).

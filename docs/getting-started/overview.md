@@ -1,6 +1,6 @@
 ## Quick links
 
-| Section | What you’ll find | Link |
+| Section | What you will find | Link |
 | --- | --- | --- |
 | Getting started | Install HyperBench and verify your environment | [Installation guide](installation.md) |
 | Package overview | Overview of the package structure and components | [Package overview](package.md) |

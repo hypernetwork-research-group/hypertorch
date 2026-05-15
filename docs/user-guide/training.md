@@ -2,10 +2,9 @@
 
 Training in HyperBench is orchestrated via `MultiModelTrainer` (Lightning under the hood).
 
-This page outlines the typical training pipeline; for a complete runnable script, see:
-
-- https://github.com/hypernetwork-research-group/hyperbench/blob/main/examples/gcn.py
-- https://github.com/hypernetwork-research-group/hyperbench/blob/main/examples/early_stopping.py
+This page outlines the typical training pipeline. For a complete runnable script, see:
+- [examples/gcn.py](https://github.com/hypernetwork-research-group/hyperbench/blob/main/examples/gcn.py)
+- [examples/early_stopping.py](https://github.com/hypernetwork-research-group/hyperbench/blob/main/examples/early_stopping.py)
 
 ## Typical pipeline
 
@@ -91,6 +90,6 @@ with MultiModelTrainer(
 
 ## Next steps
 
-- Comparing multiple models consistently: [Benchmarking](benchmarking.md)
-- Outputs and logging: [Loggers](loggers.md)
-- Visualizing runs: [TensorBoard](tensorboard.md)
+- Comparing multiple models consistently: [Benchmarking](benchmarking.md).
+- Outputs and logging: [Loggers](loggers.md).
+- Visualizing runs: [TensorBoard](tensorboard.md).

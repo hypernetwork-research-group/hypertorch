@@ -1,31 +1,29 @@
 # Models
 
 HyperBench provides ready-to-use built-in models inspired by the existing literature.
+
 At a high level:
-
 - `hyperbench.hlp.*` contains ready-to-train hyperlink prediction (HLP) modules (recommended starting point).
-
 - `hyperbench.models.*` contains actual models like Node2Vec, GCN, etc.
-
 - `hyperbench.nn.*` contains layers, enrichers, aggregators, and losses.
 
 ## Built-in HLP modules
 
 Supported models include:
 
-- `MLP`
-- `GCN`
-- `HGNN`
-- `HGNNP`
-- `HNHN`
-- `HyperGCN`
-- `NHP`
-- `Node2VecGCN`
-- `Node2VecSLP`
-- `CommonNeighbors` (non-trainable baseline)
-- `VilLain`
+- `MLP`.
+- `GCN`.
+- `HGNN`.
+- `HGNNP`.
+- `HNHN`.
+- `HyperGCN`.
+- `NHP`.
+- `Node2VecGCN`.
+- `Node2VecSLP`.
+- `CommonNeighbors` (non-trainable baseline).
+- `VilLain`.
 
-## Minimal example: an MLP baseline
+## Minimal example: Node2Vec + GCN
 
 ```python
 from torchmetrics import MetricCollection
@@ -49,20 +47,20 @@ gcn_config: Node2VecGCNHlpConfig = {
 }
 
 node2vecgcn = Node2VecGCNHlpModule(
-        encoder_config={
-            "mode": "precomputed",
-            "num_features": num_features,
-            "node2vec_config": {},
-            "gcn_config": gcn_config,
-        },
-        aggregation="mean",
-        lr=0.001,
-        weight_decay=0.0,
-        metrics=metrics,
-    )
+    encoder_config={
+        "mode": "precomputed",
+        "num_features": num_features,
+        "node2vec_config": {},
+        "gcn_config": gcn_config,
+    },
+    aggregation="mean",
+    lr=0.001,
+    weight_decay=0.0,
+    metrics=metrics,
+)
 ```
 
-## Minimal example: a GCN baseline
+## Minimal example: GCN
 
 ```python
 from hyperbench.hlp import GCNHlpModule
@@ -89,7 +87,7 @@ model = GCNHlpModule(
 
 ## Next steps
 
-- Training loop (callbacks, devices, etc.): [Training](training.md)
-- Comparing multiple models consistently: [Benchmarking](benchmarking.md)
-- Outputs and logging: [Loggers](loggers.md)
-- Visualizing runs: [TensorBoard](tensorboard.md)
+- Training loop (callbacks, devices, etc.): [Training](training.md).
+- Comparing multiple models consistently: [Benchmarking](benchmarking.md).
+- Outputs and logging: [Loggers](loggers.md).
+- Visualizing runs: [TensorBoard](tensorboard.md).

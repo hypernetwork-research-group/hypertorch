@@ -1,10 +1,9 @@
 # Benchmarking
 
 Benchmarking in HyperBench typically means:
-
-- running multiple models on the same dataset split.
-- using the same negative sampling and feature enrichment.
-- producing comparable metrics and summary tables.
+- Running multiple models on the same dataset split.
+- Using the same negative sampling and feature enrichment.
+- Producing comparable metrics and summary tables.
 
 ## Comparing multiple models
 
@@ -47,18 +46,17 @@ with MultiModelTrainer(model_configs=configs, max_epochs=200, accelerator="auto"
 ```
 
 For a complete runnable script, see:
-https://github.com/hypernetwork-research-group/hyperbench/blob/main/examples/mlp_common_neighbors.py
+[mlp_common_neighbors.py](https://github.com/hypernetwork-research-group/hyperbench/blob/main/examples/mlp_common_neighbors.py)
 
 ## Where results are saved
 
 By default, runs are saved under `hyperbench_logs/`.
 
 The trainer writes comparison tables to:
-
-- `hyperbench_logs/experiment_*/comparison/results.md`
-- `hyperbench_logs/experiment_*/comparison/results.tex`
+- `hyperbench_logs/experiment_*/comparison/results.md`.
+- `hyperbench_logs/experiment_*/comparison/results.tex`.
 
 ## Next steps
 
-- Outputs and logging: [Loggers](loggers.md)
-- Visualizing runs: [TensorBoard](tensorboard.md)
+- Outputs and logging: [Loggers](loggers.md).
+- Visualizing runs: [TensorBoard](tensorboard.md).

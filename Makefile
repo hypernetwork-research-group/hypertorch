@@ -120,7 +120,7 @@ help:
 	@echo "  run <file.py>           - Run a single file"
 	@echo "  docs                    - Build and serve documentation"
 	@echo "  docs-build              - Build documentation without serving"
-	@echo "  docs-serve              - Serve built documentation locally at $(MKDOCS_URL)"
+	@echo "  docs-serve              - Serve built documentation locally at http://$(DOCS_ADDR)"
 	@echo "  loc                     - Count lines of code"
 	@echo "  clean                   - Remove build/test artifacts"
 	@echo "  destroy                 - Destroy the environment"

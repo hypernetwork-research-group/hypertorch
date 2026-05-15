@@ -36,7 +36,8 @@ make
 ```
 This will set up the environment, install dependencies, and prepare everything for development.
 
-### Tensorboard support
+### TensorBoard support
+
 To set up TensorBoard support, run:
 
 ```bash
@@ -75,7 +76,7 @@ Run the following command to install the pre-commit hook:
 ```bash
 make setup
 
-pre-commit install --config .github/hooks/.pre-commit-config.yaml \
+uv run pre-commit install --config .github/hooks/.pre-commit-config.yaml \
     --hook-type pre-commit \
     --install-hooks --overwrite \
 ```
@@ -132,15 +133,13 @@ This will ensure that your code adheres to the project's coding standards before
 
 ## Contributing to the documentation
 
-
-The hyperbench documentation constists of two parts: the docstrings in the code itself and the docs in the folder doc/.
+The HyperBench documentation consists of two parts: the docstrings in the code and topic pages under `docs/`.
 
 The docstrings provide a clear explanation of the usage of the individual functions, while the documentation in this folder consists of tutorial-like overviews per topic together with some other information (what’s new, installation, etc).
 
-Docstring follows the [Google style](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html) and are rendered in the documentation with [mkdocstrings](https://mkdocstrings.github.io/) through [Zensical](https://github.com/zensical/zensical).
+Docstrings follow the [Google style](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html) and are rendered in the documentation with [mkdocstrings](https://mkdocstrings.github.io/) through [Zensical](https://github.com/zensical/zensical).
 
 When contributing to the documentation, please make sure to update both the docstrings and the relevant documentation pages if necessary.
-
 
 ## Policies
 

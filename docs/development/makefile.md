@@ -109,7 +109,7 @@ You can always run `make help` to see the latest list.
 	CLI:
 
 	```bash
-	uv run python3 ./scripts/check_docstrings.py
+	uv run ./scripts/validate_docstrings.py
 	```
 
 ### Tests
@@ -191,7 +191,6 @@ You can always run `make help` to see the latest list.
 	# destroy
 	rm -rf .venv uv.lock hyperbench_logs
 	```
-
 
 ### Composite targets
 
