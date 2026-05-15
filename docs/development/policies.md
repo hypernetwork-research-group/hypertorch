@@ -15,19 +15,18 @@ If you hit install issues, ensure your `torch` / `torch-geometric` / `torch-clus
 
 ### Supported platforms
 
-- For each version
-    - We aim to support Linux, macOS, and Windows.
+For each version we aim to support Linux, macOS, and Windows.
 
 Our CI relys on [GitHub-hosted runners](https://docs.github.com/en/actions/reference/runners/github-hosted-runners).
 
-We support these platforms:
+We routinely test these platforms in our pipelines:
 - macos-latest, ubuntu-latest, windows-latest
 - macos-26, ubuntu-24.04, windows-2025
 - ubuntu-24.04-arm, ubuntu-slim
 
 We do not support these platforms:
-- macos-26-intel not support for incompatibility with PyTorch.
-- Windows 11 ARM not support for incompatibility with PyTorch.
+- macos-26-intel for incompatibility with PyTorch.
+- Windows 11 ARM for incompatibility with PyTorch.
 
 | Virtual machine / container | Processor (CPU) | Memory (RAM) | Storage (SSD) | Architecture | Workflow label | Supported |
 |---|---:|---:|---:|---|---|:--:|

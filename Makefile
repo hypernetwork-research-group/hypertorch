@@ -110,6 +110,7 @@ help:
 	@echo "  check                   - Run lint and typecheck"
 	@echo "  format                  - Run formatting"
 	@echo "  typecheck               - Run type checking"
+	@echo "  docstring-check         - Check docstring formatting"
 	@echo "  lint                    - Run linting"
 	@echo "  lint-fix                - Run linting and fix issues"
 	@echo "  lint-rule R=<rule>      - Run linting for a specific rule (e.g., R=E501)"
