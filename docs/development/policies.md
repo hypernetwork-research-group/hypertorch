@@ -20,9 +20,9 @@ For each version we aim to support Linux, macOS, and Windows.
 Our CI relys on [GitHub-hosted runners](https://docs.github.com/en/actions/reference/runners/github-hosted-runners).
 
 We routinely test these platforms in our pipelines:
-- macos-latest, ubuntu-latest, windows-latest
-- macos-26, ubuntu-24.04, windows-2025
-- ubuntu-24.04-arm, ubuntu-slim
+- macos-latest, ubuntu-latest, windows-latest.
+- macos-26, ubuntu-24.04, windows-2025.
+- ubuntu-24.04-arm, ubuntu-slim.
 
 We do not support these platforms:
 - macos-26-intel for incompatibility with PyTorch.
