@@ -196,12 +196,10 @@ def test_get_gh_datasets_shas_returns_shas_and_none_on_failure():
     }
     mock_requests_get.assert_any_call(
         "https://api.github.com/repos/hypernetwork-research-group/datasets/commits",
-        params={"path": "algebra.json.zst", "per_page": 1},
-    )
+        params={"path": "algebra.json.zst", "per_page": 1}, timeout=10,)
     mock_requests_get.assert_any_call(
         "https://api.github.com/repos/hypernetwork-research-group/datasets/commits",
-        params={"path": "missing-dataset.json.zst", "per_page": 1},
-    )
+        params={"path": "missing-dataset.json.zst", "per_page": 1}, timeout=10,)
 
 
 def test_get_gh_dataset_trigger_no_commit():
@@ -221,5 +219,4 @@ def test_get_gh_dataset_trigger_no_commit():
     assert result is None
     mock_requests_get.assert_called_once_with(
         "https://api.github.com/repos/owner/repo/commits",
-        params={"path": "algebra.json.zst", "per_page": 1},
-    )
+        params={"path": "algebra.json.zst", "per_page": 1}, timeout=10,)
