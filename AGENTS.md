@@ -22,27 +22,27 @@ Write hyperbench lowercase when in hyperbench core (writing functions or classes
 - `make build` to build the package
 - `make clean` to clean up generated files
 
-- `make run T=<example_file>` to run a training script (e.g. `make run T=examples/gcn.py`)
+- `make run T=<example_file>` to run a Python script (e.g. `make run T=examples/gcn.py`)
 
 ## Repository Structure
 
-- `hyperbench/` - core codebase
-  - `data/` - data loading and processing utilities
-  - `hlp/` - hyperlink prediction modules
-  - `models/` - actual models like GCN, Node2Vec, etc.
-  - `nn/` - layers, enrichers, aggregators, and losses
-  - `train/` - training utilities and modules
-  - `tests/` - unit test
-  - `types/` - type definitions and type system utilities
-  - `utils/` - general utilities and helpers
-- `docs/` - documentation
-- `examples/` - example scripts for training and evaluation
-- `agents/` - agent code and references
-- `.github/` - GitHub configuration (workflows, issue templates, etc.)
-- `CONTRIBUTING.md` - contribution guidelines
-- `README.md` - project overview and quickstart guide
-- `Makefile` - commands for setup, testing, linting, etc.
-- `pyproject.toml` - package configuration and dependencies
+- `hyperbench/`: core codebase
+  - `data/`: data loading and processing utilities
+  - `hlp/`: hyperlink prediction modules
+  - `models/`: actual models like GCN, Node2Vec, etc.
+  - `nn/`: layers, enrichers, aggregators, and losses
+  - `train/`: training utilities and modules
+  - `tests/`: unit test
+  - `types/`: type definitions and type system utilities
+  - `utils/`: general utilities and helpers
+- `docs/`: documentation
+- `examples/`: example scripts for training and evaluation
+- `agents/`: agent code and references
+- `.github/`: GitHub configuration (workflows, issue templates, etc.)
+- `CONTRIBUTING.md`: contribution guidelines
+- `README.md`: project overview and quickstart guide
+- `Makefile`: commands for setup, testing, linting, etc.
+- `pyproject.toml`: package configuration and dependencies
 
 
 ## Coding Standards
