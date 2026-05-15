@@ -6,6 +6,7 @@ HyperBench has a few convenient loggers to make benchmarking easier.
 
 When you create a `MultiModelTrainer` without specifying `logger=...`, HyperBench configures:
 
+- A `CSVLogger` that logs training and validation metrics for each model to CSV files.
 - A `MarkdownTableLogger` that writes a comparison table.
 - A `LaTexTableLogger` that writes a LaTeX comparison table.
 - A `TensorBoardLogger` (only if TensorBoard is installed).

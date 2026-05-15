@@ -1,5 +1,3 @@
-<!-- based on https://pandas.pydata.org/docs/development/contributing.html -->
-
 # Contributing to HyperBench
 
 All contributions, bug reports, bug fixes, documentation improvements,
