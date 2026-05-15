@@ -14,30 +14,7 @@ permissions:
   id-token: write
 
 jobs:
-  docstring-check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.14"
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v7
-      - name: Install dependencies
-        run: |
-          uv venv
-          uv pip install -e .
-
-      - name: Check docstrings
-        continue-on-error: true # TODO: remove when all docstring issues are fixed
-        run: |
-          uv run ./scripts/validate_docstrings.py
-
   deploy:
-    needs: docstring-check
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

@@ -9,11 +9,46 @@ permissions:
   contents: read
 
 jobs:
+
+  code_quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+      - name: Install dependencies
+        run: |
+          make build
+
+      - name: Check docstrings
+        continue-on-error: true # TODO: remove when all docstring issues are fixed
+        run: |
+          uv run ./scripts/validate_docstrings.py
+
+      - name: Format code with ruff
+        run: |
+          make format
+
+      - name: Lint code with ruff
+        run: |
+          make lint
+
+      - name: Type check
+        run: |
+          make typecheck
+
+
   test:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-latest, macos-latest, windows-latest ]
+        os: [ ubuntu-latest, macos-latest, windows-latest, ubuntu-slim]
         python-version: [ "3.10", "3.11", "3.12", "3.13", "3.14" ]
 
     steps:
@@ -29,19 +64,61 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv venv
-          uv pip install -e .
-
-      - name: Lint code with ruff
-        uses: astral-sh/ruff-action@v3
-        with:
-          args: "check --output-format=github"
-
-      - name: Format code with ruff
-        uses: astral-sh/ruff-action@v3
-        with:
-          args: "format --check --diff"
+          make build
 
       - name: Run tests with pytest
         run: |
           uv run pytest --cov=hyperbench --cov-report=term-missing
+
+test-arm:
+  runs-on: ${{ matrix.os }}
+  strategy:
+    matrix:
+      os: [ubuntu-24.04-arm, macos-26, windows-11-arm]
+      python-version: [ "3.10", "3.11", "3.12", "3.13", "3.14" ]
+
+  steps:
+    - uses: actions/checkout@v6
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v6
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v7
+
+    - name: Install dependencies
+      run: |
+        make build
+
+    - name: Run tests with pytest
+      run: |
+        uv run pytest --cov=hyperbench --cov-report=term-missing
+
+
+test-x86:
+  runs-on: ${{ matrix.os }}
+  strategy:
+    matrix:
+      os: [ubuntu-24.04, macos-26-intel, windows-2025]
+      python-version: [ "3.10", "3.11", "3.12", "3.13", "3.14" ]
+
+  steps:
+    - uses: actions/checkout@v6
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v6
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v7
+
+    - name: Install dependencies
+      run: |
+        make build
+
+    - name: Run tests with pytest
+      run: |
+        uv run pytest --cov=hyperbench --cov-report=term-missing
