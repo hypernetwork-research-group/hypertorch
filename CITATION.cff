@@ -1,0 +1,41 @@
+cff-version: 1.2.0
+message: >-
+  If you use HyperBench in your research, please cite it using the metadata in
+  this file.
+title: HyperBench
+type: software
+
+repository-code: https://github.com/hypernetwork-research-group/hyperbench
+url: https://hypernetwork-research-group.github.io/hyperbench/
+
+license: MIT
+version: 0.1.0
+
+authors:
+  - family-names: Citro
+    given-names: Tiziano
+    orcid: https://orcid.org/0009-0009-9569-5880
+    email: tcitro@unisa.it
+  - family-names: De Vinco
+    given-names: Daniele
+    orcid: https://orcid.org/0000-0003-0781-3744
+    email: ddevinco@unisa.it
+
+keywords:
+  - hypergraph
+  - benchmarking
+  - machine-learning
+  - python
+  - hypergraph-learning
+  - hyperlink-prediction
+
+preferred-citation:
+  type: software
+  title: HyperBench
+  authors:
+    - family-names: Citro
+      given-names: Tiziano
+    - family-names: De Vinco
+      given-names: Daniele
+  year: 2026
+  url: https://github.com/hypernetwork-research-group/hyperbench

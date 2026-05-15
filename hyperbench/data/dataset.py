@@ -23,10 +23,7 @@ if TYPE_CHECKING:
 class Dataset(TorchDataset):
     """
     A dataset class for loading and processing hypergraph data.
-
     Args:
-        DATASET_NAME: Class variable indicating the name of the dataset to load.
-        hypergraph: The loaded hypergraph in HIF format. Can be ``None`` if initialized from an HData object.
         hdata: The processed hypergraph data in HData format.
         sampling_strategy: The strategy used for sampling sub-hypergraphs (e.g., by node IDs or hyperedge IDs).
             If not provided, defaults to ``SamplingStrategy.HYPEREDGE``.

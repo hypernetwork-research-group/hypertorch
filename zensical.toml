@@ -1,0 +1,143 @@
+[project]
+docs_dir = "docs"
+site_dir = "docs/site"
+site_name = "©Hyperbench Documentation"
+site_description = "Documentation for Hyperbench"
+site_author = "Hypernetwork Research Group"
+site_url = "https://hypernetwork-research-group.github.io/hyperbench"
+repo_name = "hypernetwork-research-group/hyperbench"
+repo_url = "https://github.com/hypernetwork-research-group/hyperbench"
+copyright = """
+Copyright &copy; 2026 The authors
+"""
+
+# Mirror the old MkDocs nav structure explicitly.
+nav = [
+  { "Home" = "index.md" },
+  { "Getting Started" = [
+    { "Overview" = "getting-started/overview.md" },
+    { "Installation" = "getting-started/installation.md" },
+    { "Package overview" = "getting-started/package.md" },
+    { "Tutorials" = "getting-started/tutorials.md" },
+  ] },
+  { "User Guide" = [
+    { "Overview" = "user-guide/overview.md" },
+    { "1 minute to hyperbench" = "user-guide/1-minute-to-hyperbench.md" },
+    { "HIF integration" = "user-guide/hif-integration.md" },
+    { "Models" = "user-guide/models.md" },
+    { "Training" = "user-guide/training.md" },
+    { "Benchmarking" = "user-guide/benchmarking.md" },
+    { "Loggers" = "user-guide/loggers.md" },
+    { "TensorBoard" = "user-guide/tensorboard.md" },
+  ] },
+  { "Development" = [
+    { "Overview" = "development/development.md" },
+    { "Contributing" = "development/contribution.md" },
+    { "Makefile" = "development/makefile.md" },
+    { "Policies" = "development/policies.md" },
+    { "CI/CD" = "development/ci.md" },
+  ] },
+  { "API Reference" = [
+    { "Overview" = "api/reference.md" },
+    { "Data" = "api/data.md" },
+    { "HLP" = "api/hlp.md" },
+    { "Models" = "api/models.md" },
+    { "NN" = "api/nn.md" },
+    { "Train" = "api/train.md" },
+    { "Types" = "api/types.md" },
+    { "Utils" = "api/utils.md" },
+  ] },
+  { "Release Notes" = "release-notes/release_notes.md" },
+]
+
+# Additional CSS files, relative to docs/.
+extra_css = ["stylesheets/extra.css"]
+
+[[project.extra.social]]
+icon = "fontawesome/brands/github"
+link = "https://github.com/hypernetwork-research-group/hyperbench"
+
+[project.theme]
+language = "en"
+
+# Zensical provides a number of feature toggles that change the behavior
+# of the documentation site.
+features = [
+  # Keep feature parity with the previous MkDocs Material config.
+  "navigation.tabs",
+  "navigation.sections",
+  "navigation.tracking",
+  # "navigation.expand",
+  # "toc.integrate",
+  "search.highlight",
+  "content.code.copy",
+  "content.code.select",
+]
+[[project.theme.palette]]
+media = "(prefers-color-scheme: light)"
+scheme = "default"
+primary = "light-green"
+accent = "light-green"
+toggle.icon = "lucide/sun"
+toggle.name = "Switch to dark mode"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: dark)"
+scheme = "slate"
+primary = "light-green"
+accent = "light-green"
+toggle.icon = "lucide/moon"
+toggle.name = "Switch to light mode"
+[project.markdown_extensions.abbr]
+[project.markdown_extensions.admonition]
+[project.markdown_extensions.codehilite]
+[project.markdown_extensions.attr_list]
+[project.markdown_extensions.def_list]
+[project.markdown_extensions.footnotes]
+[project.markdown_extensions.md_in_html]
+[project.markdown_extensions.toc]
+permalink = true
+[project.markdown_extensions.pymdownx.arithmatex]
+generic = true
+[project.markdown_extensions.pymdownx.betterem]
+[project.markdown_extensions.pymdownx.caret]
+[project.markdown_extensions.pymdownx.details]
+[project.markdown_extensions.pymdownx.emoji]
+emoji_generator = "zensical.extensions.emoji.to_svg"
+emoji_index = "zensical.extensions.emoji.twemoji"
+[project.markdown_extensions.pymdownx.highlight]
+anchor_linenums = true
+line_spans = "__span"
+pygments_lang_class = true
+[project.markdown_extensions.pymdownx.inlinehilite]
+[project.markdown_extensions.pymdownx.keys]
+[project.markdown_extensions.pymdownx.magiclink]
+[project.markdown_extensions.pymdownx.mark]
+[project.markdown_extensions.pymdownx.smartsymbols]
+[project.markdown_extensions.pymdownx.superfences]
+custom_fences = [
+  { name = "mermaid", class = "mermaid", format = "pymdownx.superfences.fence_code_format" }
+]
+[project.markdown_extensions.pymdownx.tabbed]
+alternate_style = true
+combine_header_slug = true
+[project.markdown_extensions.pymdownx.tasklist]
+custom_checkbox = true
+[project.markdown_extensions.pymdownx.tilde]
+
+# API reference generation (developer-facing)
+[project.plugins.mkdocstrings]
+default_handler = "python"
+
+[project.plugins.mkdocstrings.handlers.python]
+# Make the project root importable for mkdocstrings/griffe.
+paths = ["."]
+
+[project.plugins.mkdocstrings.handlers.python.options]
+docstring_style = "google"
+show_source = true
+show_root_heading = true
+show_symbol_type_heading = true
+show_symbol_type_toc = true
+members_order = "source"
+show_submodules = false

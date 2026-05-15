@@ -4,6 +4,10 @@ version = "0.1.0"
 description = ""
 readme = "README.md"
 requires-python = ">=3.10"
+authors = [
+    { name = "Tiziano Citro", email = "tcitro@unisa.it" },
+    { name = "Daniele De Vinco", email = "ddevinco@unisa.it"}
+]
 dependencies = [
     "fastjsonschema==2.21.2",
     "huggingface-hub==1.11.0",
@@ -35,14 +39,13 @@ include = ["hyperbench"]
 
 [dependency-groups]
 dev = [
-    "mkdocs==1.6.1",
-    "mkdocs-material==9.7.6",
     "mkdocstrings[python]==1.0.4",
     "pre-commit==4.5.1",
     "pytest==9.0.3",
     "pytest-cov==7.1.0",
     "ruff==0.15.11",
     "ty==0.0.34",
+    "zensical==0.0.41",
 ]
 
 [tool.pytest.ini_options]

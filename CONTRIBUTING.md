@@ -2,30 +2,77 @@
 
 The project main language is English.
 
-## Pre-commit hooks
+## Quickstart for contributors
 
-Run the following command to install the pre-commit hook:
+We use different tools to make our life easier.
+Altough they are not mandatory, we have several configuration to help you build the project:
+
+- [uv](https://github.com/astral-sh/uv)
+- [make](https://www.gnu.org/software/make/)
+- [pre-commit](https://pre-commit.com)
 
 ```bash
-make build
+git clone https://github.com/hypernetwork-research-group/hyperbench.git
+cd hyperbench
 
+# install pre-commit to setup automatic local check
+# This will ensure that your code adheres to the project's coding standards before each commit.
 pre-commit install \
     --config .github/hooks/.pre-commit-config.yaml \
     --install-hooks \
     --overwrite
-```
 
-This will ensure that your code adheres to the project's coding standards before each commit.
+# too see all the available commands already mapped in Makefile
+make help
 
-## Build and test
-
-To build the project and run tests, use the following command:
-
-```bash
+# install dependencies with uv
+make build
+# or run the full suite, which include building + test
 make
+
+# to run an existing example
+make run examples/mlp_common_neighbors.py
 ```
 
-## Commit message style
+For a full explanation of the project structure, commands, and development guidelines, please refer to the [documentation](https://hyperbench.readthedocs.io/en/latest/).
+
+## Contribution types and expectations
+
+### Feature
+Best for: new capabilities (models, datasets, training features, utilities).
+
+Expectations:
+- Prefer opening an issue first to discuss scope and API impact.
+- Include tests for the new behavior.
+- Update docs (or docstrings) if user-facing behavior changes.
+
+### Fix
+Best for: incorrect outputs, crashes, regressions, or broken docs/examples.
+
+Expectations:
+- Include a minimal reproduction (or a failing test) and a clear fix.
+- Add a regression test when feasible.
+- Keep the PR small and focused on the root cause.
+
+### Docs
+Check [guidelines](#contributing-to-the-documentation) for more details.
+
+Best for: documentation, API docs clarity, examples, READMEs.
+
+Expectations:
+- Ensure documentation build correctly (`make docs-build`).
+- Keep examples deterministic and copy-paste runnable when possible.
+
+## Workflow
+
+1. Fork the repo and create a branch (see [branch naming](#branch-naming)).
+2. Make changes with tests/docs as needed.
+3. Run local quality gates (see [quality gates](#quality-gates)).
+4. Open a PR and fill in the PR template.
+5. Address review feedback.
+6. Ensure your changes are rebased onto the latest main branch before merge.
+
+### Commit message style
 
 Commit messages should follow the [conventional commit specification](https://www.conventionalcommits.org/en/v1.0.0/).
 
@@ -42,7 +89,7 @@ Commit messages should be structured in a way that can be read as if they were c
 
 Reads as *"If applied, this commit will add new authentication method to API"*.
 
-## Branch naming
+### Branch naming
 
 Branch names should follow the pattern `^(feat|fix|chore|refactor|docs)\/[a-z0-9]+(-[a-z0-9]+)*$`. This means that branch names should:
 - Start with the same structural elements as commit messages.
@@ -61,3 +108,52 @@ To verify that your branch name adheres to these guidelines, you can use the fol
 ```bash
 git rev-parse --abbrev-ref HEAD | grep -Eq '^(feat|fix|chore|refactor|docs)\/[a-z0-9]+(-[a-z0-9]+)*$' && echo "Branch name is compliant" || echo "Invalid branch name"
 ```
+
+## Quality gates
+
+- If you have pre-commit installed, it will automatically check your code before each commit. You can also run it manually with `pre-commit run --all-files`.
+- For manual checks, you can use the following commands:
+  - Linting and formatting: `make check` (which runs `ruff format` and `ty check`).
+  - Running tests: `make test` (or `make stest <path>` for specific tests).
+
+Maintainers may:
+- Request additional explanation, tests, or revisions.
+- Ask contributors to rewrite or remove content that does not meet project standards.
+- Reject contributions that do not satisfy quality, security, or other expectations.
+
+## AI-assisted contribution policy
+
+AI tools (for example, LLMs/code assistants) may be used to help prepare contributions.
+
+Contributors must:
+
+- **Take full responsibility** for all submitted content, including correctness, clarity, style, tests, licensing, and originality.
+- **Review and validate manually** any AI-generated code/docs before submission.
+
+## Contributing to the documentation
+
+```bash
+# to build the docs locally
+make docs-build
+# to serve the docs locally (after building)
+make docs-serve
+# or for a one-off command
+make docs
+```
+
+### Configuration
+- Docs are built with zensical, which uses a custom theme and configuration (see [zensical.toml](./zensical.toml)).
+- API reference is generated with [mkdocstrings](https://mkdocstrings.github.io/) from docstrings in the codebase.
+
+### Docstring conventions
+References:
+- [Google Python style guidelines](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings)
+- [Zensical docs conventions](https://zensical.org/docs/get-started/)
+
+- Use Google-style docstrings with sections like `Args:`, `Returns:`, and `Examples:`.
+- Prefer fenced code blocks with syntax highlighting for examples.
+- Use type formatting conventions (e.g., `list[str]` instead of `List[str]`).
+
+### API reference
+
+Each API reference is generated with `mkdocstrings` and is under `docs/api/`. Each module should have a corresponding markdown file (e.g., `data.md` for `hyperbench.data`) with an overview and the `::: module` directive.

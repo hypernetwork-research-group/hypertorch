@@ -9,8 +9,8 @@ UV=uv
 PYTEST=pytest
 LINTER=ruff
 TYPECHECKER=ty
-MKDOCS_CONFIG=.github/mkdocs.yml
-MKDOCS_URL=http://127.0.0.1:8000
+ZENSICAL_CONFIG=zensical.toml
+DOCS_ADDR=127.0.0.1:8000
 
 all: clean setup check test
 
@@ -76,11 +76,11 @@ docs: docs-build docs-serve
 
 docs-build:
 	@echo '=== Building docs ==='
-	$(UV) run mkdocs build -f $(MKDOCS_CONFIG)
+	$(UV) run zensical build --clean -f $(ZENSICAL_CONFIG)
 
 docs-serve:
-	@echo '=== Serving docs at $(MKDOCS_URL) ==='
-	$(UV) run mkdocs serve -f $(MKDOCS_CONFIG)
+	@echo '=== Serving docs at http://$(DOCS_ADDR) ==='
+	$(UV) run zensical serve -f $(ZENSICAL_CONFIG) -a $(DOCS_ADDR)
 
 loc:
 	@echo '=== Counting lines of code ==='
@@ -90,11 +90,11 @@ clean:
 	@echo '=== Cleaning up ==='
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 	find . -type f -name "*.pyc" -delete 2>/dev/null || true
-	rm -rf $(PROJECT_NAME).egg-info .pytest_cache .coverage .$(LINTER)_cache .github/site
+	rm -rf $(PROJECT_NAME).egg-info .pytest_cache .coverage .$(LINTER)_cache site docs/site
 
 destroy: clean
 	@echo '=== Destroying environment ==='
-	rm -rf .venv $(UV).lock
+	rm -rf .venv $(UV).lock hyperbench_logs
 
 help:
 	@echo "Usage: make [target]"

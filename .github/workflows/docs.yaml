@@ -1,17 +1,20 @@
-name: Deploy docs
+name: Documentation
 
 on:
   push:
     branches:
       - main
       - docs
+  pull_request:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
 
 jobs:
-  deploy:
+  docstring-check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -28,6 +31,38 @@ jobs:
           uv venv
           uv pip install -e .
 
-      - name: Deploy to GitHub Pages
+      - name: Check docstrings
+        continue-on-error: true # TODO: remove when all docstring issues are fixed
         run: |
-          uv run mkdocs gh-deploy -f .github/mkdocs.yml --force
+          uv run ./scripts/validate_docstrings.py
+
+  deploy:
+    needs: docstring-check
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/configure-pages@v6
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+      - name: Install dependencies
+        run: |
+          uv venv
+          uv pip install -e .
+          uv pip install zensical mkdocstrings[python]
+          uv run zensical build --clean
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: docs/site
+
+      - uses: actions/deploy-pages@v5
+        id: deployment

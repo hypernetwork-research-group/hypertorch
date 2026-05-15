@@ -200,8 +200,6 @@ class ABHyperedgeWeightsEnricher(HyperedgeWeightsEnricher):
 
         Args:
             hyperedge_index: Hyperedge index tensor of shape ``(2, num_hyperedges)``.
-            alpha: Scaling factor for the random component added to weights.
-            beta: If provided, the random component is alpha * beta.
 
         Returns:
             Tensor of shape ``(num_hyperedges,)`` containing the weight of each hyperedge.

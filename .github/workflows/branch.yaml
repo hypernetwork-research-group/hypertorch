@@ -1,0 +1,23 @@
+# https://stackoverflow.com/questions/79382491/how-to-proactively-enforce-branch-naming-convention-in-github
+name: Branch Naming Convention Check
+on:
+  create:
+    branches:
+      - '**'
+
+permissions:
+  contents: read
+
+jobs:
+  branch-naming-rules:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check branch name
+        run: |
+          BRANCH_NAME=${GITHUB_REF#refs/heads/}
+
+          VALID_PATTERNS="^(feat|fix|chore|refactor|docs)\/[a-z0-9]+(-[a-z0-9]+)*$"
+          if ! [[ $BRANCH_NAME =~ $VALID_PATTERNS ]]; then
+            echo "Branch name invalid"
+            exit 1
+          fi

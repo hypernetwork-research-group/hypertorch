@@ -1,55 +1,66 @@
 # Installation
 
-## Prerequisites
 
-- [uv](https://github.com/astral-sh/uv)
-- [make](https://www.gnu.org/software/make/)
+## Install with pip or uv
 
-## Build
-To build the project, run:
-```bash
-make
-```
-
-### Linter and type checker
-
-Use [Ruff](https://github.com/charliermarsh/ruff) for linting and formatting:
+For users working with the pip package manager, hyperbench can be installed from PyPI.
 
 ```bash
-make lint
+pip install hyperbench
+# if you want to install optional dependencies for tensorboard support:
+pip install "hyperbench[tensorboard]"
 ```
 
-Use [Ty](https://docs.astral.sh/ty/) for type checking:
+Additionally, it is recommended to install and run hyperbench from a virtual environment, for example, using the Python standard library’s venv.
+Internally, we use [uv](https://github.com/astral-sh/uv) as a build and development tool, which also provides a convenient way to manage virtual environments and dependencies.
+After installing uv, you can set up the environment and install hyperbench with:
 
 ```bash
-make typecheck
+uv init
+uv add hyperbench # or uv pip install hyperbench
+# for optional dependencies:
+uv add "hyperbench[tensorboard]"
 ```
 
-Use the `check` target to run both linter and type checker:
+## Python version support
 
-```bash
-make check
-```
+See Python support policy in [Policies](../development/policies.md#python-support).
 
-### Tests
+## Install from source
 
-Use [pytest](https://docs.pytest.org/en/latest/) to run the test suite:
+Use the development installation for contributing or if you want to use the latest features that haven't been released yet. See the [Development guide](../development/development.md) for instructions on setting up a development environment.
 
-```bash
-make test
+## Required dependencies
 
-# Run tests with HTML report
-uv run pytest --cov=hyperbench --cov-report=html
-```
+Hyperbench has the following required dependencies:
 
-### Pre-commit hooks
+| Dependency | Version | Markers / notes |
+| --- | --- | --- |
+| fastjsonschema | 2.21.2 |  |
+| huggingface-hub | 1.11.0 |  |
+| lightning | 2.6.1 |  |
+| numpy | 2.2.6 | `python_full_version < '3.11'` |
+| numpy | 2.4.4 | `python_full_version >= '3.11'` |
+| requests | 2.33.1 |  |
+| torch | 2.11.0 |  |
+| torch-cluster | 1.6.3 | Installed via a custom `uv` index (`pyg-cpu`) |
+| torch-geometric | 2.7.0 |  |
+| zstandard | 0.25.0 |  |
 
-Run the following command to install the pre-commit hook:
+## Optional dependencies
 
-```bash
-make setup
+| Dependency | Version | Notes |
+| --- | --- | --- |
+| tensorboard | 2.20.0 | See [TensorBoard Integration](../development/development.md#tensorboard-support) |
 
-pre-commit install --config .github/hooks/.pre-commit-config.yaml --hook-type pre-commit --install-hooks --overwrite
-```
+## Development dependencies
 
-This will ensure that your code adheres to the project's coding standards before each commit.
+| Dependency | Version | Notes |
+| --- | --- | --- |
+| mkdocstrings-python | 1.0.4 |  |
+| pre-commit | 4.5.1 |  |
+| pytest | 9.0.3 |  |
+| pytest-cov | 7.1.0 |  |
+| ruff | 0.15.11 |  |
+| ty | 0.0.34 |  |
+| zensical | 0.0.41 |  |

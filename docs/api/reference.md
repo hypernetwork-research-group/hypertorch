@@ -1,66 +1,16 @@
 # API Reference
 
-Complete API documentation for all Hyperbench modules.
+Complete API documentation for Hyperbench modules.
 
-## Data Module
+Developer note: rendering is configured in `zensical.toml` under
+`[project.plugins.mkdocstrings]` (handler options, source paths, docstring style).
 
-::: hyperbench.data
-    options:
-      show_root_heading: true
-      show_source: true
-      members_order: source
-      show_submodules: true
+## Modules
 
-## HLP Module
-
-::: hyperbench.hlp
-    options:
-      show_root_heading: true
-      show_source: true
-      members_order: source
-      show_submodules: true
-
-## Models Module
-
-::: hyperbench.models
-    options:
-      show_root_heading: true
-      show_source: true
-      members_order: source
-      show_submodules: true
-
-## NN Module
-
-::: hyperbench.nn
-    options:
-      show_root_heading: true
-      show_source: true
-      members_order: source
-      show_submodules: true
-
-## Train Module
-
-::: hyperbench.train
-    options:
-      show_root_heading: true
-      show_source: true
-      members_order: source
-      show_submodules: true
-
-## Types Module
-
-::: hyperbench.types
-    options:
-      show_root_heading: true
-      show_source: true
-      members_order: source
-      show_submodules: true
-
-## Utils Module
-
-::: hyperbench.utils
-    options:
-      show_root_heading: true
-      show_source: true
-      members_order: source
-      show_submodules: true
+- [Data](data.md)
+- [HLP](hlp.md)
+- [Models](models.md)
+- [NN](nn.md)
+- [Train](train.md)
+- [Types](types.md)
+- [Utils](utils.md)
