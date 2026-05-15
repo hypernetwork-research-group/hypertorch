@@ -15,8 +15,9 @@ Write hyperbench lowercase when in hyperbench core (writing functions or classes
 - `make stest T=<test_file_or_path>` to run a specific test or folder
 - `uv run pytest` to run pytest directly (not recommended for regular use)
 
-- `make lint` to run linters and formatters
-- `make typecheck` to run type checkers
+- `make lint` to run linter
+- `make format` to run formatter
+- `make typecheck` to run type checker
 - `make docs` to build documentation
 - `make build` to build the package
 - `make clean` to clean up generated files
@@ -44,27 +45,39 @@ Write hyperbench lowercase when in hyperbench core (writing functions or classes
 - `pyproject.toml` - package configuration and dependencies
 
 
-## Architecture Boundaries
+## Coding Standards
 
-## Security Model
+- **Formatting:** Run the formatter and linter on changed files before committing. Prefer the repository Makefile targets:
+  - `make format` (format code)
+  - `make lint` (lint and style checks)
+  - Use `ruff` for fast linting and formatting checks.
+- **Typing:** Add and preserve type annotations. Use the project's typecheck target (`make typecheck`) during development.
+- **Imports:** Keep imports at the top of the file. Use `TYPE_CHECKING` guards for heavy, optional, or type-only imports.
+- **No asserts in production code:** Avoid `assert` statements for runtime checks in library code — use explicit error handling and exceptions instead.
+- **Keep public APIs stable:** Avoid changing public-facing function/class signatures without a clear, documented migration path.
+- **Small, focused commits:** Keep commits minimal and focused; prefer multiple small PRs to one large refactor.
 
-## Shared libraries
+## Testing Standards
 
-## Coding Standards
+- **Tests location:** Tests live under `hyperbench/tests/` and should mirror module locations.
+- **Run tests:** Prefer running tests via Makefile targets:
+  - `make test` for the full suite
+  - `make stest T=<test_file_or_path>` for a single test or folder
+  - For one-off runs use `uv run pytest`.
+- **Pytest style:** Use pytest functions and fixtures (avoid `unittest.TestCase`). Use `@pytest.mark.parametrize` for multiple inputs; prefer `pytest.param(..., id=...)` for readable case ids.
+- **Fixtures:** Put shared fixtures in `conftest.py` and keep fixture scope minimal. Use `autouse` sparingly.
+- **Deterministic tests:** Tests must be deterministic — avoid relying on timing, network, or external services. Use mocks and fixtures for isolation.
+- **Property tests & strategies:** Use Hypothesis for property-based tests where appropriate; keep generated example sizes small in CI.
+- **Mocking:** Use `unittest.mock` with `spec`/`autospec` for safety; prefer `AsyncMock` for async code.
+- **Time-dependent tests:** Use time-freezing helpers (e.g. `time_machine`) rather than sleeping or real clock checks.
+- **Coverage and CI:** Add tests for new behavior, edge cases, and failure modes. Ensure CI stays green before requesting a review.
 
-## Testing Standards
 
 ## Conventions
 
 Git remote, commits and PRs should follow the repository's contribution guidelines:
   - CONTRIBUTING.md
   - docs/contributing.md
-
-## Creating Pull Requests
-
-## Tracking issues for deferred work
-
-## GitHub messages drafted by agents
 
 ## Boundaries
 
@@ -79,7 +92,7 @@ Git remote, commits and PRs should follow the repository's contribution guidelin
 
 ## Specific agents references
 
-- docs/agents/references/testing.md
-- docs/agents/references/package.md
-- docs/agents/references/type-system.md
-- docs/agents/references/standard-lib.md
+- [Testing](docs/agents/references/testing.md)
+- [Package](docs/agents/references/package.md)
+- [Type System](docs/agents/references/type-system.md)
+- [Standard Library](docs/agents/references/standard-lib.md)
