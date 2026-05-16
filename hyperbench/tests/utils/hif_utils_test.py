@@ -143,8 +143,12 @@ def test_get_datasets_shas_returns_shas_and_none_on_failure():
         "algebra": "sha-algebra",
         "missing-dataset": None,
     }
-    mock_hf_api.return_value.dataset_info.assert_any_call(repo_id="HypernetworkRG/algebra")
-    mock_hf_api.return_value.dataset_info.assert_any_call(repo_id="HypernetworkRG/missing-dataset")
+    mock_hf_api.return_value.dataset_info.assert_any_call(
+        repo_id="HypernetworkRG/algebra"
+    )
+    mock_hf_api.return_value.dataset_info.assert_any_call(
+        repo_id="HypernetworkRG/missing-dataset"
+    )
 
 
 def test_get_dataset_sha_returns_sha():
@@ -156,7 +160,9 @@ def test_get_dataset_sha_returns_sha():
         result = get_hf_dataset_sha("algebra")
 
     assert result == "sha-algebra"
-    mock_hf_api.return_value.dataset_info.assert_called_once_with(repo_id="HypernetworkRG/algebra")
+    mock_hf_api.return_value.dataset_info.assert_called_once_with(
+        repo_id="HypernetworkRG/algebra"
+    )
 
 
 def test_get_dataset_sha_returns_none_on_failure():
@@ -169,7 +175,9 @@ def test_get_dataset_sha_returns_none_on_failure():
         result = get_hf_dataset_sha("algebra")
 
     assert result is None
-    mock_hf_api.return_value.dataset_info.assert_called_once_with(repo_id="HypernetworkRG/algebra")
+    mock_hf_api.return_value.dataset_info.assert_called_once_with(
+        repo_id="HypernetworkRG/algebra"
+    )
 
 
 def test_get_gh_datasets_shas_returns_shas_and_none_on_failure():
@@ -184,7 +192,8 @@ def test_get_gh_datasets_shas_returns_shas_and_none_on_failure():
 
     with (
         patch(
-            "hyperbench.utils.hif_utils.requests.get", side_effect=requests_get_side_effect
+            "hyperbench.utils.hif_utils.requests.get",
+            side_effect=requests_get_side_effect,
         ) as mock_requests_get,
         pytest.warns(UserWarning, match="missing-dataset: failed to retrieve SHA"),
     ):
@@ -197,10 +206,12 @@ def test_get_gh_datasets_shas_returns_shas_and_none_on_failure():
     mock_requests_get.assert_any_call(
         "https://api.github.com/repos/hypernetwork-research-group/datasets/commits",
         params={"path": "algebra.json.zst", "per_page": 1},
+        timeout=10,
     )
     mock_requests_get.assert_any_call(
         "https://api.github.com/repos/hypernetwork-research-group/datasets/commits",
         params={"path": "missing-dataset.json.zst", "per_page": 1},
+        timeout=10,
     )
 
 
@@ -212,9 +223,12 @@ def test_get_gh_dataset_trigger_no_commit():
 
     with (
         patch(
-            "hyperbench.utils.hif_utils.requests.get", side_effect=requests_get_side_effect
+            "hyperbench.utils.hif_utils.requests.get",
+            side_effect=requests_get_side_effect,
         ) as mock_requests_get,
-        pytest.warns(UserWarning, match="algebra: no commits found for algebra.json.zst"),
+        pytest.warns(
+            UserWarning, match="algebra: no commits found for algebra.json.zst"
+        ),
     ):
         result = get_gh_dataset_sha("algebra", "owner", "repo")
 
@@ -222,4 +236,5 @@ def test_get_gh_dataset_trigger_no_commit():
     mock_requests_get.assert_called_once_with(
         "https://api.github.com/repos/owner/repo/commits",
         params={"path": "algebra.json.zst", "per_page": 1},
+        timeout=10,
     )
