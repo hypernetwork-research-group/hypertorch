@@ -1,6 +1,5 @@
 # Installation
 
-
 ## Install with pip or uv
 
 For users working with the pip package manager, hyperbench can be installed from PyPI.
@@ -13,16 +12,17 @@ pip install "hyperbench[tensorboard]"
 
 Additionally, it is recommended to install and run hyperbench from a virtual environment, for example, using the Python standard library’s venv.
 Internally, we use [uv](https://github.com/astral-sh/uv) as a build and development tool, which also provides a convenient way to manage virtual environments and dependencies.
-After installing uv, you can set up the environment and install hyperbench with:
+After installing uv, you can create a project environment and add hyperbench with:
 
 ```bash
 uv init
 uv add hyperbench # or uv pip install hyperbench
-# for optional dependencies:
+
+# For optional dependencies
 uv add "hyperbench[tensorboard]"
 ```
 
-## Python version support
+## Python version support
 
 See Python support policy in [Policies](../development/policies.md#python-support).
 
@@ -30,9 +30,9 @@ See Python support policy in [Policies](../development/policies.md#python-suppor
 
 Use the development installation for contributing or if you want to use the latest features that haven't been released yet. See the [Development guide](../development/development.md) for instructions on setting up a development environment.
 
-## Required dependencies
+## Required dependencies
 
-Hyperbench has the following required dependencies:
+HyperBench has the following required dependencies:
 
 | Dependency | Version | Markers / notes |
 | --- | --- | --- |
@@ -53,7 +53,7 @@ Hyperbench has the following required dependencies:
 | --- | --- | --- |
 | tensorboard | 2.20.0 | See [TensorBoard Integration](../development/development.md#tensorboard-support) |
 
-## Development dependencies
+## Development dependencies
 
 | Dependency | Version | Notes |
 | --- | --- | --- |

@@ -1,6 +1,6 @@
 # API Reference
 
-Complete API documentation for Hyperbench modules.
+Complete API documentation for HyperBench modules.
 
 Developer note: rendering is configured in `zensical.toml` under
 `[project.plugins.mkdocstrings]` (handler options, source paths, docstring style).

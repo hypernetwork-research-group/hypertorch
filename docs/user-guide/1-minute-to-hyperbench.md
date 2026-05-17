@@ -4,8 +4,8 @@ This page is a quick, “copy/paste and run” introduction to HyperBench.
 
 ## Prerequisites
 
-- Follow the [installation guide](../getting-started/installation.md)
-- Recommended tools: `uv` + `make`
+- Follow the [installation guide](../getting-started/installation.md).
+- Recommended tools: `uv` + `make`.
 
 ## Run your first example
 
@@ -17,7 +17,6 @@ make run examples/gcn.py
 ```
 
 Other good starting points are located in `examples/` (e.g. `hgnn.py`, `villain.py`).
-
 
 ## What happens when you run an example
 
@@ -32,14 +31,14 @@ Most examples follow the same high-level pipeline:
 
 Artifacts are written under `hyperbench_logs/` (by default). In particular:
 
-- `hyperbench_logs/experiment_*/comparison/results.md` (markdown table)
-- `hyperbench_logs/experiment_*/comparison/results.tex` (LaTeX table)
+- `hyperbench_logs/experiment_*/comparison/results.md` (markdown table).
+- `hyperbench_logs/experiment_*/comparison/results.tex` (LaTeX table).
 
 ## Next steps
 
-- Dataset ingestion: [HIF integration](hif-integration.md)
-- Model selection/customization: [Models](models.md)
-- Training loop (callbacks, devices, etc.): [Training](training.md)
-- Comparing multiple models consistently: [Benchmarking](benchmarking.md)
-- Outputs and logging: [Loggers](loggers.md)
-- Visualizing runs: [TensorBoard](tensorboard.md)
+- Dataset ingestion: [HIF integration](hif-integration.md).
+- Model selection/customization: [Models](models.md).
+- Training loop (callbacks, devices, etc.): [Training](training.md).
+- Comparing multiple models consistently: [Benchmarking](benchmarking.md).
+- Outputs and logging: [Loggers](loggers.md).
+- Visualizing runs: [TensorBoard](tensorboard.md).

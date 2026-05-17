@@ -5,7 +5,7 @@ The project main language is English.
 ## Quickstart for contributors
 
 We use different tools to make our life easier.
-Altough they are not mandatory, we have several configuration to help you build the project:
+Although they are not mandatory for every contribution, the repository is configured around:
 
 - [uv](https://github.com/astral-sh/uv)
 - [make](https://www.gnu.org/software/make/)
@@ -15,26 +15,27 @@ Altough they are not mandatory, we have several configuration to help you build 
 git clone https://github.com/hypernetwork-research-group/hyperbench.git
 cd hyperbench
 
-# install pre-commit to setup automatic local check
+# Install dependencies with uv
+make build
+
+# Install pre-commit to set up automatic local checks
 # This will ensure that your code adheres to the project's coding standards before each commit.
-pre-commit install \
+uv run pre-commit install \
     --config .github/hooks/.pre-commit-config.yaml \
     --install-hooks \
     --overwrite
 
-# too see all the available commands already mapped in Makefile
+# See all the available commands mapped in the Makefile
 make help
 
-# install dependencies with uv
-make build
-# or run the full suite, which include building + test
+# Or run the full suite, which includes setup, checks, and tests
 make
 
-# to run an existing example
+# Run an existing example
 make run examples/mlp_common_neighbors.py
 ```
 
-For a full explanation of the project structure, commands, and development guidelines, please refer to the [documentation](https://hyperbench.readthedocs.io/en/latest/).
+For a full explanation of the project structure, commands, and development guidelines, refer to the [documentation](https://hypernetwork-research-group.github.io/hyperbench/).
 
 ## Contribution types and expectations
 
@@ -60,7 +61,7 @@ Check [guidelines](#contributing-to-the-documentation) for more details.
 Best for: documentation, API docs clarity, examples, READMEs.
 
 Expectations:
-- Ensure documentation build correctly (`make docs-build`).
+- Ensure documentation builds correctly (`make docs-build`).
 - Keep examples deterministic and copy-paste runnable when possible.
 
 ## Workflow
@@ -113,8 +114,8 @@ git rev-parse --abbrev-ref HEAD | grep -Eq '^(feat|fix|chore|refactor|docs)\/[a-
 
 - If you have pre-commit installed, it will automatically check your code before each commit. You can also run it manually with `pre-commit run --all-files`.
 - For manual checks, you can use the following commands:
-  - Linting and formatting: `make check` (which runs `ruff format` and `ty check`).
-  - Running tests: `make test` (or `make stest <path>` for specific tests).
+  - Linting, formatting, and type checking: `make check`.
+  - Running tests: `make test` (or `make stest T=<path>` for specific tests under `hyperbench/tests/`).
 
 Maintainers may:
 - Request additional explanation, tests, or revisions.

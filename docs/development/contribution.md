@@ -4,8 +4,7 @@ All contributions, bug reports, bug fixes, documentation improvements,
 enhancements, and ideas are welcome. We ask that contributors follow
 all contribution guidelines when participating with HyperBench.
 
-
-## Starting out
+## Getting started
 
 If you are brand new to open-source development, we recommend searching
 the [GitHub "issues" tab](https://github.com/hypernetwork-research-group/hyperbench/issues)
@@ -25,7 +24,7 @@ or a pull request in the past 2-3 weeks, you may take it over.
 If for whatever reason you are not able to continue working with the issue, please
 leave a comment on an issue, so other people know it's available again.
 
-## Submitting a pull request
+## Submitting a pull request
 
 ### Version control, Git, and GitHub
 
@@ -60,7 +59,7 @@ Below are some useful resources for learning more about forking and pull request
 setting up your SSH key, and configuring git.  All these steps need to be completed before
 you can work seamlessly between your local repository and GitHub.
 
-### Create a fork of HyperBench
+### Create a fork of HyperBench
 
 You will need your own copy of HyperBench (aka fork) to work on the code. Go to the
 [HyperBench project page](https://github.com/hypernetwork-research-group/hyperbench) and hit the `Fork`
@@ -77,8 +76,7 @@ You will want to clone your fork to your machine
 This creates the directory ``hyperbench-yourname`` and connects your repository to
 the upstream (main project) *HyperBench* repository.
 
-
-### Creating a feature branch
+### Creating a feature branch
 
 Your local ``main`` branch should always reflect the current state of HyperBench repository.
 First ensure it's up-to-date with the main HyperBench repository.
@@ -102,7 +100,6 @@ and switch in between them using the ``git checkout`` command.
 When you want to update the feature branch with changes in main after
 you created the branch, check the section on
 [updating a PR](#updating-your-pull-request).
-
 
 ### Making code changes
 
@@ -136,8 +133,7 @@ message
     git commit -m "feat: your commit message goes here"
 ```
 
-
-### Pushing your changes
+### Pushing your changes
 
 When you want your changes to appear publicly on your GitHub page, push your
 forked feature branch's commits while adhering to the repository's commit message guidelines (see [contributing guidelines](development.md#contributing-to-the-code-base)).
@@ -165,7 +161,7 @@ like
 Now your code is on GitHub, but it is not yet a part of the HyperBench project. For that to
 happen, a pull request needs to be submitted on GitHub.
 
-### Making a pull request
+### Making a pull request
 
 Once you have finished your code changes, your code change will need to follow the
 [HyperBench contribution guidelines](development.md#contributing-to-the-code-base) to be successfully accepted.
@@ -178,16 +174,8 @@ and merged into the project to appear in the next release. To submit a pull requ
 - Click on the ``Compare & pull request`` button
 - You can then click on ``Commits`` and ``Files Changed`` to make sure everything looks
    okay one last time
-- Write a descriptive title that includes prefixes. HyperBench uses a convention for title
-   prefixes. Here are some common ones along with general guidelines for when to use them:
-
-    - `feat:` : A new feature or enhancement to an existing feature.
-    - `fix:` : A bug fix or patch to existing code.
-    - `chore:` : Routine tasks, maintenance, or non-code changes (e.g
-        updating documentation, refactoring without changing functionality).
-    - `refactor:` : A code change that neither fixes a bug nor adds a feature but makes the code cleaner or more efficient.
-    - `docs:` : Changes to documentation only.
-    You can check the [CONTRIBUTING.md](https://github.com/hypernetwork-research-group/hyperbench/blob/main/CONTRIBUTING.md) file for more details on commit message guidelines and title prefixes.
+- Write a descriptive title with an accepted prefix: `feat:`, `fix:`, `chore:`, `refactor:`, or `docs:`.
+- Check [CONTRIBUTING.md](https://github.com/hypernetwork-research-group/hyperbench/blob/main/CONTRIBUTING.md) for the full commit message and title guidelines.
 
 - Complete the checklist template in the body of the pull request and write an additional description below the checklist if necessary.
 - Click ``Send Pull Request``.
@@ -195,14 +183,14 @@ and merged into the project to appear in the next release. To submit a pull requ
 This request then goes to the repository maintainers, and they will review
 the code.
 
->> Notes
+> Notes
 >
->    A pull request should be associated with an open Github issue except if the change is trivial such as fixing a typo.
->   Pull requests that do not abide by all the applicable contribution guidelines may be closed by a maintainer. Contributors
->   who have shown continued, quality pull requests may be exempt from following all guidelines strictly.
+> A pull request should be associated with an open GitHub issue unless the change is trivial, such as fixing a typo.
+> Pull requests that do not follow the applicable contribution guidelines may be closed by a maintainer.
+> Contributors who have shown continued, quality pull requests may be exempt from following all guidelines strictly.
 
 
-### Updating your pull request
+### Updating your pull request
 
 Based on the review you get on your pull request, you will probably need to make
 some changes to the code. You can follow the [code committing steps](#making-code-changes)
@@ -233,12 +221,11 @@ If you have conflicts, you will need to resolve those conflicts before pushing. 
     git rebase --continue
 ```
 
->> Notes
+> Notes
 >
->    If you have uncommitted changes at the moment you want to update the branch with
->    ``main``, you will need to ``stash`` them prior to updating (see the
->    [stash docs](https://git-scm.com/book/en/v2/Git-Tools-Stashing-and-Cleaning)).
->    This will effectively store your changes and they can be reapplied after updating.
+> If you have uncommitted changes when you update the branch with `main`, stash them before updating.
+> See the [stash docs](https://git-scm.com/book/en/v2/Git-Tools-Stashing-and-Cleaning).
+> This will effectively store your changes and they can be reapplied after updating.
 
 After the feature branch has been updated locally, you can now update your pull
 request by pushing to the branch on GitHub:
@@ -262,4 +249,4 @@ To improve the chances of your pull request being reviewed, you should:
 - **Ensure you have appropriate tests**. These should be the first part of any PR
 - **Keep your pull requests as simple as possible**. Larger PRs take longer to review
 - **Ensure that CI is in a green state**. Reviewers may not even look otherwise (See [CI documentation](../development/ci.md) for more info on CI checks).
-- **Keep** `Updating your pull request`, either by request or every few days
+- **Keep your pull request updated** when requested or when `main` has moved significantly.

@@ -26,19 +26,23 @@ from hyperbench.train import MultiModelTrainer
 with MultiModelTrainer(
     model_configs=configs,
     auto_start_tensorboard=True,
-    auto_wait=True,                 # Enable `auto_wait` to keep the server alive after training completes so you can inspect results before the trainer is finalized.
-
+    auto_wait=True,
 ) as trainer:
     trainer.fit_all(train_dataloader=train_loader, val_dataloader=val_loader)
 ```
 
+Set `auto_wait=True` when you want the TensorBoard server to stay alive after training completes, until you press Enter.
+
 ## Start TensorBoard manually
 
 If you prefer to run it yourself, add
+
 ```python
 with MultiModelTrainer(
     ...
     auto_start_tensorboard=False,
+    ...
+):
     ...
 ```
 

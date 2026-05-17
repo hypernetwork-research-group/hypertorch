@@ -14,15 +14,15 @@ Copyright &copy; 2026 The authors
 # Mirror the old MkDocs nav structure explicitly.
 nav = [
   { "Home" = "index.md" },
-  { "Getting Started" = [
+  { "Getting started" = [
     { "Overview" = "getting-started/overview.md" },
     { "Installation" = "getting-started/installation.md" },
     { "Package overview" = "getting-started/package.md" },
     { "Tutorials" = "getting-started/tutorials.md" },
   ] },
-  { "User Guide" = [
+  { "User guide" = [
     { "Overview" = "user-guide/overview.md" },
-    { "1 minute to hyperbench" = "user-guide/1-minute-to-hyperbench.md" },
+    { "1 minute to HyperBench" = "user-guide/1-minute-to-hyperbench.md" },
     { "HIF integration" = "user-guide/hif-integration.md" },
     { "Models" = "user-guide/models.md" },
     { "Training" = "user-guide/training.md" },
@@ -37,7 +37,7 @@ nav = [
     { "Policies" = "development/policies.md" },
     { "CI/CD" = "development/ci.md" },
   ] },
-  { "API Reference" = [
+  { "API reference" = [
     { "Overview" = "api/reference.md" },
     { "Data" = "api/data.md" },
     { "HLP" = "api/hlp.md" },
@@ -47,7 +47,7 @@ nav = [
     { "Types" = "api/types.md" },
     { "Utils" = "api/utils.md" },
   ] },
-  { "Release Notes" = "release-notes/release_notes.md" },
+  { "Release notes" = "release-notes/release_notes.md" },
 ]
 
 # Additional CSS files, relative to docs/.

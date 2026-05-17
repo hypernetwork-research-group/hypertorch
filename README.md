@@ -32,8 +32,8 @@ Use HyperBench to:
 
 | Feature | What you can do | Highlights | Package |
 | :--- | :--- | :--- | :--- |
-| **Dataset management** | Load, preprocess, and manage hypergraph datasets | HIF loader/processor, built-in datasets like Cora, Pubmed, DBLP, Amazon, IMDB | `hyperbench.data` |
-| **Sampling and batching** | Efficiently sample subgraphs and prepare training batches | DataLoader, node/hyperedge samplers, customizable sampling strategies | `hyperbench.data` |
+| **Dataset management** | Load, preprocess, and manage hypergraph datasets | HIF loader/processor, built-in datasets such as Algebra, Cora, Pubmed, DBLP, Amazon, and IMDB | `hyperbench.data` |
+| **Sampling and batching** | Sample sub-hypergraphs and prepare training batches | DataLoader, node and hyperedge samplers, and full-hypergraph evaluation batches | `hyperbench.data` |
 | **Training and benchmarking** | Train and benchmark models out of the box | Multi-model trainer, negative sampling, schedulers, Markdown/LaTeX result tables | `hyperbench.train` |
 | **Models** | Access a wide range of hypergraph models | HGNN, HGNNP, HNHN, HyperGCN, GCN, MLP/SLP, NHP, Node2Vec, VilLain, CommonNeighbors | `hyperbench.models` |
 | **Neural network components** | Build custom architectures and pipelines | Convolutions, aggregators, losses, scorers, enrichers, positional encodings | `hyperbench.nn` |
@@ -61,12 +61,15 @@ If you want to build the project from source, see the [documentation](#documenta
 
 ### Run examples
 
-You can download [examples](examples) directory and run the example scripts to get started. For instance:
+You can download [examples](examples) directory and run the example scripts to get started.
+
+With Python:
 
 ```bash
 python3 examples/early_stopping.py
 ```
-or with `uv`:
+
+Or with `uv`:
 
 ```bash
 uv run examples/early_stopping.py
@@ -79,11 +82,13 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for details on contributing to the projec
 ## Documentation
 
 You can find the extensive documentation [here][docs].
+
 Alternatively, you can build the documentation locally with the following commands:
 
 ```bash
 make docs
-# or with explicit commands:
+
+# With explicit commands
 uv run zensical build --clean -f zensical.toml
 uv run zensical serve -f zensical.toml -a 127.0.0.1:8000
 ```

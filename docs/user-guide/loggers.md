@@ -17,9 +17,9 @@ By default outputs are stored under `hyperbench_logs/`.
 
 Common files to look for:
 
-- `hyperbench_logs/experiment_*/comparison/results.md`
-- `hyperbench_logs/experiment_*/comparison/results.tex`
-- `hyperbench_logs/experiment_*/<model_name>/version_*/metrics.csv` (CSV logger)
+- `hyperbench_logs/experiment_*/comparison/results.md`.
+- `hyperbench_logs/experiment_*/comparison/results.tex`.
+- `hyperbench_logs/experiment_*/<model_name>/version_*/metrics.csv` (CSV logger).
 
 ## Using your own logger
 
@@ -37,4 +37,4 @@ with MultiModelTrainer(model_configs=configs, logger=logger, max_epochs=10) as t
 
 ## Next steps
 
-- Enable/inspect TensorBoard: [TensorBoard](tensorboard.md)
+- Enable/inspect TensorBoard: [TensorBoard](tensorboard.md).
