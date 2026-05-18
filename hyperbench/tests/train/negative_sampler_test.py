@@ -14,7 +14,7 @@ from hyperbench.types import HData
 
 
 @pytest.fixture
-def mock_hdata_with_attr():
+def mock_hdata_with_attr() -> HData:
     return HData(
         x=torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]]),
         hyperedge_index=torch.tensor([[0, 1, 2], [0, 1, 2]]),
@@ -25,13 +25,29 @@ def mock_hdata_with_attr():
 
 
 @pytest.fixture
-def mock_hdata_no_attr():
+def mock_hdata_no_attr() -> HData:
     return HData(
         x=torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]]),
         hyperedge_index=torch.tensor([[0, 1, 2], [0, 0, 1]]),
         hyperedge_attr=None,
         num_nodes=3,
         num_hyperedges=3,
+    )
+
+
+@pytest.fixture
+def mock_clique_hdata() -> HData:
+    return HData(
+        x=torch.arange(5, dtype=torch.float).unsqueeze(1),
+        hyperedge_index=torch.tensor(
+            [
+                [0, 1, 2, 0, 3, 1, 3, 2, 3, 3, 4],
+                [0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4],
+            ],
+            dtype=torch.long,
+        ),
+        num_nodes=5,
+        num_hyperedges=5,
     )
 
 
@@ -323,35 +339,6 @@ def test_random_negative_sampler_uses_hyperedge_enrichers(mock_hdata_no_attr):
         assert node_id in attr_enricher_index[0]
 
 
-def clique_hdata() -> HData:
-    return HData(
-        x=torch.arange(5, dtype=torch.float).unsqueeze(1),
-        hyperedge_index=torch.tensor(
-            [
-                [0, 1, 2, 0, 3, 1, 3, 2, 3, 3, 4],
-                [0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4],
-            ],
-            dtype=torch.long,
-        ),
-        num_nodes=5,
-        num_hyperedges=5,
-    )
-
-
-def hyperedge_signatures(hyperedge_index: torch.Tensor) -> set[tuple[int, ...]]:
-    signatures = set()
-    for hyperedge_id in hyperedge_index[1].unique().tolist():
-        nodes = hyperedge_index[0][hyperedge_index[1] == hyperedge_id].tolist()
-        signatures.add(tuple(sorted(nodes)))
-    return signatures
-
-
-def assert_clique(signature: tuple[int, ...], adjacency: dict[int, set[int]]) -> None:
-    for node_index, first_node_id in enumerate(signature):
-        for second_node_id in signature[node_index + 1 :]:
-            assert second_node_id in adjacency[first_node_id]
-
-
 def test_clique_negative_sampler_invalid_args():
     with pytest.raises(ValueError, match="num_negative_samples must be positive, got 0"):
         CliqueNegativeSampler(num_negative_samples=0, num_nodes_per_sample=3)
@@ -376,15 +363,31 @@ def test_clique_negative_sampler_is_same_node_space_negative_sampler():
     assert isinstance(sampler, SameNodeSpaceNegativeSampler)
 
 
-def test_clique_negative_sampler_samples_cliques_and_rejects_positives():
-    hdata = clique_hdata()
+def test_clique_negative_sampler_sample_too_many_nodes(mock_clique_hdata):
+    sampler = CliqueNegativeSampler(num_negative_samples=2, num_nodes_per_sample=10)
+
+    with pytest.raises(
+        ValueError,
+        match="Asked to create samples with 10 nodes, but only 5 nodes are available",
+    ):
+        sampler.sample(mock_clique_hdata)
+
+
+def test_clique_negative_sampler_samples_cliques_and_rejects_positives(mock_clique_hdata):
     sampler = CliqueNegativeSampler(num_negative_samples=3, num_nodes_per_sample=3)
 
-    result = sampler.sample(hdata, seed=123)
+    result = sampler.sample(mock_clique_hdata, seed=123)
 
-    positive_signatures = hyperedge_signatures(hdata.hyperedge_index)
-    negative_signatures = hyperedge_signatures(result.hyperedge_index)
-    adjacency = {
+    first_negative_nodes = set(result.hyperedge_index[0][result.hyperedge_index[1] == 5].tolist())
+    second_negative_nodes = set(result.hyperedge_index[0][result.hyperedge_index[1] == 6].tolist())
+    third_negative_nodes = set(result.hyperedge_index[0][result.hyperedge_index[1] == 7].tolist())
+    negative_node_sets = {
+        tuple(sorted(first_negative_nodes)),
+        tuple(sorted(second_negative_nodes)),
+        tuple(sorted(third_negative_nodes)),
+    }
+
+    adjacency_list = {
         0: {1, 2, 3},
         1: {0, 2, 3},
         2: {0, 1, 3},
@@ -393,18 +396,26 @@ def test_clique_negative_sampler_samples_cliques_and_rejects_positives():
     }
 
     assert result.num_hyperedges == 3
-    assert negative_signatures == {(0, 1, 3), (0, 2, 3), (1, 2, 3)}
-    assert negative_signatures.isdisjoint(positive_signatures)
-    for signature in negative_signatures:
-        assert_clique(signature, adjacency)
+    assert negative_node_sets == {(0, 1, 3), (0, 2, 3), (1, 2, 3)}
+    # This is the only positive hyperedge of size 3 in the input and should be rejected
+    assert (0, 1, 2) not in negative_node_sets
+
+    for negative_node_set in negative_node_sets:
+        for node_idx, first_node_id in enumerate(negative_node_set):
+            # Every pair in each sampled negative must be adjacent in the clique-expanded graph
+            for second_node_id in negative_node_set[node_idx + 1 :]:
+                # Since adjacency is undirected, each unordered pair only needs one check
+                # Example: negative_node_set == (0, 1, 3)
+                #          -> check that 1 and 3 are in adjacency_list[0]
+                #          -> then check that 3 is in adjacency_list[1]
+                assert second_node_id in adjacency_list[first_node_id]
 
 
-def test_clique_negative_sampler_sample_with_seed_is_reproducible():
-    hdata = clique_hdata()
+def test_clique_negative_sampler_sample_with_seed_is_reproducible(mock_clique_hdata):
     sampler = CliqueNegativeSampler(num_negative_samples=2, num_nodes_per_sample=3)
 
-    result_a = sampler.sample(hdata, seed=123)
-    result_b = sampler.sample(hdata, seed=123)
+    result_a = sampler.sample(mock_clique_hdata, seed=123)
+    result_b = sampler.sample(mock_clique_hdata, seed=123)
 
     assert torch.equal(result_a.x, result_b.x)
     assert torch.equal(result_a.hyperedge_index, result_b.hyperedge_index)
