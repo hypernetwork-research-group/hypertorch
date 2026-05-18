@@ -1,4 +1,4 @@
-# API Reference
+# API reference
 
 Complete API documentation for HyperBench modules.
 
