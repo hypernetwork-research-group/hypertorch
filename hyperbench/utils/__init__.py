@@ -32,6 +32,7 @@ from .node_utils import (
     is_transductive_setting,
     is_transductive_split,
 )
+from .random_utils import create_seeded_torch_generator
 from .sparse_utils import sparse_dropout
 from .url_utils import validate_http_url
 from .file_utils import decompress_zst, compress_to_zst, write_to_disk
@@ -46,6 +47,7 @@ __all__ = [
     "Stage",
     "assign_hyperedge_label_to_nodes",
     "compress_to_zst",
+    "create_seeded_torch_generator",
     "decompress_zst",
     "empty_edgeattr",
     "empty_hyperedgeindex",
