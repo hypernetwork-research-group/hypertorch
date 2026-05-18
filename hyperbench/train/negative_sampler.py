@@ -2,10 +2,29 @@ import torch
 
 from abc import ABC, abstractmethod
 from math import comb
+from itertools import combinations
 from torch import Tensor
 from hyperbench.nn import NodeEnricher
 from hyperbench.nn.enricher import HyperedgeAttrsEnricher, HyperedgeWeightsEnricher
 from hyperbench.types import HData, HyperedgeIndex
+
+
+def _hyperedge_nodes_signature(node_ids: Tensor | list[int] | tuple[int, ...]) -> tuple[int, ...]:
+    if isinstance(node_ids, Tensor):
+        return tuple(sorted(int(node_id) for node_id in node_ids.tolist()))
+    return tuple(sorted(int(node_id) for node_id in node_ids))
+
+
+def _hyperedges_signatures(hyperedge_index: Tensor) -> set[tuple[int, ...]]:
+    all_hyperedge_ids = hyperedge_index[1]
+    unique_hyperedge_ids = all_hyperedge_ids.unique().tolist()
+
+    signatures: set[tuple[int, ...]] = set()
+    for hyperedge_id in unique_hyperedge_ids:
+        node_ids_in_hyperedge_mask = all_hyperedge_ids == hyperedge_id
+        node_ids_in_hyperedge = hyperedge_index[0][node_ids_in_hyperedge_mask]
+        signatures.add(_hyperedge_nodes_signature(node_ids_in_hyperedge.unique()))
+    return signatures
 
 
 class NegativeSampler(ABC):
@@ -563,3 +582,246 @@ class RandomNegativeSampler(SameNodeSpaceNegativeSampler):
                 f"{self.num_nodes_per_sample} nodes each, but only "
                 f"{num_possible_negative_hyperedges} are available."
             )
+
+class CliqueNegativeSampler(SameNodeSpaceNegativeSampler):
+    """
+    Sample negative hyperedges that are cliques in the underlying graph.
+
+    The underlying graph is obtained through clique expansion: two nodes are adjacent when
+    they co-occur in at least one positive hyperedge. A sampled negative hyperedge contains
+    ``num_nodes_per_sample`` nodes where every pair is adjacent, and the node set must not
+    already exist as a positive hyperedge.
+
+    Args:
+        num_negative_samples: Number of negative hyperedges to generate.
+        num_nodes_per_sample: Number of nodes per negative hyperedge. Must be at least 2.
+        hyperedge_attr_enricher: Optional enricher to generate attributes for sampled negatives.
+        hyperedge_weights_enricher: Optional enricher to generate weights for sampled negatives.
+        return_0based_negatives: If ``True``, returned negative node and hyperedge IDs are rebased to 0-based IDs.
+        max_candidates: Optional upper bound for enumerated clique candidates.
+
+    Raises:
+        ValueError: If numeric arguments are invalid.
+    """
+
+    def __init__(
+        self,
+        num_negative_samples: int,
+        num_nodes_per_sample: int,
+        hyperedge_attr_enricher: HyperedgeAttrsEnricher | None = None,
+        hyperedge_weights_enricher: HyperedgeWeightsEnricher | None = None,
+        return_0based_negatives: bool = False,
+        max_candidates: int | None = None,
+    ):
+        if num_negative_samples <= 0:
+            raise ValueError(f"num_negative_samples must be positive, got {num_negative_samples}.")
+        if num_nodes_per_sample < 2:
+            raise ValueError(
+                f"num_nodes_per_sample must be at least 2 for clique negative sampling, got {num_nodes_per_sample}."
+            )
+        if max_candidates is not None and max_candidates <= 0:
+            raise ValueError(
+                f"max_candidates must be positive when provided, got {max_candidates}."
+            )
+
+        super().__init__(
+            hyperedge_attr_enricher=hyperedge_attr_enricher,
+            hyperedge_weights_enricher=hyperedge_weights_enricher,
+            return_0based_negatives=return_0based_negatives,
+        )
+        self.num_negative_samples = num_negative_samples
+        self.num_nodes_per_sample = num_nodes_per_sample
+        self.max_candidates = max_candidates
+
+    def sample(self, hdata: HData, seed: int | None = None) -> HData:
+        """
+        Generate clique-based negative hyperedges from the input hypergraph.
+
+        Args:
+            hdata: Input hypergraph data.
+            seed: Optional random seed for reproducible candidate selection.
+
+        Returns:
+            A new :class:`HData` instance containing only sampled negative hyperedges.
+
+        Raises:
+            ValueError: If too few nodes or valid clique negatives are available.
+        """
+        if self.num_nodes_per_sample > hdata.num_nodes:
+            raise ValueError(
+                f"Asked to create samples with {self.num_nodes_per_sample} nodes, but only {hdata.num_nodes} nodes are available."
+            )
+
+        device = hdata.device
+        generator = None
+        if seed is not None:
+            generator = torch.Generator(device=device)
+            generator.manual_seed(seed)
+
+        positive_hyperedge_signatures = {
+            signature
+            for signature in _hyperedges_signatures(hdata.hyperedge_index)
+            if len(signature) == self.num_nodes_per_sample
+        }
+        adjacency = self.__build_underlying_graph_adjacency(hdata)
+        valid_candidates = self.__valid_clique_candidates(
+            adjacency=adjacency,
+            positive_hyperedge_signatures=positive_hyperedge_signatures,
+        )
+
+        if len(valid_candidates) < self.num_negative_samples:
+            raise ValueError(
+                "Asked to create "
+                f"{self.num_negative_samples} clique negative samples with "
+                f"{self.num_nodes_per_sample} nodes each, but only "
+                f"{len(valid_candidates)} are available."
+            )
+
+        candidate_order = torch.randperm(
+            len(valid_candidates),
+            device=device,
+            generator=generator,
+        )[: self.num_negative_samples]
+        sampled_candidates = [
+            valid_candidates[int(candidate_index)] for candidate_index in candidate_order.tolist()
+        ]
+
+        (
+            sampled_hyperedge_indexes,
+            sampled_hyperedge_attrs,
+            sampled_negative_node_ids,
+            new_hyperedge_id_offset,
+        ) = self.__build_negative_samples(
+            hdata=hdata,
+            sampled_candidates=sampled_candidates,
+            generator=generator,
+        )
+
+        negative_node_ids_tensor = torch.tensor(sorted(sampled_negative_node_ids), device=device)
+        new_x, num_negative_nodes = self._new_x(hdata.x, negative_node_ids_tensor)
+
+        negative_hyperedge_ids = torch.arange(
+            new_hyperedge_id_offset,
+            new_hyperedge_id_offset + self.num_negative_samples,
+            device=device,
+        )
+        negative_hyperedge_index = self._new_negative_hyperedge_index(
+            sampled_hyperedge_indexes,
+            negative_node_ids_tensor,
+            negative_hyperedge_ids,
+        )
+
+        negative_hyperedge_attr = self._new_enriched_hyperedge_attr(
+            hyperedge_attr_enricher=self.hyperedge_attr_enricher,
+            negative_hyperedge_index=negative_hyperedge_index,
+        )
+        if negative_hyperedge_attr is None:
+            negative_hyperedge_attr = self._new_hyperedge_attr(
+                sampled_hyperedge_attrs=sampled_hyperedge_attrs,
+                hyperedge_attr=hdata.hyperedge_attr,
+            )
+
+        return HData(
+            x=new_x,
+            hyperedge_index=negative_hyperedge_index,
+            hyperedge_weights=self._new_enriched_hyperedge_weights(
+                hyperedge_weights_enricher=self.hyperedge_weights_enricher,
+                negative_hyperedge_index=negative_hyperedge_index,
+            ),
+            hyperedge_attr=negative_hyperedge_attr,
+            num_nodes=num_negative_nodes,
+            num_hyperedges=self.num_negative_samples,
+            global_node_ids=self._new_global_node_ids(
+                global_node_ids=hdata.global_node_ids,
+                negative_node_ids=negative_node_ids_tensor,
+            ),
+        ).with_y_zeros()
+
+    def __build_underlying_graph_adjacency(self, hdata: HData) -> list[set[int]]:
+        adjacency: list[set[int]] = [set() for _ in range(hdata.num_nodes)]
+        all_hyperedge_ids = hdata.hyperedge_index[1]
+
+        for hyperedge_id in all_hyperedge_ids.unique().tolist():
+            node_ids = hdata.hyperedge_index[0][all_hyperedge_ids == hyperedge_id].unique()
+            for first_raw_node_id, second_raw_node_id in combinations(node_ids.tolist(), 2):
+                first_node_id = int(first_raw_node_id)
+                second_node_id = int(second_raw_node_id)
+                adjacency[first_node_id].add(second_node_id)
+                adjacency[second_node_id].add(first_node_id)
+
+        return adjacency
+
+    def __valid_clique_candidates(
+        self,
+        adjacency: list[set[int]],
+        positive_hyperedge_signatures: set[tuple[int, ...]],
+    ) -> list[tuple[int, ...]]:
+        valid_candidates: list[tuple[int, ...]] = []
+        enumerated_candidates = 0
+
+        def expand(prefix: tuple[int, ...], candidates: list[int]) -> None:
+            nonlocal enumerated_candidates
+
+            if len(prefix) == self.num_nodes_per_sample:
+                if self.max_candidates is not None and enumerated_candidates >= self.max_candidates:
+                    raise ValueError(
+                        "Clique negative candidate enumeration exceeded "
+                        f"max_candidates={self.max_candidates}."
+                    )
+                enumerated_candidates += 1
+
+                signature = _hyperedge_nodes_signature(prefix)
+                if signature not in positive_hyperedge_signatures:
+                    valid_candidates.append(signature)
+                return
+
+            for index, node_id in enumerate(candidates):
+                next_candidates = [
+                    candidate_node_id
+                    for candidate_node_id in candidates[index + 1 :]
+                    if candidate_node_id in adjacency[node_id]
+                ]
+                expand((*prefix, node_id), next_candidates)
+
+        expand(prefix=(), candidates=list(range(len(adjacency))))
+        return valid_candidates
+
+    def __build_negative_samples(
+        self,
+        hdata: HData,
+        sampled_candidates: list[tuple[int, ...]],
+        generator: torch.Generator | None,
+    ) -> tuple[list[Tensor], list[Tensor], set[int], int]:
+        device = hdata.device
+        sampled_negative_node_ids: set[int] = set()
+        sampled_hyperedge_indexes: list[Tensor] = []
+        sampled_hyperedge_attrs: list[Tensor] = []
+        new_hyperedge_id_offset = hdata.num_hyperedges
+
+        for new_hyperedge_id, sampled_candidate in enumerate(sampled_candidates):
+            sampled_node_ids = torch.tensor(sampled_candidate, dtype=torch.long, device=device)
+            sampled_hyperedge_id_tensor = torch.full(
+                (self.num_nodes_per_sample,),
+                new_hyperedge_id + new_hyperedge_id_offset,
+                device=device,
+            )
+            sampled_hyperedge_indexes.append(
+                torch.stack([sampled_node_ids, sampled_hyperedge_id_tensor], dim=0)
+            )
+            sampled_negative_node_ids.update(sampled_candidate)
+
+            if hdata.hyperedge_attr is not None:
+                random_hyperedge_attr = torch.randn(
+                    hdata.hyperedge_attr[0].shape,
+                    dtype=hdata.hyperedge_attr.dtype,
+                    device=device,
+                    generator=generator,
+                )
+                sampled_hyperedge_attrs.append(random_hyperedge_attr)
+
+        return (
+            sampled_hyperedge_indexes,
+            sampled_hyperedge_attrs,
+            sampled_negative_node_ids,
+            new_hyperedge_id_offset,
+        )

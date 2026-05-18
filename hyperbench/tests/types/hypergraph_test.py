@@ -613,6 +613,43 @@ def test_clique_expansion_overlapping_hyperedges():
 
 
 @pytest.mark.parametrize(
+    "hyperedge_index_tensor, num_nodes, expected_adjacency",
+    [
+        pytest.param(
+            torch.empty((2, 0), dtype=torch.long),
+            None,
+            [],
+            id="empty_hypergraph",
+        ),
+        pytest.param(
+            torch.tensor([[0, 1, 2], [0, 0, 0]], dtype=torch.long),
+            None,
+            [{1, 2}, {0, 2}, {0, 1}],
+            id="single_hyperedge_three_nodes",
+        ),
+        pytest.param(
+            torch.tensor([[0, 1, 1, 2], [0, 0, 1, 1]], dtype=torch.long),
+            None,
+            [{1}, {0, 2}, {1}],
+            id="two_overlapping_hyperedges",
+        ),
+        pytest.param(
+            torch.tensor([[0, 1], [0, 0]], dtype=torch.long),
+            4,
+            [{1}, {0}, set(), set()],
+            id="preserves_isolated_nodes",
+        ),
+    ],
+)
+def test_get_clique_expansion_adjacency(hyperedge_index_tensor, num_nodes, expected_adjacency):
+    result = HyperedgeIndex(hyperedge_index_tensor).get_clique_expansion_adjacency_list(
+        num_nodes=num_nodes
+    )
+
+    assert result == expected_adjacency
+
+
+@pytest.mark.parametrize(
     "x, hyperedge_index, with_mediators, expected_num_edges",
     [
         pytest.param(
