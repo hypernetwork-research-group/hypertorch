@@ -1,5 +1,6 @@
 import pytest
 import torch
+import re
 
 from unittest.mock import MagicMock
 from hyperbench.nn import HyperedgeAttrsEnricher, HyperedgeWeightsEnricher, NodeEnricher
@@ -39,6 +40,9 @@ def test_random_negative_sampler_invalid_args():
 
     with pytest.raises(ValueError, match="num_nodes_per_sample must be positive, got 0"):
         RandomNegativeSampler(num_negative_samples=2, num_nodes_per_sample=0)
+
+    with pytest.raises(ValueError, match="max_retry must be positive, got 0"):
+        RandomNegativeSampler(num_negative_samples=2, num_nodes_per_sample=1, max_retry=0)
 
 
 def test_random_negative_sampler_is_same_node_space_negative_sampler():
@@ -135,7 +139,7 @@ def test_random_negative_sampler_handles_missing_global_node_ids(mock_hdata_no_a
 
 
 def test_random_negative_sampler_sample_unique_nodes(mock_hdata_no_attr):
-    sampler = RandomNegativeSampler(num_negative_samples=3, num_nodes_per_sample=2)
+    sampler = RandomNegativeSampler(num_negative_samples=2, num_nodes_per_sample=2)
     result = sampler.sample(mock_hdata_no_attr)
 
     node_ids = result.hyperedge_index[0]
@@ -152,8 +156,92 @@ def test_random_negative_sampler_sample_unique_nodes(mock_hdata_no_attr):
         assert len(unique_edge_nodes) == sampler.num_nodes_per_sample
 
 
+def test_random_negative_sampler_rejects_positive_hyperedges():
+    hdata = HData(
+        x=torch.tensor([[1.0], [2.0], [3.0]]),
+        hyperedge_index=torch.tensor([[0, 1, 0, 2], [0, 0, 1, 1]]),
+        num_nodes=3,
+        num_hyperedges=2,
+    )
+    sampler = RandomNegativeSampler(
+        num_negative_samples=1,
+        num_nodes_per_sample=2,
+        max_retry=100,
+    )
+
+    result = sampler.sample(hdata, seed=123)
+
+    sampled_nodes = result.hyperedge_index[0].tolist()
+    assert set(sampled_nodes) == {1, 2}
+
+
+def test_random_negative_sampler_rejects_duplicate_negative_hyperedges():
+    hdata = HData(
+        x=torch.tensor([[1.0], [2.0], [3.0]]),
+        hyperedge_index=torch.empty((2, 0), dtype=torch.long),
+        num_nodes=3,
+        num_hyperedges=0,
+    )
+    sampler = RandomNegativeSampler(
+        num_negative_samples=3,
+        num_nodes_per_sample=1,
+        max_retry=100,
+    )
+
+    result = sampler.sample(hdata, seed=123)
+
+    sampled_nodes = result.hyperedge_index[0].tolist()
+    assert sorted(sampled_nodes) == [0, 1, 2]
+
+
+def test_random_negative_sampler_fails_when_unique_negatives_are_unavailable():
+    hdata = HData(
+        x=torch.tensor([[1.0], [2.0], [3.0]]),
+        hyperedge_index=torch.tensor([[0, 1, 0, 2, 1, 2], [0, 0, 1, 1, 2, 2]]),
+        num_nodes=3,
+        num_hyperedges=3,
+    )
+    sampler = RandomNegativeSampler(num_negative_samples=1, num_nodes_per_sample=2)
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Asked to create 1 unique negative samples with 2 nodes each, but only 0 are available"
+        ),
+    ):
+        sampler.sample(hdata)
+
+
+def test_random_negative_sampler_fails_when_retry_budget_is_exhausted(monkeypatch):
+    hdata = HData(
+        x=torch.tensor([[1.0], [2.0], [3.0]]),
+        hyperedge_index=torch.tensor([[0, 1], [0, 0]]),
+        num_nodes=3,
+        num_hyperedges=1,
+    )
+    sampler = RandomNegativeSampler(
+        num_negative_samples=1,
+        num_nodes_per_sample=2,
+        max_retry=2,
+    )
+
+    def sample_positive_hyperedge(**kwargs):
+        return torch.tensor([0, 1], device=kwargs["input"].device)
+
+    monkeypatch.setattr(torch, "multinomial", sample_positive_hyperedge)
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Unable to sample 1 unique negative hyperedges after 2 attempts. "
+            "Increase max_retry or request fewer samples."
+        ),
+    ):
+        sampler.sample(hdata)
+
+
 def test_random_negative_sampler_sample_new_hyperedges(mock_hdata_no_attr):
-    sampler = RandomNegativeSampler(num_negative_samples=3, num_nodes_per_sample=2)
+    sampler = RandomNegativeSampler(num_negative_samples=2, num_nodes_per_sample=2)
     result = sampler.sample(mock_hdata_no_attr)
 
     hyperedge_ids = result.hyperedge_index[1]
