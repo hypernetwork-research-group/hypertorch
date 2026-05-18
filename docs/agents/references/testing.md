@@ -3,10 +3,26 @@
 ## HyperBench specifics
 
 - Tests live under `hyperbench/tests/`.
-- Prefer running tests via Makefile targets:
-    - `make test` (full suite)
-    - `make stest T=<test_file_or_path>` (single test or folder)
-- If you need a one-off command, prefer `uv run pytest`.
+- Mirror package structure when adding tests. Examples:
+  - `hyperbench/data/...` -> `hyperbench/tests/data/...`
+  - `hyperbench/train/...` -> `hyperbench/tests/train/...`
+  - `hyperbench/utils/...` -> `hyperbench/tests/utils/...`
+- Prefer Makefile targets:
+  - `make test`
+  - `make stest T=<path-within-hyperbench/tests>`
+- Use `uv run pytest` only for targeted one-off runs.
+
+## Style
+
+- Do not rely on live network calls.
+- Do not use `sleep` for synchronization.
+- Prefer `tmp_path` over real filesystem locations.
+- Prefer patching external tools instead of spawning real long-lived processes.
+- Keep randomized or generated inputs bounded and reproducible.
+- Use plain pytest functions, not `unittest.TestCase`.
+- Use `pytest.mark.parametrize` for input matrices.
+- Prefer `pytest.param(..., id="...")` when the case name matters.
+- Keep test names explicit about behavior and failure mode.
 
 ## Basic pytest structure
 
@@ -28,7 +44,42 @@ def test_user_validation() -> None:
 
 ```
 
-## Fixtures for setup/teardown and shared mocks
+## Mocking and patching
+
+- Use `unittest.mock.patch` or `Mock`/`MagicMock`.
+- Patch at the import site used by the code under test.
+- Mock network, subprocess, and filesystem side effects.
+- Use `autospec` or `spec` when it meaningfully tightens the contract.
+
+Examples from this repository include patching:
+
+- `hyperbench.data.hif.requests.get`
+- `hyperbench.data.hif.hf_hub_download`
+- `hyperbench.train.trainer.subprocess.Popen`
+- `lightning.pytorch.loggers.TensorBoardLogger`
+
+Example:
+
+```python
+from unittest.mock import patch
+
+
+def test_download_uses_requests_fallback() -> None:
+    with patch("hyperbench.data.hif.requests.get") as mock_get:
+        mock_get.return_value.ok = True
+        mock_get.return_value.content = b"{}"
+
+        result = download_hif_file(...)
+
+    assert result is not None
+    mock_get.assert_called_once()
+```
+
+### Fixtures for setup/teardown and shared mocks
+
+- Keep fixture scope minimal.
+- Put broadly shared fixtures in `hyperbench/tests/conftest.py` if they are reused.
+- Prefer factory fixtures when a test needs a small amount of variation.
 
 ```python
 # conftest.py - shared fixtures

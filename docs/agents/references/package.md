@@ -2,21 +2,35 @@
 
 ## HyperBench specifics
 
-- HyperBench uses `uv` for environments and execution; prefer running commands via `make` targets.
-- Common targets:
-  - `make setup` (or `uv sync`)
-  - `make check` (lint/typecheck)
-  - `make test` / `make stest T=<path>`
-  - `make docs-build` / `make docs-serve`
-- Package metadata lives in `pyproject.toml` and the package is discovered via setuptools (`[tool.setuptools.packages.find]`).
-- Optional extras are in `pyproject.toml` under `[project.optional-dependencies]` (e.g. `tensorboard`).
-- For a one-off command, prefer `uv run ...` (example: `uv run pytest`).
+- HyperBench uses `uv` for environment management and command execution.
+- Prefer Makefile targets over ad hoc commands.
+- The package uses a flat layout: `hyperbench/` lives at the repository root.
+- Package metadata, dependencies, and tool configuration live in `pyproject.toml`.
+- Optional extras are defined in `pyproject.toml` under `[project.optional-dependencies]`, currently including `tensorboard`.
 
-## Repository structure
+## Primary commands
 
-HyperBench uses a “flat” package layout: the `hyperbench/` package lives at the repo root (there is no `src/` directory).
+- Setup:
+  - `make setup`
+  - `make setup-tensorboard` for the optional TensorBoard extra
+- Quality:
+  - `make lint`
+  - `make format`
+  - `make typecheck`
+  - `make check`
+- Tests:
+  - `make test`
+  - `make stest T=<path-within-hyperbench/tests>`
+- Docs:
+  - `make docs-build`
+  - `make docs-serve`
+  - `make docs`
+- One-off commands:
+  - `uv run pytest`
+  - `uv run ruff check`
+  - `uv run ty check`
 
-## Project structure
+## Repository shape
 
 ```bash
 .
@@ -50,28 +64,23 @@ HyperBench uses a “flat” package layout: the `hyperbench/` package lives at 
 └── zensical.toml           # zensical config for docs
 ```
 
-## Project metadata
 
-Look at [pyproject.toml](../../pyproject.toml) for the actual dependencies, optional extras, and setuptools package discovery.
+## Packaging notes
 
-## Common commands
+- `make setup` runs `uv sync` and then installs HyperBench in editable mode with `uv pip install -e .`.
+- `make build` is a convenience target for `clean` followed by `setup`.
+- The project is discovered via setuptools in `pyproject.toml` under `[tool.setuptools.packages.find]`.
+- If you change dependencies, extras, or tool configuration, update `pyproject.toml` and any affected docs together.
 
-- Setup (editable install): `make setup`
-- Setup with TensorBoard extra: `make setup-tensorboard`
-- Lint/format/typecheck: `make check`
-- Tests: `make test` (single test/folder: `make stest T=<path>`)
-- Run a script: `make run path/to/script.py`
+## Documentation notes
 
-If you need a one-off command without Makefile sugar, prefer `uv run ...` (example: `uv run ruff check`).
+- Docs are built with `zensical` using `zensical.toml`.
+- Generated site output lives under `docs/site/`; treat it as generated content.
+- When updating contributor-facing instructions, keep `AGENTS.md`, `CONTRIBUTING.md`, and `docs/development/` aligned.
 
-## Documentation
+## Pre-commit
 
-- Build: `make docs-build`
-- Serve: `make docs-serve` (defaults to `127.0.0.1:8000`)
-
-## Pre-commit (optional)
-
-The pre-commit configuration is stored at [.github/hooks/.pre-commit-config.yaml](../../.github/hooks/.pre-commit-config.yaml).
+The pre-commit configuration lives at `.github/hooks/.pre-commit-config.yaml`.
 
 ```bash
 uv run pre-commit install -c .github/hooks/.pre-commit-config.yaml

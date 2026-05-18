@@ -1,5 +1,10 @@
 # Standard library mastery
 
+## Rule of thumb
+
+Prefer the standard library when it is already sufficient.
+Add a dependency only when it materially improves correctness, clarity, or maintainability.
+
 ## Pathlib for file operations
 
 ```python
