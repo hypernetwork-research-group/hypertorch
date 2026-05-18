@@ -2,7 +2,7 @@
 
 | Section | What you will find | Link |
 |---|---|---|
-| **1 minute to hyperbench** | A quick introduction to HyperBench | [1 minute to hyperbench](../user-guide/1-minute-to-hyperbench.md) |
+| **1 minute to HyperBench** | A quick introduction to HyperBench | [1 minute to HyperBench](../user-guide/1-minute-to-hyperbench.md) |
 | **HIF integration** | How to load and work with HIF datasets | [HIF integration](../user-guide/hif-integration.md) |
 | **Models** | Built-in models and how to implement your own | [Models](../user-guide/models.md) |
 | **Training** | How to train models using HyperBench's training utilities | [Training](../user-guide/training.md) |

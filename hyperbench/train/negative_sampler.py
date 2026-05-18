@@ -1,6 +1,7 @@
 import torch
 
 from abc import ABC, abstractmethod
+from math import comb
 from torch import Tensor
 from hyperbench.nn import NodeEnricher
 from hyperbench.nn.enricher import HyperedgeAttrsEnricher, HyperedgeWeightsEnricher
@@ -234,9 +235,11 @@ class RandomNegativeSampler(SameNodeSpaceNegativeSampler):
         return_0based_negatives:
             - If ``True``, the negative samples returned by the ``sample`` method will have 0-based node and hyperedge IDs.
             - If ``False``, the negative samples will retain the original global node and hyperedge IDs from the input data.
+        max_retry: Maximum number of rejected sampling attempts allowed per requested negative hyperedge before failing.
+            If ``num_negative_samples`` is ``N``, the total maximum number of attempts will be ``N * max_retry``.
 
     Raises:
-        ValueError: If either argument is not positive.
+        ValueError: If any numeric argument is not positive.
     """
 
     def __init__(
@@ -246,11 +249,14 @@ class RandomNegativeSampler(SameNodeSpaceNegativeSampler):
         hyperedge_attr_enricher: HyperedgeAttrsEnricher | None = None,
         hyperedge_weights_enricher: HyperedgeWeightsEnricher | None = None,
         return_0based_negatives: bool = False,
+        max_retry: int = 100,
     ):
         if num_negative_samples <= 0:
             raise ValueError(f"num_negative_samples must be positive, got {num_negative_samples}.")
         if num_nodes_per_sample <= 0:
             raise ValueError(f"num_nodes_per_sample must be positive, got {num_nodes_per_sample}.")
+        if max_retry <= 0:
+            raise ValueError(f"max_retry must be positive, got {max_retry}.")
 
         super().__init__(
             hyperedge_attr_enricher=hyperedge_attr_enricher,
@@ -259,6 +265,7 @@ class RandomNegativeSampler(SameNodeSpaceNegativeSampler):
         )
         self.num_negative_samples = num_negative_samples
         self.num_nodes_per_sample = num_nodes_per_sample
+        self.max_retry = max_retry
 
     def sample(self, hdata: HData, seed: int | None = None) -> HData:
         """
@@ -309,13 +316,28 @@ class RandomNegativeSampler(SameNodeSpaceNegativeSampler):
             )
 
         device = hdata.device
+        positive_hyperedge_signatures = self.__hyperedges_signatures(hdata.hyperedge_index)
+        matching_size_positive_hyperedges_signatures = {
+            signature
+            for signature in positive_hyperedge_signatures
+            if len(signature) == self.num_nodes_per_sample
+        }
+        self.__validate_enough_negative_hyperedges(
+            hdata=hdata,
+            positive_hyperedges_signatures=matching_size_positive_hyperedges_signatures,
+        )
 
         (
             sampled_hyperedge_indexes,
             sampled_hyperedge_attrs,
             sampled_negative_node_ids,
             new_hyperedge_id_offset,
-        ) = self.__sample_loop(hdata=hdata, device=device, seed=seed)
+        ) = self.__sample_loop(
+            hdata=hdata,
+            positive_hyperedges_signatures=matching_size_positive_hyperedges_signatures,
+            device=device,
+            seed=seed,
+        )
 
         negative_node_ids_tensor = torch.tensor(sorted(sampled_negative_node_ids), device=device)
         new_x, num_negative_nodes = self._new_x(hdata.x, negative_node_ids_tensor)
@@ -364,20 +386,46 @@ class RandomNegativeSampler(SameNodeSpaceNegativeSampler):
     def __sample_loop(
         self,
         hdata: HData,
+        positive_hyperedges_signatures: set[tuple[int, ...]],
         device: torch.device,
         seed: int | None = None,
     ) -> tuple[list[Tensor], list[Tensor], set[int], int]:
+        """
+        Sample unique negative hyperedges until the requested count or retry limit is reached.
+
+        Args:
+            hdata: The input hypergraph data used as the node and hyperedge ID source.
+            positive_hyperedges_signatures: Existing positive hyperedge signatures that must not be sampled as negatives.
+            device: Device where the sampled tensors should be created.
+            seed: Optional random seed for reproducible sampling.
+
+        Returns:
+            A tuple containing sampled hyperedge index tensors, sampled hyperedge attribute
+            tensors, sampled node IDs, and the first negative hyperedge ID.
+
+        Raises:
+            ValueError: If the sampler cannot produce the requested number of unique negative
+                hyperedges within the number of maximum allowed attempts.
+        """
         generator = None
         if seed is not None:
             generator = torch.Generator(device=device)
             generator.manual_seed(seed)
 
         sampled_negative_node_ids: set[int] = set()
+        sampled_negative_hyperedge_signatures: set[tuple[int, ...]] = set()
         sampled_hyperedge_indexes: list[Tensor] = []
         sampled_hyperedge_attrs: list[Tensor] = []
 
         new_hyperedge_id_offset = hdata.num_hyperedges
-        for new_hyperedge_id in range(self.num_negative_samples):
+        # max_retry is per requested negative, so scale the retries with the requested count.
+        max_attempts = self.num_negative_samples * self.max_retry
+        attempts = 0
+        while (
+            len(sampled_hyperedge_indexes) < self.num_negative_samples and attempts < max_attempts
+        ):
+            attempts += 1
+
             # Sample with multinomial without replacement to ensure unique node ids
             # and assign each node id equal probability of being selected by setting all of them to 1
             # Example: num_nodes_per_sample=3, max_node_id=5
@@ -390,9 +438,20 @@ class RandomNegativeSampler(SameNodeSpaceNegativeSampler):
                 generator=generator,
             )
 
+            sampled_nodes_signature = self.__hyperedge_nodes_signature(sampled_node_ids)
+            if (
+                sampled_nodes_signature in positive_hyperedges_signatures
+                or sampled_nodes_signature in sampled_negative_hyperedge_signatures
+            ):
+                # Reject this sample as it already exists as a positive
+                # or as a previously sampled negative hyperedge
+                continue
+            sampled_negative_hyperedge_signatures.add(sampled_nodes_signature)
+
             # Example: sampled_node_ids = [2, 0, 4], new_hyperedge_id=0, new_hyperedge_id_offset=3
             #          -> hyperedge_index = [[2, 0, 4],
             #                                [3, 3, 3]]  # this is sampled_hyperedge_id_tensor
+            new_hyperedge_id = len(sampled_hyperedge_indexes)
             sampled_hyperedge_id_tensor = torch.full(
                 (self.num_nodes_per_sample,),
                 new_hyperedge_id + new_hyperedge_id_offset,
@@ -417,9 +476,90 @@ class RandomNegativeSampler(SameNodeSpaceNegativeSampler):
                 )
                 sampled_hyperedge_attrs.append(random_hyperedge_attr)
 
+        if len(sampled_hyperedge_indexes) < self.num_negative_samples:
+            raise ValueError(
+                "Unable to sample "
+                f"{self.num_negative_samples} unique negative hyperedges after "
+                f"{max_attempts} attempts. Increase max_retry or request fewer samples."
+            )
+
         return (
             sampled_hyperedge_indexes,
             sampled_hyperedge_attrs,
             sampled_negative_node_ids,
             new_hyperedge_id_offset,
         )
+
+    def __hyperedges_signatures(self, hyperedge_index: Tensor) -> set[tuple[int, ...]]:
+        """
+        Build order-independent node signatures for every hyperedge in a hyperedge index.
+
+        Examples:
+            >>> sampler = RandomNegativeSampler(num_negative_samples=1, num_nodes_per_sample=2)
+            >>> hyperedge_index = torch.tensor([[2, 0, 1, 3], [0, 0, 1, 1]])
+            >>> sorted(sampler._RandomNegativeSampler__hyperedges_signatures(hyperedge_index))
+            [(0, 2), (1, 3)]
+
+        Args:
+            hyperedge_index: A tensor of shape ``[2, num_incidences]`` containing the
+                node and hyperedge IDs for all hyperedges in the input data.
+
+        Returns:
+            A set of sorted node ID tuples, one tuple per hyperedge.
+        """
+        all_hyperedge_ids = hyperedge_index[1]
+        unique_hyperedge_ids = all_hyperedge_ids.unique().tolist()
+
+        signatures: set[tuple[int, ...]] = set()
+        for hyperedge_id in unique_hyperedge_ids:
+            node_ids_in_hyperedge_mask = all_hyperedge_ids == hyperedge_id
+            node_ids_in_hyperedge = hyperedge_index[0][node_ids_in_hyperedge_mask]
+            signatures.add(self.__hyperedge_nodes_signature(node_ids_in_hyperedge))
+        return signatures
+
+    def __hyperedge_nodes_signature(self, node_ids: Tensor) -> tuple[int, ...]:
+        """
+        Convert node IDs into a sorted tuple that can be used as a comparable hyperedge signature.
+
+        Examples:
+            >>> sampler = RandomNegativeSampler(num_negative_samples=1, num_nodes_per_sample=2)
+            >>> node_ids = torch.tensor([2, 0, 4])
+            >>> sampler._RandomNegativeSampler__hyperedge_nodes_signature(node_ids)
+            (0, 2, 4)
+
+        Args:
+            node_ids: A one-dimensional tensor containing the node IDs connected by one hyperedge.
+
+        Returns:
+            A sorted tuple of Python ``int`` values of any length.
+        """
+        return tuple(sorted(int(node_id) for node_id in node_ids.tolist()))
+
+    def __validate_enough_negative_hyperedges(
+        self,
+        hdata: HData,
+        positive_hyperedges_signatures: set[tuple[int, ...]],
+    ) -> None:
+        """
+        Validate that enough unique negative hyperedges exist for the requested sample count.
+
+        Args:
+            hdata: The input hypergraph data that defines the number of available nodes.
+            positive_hyperedges_signatures: Positive hyperedge signatures with the same size
+                as the requested negative hyperedges.
+
+        Raises:
+            ValueError: If the requested number of negatives exceeds the number of possible
+                unique non-positive hyperedges.
+        """
+        num_possible_hyperedges_by_size = comb(hdata.num_nodes, self.num_nodes_per_sample)
+        num_positive_hyperedges = len(positive_hyperedges_signatures)
+        num_possible_negative_hyperedges = num_possible_hyperedges_by_size - num_positive_hyperedges
+
+        if self.num_negative_samples > num_possible_negative_hyperedges:
+            raise ValueError(
+                "Asked to create "
+                f"{self.num_negative_samples} unique negative samples with "
+                f"{self.num_nodes_per_sample} nodes each, but only "
+                f"{num_possible_negative_hyperedges} are available."
+            )

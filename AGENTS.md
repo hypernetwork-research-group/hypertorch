@@ -54,14 +54,16 @@ Write `HyperBench` when referring to the project, repository, organization, or p
 ## Coding standards
 
 - **Formatting:** Prefer the Makefile targets:
-  - `make format`
-  - `make lint`
-  - `make check`
+    - `make format`
+    - `make lint`
+    - `make check`
 - **Typing:** Add and preserve type annotations. Run `make typecheck` for changes that touch typed code.
 - **Imports:** Keep imports at module top level unless a delayed import is necessary. Use `TYPE_CHECKING` guards for type-only or heavyweight imports.
 - **Runtime checks:** Do not use `assert` for library-facing validation. Raise explicit exceptions instead.
 - **Public APIs:** Avoid changing public signatures without a clear reason and matching docs/tests updates.
 - **Scope:** Keep changes narrow. Do not mix behavioral edits with unrelated refactors.
+- **Documentation:** Update docstrings and public documentation for any behavior changes, new features, or edge cases.
+    - Docstrings should follow the Google style guide and include in this order: function/method description, usage examples if helpful (Examples), parameter descriptions (Args), return values (Returns), and raised exceptions (Raises).
 
 ## Testing standards
 

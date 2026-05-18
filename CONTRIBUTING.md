@@ -40,14 +40,16 @@ For a full explanation of the project structure, commands, and development guide
 ## Contribution types and expectations
 
 ### Feature
+
 Best for: new capabilities (models, datasets, training features, utilities).
 
 Expectations:
 - Prefer opening an issue first to discuss scope and API impact.
 - Include tests for the new behavior.
-- Update docs (or docstrings) if user-facing behavior changes.
+- Update documentation (or docstrings) if user-facing behavior changes.
 
 ### Fix
+
 Best for: incorrect outputs, crashes, regressions, or broken docs/examples.
 
 Expectations:
@@ -55,7 +57,8 @@ Expectations:
 - Add a regression test when feasible.
 - Keep the PR small and focused on the root cause.
 
-### Docs
+### Documentation
+
 Check [guidelines](#contributing-to-the-documentation) for more details.
 
 Best for: documentation, API docs clarity, examples, READMEs.
@@ -143,15 +146,23 @@ make docs
 ```
 
 ### Configuration
+
 - Docs are built with zensical, which uses a custom theme and configuration (see [zensical.toml](./zensical.toml)).
 - API reference is generated with [mkdocstrings](https://mkdocstrings.github.io/) from docstrings in the codebase.
 
 ### Docstring conventions
+
 References:
 - [Google Python style guidelines](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings)
-- [Zensical docs conventions](https://zensical.org/docs/get-started/)
+- [Zensical documentation conventions](https://zensical.org/docs/get-started/)
 
-- Use Google-style docstrings with sections like `Args:`, `Returns:`, and `Examples:`.
+- Docstrings should follow the Google style guidelines and include in this order: 
+    - Function/method description.
+    - Usage examples under the *Examples* section, if helpful.
+    - Parameter descriptions under the *Args* section.
+    - Return values under the *Returns* section.
+    - Raised exceptions under the *Raises* section.
+
 - Prefer fenced code blocks with syntax highlighting for examples.
 - Use type formatting conventions (e.g., `list[str]` instead of `List[str]`).
 
