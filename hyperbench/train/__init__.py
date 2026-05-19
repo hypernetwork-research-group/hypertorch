@@ -3,6 +3,7 @@ import logging
 from .latex_logger import LaTexTableLogger
 from .markdown_logger import MarkdownTableLogger
 from .negative_sampler import (
+    CliqueNegativeSampler,
     SameNodeSpaceNegativeSampler,
     GeneratedNodesNegativeSampler,
     NegativeSampler,
@@ -14,6 +15,7 @@ from .trainer import MultiModelTrainer
 logging.getLogger("lightning.pytorch").setLevel(logging.ERROR)
 
 __all__ = [
+    "CliqueNegativeSampler",
     "GeneratedNodesNegativeSampler",
     "LaTexTableLogger",
     "MarkdownTableLogger",

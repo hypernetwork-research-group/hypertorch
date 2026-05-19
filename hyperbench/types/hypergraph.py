@@ -1,5 +1,6 @@
 import torch
 
+from itertools import combinations
 from torch import Tensor
 from typing import Any, Literal, TypeAlias
 from hyperbench.utils import sparse_dropout, to_0based_ids
@@ -455,6 +456,41 @@ class HyperedgeIndex:
             The number of nodes in the hypergraph, which is the maximum of the number of unique nodes in the hyperedge index and the provided ``num_nodes``.
         """
         return max(self.num_nodes, num_nodes)
+
+    def get_clique_expansion_adjacency_list(self, num_nodes: int | None = None) -> list[set[int]]:
+        """
+        Build an adjacency list for the clique-expanded underlying graph.
+
+        For each hyperedge, every pair of member nodes becomes an undirected graph edge.
+        Self-loops are not included in the returned neighbor sets.
+
+        Args:
+            num_nodes: Total number of nodes to include in the adjacency list.
+                If ``None``, inferred from the unique node IDs in ``hyperedge_index``.
+
+        Returns:
+            A list where ``adjacency[node_id]`` is the set of nodes adjacent to ``node_id``.
+        """
+        num_nodes = num_nodes if num_nodes is not None else self.num_nodes
+        adjacency_list: list[set[int]] = [set() for _ in range(num_nodes)]
+
+        for hyperedge_id in self.hyperedge_ids.tolist():
+            node_ids: list[int] = (
+                self.all_node_ids[self.all_hyperedge_ids == hyperedge_id].unique().tolist()
+            )
+
+            # Clique expansion: every pair of nodes in the same hyperedge becomes an undirected graph edge
+            # Example: hyperedge [0, 1, 2] adds (0, 1), (0, 2), and (1, 2):
+            #          -> adjacency[0] = {1, 2}
+            #          -> adjacency[1] = {0, 2}
+            #          -> adjacency[2] = {0, 1}
+            for first_raw_node_id, second_raw_node_id in combinations(node_ids, 2):
+                first_node_id = int(first_raw_node_id)
+                second_node_id = int(second_raw_node_id)
+                adjacency_list[first_node_id].add(second_node_id)
+                adjacency_list[second_node_id].add(first_node_id)
+
+        return adjacency_list
 
     def get_sparse_incidence_matrix(
         self,

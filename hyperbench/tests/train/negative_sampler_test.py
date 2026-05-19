@@ -5,6 +5,7 @@ import re
 from unittest.mock import MagicMock
 from hyperbench.nn import HyperedgeAttrsEnricher, HyperedgeWeightsEnricher, NodeEnricher
 from hyperbench.train import (
+    CliqueNegativeSampler,
     GeneratedNodesNegativeSampler,
     RandomNegativeSampler,
     SameNodeSpaceNegativeSampler,
@@ -13,7 +14,7 @@ from hyperbench.types import HData
 
 
 @pytest.fixture
-def mock_hdata_with_attr():
+def mock_hdata_with_attr() -> HData:
     return HData(
         x=torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]]),
         hyperedge_index=torch.tensor([[0, 1, 2], [0, 1, 2]]),
@@ -24,13 +25,29 @@ def mock_hdata_with_attr():
 
 
 @pytest.fixture
-def mock_hdata_no_attr():
+def mock_hdata_no_attr() -> HData:
     return HData(
         x=torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]]),
         hyperedge_index=torch.tensor([[0, 1, 2], [0, 0, 1]]),
         hyperedge_attr=None,
         num_nodes=3,
         num_hyperedges=3,
+    )
+
+
+@pytest.fixture
+def mock_clique_hdata() -> HData:
+    return HData(
+        x=torch.arange(5, dtype=torch.float).unsqueeze(1),
+        hyperedge_index=torch.tensor(
+            [
+                [0, 1, 2, 0, 3, 1, 3, 2, 3, 3, 4],
+                [0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4],
+            ],
+            dtype=torch.long,
+        ),
+        num_nodes=5,
+        num_hyperedges=5,
     )
 
 
@@ -320,3 +337,197 @@ def test_random_negative_sampler_uses_hyperedge_enrichers(mock_hdata_no_attr):
     assert torch.equal(attr_enricher_index[1].unique(sorted=True), torch.arange(2))
     for node_id in range(int(attr_enricher_index[0].max().item()) + 1):
         assert node_id in attr_enricher_index[0]
+
+
+def test_clique_negative_sampler_invalid_args():
+    with pytest.raises(ValueError, match="num_negative_samples must be positive, got 0"):
+        CliqueNegativeSampler(num_negative_samples=0, num_nodes_per_sample=3)
+
+    with pytest.raises(
+        ValueError,
+        match="num_nodes_per_sample must be at least 2 for clique negative sampling, got 1",
+    ):
+        CliqueNegativeSampler(num_negative_samples=1, num_nodes_per_sample=1)
+
+    with pytest.raises(ValueError, match="max_candidates must be positive when provided, got 0"):
+        CliqueNegativeSampler(
+            num_negative_samples=1,
+            num_nodes_per_sample=3,
+            max_candidates=0,
+        )
+
+
+def test_clique_negative_sampler_is_same_node_space_negative_sampler():
+    sampler = CliqueNegativeSampler(num_negative_samples=1, num_nodes_per_sample=2)
+
+    assert isinstance(sampler, SameNodeSpaceNegativeSampler)
+
+
+def test_clique_negative_sampler_sample_too_many_nodes(mock_clique_hdata):
+    sampler = CliqueNegativeSampler(num_negative_samples=2, num_nodes_per_sample=10)
+
+    with pytest.raises(
+        ValueError,
+        match="Asked to create samples with 10 nodes, but only 5 nodes are available",
+    ):
+        sampler.sample(mock_clique_hdata)
+
+
+def test_clique_negative_sampler_samples_cliques_and_rejects_positives(mock_clique_hdata):
+    sampler = CliqueNegativeSampler(num_negative_samples=3, num_nodes_per_sample=3)
+
+    result = sampler.sample(mock_clique_hdata, seed=123)
+
+    first_negative_nodes = set(result.hyperedge_index[0][result.hyperedge_index[1] == 5].tolist())
+    second_negative_nodes = set(result.hyperedge_index[0][result.hyperedge_index[1] == 6].tolist())
+    third_negative_nodes = set(result.hyperedge_index[0][result.hyperedge_index[1] == 7].tolist())
+    negative_node_sets = {
+        tuple(sorted(first_negative_nodes)),
+        tuple(sorted(second_negative_nodes)),
+        tuple(sorted(third_negative_nodes)),
+    }
+
+    adjacency_list = {
+        0: {1, 2, 3},
+        1: {0, 2, 3},
+        2: {0, 1, 3},
+        3: {0, 1, 2, 4},
+        4: {3},
+    }
+
+    assert result.num_hyperedges == 3
+    assert negative_node_sets == {(0, 1, 3), (0, 2, 3), (1, 2, 3)}
+    # This is the only positive hyperedge of size 3 in the input and should be rejected
+    assert (0, 1, 2) not in negative_node_sets
+
+    for negative_node_set in negative_node_sets:
+        for node_idx, first_node_id in enumerate(negative_node_set):
+            # Every pair in each sampled negative must be adjacent in the clique-expanded graph
+            for second_node_id in negative_node_set[node_idx + 1 :]:
+                # Since adjacency is undirected, each unordered pair only needs one check
+                # Example: negative_node_set == (0, 1, 3)
+                #          -> check that 1 and 3 are in adjacency_list[0]
+                #          -> then check that 3 is in adjacency_list[1]
+                assert second_node_id in adjacency_list[first_node_id]
+
+
+def test_clique_negative_sampler_sample_with_seed_is_reproducible(mock_clique_hdata):
+    sampler = CliqueNegativeSampler(num_negative_samples=2, num_nodes_per_sample=3)
+
+    result_a = sampler.sample(mock_clique_hdata, seed=123)
+    result_b = sampler.sample(mock_clique_hdata, seed=123)
+
+    assert torch.equal(result_a.x, result_b.x)
+    assert torch.equal(result_a.hyperedge_index, result_b.hyperedge_index)
+    assert torch.equal(result_a.y, result_b.y)
+
+
+def test_clique_negative_sampler_return_0based_negatives_rebases_nodes_and_hyperedges():
+    hdata = HData(
+        x=torch.arange(5, dtype=torch.float).unsqueeze(1),
+        hyperedge_index=torch.tensor(
+            [[2, 3, 2, 4, 3, 4], [0, 0, 1, 1, 2, 2]],
+            dtype=torch.long,
+        ),
+        num_nodes=5,
+        num_hyperedges=3,
+    )
+    sampler = CliqueNegativeSampler(
+        num_negative_samples=1,
+        num_nodes_per_sample=3,
+        return_0based_negatives=True,
+    )
+
+    result = sampler.sample(hdata, seed=123)
+
+    assert torch.equal(result.hyperedge_index[0].unique(sorted=True), torch.arange(3))
+    assert torch.equal(result.hyperedge_index[1].unique(sorted=True), torch.arange(1))
+    assert result.global_node_ids is not None
+    assert torch.equal(result.global_node_ids, torch.tensor([2, 3, 4]))
+
+
+def test_clique_negative_sampler_uses_hyperedge_enrichers(mock_clique_hdata):
+    hyperedge_attr = torch.tensor([[10.0, 11.0]])
+    hyperedge_attr_enricher = MagicMock(spec=HyperedgeAttrsEnricher)
+    hyperedge_attr_enricher.enrich.return_value = hyperedge_attr
+
+    hyperedge_weights = torch.tensor([0.2])
+    hyperedge_weights_enricher = MagicMock(spec=HyperedgeWeightsEnricher)
+    hyperedge_weights_enricher.enrich.return_value = hyperedge_weights
+
+    sampler = CliqueNegativeSampler(
+        num_negative_samples=1,
+        num_nodes_per_sample=3,
+        hyperedge_attr_enricher=hyperedge_attr_enricher,
+        hyperedge_weights_enricher=hyperedge_weights_enricher,
+    )
+    result = sampler.sample(mock_clique_hdata, seed=123)
+
+    assert result.hyperedge_attr is not None
+    assert result.hyperedge_weights is not None
+    assert torch.equal(result.hyperedge_attr, hyperedge_attr)
+    assert torch.equal(result.hyperedge_weights, hyperedge_weights)
+
+    attr_enricher_index = hyperedge_attr_enricher.enrich.call_args.args[0]
+    weights_enricher_index = hyperedge_weights_enricher.enrich.call_args.args[0]
+    assert torch.equal(attr_enricher_index, weights_enricher_index)
+    assert torch.equal(attr_enricher_index[0].unique(sorted=True), torch.arange(3))
+    assert torch.equal(attr_enricher_index[1].unique(sorted=True), torch.arange(1))
+
+
+def test_clique_negative_sampler_defaults_to_random_hyperedge_attr(mock_clique_hdata):
+    mock_clique_hdata.hyperedge_attr = torch.tensor([[0.1], [0.2], [0.3], [0.4], [0.5]])
+
+    sampler = CliqueNegativeSampler(num_negative_samples=1, num_nodes_per_sample=3)
+
+    result_a = sampler.sample(mock_clique_hdata, seed=123)
+    result_b = sampler.sample(mock_clique_hdata, seed=123)
+
+    assert result_a.hyperedge_attr is not None
+    assert result_b.hyperedge_attr is not None
+    assert result_a.hyperedge_attr.shape == (1, 1)
+    assert torch.equal(result_a.hyperedge_attr, result_b.hyperedge_attr)
+
+
+def test_clique_negative_sampler_fails_when_positive_clique_is_only_candidate():
+    hdata = HData(
+        x=torch.arange(3, dtype=torch.float).unsqueeze(1),
+        hyperedge_index=torch.tensor([[0, 1, 2], [0, 0, 0]], dtype=torch.long),
+        num_nodes=3,
+        num_hyperedges=1,
+    )
+    sampler = CliqueNegativeSampler(num_negative_samples=1, num_nodes_per_sample=3)
+
+    with pytest.raises(
+        ValueError,
+        match="Asked to create 1 clique negative samples with 3 nodes each, but only 0 are available",
+    ):
+        sampler.sample(hdata)
+
+
+def test_clique_negative_sampler_fails_when_max_candidates_is_exceeded():
+    hdata = HData(
+        x=torch.arange(5, dtype=torch.float).unsqueeze(1),
+        hyperedge_index=torch.tensor(
+            [
+                [0, 1, 0, 2, 0, 3, 0, 4, 1, 2, 1, 3, 1, 4, 2, 3, 2, 4, 3, 4],
+                [0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9],
+            ],
+            dtype=torch.long,
+        ),
+        num_nodes=5,
+        num_hyperedges=10,
+    )
+    sampler = CliqueNegativeSampler(
+        num_negative_samples=1,
+        num_nodes_per_sample=3,
+        # Only 2 unique cliques of size 3 are possible, but the sampler will encounter
+        # the same positive clique multiple times due to the dense connectivity
+        max_candidates=2,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Clique negative candidate enumeration exceeded max_candidates=2",
+    ):
+        sampler.sample(hdata)
