@@ -276,7 +276,6 @@ class RandomNegativeSampler(SameNodeSpaceNegativeSampler):
         Otherwise, the negative samples retain their original global node and hyperedge IDs from the input data.
 
         Examples:
-        Examples:
             With ``self.return_0based_negatives = True``:
 
             >>> num_negative_samples = 2
@@ -438,16 +437,6 @@ class RandomNegativeSampler(SameNodeSpaceNegativeSampler):
                 replacement=False,
                 generator=generator,
             )
-
-            sampled_nodes_signature = self.__hyperedge_nodes_signature(sampled_node_ids)
-            if (
-                sampled_nodes_signature in positive_hyperedges_signatures
-                or sampled_nodes_signature in sampled_negative_hyperedge_signatures
-            ):
-                # Reject this sample as it already exists as a positive
-                # or as a previously sampled negative hyperedge
-                continue
-            sampled_negative_hyperedge_signatures.add(sampled_nodes_signature)
 
             sampled_nodes_signature = self.__hyperedge_nodes_signature(sampled_node_ids)
             if (

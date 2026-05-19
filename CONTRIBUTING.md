@@ -40,20 +40,6 @@ For a full explanation of the project structure, commands, and development guide
 ## Contribution types and expectations
 
 ### Feature
-Best for: new capabilities (models, datasets, training features, utilities).
-
-Expectations:
-- Prefer opening an issue first to discuss scope and API impact.
-- Include tests for the new behavior.
-- Update docs (or docstrings) if user-facing behavior changes.
-
-### Fix
-Best for: incorrect outputs, crashes, regressions, or broken docs/examples.
-
-Expectations:
-- Include a minimal reproduction (or a failing test) and a clear fix.
-- Add a regression test when feasible.
-- Keep the PR small and focused on the root cause.
 
 Best for: new capabilities (models, datasets, training features, utilities).
 
@@ -170,7 +156,7 @@ References:
 - [Google Python style guidelines](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings)
 - [Zensical documentation conventions](https://zensical.org/docs/get-started/)
 
-- Docstrings should follow the Google style guidelines and include in this order: 
+- Docstrings should follow the Google style guidelines and include in this order:
     - Function/method description.
     - Usage examples under the *Examples* section, if helpful.
     - Parameter descriptions under the *Args* section.
