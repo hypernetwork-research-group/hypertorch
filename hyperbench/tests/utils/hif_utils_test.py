@@ -175,7 +175,7 @@ def test_get_dataset_sha_returns_none_on_failure():
 def test_get_gh_datasets_shas_returns_shas_and_none_on_failure():
     names = ["algebra", "missing-dataset"]
 
-    def requests_get_side_effect(url, *, params):
+    def requests_get_side_effect(url, *, params, timeout):
         if params["path"] == "missing-dataset.json.zst":
             raise requests.RequestException("not found")
         mock_response = MagicMock()
@@ -184,7 +184,8 @@ def test_get_gh_datasets_shas_returns_shas_and_none_on_failure():
 
     with (
         patch(
-            "hyperbench.utils.hif_utils.requests.get", side_effect=requests_get_side_effect
+            "hyperbench.utils.hif_utils.requests.get",
+            side_effect=requests_get_side_effect,
         ) as mock_requests_get,
         pytest.warns(UserWarning, match="missing-dataset: failed to retrieve SHA"),
     ):
@@ -197,22 +198,25 @@ def test_get_gh_datasets_shas_returns_shas_and_none_on_failure():
     mock_requests_get.assert_any_call(
         "https://api.github.com/repos/hypernetwork-research-group/datasets/commits",
         params={"path": "algebra.json.zst", "per_page": 1},
+        timeout=10,
     )
     mock_requests_get.assert_any_call(
         "https://api.github.com/repos/hypernetwork-research-group/datasets/commits",
         params={"path": "missing-dataset.json.zst", "per_page": 1},
+        timeout=10,
     )
 
 
 def test_get_gh_dataset_trigger_no_commit():
-    def requests_get_side_effect(url, *, params):
+    def requests_get_side_effect(url, *, params, timeout):
         mock_response = MagicMock()
         mock_response.json.return_value = []  # No commits found
         return mock_response
 
     with (
         patch(
-            "hyperbench.utils.hif_utils.requests.get", side_effect=requests_get_side_effect
+            "hyperbench.utils.hif_utils.requests.get",
+            side_effect=requests_get_side_effect,
         ) as mock_requests_get,
         pytest.warns(UserWarning, match="algebra: no commits found for algebra.json.zst"),
     ):
@@ -222,4 +226,5 @@ def test_get_gh_dataset_trigger_no_commit():
     mock_requests_get.assert_called_once_with(
         "https://api.github.com/repos/owner/repo/commits",
         params={"path": "algebra.json.zst", "per_page": 1},
+        timeout=10,
     )

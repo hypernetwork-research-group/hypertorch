@@ -84,7 +84,7 @@ def get_gh_dataset_sha(dataset_name: str, owner: str, repository: str) -> str | 
     }
 
     try:
-        response = requests.get(url, params=params)
+        response = requests.get(url, params=params, timeout=10)
         response.raise_for_status()
     except requests.RequestException as e:
         warnings.warn(
