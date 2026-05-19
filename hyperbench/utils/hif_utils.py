@@ -24,11 +24,7 @@ def validate_hif_json(filename: str) -> bool:
     try:
         schema = requests.get(url, timeout=10).json()
     except (requests.RequestException, requests.Timeout):
-        with (
-            resources.files("hyperbench.utils.schema")
-            .joinpath("hif_schema.json")
-            .open("r") as f
-        ):
+        with resources.files("hyperbench.utils.schema").joinpath("hif_schema.json").open("r") as f:
             schema = json.load(f)
     validator = fastjsonschema.compile(schema)
 
@@ -51,9 +47,7 @@ def get_hf_datasets_shas(
     return shas
 
 
-def get_hf_dataset_sha(
-    dataset_name: str, namespace: str = "HypernetworkRG"
-) -> str | None:
+def get_hf_dataset_sha(dataset_name: str, namespace: str = "HypernetworkRG") -> str | None:
     api = HfApi()
     repo_id = f"{namespace}/{dataset_name}"
     try:
