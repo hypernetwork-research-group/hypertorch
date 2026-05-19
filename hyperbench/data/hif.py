@@ -349,15 +349,15 @@ class HIFLoader:
                         hf_content = hf_file.read()
                     tmp_hf_file.write(hf_content)
 
-                response._content = hf_content
+                hf_content = hf_content
 
             if save_on_disk:
                 os.makedirs(os.path.join(current_dir, "datasets"), exist_ok=True)
                 with open(zst_filename, "wb") as f:
-                    f.write(response.content)
+                    f.write(hf_content)
             else:
                 # Create temporary file for downloaded zst content
-                zst_filename = named_temporary_file(content=response.content, suffix=".json.zst")
+                zst_filename = named_temporary_file(content=hf_content, suffix=".json.zst")
 
         output = decompress_zst(zst_filename)
         hypergraph = cls.__extract_hif(output)
