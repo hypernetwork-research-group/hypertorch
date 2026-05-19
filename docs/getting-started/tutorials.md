@@ -28,3 +28,4 @@ make run examples/gcn.py
 | [node2vecslp.py](https://github.com/hypernetwork-research-group/hyperbench/blob/main/examples/node2vecslp.py) | Compute Node2Vec embeddings then train Node2Vec+SLP HLP | `make run examples/node2vecslp.py` |
 | [node_enricher.py](https://github.com/hypernetwork-research-group/hyperbench/blob/main/examples/node_enricher.py) | Node feature enrichment: Laplacian positional encoding (LPE) + Node2Vec | `make run examples/node_enricher.py` |
 | [hyperedge_enricher.py](https://github.com/hypernetwork-research-group/hyperbench/blob/main/examples/hyperedge_enricher.py) | Hyperedge enrichment: weights (degree) + hyperedge attributes | `make run examples/hyperedge_enricher.py` |
+| [negative_sampler.py](https://github.com/hypernetwork-research-group/hyperbench/blob/main/examples/negative_sampler.py) | Negative sampling strategies for hypergraphs | `make run examples/negative_sampler.py` |
