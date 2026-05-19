@@ -600,7 +600,13 @@ class CliqueNegativeSampler(SameNodeSpaceNegativeSampler):
         hyperedge_attr_enricher: Optional enricher to generate attributes for sampled negatives.
         hyperedge_weights_enricher: Optional enricher to generate weights for sampled negatives.
         return_0based_negatives: If ``True``, returned negative node and hyperedge IDs are rebased to 0-based IDs.
-        max_candidates: Optional upper bound for enumerated clique candidates.
+        max_candidates: Optional upper bound for full-size clique candidates enumerated during search
+            If ``None``, it means no explicit cap. The limit counts every full-size clique candidate
+            encountered before positive-hyperedge filtering, so positive hyperedges still consume the budget
+            because they still require search work. This is a safety guard for dense graphs where clique enumeration
+            can grow quickly. For example, ``max_candidates=10_000`` means the sampler stops if finding candidates
+            requires enumerating more than 10,000 cliques of size ``num_nodes_per_sample``.
+            It does not control how many negatives are returned, as that is controlled by ``num_negative_samples``.
 
     Raises:
         ValueError: If numeric arguments are invalid.
@@ -744,15 +750,28 @@ class CliqueNegativeSampler(SameNodeSpaceNegativeSampler):
         valid_candidates: list[tuple[int, ...]],
         enumerated_candidates: int,
     ) -> int:
-        if len(prefix) == self.num_nodes_per_sample:
-            # Count every enumerated clique, including positives that will be rejected,
-            # so max_candidates limits the full search effort.
+        """
+        Recursively enumerate clique candidates from a clique-expanded adjacency list.
+
+        Args:
+            prefix: Current partial clique, represented as sorted node IDs.
+            candidates: Node IDs that may extend ``prefix`` while preserving clique structure.
+            adjacency_list: Clique-expanded graph adjacency list.
+            positive_hyperedge_signatures: Positive hyperedge node signatures that must not be returned as negatives.
+            valid_candidates: Output list mutated in place with valid negative clique candidates.
+            enumerated_candidates: Number of full-size clique candidates visited so far.
+
+        Returns:
+            Updated number of full-size clique candidates visited.
+
+        Raises:
+            ValueError: If ``max_candidates`` is set and clique enumeration exceeds it.
+        """
+        if len(prefix) == self.num_nodes_per_sample:  # Found a full-size clique candidate
             if self.max_candidates is not None and enumerated_candidates >= self.max_candidates:
                 raise ValueError(
-                    "Clique negative candidate enumeration exceeded "
-                    f"max_candidates={self.max_candidates}."
+                    f"Clique negative candidate enumeration exceeded max_candidates={self.max_candidates}."
                 )
-
             enumerated_candidates += 1
 
             signature = self._hyperedge_nodes_signature(prefix)
@@ -764,19 +783,19 @@ class CliqueNegativeSampler(SameNodeSpaceNegativeSampler):
         for node_idx, node_id in enumerate(candidates):
             # Keep only future candidates adjacent to the new node. Since previous
             # expansion steps already intersected with earlier prefix nodes, every
-            # recursive prefix remains a clique.
+            # recursive prefix remains a clique
             # Example: prefix = (0,), candidates = [1, 2, 3],
-            #          index = 0, node_id = 1, adjacency[1] = {0, 2, 3},
+            #          node_idx = 0, node_id = 1, adjacency_list[1] = {0, 2, 3},
             #          -> next_candidates = [2, 3]
+            #             We don't pick 0 because it's already in the prefix
             next_candidates = [
                 candidate_node_id
                 for candidate_node_id in candidates[node_idx + 1 :]
                 if candidate_node_id in adjacency_list[node_id]
             ]
 
-            new_prefix: tuple[int, ...] = (*prefix, node_id)
             enumerated_candidates = self.__expand_clique_candidates(
-                prefix=new_prefix,
+                prefix=(*prefix, node_id),
                 candidates=next_candidates,
                 adjacency_list=adjacency_list,
                 positive_hyperedge_signatures=positive_hyperedge_signatures,
@@ -791,11 +810,29 @@ class CliqueNegativeSampler(SameNodeSpaceNegativeSampler):
         adjacency_list: list[set[int]],
         positive_hyperedge_signatures: set[tuple[int, ...]],
     ) -> list[tuple[int, ...]]:
+        """
+        Find valid clique negative candidates in the clique-expanded graph.
+
+        Args:
+            adjacency_list: Clique-expanded graph adjacency list.
+            positive_hyperedge_signatures: Positive hyperedge node signatures with the requested sample size.
+
+        Returns:
+            Clique node signatures that are not positive hyperedges.
+
+        Raises:
+            ValueError: If fewer valid clique negatives exist than requested, or if
+                ``max_candidates`` is exceeded during enumeration.
+        """
         valid_clique_candidates: list[tuple[int, ...]] = []
+
         num_nodes = len(adjacency_list)
+        # Initial candidates are all nodes, the recursive expansion
+        # will narrow down to cliques of the right size
+        all_nodes_as_candidates = list(range(num_nodes))
         self.__expand_clique_candidates(
             prefix=(),
-            candidates=list(range(num_nodes)),
+            candidates=all_nodes_as_candidates,
             adjacency_list=adjacency_list,
             positive_hyperedge_signatures=positive_hyperedge_signatures,
             valid_candidates=valid_clique_candidates,
@@ -818,6 +855,18 @@ class CliqueNegativeSampler(SameNodeSpaceNegativeSampler):
         clique_candidates: list[tuple[int, ...]],
         seed: int | None = None,
     ) -> tuple[list[Tensor], list[Tensor], set[int], int]:
+        """
+        Sample from valid clique candidates and build negative hyperedge tensors.
+
+        Args:
+            hdata: Input hypergraph data used for feature, attribute, and ID context.
+            clique_candidates: Valid clique negative candidates to sample from.
+            seed: Optional seed for reproducible candidate shuffling and random attributes.
+
+        Returns:
+            A tuple containing sampled hyperedge index tensors, sampled hyperedge
+            attribute tensors, sampled node IDs, and the first negative hyperedge ID.
+        """
         device = hdata.device
         generator = create_seeded_torch_generator(device=device, seed=seed)
 

@@ -446,21 +446,13 @@ def test_clique_negative_sampler_return_0based_negatives_rebases_nodes_and_hyper
     assert torch.equal(result.global_node_ids, torch.tensor([2, 3, 4]))
 
 
-def test_clique_negative_sampler_uses_hyperedge_enrichers():
-    hdata = HData(
-        x=torch.arange(5, dtype=torch.float).unsqueeze(1),
-        hyperedge_index=torch.tensor(
-            [[2, 3, 2, 4, 3, 4], [0, 0, 1, 1, 2, 2]],
-            dtype=torch.long,
-        ),
-        num_nodes=5,
-        num_hyperedges=3,
-    )
+def test_clique_negative_sampler_uses_hyperedge_enrichers(mock_clique_hdata):
     hyperedge_attr = torch.tensor([[10.0, 11.0]])
-    hyperedge_weights = torch.tensor([0.2])
     hyperedge_attr_enricher = MagicMock(spec=HyperedgeAttrsEnricher)
-    hyperedge_weights_enricher = MagicMock(spec=HyperedgeWeightsEnricher)
     hyperedge_attr_enricher.enrich.return_value = hyperedge_attr
+
+    hyperedge_weights = torch.tensor([0.2])
+    hyperedge_weights_enricher = MagicMock(spec=HyperedgeWeightsEnricher)
     hyperedge_weights_enricher.enrich.return_value = hyperedge_weights
 
     sampler = CliqueNegativeSampler(
@@ -469,7 +461,7 @@ def test_clique_negative_sampler_uses_hyperedge_enrichers():
         hyperedge_attr_enricher=hyperedge_attr_enricher,
         hyperedge_weights_enricher=hyperedge_weights_enricher,
     )
-    result = sampler.sample(hdata, seed=123)
+    result = sampler.sample(mock_clique_hdata, seed=123)
 
     assert result.hyperedge_attr is not None
     assert result.hyperedge_weights is not None
@@ -483,25 +475,17 @@ def test_clique_negative_sampler_uses_hyperedge_enrichers():
     assert torch.equal(attr_enricher_index[1].unique(sorted=True), torch.arange(1))
 
 
-def test_clique_negative_sampler_defaults_to_random_hyperedge_attr():
-    hdata = HData(
-        x=torch.arange(5, dtype=torch.float).unsqueeze(1),
-        hyperedge_index=torch.tensor(
-            [[2, 3, 2, 4, 3, 4], [0, 0, 1, 1, 2, 2]],
-            dtype=torch.long,
-        ),
-        hyperedge_attr=torch.tensor([[0.1, 0.2], [0.3, 0.4], [0.5, 0.6]]),
-        num_nodes=5,
-        num_hyperedges=3,
-    )
+def test_clique_negative_sampler_defaults_to_random_hyperedge_attr(mock_clique_hdata):
+    mock_clique_hdata.hyperedge_attr = torch.tensor([[0.1], [0.2], [0.3], [0.4], [0.5]])
+
     sampler = CliqueNegativeSampler(num_negative_samples=1, num_nodes_per_sample=3)
 
-    result_a = sampler.sample(hdata, seed=123)
-    result_b = sampler.sample(hdata, seed=123)
+    result_a = sampler.sample(mock_clique_hdata, seed=123)
+    result_b = sampler.sample(mock_clique_hdata, seed=123)
 
     assert result_a.hyperedge_attr is not None
     assert result_b.hyperedge_attr is not None
-    assert result_a.hyperedge_attr.shape == (1, 2)
+    assert result_a.hyperedge_attr.shape == (1, 1)
     assert torch.equal(result_a.hyperedge_attr, result_b.hyperedge_attr)
 
 
@@ -537,6 +521,8 @@ def test_clique_negative_sampler_fails_when_max_candidates_is_exceeded():
     sampler = CliqueNegativeSampler(
         num_negative_samples=1,
         num_nodes_per_sample=3,
+        # Only 2 unique cliques of size 3 are possible, but the sampler will encounter
+        # the same positive clique multiple times due to the dense connectivity
         max_candidates=2,
     )
 
