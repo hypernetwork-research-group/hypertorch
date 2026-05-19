@@ -315,6 +315,7 @@ class HIFLoader:
         zst_filename = os.path.join(current_dir, "datasets", f"{dataset_name}.json.zst")
 
         if not os.path.exists(zst_filename):
+            hf_content_bytes = None
             github_url = f"https://raw.githubusercontent.com/hypernetwork-research-group/datasets/{GITHUB_COMMIT_SHA}/{dataset_name}.json.zst"
             response = requests.get(github_url, timeout=20)
             if response.status_code != 200:
@@ -349,15 +350,17 @@ class HIFLoader:
                         hf_content = hf_file.read()
                     tmp_hf_file.write(hf_content)
 
-                hf_content = hf_content
+                hf_content_bytes = hf_content
+            else:
+                hf_content_bytes = response.content
 
             if save_on_disk:
                 os.makedirs(os.path.join(current_dir, "datasets"), exist_ok=True)
                 with open(zst_filename, "wb") as f:
-                    f.write(hf_content)
+                    f.write(hf_content_bytes)
             else:
                 # Create temporary file for downloaded zst content
-                zst_filename = named_temporary_file(content=hf_content, suffix=".json.zst")
+                zst_filename = named_temporary_file(content=hf_content_bytes, suffix=".json.zst")
 
         output = decompress_zst(zst_filename)
         hypergraph = cls.__extract_hif(output)
