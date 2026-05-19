@@ -27,7 +27,6 @@ with MultiModelTrainer(
     model_configs=configs,
     auto_start_tensorboard=True,
     auto_wait=True,
-
 ) as trainer:
     trainer.fit_all(train_dataloader=train_loader, val_dataloader=val_loader)
 ```
