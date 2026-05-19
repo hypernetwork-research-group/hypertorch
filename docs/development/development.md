@@ -92,32 +92,6 @@ make test
 uv run pytest --cov=hyperbench --cov-report=html
 ```
 
-
-## Contributing to the code base
-
-### Pre-commit hooks
-
-Run the following command to install the pre-commit hook:
-
-```bash
-make setup
-
-uv run pre-commit install --config .github/hooks/.pre-commit-config.yaml \
-    --hook-type pre-commit \
-    --install-hooks --overwrite \
-```
-
-### Tests
-
-Use [pytest](https://docs.pytest.org/en/latest/) to run the test suite:
-
-```bash
-make test
-
-# Run tests with HTML report
-uv run pytest --cov=hyperbench --cov-report=html
-```
-
 ### Commit message style
 
 Commit messages should follow the [conventional commit specification](https://www.conventionalcommits.org/en/v1.0.0/).

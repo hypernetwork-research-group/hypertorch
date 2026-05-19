@@ -2,7 +2,7 @@
 
 HyperBench is organized as a flat Python package: the `hyperbench/` package lives at the repository root rather than under `src/`.
 
-```
+```bash
 .
 ├── .github                 # GitHub workflows and templates
 ├── Makefile                # convenience build/run targets

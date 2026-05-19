@@ -10,11 +10,7 @@ make setup
 # Optional setup
 make setup-tensorboard
 
-<<<<<<< HEAD
 make run examples/gcn.py
-=======
-make run examples/early_stopping.py
->>>>>>> df07b4f (docs: added more files for dev docs)
 ```
 
 | Example | What it demonstrates | Run |
