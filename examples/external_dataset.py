@@ -33,7 +33,6 @@ if __name__ == "__main__":
     dataset = Dataset.from_url(
         url="https://raw.githubusercontent.com/hypernetwork-research-group/datasets/main/algebra.json.zst",
     )
-    print(f"Original dataset:\n {dataset.hdata}\n")
 
     if verbose:
         print(f"Dataset:\n {dataset.hdata}\n")

@@ -357,11 +357,7 @@ class HIFLoader:
                     f.write(response.content)
             else:
                 # Create temporary file for downloaded zst content
-                with tempfile.NamedTemporaryFile(
-                    mode="wb", suffix=".json.zst", delete=False
-                ) as tmp_zst_file:
-                    tmp_zst_file.write(response.content)
-                    zst_filename = tmp_zst_file.name
+                zst_filename = named_temporary_file(content=response.content, suffix=".json.zst")
 
         output = decompress_zst(zst_filename)
         hypergraph = cls.__extract_hif(output)
