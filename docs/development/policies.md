@@ -30,7 +30,7 @@ We do not support these platforms:
 
 | Virtual machine / container | Processor (CPU) | Memory (RAM) | Storage (SSD) | Architecture | Workflow label | Supported |
 |---|---:|---:|---:|---|---|:--:|
-| Linux | 1 | 5 GB | 14 GB | x64 | ubuntu-slim | :heavy_check_mark: |
+| Linux | 1 | 5 GB | 14 GB | x64 | ubuntu-slim | :x: |
 | Linux | 4 | 16 GB | 14 GB | x64 | ubuntu-latest, ubuntu-24.04 | :heavy_check_mark: |
 | Windows | 4 | 16 GB | 14 GB | x64 | windows-latest, windows-2025 | :heavy_check_mark: |
 | Linux | 4 | 16 GB | 14 GB | arm64 | ubuntu-24.04-arm | :heavy_check_mark: |
