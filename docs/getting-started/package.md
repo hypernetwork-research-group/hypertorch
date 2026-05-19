@@ -22,11 +22,11 @@ HyperBench is organized as a flat Python package: the `hyperbench/` package live
 │   ├── types               # shared tensor/data types
 │   └── utils               # reusable helpers
 ├── hyperbench_logs         # local experiment outputs
-│   └── experiment_0
-│       ├── comparison
-│       ├── hgnn
-│       ├── ...             # more experiment outputs
-│       └── villain
+│   └── experiment_0
+│       ├── comparison
+│       ├── hgnn
+│       ├── ...             # more experiment outputs
+│       └── villain
 ├── pyproject.toml          # package metadata and dependencies
 ├── uv.lock                 # pinned dependency lockfile
 └── zensical.toml           # zensical config for docs

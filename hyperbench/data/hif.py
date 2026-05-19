@@ -15,6 +15,7 @@ from hyperbench.utils import (
     compress_to_zst,
     validate_http_url,
     write_to_disk,
+    named_temporary_file,
 )
 
 
@@ -254,25 +255,24 @@ class HIFLoader:
                 f"Failed to download dataset from URL '{url}' with status code {response.status_code}"
             )
 
-        with tempfile.NamedTemporaryFile(
-            mode="wb", suffix=".json.zst", delete=False
-        ) as tmp_zst_file:
-            tmp_zst_file.write(response.content)
-            zst_filename = tmp_zst_file.name
+        if url.endswith(".json.zst"):
+            zst_filename = named_temporary_file(content=response.content, suffix=".json.zst")
+        elif url.endswith(".json"):
+            zst_filename = named_temporary_file(content=response.content, suffix=".json")
+        else:
+            raise ValueError(
+                f"Unsupported file format for URL '{url}'. Expected .json or .json.zst"
+            )
 
         if zst_filename.endswith(".zst"):
             if save_on_disk:
                 write_to_disk(os.path.basename(url), response.content)
             output = decompress_zst(zst_filename)
-        elif zst_filename.endswith(".json"):
+        else:  # json
             if save_on_disk:
                 compressed = compress_to_zst(zst_filename)
                 write_to_disk(os.path.basename(url), compressed)
             output = zst_filename
-        else:
-            raise ValueError(
-                f"Unsupported file format for URL '{url}'. Expected .json or .json.zst"
-            )
 
         hypergraph = cls.__extract_hif(output)
         hdata = HIFProcessor.process_hypergraph(hypergraph)
@@ -315,6 +315,7 @@ class HIFLoader:
         zst_filename = os.path.join(current_dir, "datasets", f"{dataset_name}.json.zst")
 
         if not os.path.exists(zst_filename):
+            hf_content_bytes = None
             github_url = f"https://raw.githubusercontent.com/hypernetwork-research-group/datasets/{GITHUB_COMMIT_SHA}/{dataset_name}.json.zst"
             response = requests.get(github_url, timeout=20)
             if response.status_code != 200:
@@ -349,19 +350,17 @@ class HIFLoader:
                         hf_content = hf_file.read()
                     tmp_hf_file.write(hf_content)
 
-                response._content = hf_content
+                hf_content_bytes = hf_content
+            else:
+                hf_content_bytes = response.content
 
             if save_on_disk:
                 os.makedirs(os.path.join(current_dir, "datasets"), exist_ok=True)
                 with open(zst_filename, "wb") as f:
-                    f.write(response.content)
+                    f.write(hf_content_bytes)
             else:
                 # Create temporary file for downloaded zst content
-                with tempfile.NamedTemporaryFile(
-                    mode="wb", suffix=".json.zst", delete=False
-                ) as tmp_zst_file:
-                    tmp_zst_file.write(response.content)
-                    zst_filename = tmp_zst_file.name
+                zst_filename = named_temporary_file(content=hf_content_bytes, suffix=".json.zst")
 
         output = decompress_zst(zst_filename)
         hypergraph = cls.__extract_hif(output)

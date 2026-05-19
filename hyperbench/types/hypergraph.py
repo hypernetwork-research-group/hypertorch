@@ -901,7 +901,7 @@ class HyperedgeIndex:
         """
         Remove hyperedges that contain fewer than k nodes.
 
-        Example:
+        Examples:
             >>> hyperedge_index = [[0, 1, 2, 3, 5, 4],
             ...                    [0, 0, 1, 1, 2, 1]], shape (2, |E| = 6)
 

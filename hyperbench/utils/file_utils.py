@@ -55,3 +55,10 @@ def write_to_disk(dataset_name: str, content: bytes, output_dir: str | None = No
 
     with open(zst_filename, "wb") as f:
         f.write(content)
+
+
+def named_temporary_file(content: bytes, suffix: str = ".json.zst") -> str:
+    with tempfile.NamedTemporaryFile(mode="wb", suffix=suffix, delete=False) as tmp_zst_file:
+        tmp_zst_file.write(content)
+        zst_filename = tmp_zst_file.name
+    return zst_filename

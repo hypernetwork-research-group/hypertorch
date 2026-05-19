@@ -470,6 +470,19 @@ def test_hifloader_falls_back_to_hf_hub_download_when_github_raw_download_fails(
         _ = HIFLoader.load_by_name("algebra", save_on_disk=False)
 
 
+def test_hifloader_from_url_raise_error_on_wrong_extension():
+    with patch("hyperbench.data.hif.requests.get") as mock_get:
+        mock_response = mock_get.return_value
+        mock_response.status_code = 200
+        mock_response.content = b"bytes"
+
+        with pytest.raises(
+            ValueError,
+            match=r"Unsupported file format for URL 'https://example.com/algebra.txt'",
+        ):
+            HIFLoader.load_from_url("https://example.com/algebra.txt")
+
+
 def test_load_saves_downloaded_dataset_on_disk(tmp_path, mock_hypergraph):
     json_path = _write_hif_json(tmp_path, mock_hypergraph)
 

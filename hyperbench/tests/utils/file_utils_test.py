@@ -1,4 +1,5 @@
-from hyperbench.utils import write_to_disk
+import os
+from hyperbench.utils import write_to_disk, named_temporary_file
 from unittest.mock import patch
 
 
@@ -33,3 +34,15 @@ def test_write_to_disk_writes_file_optional_output_dir(tmp_path):
     with open(expected_path, "rb") as f:
         file_content = f.read()
         assert file_content == content
+
+
+def test_create_named_temporary_file(tmp_path):
+    content = b"temporary file content"
+    temp_file_path = named_temporary_file(content, suffix=".txt")
+
+    assert os.path.isfile(temp_file_path)
+
+    with open(temp_file_path, "rb") as f:
+        file_content = f.read()
+        assert file_content == content
+        assert temp_file_path.endswith(".txt")

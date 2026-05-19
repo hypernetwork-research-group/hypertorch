@@ -156,7 +156,7 @@ References:
 - [Google Python style guidelines](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings)
 - [Zensical documentation conventions](https://zensical.org/docs/get-started/)
 
-- Docstrings should follow the Google style guidelines and include in this order: 
+- Docstrings should follow the Google style guidelines and include in this order:
     - Function/method description.
     - Usage examples under the *Examples* section, if helpful.
     - Parameter descriptions under the *Args* section.
