@@ -63,6 +63,10 @@ stest:
 	@echo '=== Test for $(T) ==='
 	$(UV) run $(PYTEST) -s $(PROJECT_NAME)/tests/$(T)
 
+integration-test:
+	@echo '=== Running integration tests ==='
+	$(UV) run $(PYTEST) -s $(PROJECT_NAME)/tests/integration
+
 # If the first argument is run...
 ifeq ($(firstword $(MAKECMDGOALS)),run)
   # use the rest as arguments for run...
@@ -117,6 +121,7 @@ help:
 	@echo "  lint-rule-fix R=<rule>  - Run linting for a specific rule and fix issues"
 	@echo "  test                    - Run all tests"
 	@echo "  stest T=<test_name>     - Run a single test"
+	@echo "  integration-test        - Run integration tests"
 	@echo "  run <file.py>           - Run a single file"
 	@echo "  docs                    - Build and serve documentation"
 	@echo "  docs-build              - Build documentation without serving"
