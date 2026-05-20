@@ -153,7 +153,7 @@ def _write_hif_json(tmp_path, hypergraph: HIFHypergraph, filename: str = "sample
         "edges": hypergraph.hyperedges,
         "incidences": hypergraph.incidences,
     }
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8") as f:
         json.dump(payload, f)
     return str(path)
 
@@ -251,6 +251,24 @@ def test_load_from_path_processes_hypergraph_cases(
     assert hdata.num_hyperedges == expected_hyperedges
     assert hdata.hyperedge_index.shape[1] == expected_incidences
     assert (hdata.hyperedge_weights is not None) is has_hyperedge_weights
+
+
+def test_load_from_path_reads_utf8_json(tmp_path):
+    hypergraph = HIFHypergraph(
+        network_type="undirected",
+        nodes=[{"node": "0", "attrs": {"label": "café ☕"}}],
+        hyperedges=[{"edge": "0", "attrs": {"name": "東京"}}],
+        incidences=[{"node": "0", "edge": "0"}],
+        metadata={"description": "naïve façade"},
+    )
+    json_path = _write_hif_json(tmp_path, hypergraph, filename="utf8.json")
+
+    with patch("hyperbench.data.hif.validate_hif_json", return_value=True):
+        hdata = HIFLoader.load_from_path(json_path)
+
+    assert hdata.num_nodes == 1
+    assert hdata.num_hyperedges == 1
+    assert hdata.hyperedge_index.shape[1] == 1
 
 
 def test_load_from_path_zst_uses_decompress(tmp_path, mock_hypergraph):
