@@ -7,7 +7,7 @@ on:
 jobs:
   label:
     environment:
-      name: labels
+      name: management
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -21,7 +21,7 @@ jobs:
 
   assignees:
     environment:
-      name: labels
+      name: management
     runs-on: ubuntu-latest
     permissions:
       contents: read
