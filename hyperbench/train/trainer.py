@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import copy
 import importlib.util
 import shutil
@@ -202,7 +204,7 @@ class MultiModelTrainer:
         print(f"Initialized trainer(models: {len(model_configs)}, log_dir: {self.log_dir})")
         self.__auto_start_tensorboard_if_enabled()
 
-    def __enter__(self) -> "MultiModelTrainer":
+    def __enter__(self) -> MultiModelTrainer:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:

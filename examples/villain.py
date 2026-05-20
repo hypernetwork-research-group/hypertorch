@@ -6,10 +6,10 @@ from torchmetrics.classification import (
     BinaryPrecision,
     BinaryRecall,
 )
-from hyperbench.data import CoraDataset, DataLoader, SamplingStrategy
 from hyperbench.hlp import VilLainHlpModule
-from hyperbench.train import MultiModelTrainer, RandomNegativeSampler
+from hyperbench.train import MultiModelTrainer
 from hyperbench.types import ModelConfig
+from hyperbench.data import CoraDataset, DataLoader, RandomNegativeSampler, SamplingStrategy
 
 
 if __name__ == "__main__":

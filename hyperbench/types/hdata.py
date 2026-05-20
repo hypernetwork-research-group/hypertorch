@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import torch
 
 from torch import Tensor
@@ -13,11 +15,10 @@ from hyperbench.utils import (
     to_0based_ids,
 )
 
-from hyperbench.nn.enricher import EnrichmentMode, NodeEnricher, HyperedgeEnricher
 from hyperbench.types.hypergraph import HyperedgeIndex
 
 if TYPE_CHECKING:
-    from hyperbench.train import NegativeSampler
+    from hyperbench.data import EnrichmentMode, HyperedgeEnricher, NegativeSampler, NodeEnricher
 
 
 class HData:
@@ -112,7 +113,7 @@ class HData:
         )
 
     @classmethod
-    def cat_same_node_space(cls, hdatas: Sequence["HData"], x: Tensor | None = None) -> "HData":
+    def cat_same_node_space(cls, hdatas: Sequence[HData], x: Tensor | None = None) -> HData:
         """
         Concatenate `HData` instances that share the same node space, meaning nodes with the same ID in different instances are the same node.
         This is useful when combining positive and negative hyperedges that reference the same set of nodes.
@@ -183,9 +184,9 @@ class HData:
 
     def add_negative_samples(
         self,
-        negative_sampler: "NegativeSampler",
+        negative_sampler: NegativeSampler,
         seed: int | None = None,
-    ) -> "HData":
+    ) -> HData:
         """
         Return a new `HData` with sampled negative hyperedges added.
 
@@ -201,7 +202,7 @@ class HData:
         return hdata_with_negatives.shuffle(seed=seed)
 
     @classmethod
-    def empty(cls) -> "HData":
+    def empty(cls) -> HData:
         return cls(
             x=empty_nodefeatures(),
             hyperedge_index=empty_hyperedgeindex(),
@@ -214,7 +215,7 @@ class HData:
         )
 
     @classmethod
-    def from_hyperedge_index(cls, hyperedge_index: Tensor) -> "HData":
+    def from_hyperedge_index(cls, hyperedge_index: Tensor) -> HData:
         """
         Build an `HData` from a given hyperedge index, with empty node features and hyperedge attributes.
 
@@ -250,10 +251,10 @@ class HData:
     @classmethod
     def split(
         cls,
-        hdata: "HData",
+        hdata: HData,
         split_hyperedge_ids: Tensor,
         node_space_setting: NodeSpaceSetting = "transductive",
-    ) -> "HData":
+    ) -> HData:
         """
         Build an `HData` for a single split from the given hyperedge IDs.
 
@@ -360,7 +361,7 @@ class HData:
         self,
         enricher: NodeEnricher,
         enrichment_mode: EnrichmentMode | None = None,
-    ) -> "HData":
+    ) -> HData:
         """
         Enrich node features using the provided node feature enricher.
 
@@ -391,10 +392,10 @@ class HData:
 
     def enrich_node_features_from(
         self,
-        hdata_with_features: "HData",
+        hdata_with_features: HData,
         node_space_setting: NodeSpaceSetting = "transductive",
         fill_value: NodeSpaceFiller | None = None,
-    ) -> "HData":
+    ) -> HData:
         """
         Copy node features from another `HData` by aligning features by ``global_node_ids``.
 
@@ -508,7 +509,7 @@ class HData:
         self,
         enricher: HyperedgeEnricher,
         enrichment_mode: EnrichmentMode | None = None,
-    ) -> "HData":
+    ) -> HData:
         """Enrich hyperedge weights using the provided hyperedge weight enricher.
         Args:
             enricher: An instance of HyperedgeEnricher to generate hyperedge weights from hypergraph topology.
@@ -543,7 +544,7 @@ class HData:
         self,
         enricher: HyperedgeEnricher,
         enrichment_mode: EnrichmentMode | None = None,
-    ) -> "HData":
+    ) -> HData:
         """
         Enrich hyperedge features using the provided hyperedge feature enricher.
 
@@ -599,7 +600,7 @@ class HData:
 
         return devices.pop() if len(devices) == 1 else torch.device("cpu")
 
-    def remove_hyperedges_with_fewer_than_k_nodes(self, k: int) -> "HData":
+    def remove_hyperedges_with_fewer_than_k_nodes(self, k: int) -> HData:
         hyperedge_index_wrapper = HyperedgeIndex(
             self.hyperedge_index
         ).remove_hyperedges_with_fewer_than_k_nodes(k)
@@ -629,7 +630,7 @@ class HData:
             y=y,
         )
 
-    def shuffle(self, seed: int | None = None) -> "HData":
+    def shuffle(self, seed: int | None = None) -> HData:
         """
         Return a new `HData` instance with hyperedge IDs randomly reassigned.
 
@@ -702,7 +703,7 @@ class HData:
             y=new_y,
         )
 
-    def clone(self) -> "HData":
+    def clone(self) -> HData:
         """
         Return a deep copy of this `HData`.
 
@@ -729,7 +730,7 @@ class HData:
             y=self.y.clone(),
         )
 
-    def to(self, device: torch.device | str, non_blocking: bool = False) -> "HData":
+    def to(self, device: torch.device | str, non_blocking: bool = False) -> HData:
         """
         Move all tensors to the specified device.
 
@@ -758,7 +759,7 @@ class HData:
         self.device = device if isinstance(device, torch.device) else torch.device(device)
         return self
 
-    def with_y_to(self, value: float) -> "HData":
+    def with_y_to(self, value: float) -> HData:
         """
         Return a copy of this instance with a y attribute set to the given value.
 
@@ -779,11 +780,11 @@ class HData:
             y=torch.full((self.num_hyperedges,), value, dtype=torch.float, device=self.device),
         )
 
-    def with_y_ones(self) -> "HData":
+    def with_y_ones(self) -> HData:
         """Return a copy of this instance with a y attribute of all ones."""
         return self.with_y_to(1.0)
 
-    def with_y_zeros(self) -> "HData":
+    def with_y_zeros(self) -> HData:
         """Return a copy of this instance with a y attribute of all zeros."""
         return self.with_y_to(0.0)
 

@@ -1,7 +1,11 @@
 import torch
 
-from hyperbench.data import Dataset, SamplingStrategy
-from hyperbench.train import CliqueNegativeSampler, RandomNegativeSampler
+from hyperbench.data import (
+    CliqueNegativeSampler,
+    Dataset,
+    RandomNegativeSampler,
+    SamplingStrategy,
+)
 from hyperbench.types import HData
 
 

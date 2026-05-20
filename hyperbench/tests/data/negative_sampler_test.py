@@ -3,10 +3,12 @@ import torch
 import re
 
 from unittest.mock import MagicMock
-from hyperbench.nn import HyperedgeAttrsEnricher, HyperedgeWeightsEnricher, NodeEnricher
-from hyperbench.train import (
+from hyperbench.data import (
     CliqueNegativeSampler,
     GeneratedNodesNegativeSampler,
+    HyperedgeAttrsEnricher,
+    HyperedgeWeightsEnricher,
+    NodeEnricher,
     RandomNegativeSampler,
     SameNodeSpaceNegativeSampler,
 )

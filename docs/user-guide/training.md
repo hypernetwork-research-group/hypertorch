@@ -19,9 +19,14 @@ This page outlines the typical training pipeline. For a complete runnable script
 ## Minimal end-to-end skeleton
 
 ```python
-from hyperbench.data import AlgebraDataset, DataLoader, SamplingStrategy
-from hyperbench.nn import LaplacianPositionalEncodingEnricher
-from hyperbench.train import MultiModelTrainer, RandomNegativeSampler
+from hyperbench.data import (
+    AlgebraDataset,
+    DataLoader,
+    LaplacianPositionalEncodingEnricher,
+    RandomNegativeSampler,
+    SamplingStrategy
+)
+from hyperbench.train import MultiModelTrainer
 from hyperbench.types import ModelConfig
 from hyperbench.hlp import MLPHlpModule
 

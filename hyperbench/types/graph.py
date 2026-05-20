@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import torch
 
 from torch import Tensor
@@ -43,7 +45,7 @@ class Graph:
         """Return the number of edges in the graph."""
         return len(self.edges)
 
-    def remove_selfloops(self) -> "Graph":
+    def remove_selfloops(self) -> Graph:
         """
         Remove self-loops from the graph.
 
@@ -191,7 +193,7 @@ class EdgeIndex:
         self,
         num_nodes: int | None = None,
         with_duplicate_removal: bool = True,
-    ) -> "EdgeIndex":
+    ) -> EdgeIndex:
         """
         Add self-loops to each node in the edge index.
 
@@ -495,7 +497,7 @@ class EdgeIndex:
         )
         return normalized_laplacian_matrix.coalesce()
 
-    def remove_selfloops(self) -> "EdgeIndex":
+    def remove_selfloops(self) -> EdgeIndex:
         """Remove self-loops from the edge index."""
         # Example: edge_index = [[0, 1, 2, 3],
         #                        [1, 1, 3, 2]], shape (2, |E| = 4)
@@ -508,7 +510,7 @@ class EdgeIndex:
             self.__edge_weights = self.__edge_weights[keep_mask]
         return self
 
-    def remove_duplicate_edges(self, num_nodes: int | None = None) -> "EdgeIndex":
+    def remove_duplicate_edges(self, num_nodes: int | None = None) -> EdgeIndex:
         """
         Remove duplicate edges from the edge index. Keeps the tensor contiguous in memory.
 
@@ -561,7 +563,7 @@ class EdgeIndex:
         self,
         with_selfloops: bool = False,
         num_nodes: int | None = None,
-    ) -> "EdgeIndex":
+    ) -> EdgeIndex:
         """
         Convert the edge index to an undirected edge index by adding reverse edges.
 

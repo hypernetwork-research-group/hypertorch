@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 import torch
 
 from typing import TYPE_CHECKING, Any
 from torch import Tensor
 from torch.utils.data import Dataset as TorchDataset
-from hyperbench.nn import EnrichmentMode, NodeEnricher, HyperedgeEnricher
+from hyperbench.data.enricher import EnrichmentMode, HyperedgeEnricher, NodeEnricher
 from hyperbench.types import HData
 from hyperbench.utils import (
     NodeSpaceFiller,
@@ -12,11 +14,11 @@ from hyperbench.utils import (
 )
 
 from hyperbench.data.hif import HIFLoader, HIFProcessor
-from hyperbench.data.sampling import SamplingStrategy, create_sampler_from_strategy
+from hyperbench.data.sampler import SamplingStrategy, create_sampler_from_strategy
 from hyperbench.data.splitter import HyperedgeIDSplitter
 
 if TYPE_CHECKING:
-    from hyperbench.train import NegativeSampler
+    from hyperbench.data import NegativeSampler
 
 
 class Dataset(TorchDataset):
@@ -73,7 +75,7 @@ class Dataset(TorchDataset):
         cls,
         hdata: HData,
         sampling_strategy: SamplingStrategy = SamplingStrategy.HYPEREDGE,
-    ) -> "Dataset":
+    ) -> Dataset:
         """
         Create a `Dataset` instance from an `HData` object.
 
@@ -92,7 +94,7 @@ class Dataset(TorchDataset):
         url: str,
         sampling_strategy: SamplingStrategy = SamplingStrategy.HYPEREDGE,
         save_on_disk: bool = False,
-    ) -> "Dataset":
+    ) -> Dataset:
         """
         Create a `Dataset` instance by loading a hypergraph from a URL pointing to a .json or .json.zst file in HIF format.
 
@@ -113,7 +115,7 @@ class Dataset(TorchDataset):
         cls,
         filepath: str,
         sampling_strategy: SamplingStrategy = SamplingStrategy.HYPEREDGE,
-    ) -> "Dataset":
+    ) -> Dataset:
         """
         Create a `Dataset` instance by loading a hypergraph from a local file path pointing to a .json or .json.zst file in HIF format.
 
@@ -146,7 +148,7 @@ class Dataset(TorchDataset):
 
     def enrich_node_features_from(
         self,
-        dataset_with_features: "Dataset",
+        dataset_with_features: Dataset,
         node_space_setting: NodeSpaceSetting = "transductive",
         fill_value: NodeSpaceFiller | None = None,
     ) -> None:
@@ -210,7 +212,7 @@ class Dataset(TorchDataset):
         """
         self.hdata = self.hdata.enrich_hyperedge_weights(enricher, enrichment_mode)
 
-    def update_from_hdata(self, hdata: HData) -> "Dataset":
+    def update_from_hdata(self, hdata: HData) -> Dataset:
         """
         Create a `Dataset` instance from an `HData` object.
 
@@ -224,9 +226,9 @@ class Dataset(TorchDataset):
 
     def add_negative_samples(
         self,
-        negative_sampler: "NegativeSampler",
+        negative_sampler: NegativeSampler,
         seed: int | None = None,
-    ) -> "Dataset":
+    ) -> Dataset:
         """
         Create a new `Dataset` with sampled negative hyperedges added.
 
@@ -259,7 +261,7 @@ class Dataset(TorchDataset):
         shuffle: bool | None = False,
         seed: int | None = None,
         node_space_setting: NodeSpaceSetting = "transductive",
-    ) -> list["Dataset"]:
+    ) -> list[Dataset]:
         """
         Split the dataset by hyperedges into partitions with contiguous 0-based hyperedge IDs.
 
@@ -384,7 +386,7 @@ class Dataset(TorchDataset):
 
         return split_datasets, final_ratios
 
-    def to(self, device: torch.device) -> "Dataset":
+    def to(self, device: torch.device) -> Dataset:
         """
         Move the dataset's HData to the specified device.
 

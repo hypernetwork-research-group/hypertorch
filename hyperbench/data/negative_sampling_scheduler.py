@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Any
 
-from hyperbench.train.negative_sampler import NegativeSampler
+from hyperbench.data.negative_sampler import NegativeSampler
 from hyperbench.types.hdata import HData
 
 

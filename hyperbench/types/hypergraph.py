@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import torch
 
 from itertools import combinations
@@ -39,7 +41,7 @@ class HIFHypergraph:
         self.hyperedges = hyperedges if hyperedges is not None else []
 
     @classmethod
-    def empty(cls) -> "HIFHypergraph":
+    def empty(cls) -> HIFHypergraph:
         return cls(
             network_type="undirected",
             nodes=[],
@@ -49,7 +51,7 @@ class HIFHypergraph:
         )
 
     @classmethod
-    def from_hif(cls, data: dict[str, Any]) -> "HIFHypergraph":
+    def from_hif(cls, data: dict[str, Any]) -> HIFHypergraph:
         """
         Create a Hypergraph from a HIF (Hypergraph Interchange Format).
 
@@ -324,7 +326,7 @@ class Hypergraph:
         }
 
     @classmethod
-    def from_hyperedge_index(cls, hyperedge_index: Tensor) -> "Hypergraph":
+    def from_hyperedge_index(cls, hyperedge_index: Tensor) -> Hypergraph:
         """
         Create a Hypergraph from a hyperedge index representation.
 
@@ -912,7 +914,7 @@ class HyperedgeIndex:
             graph.edge_weights_tensor.to(device) if return_weights else None,
         )
 
-    def remove_duplicate_edges(self) -> "HyperedgeIndex":
+    def remove_duplicate_edges(self) -> HyperedgeIndex:
         """Remove duplicate edges from the hyperedge index. Keeps the tensor contiguous in memory."""
         # Example: hyperedge_index = [[0, 1, 2, 2, 0, 3, 2],
         #                             [3, 4, 4, 3, 4, 3, 3]], shape (2, 7)
@@ -925,7 +927,7 @@ class HyperedgeIndex:
         self.__hyperedge_index = torch.unique(self.__hyperedge_index, dim=1).contiguous()
         return self
 
-    def remove_hyperedges_with_fewer_than_k_nodes(self, k: int) -> "HyperedgeIndex":
+    def remove_hyperedges_with_fewer_than_k_nodes(self, k: int) -> HyperedgeIndex:
         """
         Remove hyperedges that contain fewer than k nodes.
 
@@ -966,7 +968,7 @@ class HyperedgeIndex:
         self,
         node_ids_to_rebase: Tensor | None = None,
         hyperedge_ids_to_rebase: Tensor | None = None,
-    ) -> "HyperedgeIndex":
+    ) -> HyperedgeIndex:
         """
         Convert hyperedge index to the 0-based format by rebasing node IDs to the range ``[0, num_nodes-1]`` and hyperedge IDs ``[0, num_hyperedges-1]``.
 

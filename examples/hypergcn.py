@@ -7,10 +7,15 @@ from torchmetrics.classification import (
     BinaryRecall,
 )
 from hyperbench.hlp import HyperGCNHlpModule
-from hyperbench.nn import ABHyperedgeWeightsEnricher, LaplacianPositionalEncodingEnricher
-from hyperbench.train import MultiModelTrainer, RandomNegativeSampler
+from hyperbench.train import MultiModelTrainer
 from hyperbench.types import ModelConfig
-from hyperbench.data import AlgebraDataset, DataLoader, SamplingStrategy
+from hyperbench.data import (
+    AlgebraDataset,
+    DataLoader,
+    LaplacianPositionalEncodingEnricher,
+    RandomNegativeSampler,
+    SamplingStrategy,
+)
 
 
 if __name__ == "__main__":
@@ -69,14 +74,6 @@ if __name__ == "__main__":
 
         if verbose:
             print(f"{name} dataset after adding negative samples: {ds_with_negatives.hdata}\n")
-
-    print("Enriching hyperedge weights...")
-
-    for ds in [train_dataset, val_dataset, test_dataset]:
-        ds.enrich_hyperedge_weights(
-            enricher=ABHyperedgeWeightsEnricher(alpha=1.0, beta=None),
-            enrichment_mode="replace",
-        )
 
     print("Enriching node features...")
 

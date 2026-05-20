@@ -5,8 +5,7 @@ import re
 from typing import cast
 from unittest.mock import patch, MagicMock
 from hyperbench.data import AlgebraDataset, Dataset, HIFLoader, SamplingStrategy
-from hyperbench.nn import NodeEnricher, HyperedgeEnricher
-from hyperbench.train import NegativeSampler
+from hyperbench.data import HyperedgeEnricher, NegativeSampler, NodeEnricher
 from hyperbench.types import HData
 from hyperbench.tests import new_mock_negative_sampler
 
