@@ -65,6 +65,10 @@ jobs:
         run: |
           make test
 
+      - name: Run integration tests with pytest
+        run: |
+          make integration-test
+
   test-arm:
     runs-on: ${{ matrix.os }}
     strategy:

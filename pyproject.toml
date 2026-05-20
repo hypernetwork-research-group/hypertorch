@@ -43,6 +43,7 @@ dev = [
     "pre-commit==4.5.1",
     "pytest==9.0.3",
     "pytest-cov==7.1.0",
+    "pytest-xdist>=3.8.0",
     "ruff==0.15.11",
     "ty==0.0.34",
     "zensical==0.0.42",
@@ -56,7 +57,9 @@ addopts = [
     "--strict-markers",
 ]
 testpaths = ["hyperbench/tests"]
-norecursedirs = ["integration"]
+markers = [
+    "integration: tests that use real workflows",
+]
 filterwarnings = [
     "ignore:.*torch.jit.script.*deprecated.*",
     "ignore:.*torch.jit.script.*is not supported in Python 3.14.*",

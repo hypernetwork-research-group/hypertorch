@@ -8,7 +8,6 @@ from hyperbench.utils import (
     empty_edgeattr,
     to_non_empty_edgeattr,
     to_0based_ids,
-    list_datasets,
 )
 
 
@@ -126,11 +125,3 @@ def test_to_0based_ids(original_ids, ids_to_rebase, expected_result):
     result = to_0based_ids(original_ids, ids_to_rebase)
 
     assert torch.equal(result, expected_result)
-
-
-def test_list_datasets():
-    dataset_names = list_datasets()
-
-    assert isinstance(dataset_names, list)
-    assert all(isinstance(name, str) for name in dataset_names)
-    assert len(dataset_names) > 0

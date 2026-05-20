@@ -26,6 +26,7 @@ from .supported_datasets import (
     ThreadsMathsxDataset,
     TwitterDataset,
     VegasBarsReviewsDataset,
+    list_datasets,
 )
 
 from .loader import DataLoader
@@ -116,4 +117,5 @@ __all__ = [
     "VilLainEnricher",
     "VilLainHyperedgeAttrsEnricher",
     "create_sampler_from_strategy",
+    "list_datasets",
 ]
