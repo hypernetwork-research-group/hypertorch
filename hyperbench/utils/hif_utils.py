@@ -24,11 +24,15 @@ def validate_hif_json(filename: str) -> bool:
     try:
         schema = requests.get(url, timeout=10).json()
     except (requests.RequestException, requests.Timeout):
-        with resources.files("hyperbench.utils.schema").joinpath("hif_schema.json").open("r") as f:
+        with (
+            resources.files("hyperbench.utils.schema")
+            .joinpath("hif_schema.json")
+            .open("r", encoding="utf-8") as f
+        ):
             schema = json.load(f)
     validator = fastjsonschema.compile(schema)
 
-    with open(filename) as f:
+    with open(filename, encoding="utf-8") as f:
         hiftext = json.load(f)
         try:
             validator(hiftext)

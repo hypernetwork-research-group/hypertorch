@@ -59,7 +59,7 @@ def test_validate_hif_json_with_url_timeout_fallback():
 
         mock_files_call.assert_called_once_with("hyperbench.utils.schema")
         mock_files.joinpath.assert_called_once_with("hif_schema.json")
-        mock_path.open.assert_called_once_with("r")
+        mock_path.open.assert_called_once_with("r", encoding="utf-8")
 
 
 def test_validate_hif_json_with_url_request_exception_fallback():
@@ -81,7 +81,7 @@ def test_validate_hif_json_with_url_request_exception_fallback():
 
         mock_files_call.assert_called_once_with("hyperbench.utils.schema")
         mock_files.joinpath.assert_called_once_with("hif_schema.json")
-        mock_path.open.assert_called_once_with("r")
+        mock_path.open.assert_called_once_with("r", encoding="utf-8")
 
 
 def test_compress_to_zst_returns_non_empty_bytes(tmp_path):
