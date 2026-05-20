@@ -1,11 +1,13 @@
 name: Manage PRs
 
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, synchronize, reopened]
 
 jobs:
   label:
+    environment:
+      name: labels
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -18,6 +20,8 @@ jobs:
           sync-labels: true
 
   assignees:
+    environment:
+      name: labels
     runs-on: ubuntu-latest
     permissions:
       contents: read
