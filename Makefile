@@ -56,10 +56,6 @@ lint-rule-fix:
 	$(UV) run $(LINTER) check --select $(R) --fix
 
 test:
-	@echo '=== Tests ==='
-	$(UV) run $(PYTEST) --cov=$(PROJECT_NAME) --cov-report=term-missing -m "not integration"
-
-test-p:
 	@echo '=== Running tests in parallel ==='
 	$(UV) run $(PYTEST) -n auto --cov=$(PROJECT_NAME) --cov-report=term-missing -m "not integration"
 
@@ -68,10 +64,6 @@ stest:
 	$(UV) run $(PYTEST) -s $(PROJECT_NAME)/tests/$(T)
 
 integration-test:
-	@echo '=== Running integration tests ==='
-	$(UV) run $(PYTEST) -m "integration"
-
-integration-test-p:
 	@echo '=== Running integration tests in parallel ==='
 	$(UV) run $(PYTEST) -n auto -m "integration"
 
@@ -127,11 +119,9 @@ help:
 	@echo "  lint-fix                - Run linting and fix issues"
 	@echo "  lint-rule R=<rule>      - Run linting for a specific rule (e.g., R=E501)"
 	@echo "  lint-rule-fix R=<rule>  - Run linting for a specific rule and fix issues"
-	@echo "  test                    - Run all tests"
-	@echo "  test-p                  - Run all tests in parallel"
+	@echo "  test                    - Run all tests in parallel"
 	@echo "  stest T=<test_name>     - Run a single test"
-	@echo "  integration-test        - Run integration tests"
-	@echo "  integration-test-p      - Run integration tests in parallel"
+	@echo "  integration-test        - Run integration tests in parallel"
 	@echo "  run <file.py>           - Run a single file"
 	@echo "  docs                    - Build and serve documentation"
 	@echo "  docs-build              - Build documentation without serving"
