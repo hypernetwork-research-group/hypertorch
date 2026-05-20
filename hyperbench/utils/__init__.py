@@ -5,6 +5,7 @@ from .data_utils import (
     empty_nodefeatures,
     to_non_empty_edgeattr,
     to_0based_ids,
+    list_datasets,
 )
 
 from .hif_utils import (
@@ -64,6 +65,8 @@ __all__ = [
     "is_input_layer",
     "is_layer",
     "is_transductive_setting",
+    "is_transductive_split",
+    "list_datasets",
     "maxmin_scatter",
     "named_temporary_file",
     "sparse_dropout",

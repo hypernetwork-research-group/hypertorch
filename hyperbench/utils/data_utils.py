@@ -1,6 +1,8 @@
 import torch
 
 from torch import Tensor
+import inspect
+from importlib import import_module
 
 
 def clone_optional_tensor(tensor: Tensor | None) -> Tensor | None:
@@ -53,3 +55,27 @@ def to_0based_ids(original_ids: Tensor, ids_to_rebase: Tensor | None = None) -> 
     ids_to_keep = original_ids[keep_mask]
     sorted_unique_ids_to_rebase = ids_to_rebase.unique(sorted=True)
     return torch.searchsorted(sorted_unique_ids_to_rebase, ids_to_keep)
+
+
+def list_datasets():
+    """
+    Return a sorted list of available dataset names discovered from the
+    classes exported in the `hyperbench.data` package.
+
+    This inspects `hyperbench.data` for classes that subclass `Dataset` and
+    expose a non-empty `DATASET_NAME` attribute. It avoids requiring an
+    explicit exported mapping in `supported_datasets.py`.
+    """
+    mod = import_module("hyperbench.data.supported_datasets")
+    # Import the base `Dataset` type from the package to allow issubclass checks
+    from hyperbench.data.supported_datasets import _PreloadedDataset
+
+    names: list[str] = []
+    for _, obj in inspect.getmembers(mod, inspect.isclass):
+        if issubclass(obj, _PreloadedDataset) and obj is not _PreloadedDataset:
+            ds_name = getattr(obj, "DATASET_NAME", None)
+            if isinstance(ds_name, str) and ds_name:
+                names.append(ds_name)
+
+    # Return deterministic ordering
+    return sorted(set(names))
