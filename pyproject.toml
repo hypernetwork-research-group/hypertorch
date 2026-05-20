@@ -10,12 +10,12 @@ authors = [
 ]
 dependencies = [
     "fastjsonschema==2.21.2",
-    "huggingface-hub==1.11.0",
+    "huggingface-hub==1.15.0",
     "lightning==2.6.1",
     "numpy==2.2.6 ; python_full_version < '3.11'",
     "numpy==2.4.4 ; python_full_version >= '3.11'",
-    "requests==2.33.1",
-    "torch==2.11.0",
+    "requests==2.34.2",
+    "torch==2.12.0",
     "torch-cluster==1.6.3",
     "torch-geometric==2.7.0",
     "zstandard==0.25.0",
