@@ -4,6 +4,27 @@ from hyperbench.data.dataset import Dataset
 from hyperbench.data.sampler import SamplingStrategy
 
 
+def list_datasets():
+    """
+    Return a sorted list of available dataset names discovered from the
+    classes exported in this module.
+
+    This inspects the module for classes that subclass `_PreloadedDataset`
+    and expose a non-empty `DATASET_NAME` attribute. It avoids requiring an
+    explicit exported mapping.
+    """
+    mod = sys.modules[__name__]
+    names: list[str] = []
+    for _, obj in inspect.getmembers(mod, inspect.isclass):
+        if issubclass(obj, _PreloadedDataset) and obj is not _PreloadedDataset:
+            ds_name = getattr(obj, "DATASET_NAME", None)
+            if isinstance(ds_name, str) and ds_name:
+                names.append(ds_name)
+
+    # Return deterministic ordering
+    return sorted(set(names))
+
+
 class _PreloadedDataset(Dataset):
     """
     Base class for datasets that use default loading.
