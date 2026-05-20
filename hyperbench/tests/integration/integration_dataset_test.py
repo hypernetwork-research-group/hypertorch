@@ -60,16 +60,15 @@ SUPPORTED_DATASETS = (
     [pytest.param(dataset_cls, id=dataset_cls.DATASET_NAME) for dataset_cls in SUPPORTED_DATASETS],
 )
 def test_all_supported_datasets_load(dataset_cls):
-    # hdata = HIFLoader.load_by_name(
-    #     dataset_cls.DATASET_NAME,
-    #     hf_sha=dataset_cls.HF_SHA,
-    #     save_on_disk=False,
-    # )
+    hdata = HIFLoader.load_by_name(
+        dataset_cls.DATASET_NAME,
+        hf_sha=dataset_cls.HF_SHA,
+        save_on_disk=False,
+    )
 
-    # dataset = dataset_cls(hdata=hdata)
+    dataset = dataset_cls(hdata=hdata)
 
-    # assert dataset.hdata is not None
-    # assert dataset.hdata.x is not None
-    # assert dataset.hdata.hyperedge_index.shape[0] == 2
-    # assert len(dataset) > 0
-    pass
+    assert dataset.hdata is not None
+    assert dataset.hdata.x is not None
+    assert dataset.hdata.hyperedge_index.shape[0] == 2
+    assert len(dataset) > 0
