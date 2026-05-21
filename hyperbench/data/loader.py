@@ -28,7 +28,7 @@ class DataLoader(TorchDataLoader):
 
     def collate(self, batch: list[HData]) -> HData:
         """
-        Collates a list of :class:`HData objects into a single batched :class:`HData object.
+        Collates a list of `HData objects into a single batched `HData object.
 
         This function combines multiple separate samples into a single batched representation suitable for mini-batch training.
         It handles:
@@ -64,10 +64,10 @@ class DataLoader(TorchDataLoader):
             ...                    [0, 0, 1, 1, 2, 2]]  # Hyperedge IDs: original then offset by 2
 
         Args:
-            batch: List of :class:`HData objects to collate.
+            batch: List of `HData objects to collate.
 
         Returns:
-            A single :class:`HData` object containing the collated data.
+            hdata: A single `HData` object containing the collated data.
         """
         if self.__sample_full_hypergraph:
             return self.__cached_dataset_hdata.clone().to(batch[0].device)

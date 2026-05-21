@@ -15,7 +15,7 @@ def create_seeded_torch_generator(
         seed: Optional seed for deterministic random operations.
 
     Returns:
-        A seeded torch.Generator when ``seed`` is provided, otherwise ``None``.
+        generator: A seeded torch.Generator when ``seed`` is provided, otherwise ``None``.
     """
     if seed is None:
         return None

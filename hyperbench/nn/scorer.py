@@ -44,7 +44,7 @@ class CommonNeighborsScorer(NeighborScorer):
             candidate_to_neighbors: Mapping from node IDs to their set of neighbors.
 
         Returns:
-            The aggregated common neighbors score.
+            score: The aggregated common neighbors score.
         """
         if len(candidate_nodes) < 2:
             return self.__DEFAULT_SCORE
@@ -76,7 +76,7 @@ class CommonNeighborsScorer(NeighborScorer):
             node_to_neighbors: Optional precomputed node to neighborhood mapping. If None, it will be computed from ``hyperedge_index``.
 
         Returns:
-            A 1-D tensor of shape ``(num_hyperedges,)`` with the CN score for each hyperedge.
+            scores: A 1-D tensor of shape ``(num_hyperedges,)`` with the CN score for each hyperedge.
         """
         if node_to_neighbors is None:
             node_to_neighbors = Hypergraph.from_hyperedge_index(hyperedge_index).neighbors_of_all()

@@ -56,7 +56,7 @@ class HyperGCNConv(nn.Module):
                 If provided, it will be used directly for smoothing, so we can skip computing it from edge_index.
 
         Returns:
-            The output node feature matrix. Size ``(num_nodes, out_channels)``.
+            x: The output node feature matrix. Size ``(num_nodes, out_channels)``.
         """
         x = self.theta(x)
 
@@ -141,7 +141,7 @@ class HGNNConv(nn.Module):
             hyperedge_index: Hyperedge incidence in COO format of size ``(2, num_incidences)``.
 
         Returns:
-            The output node feature matrix of size ``(num_nodes, out_channels)``.
+            x: The output node feature matrix of size ``(num_nodes, out_channels)``.
         """
         x = self.theta(x)
 
@@ -208,7 +208,7 @@ class HGNNPConv(nn.Module):
             hyperedge_index: Hyperedge incidence in COO format of size ``(2, num_incidences)``.
 
         Returns:
-            The output node feature matrix of size ``(num_nodes, out_channels)``.
+            x: The output node feature matrix of size ``(num_nodes, out_channels)``.
         """
         x = self.theta(x)
 
@@ -269,7 +269,7 @@ class HNHNConv(nn.Module):
             hyperedge_index: Hyperedge incidence in COO format of size ``(2, num_incidences)``.
 
         Returns:
-            The output node feature matrix of size ``(num_nodes, out_channels)``.
+            x: The output node feature matrix of size ``(num_nodes, out_channels)``.
         """
         x = self.theta_v2e(x)
 

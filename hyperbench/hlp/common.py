@@ -79,7 +79,7 @@ class HlpModule(L.LightningModule):
             stage: The current stage (train/val/test) for logging purposes.
 
         Returns:
-            The computed loss tensor.
+            loss: The computed loss tensor.
         """
         loss = self.loss_fn(scores, labels)
         self.log(name=f"{stage.value}_loss", value=loss, prog_bar=True, batch_size=batch_size)
@@ -133,7 +133,7 @@ class HlpModule(L.LightningModule):
             stage: The current stage (train/val/test) for which to get metrics.
 
         Returns:
-            The metric collection corresponding to the given stage, or ``None`` if no metrics are configured.
+            metrics: The metric collection corresponding to the given stage, or ``None`` if no metrics are configured.
         """
         match stage:
             case Stage.TRAIN:
@@ -161,7 +161,7 @@ class HlpModule(L.LightningModule):
             batch: The current batch of data for which to sample negatives.
 
         Returns:
-            A batch of negative samples, either freshly sampled or from cache.
+            negatives: A batch of negative samples, either freshly sampled or from cache.
         """
         if self.__negative_sampling_scheduler is None:
             raise ValueError("Asked to sample negatives but no negative sampler is not configured.")

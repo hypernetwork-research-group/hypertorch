@@ -57,7 +57,7 @@ class HIFHypergraph:
             data: Dictionary with keys: network-type, metadata, incidences, nodes, hyperedges
 
         Returns:
-            Hypergraph instance
+            hypergraph: Hypergraph instance
         """
         network_type = data.get("network-type") or data.get("network_type")
         metadata = data.get("metadata", {})
@@ -103,7 +103,7 @@ class HIFHypergraph:
         - ``distribution_hyperedge_size_hist``: A dictionary where the keys are hyperedge sizes and the values are the count of hyperedges with that size.
 
         Returns:
-            A dictionary containing various statistics about the hypergraph.
+            stats: A dictionary containing various statistics about the hypergraph.
         """
 
         node_degree: dict[Any, int] = {}
@@ -220,7 +220,7 @@ class Hypergraph:
             node: The node ID to find neighbors for.
 
         Returns:
-            A set of neighbor node IDs (excluding the node itself).
+            neighbors: A set of neighbor node IDs (excluding the node itself).
         """
         neighbors: Neighborhood = set()
         for hyperedge in self.hyperedges:
@@ -238,7 +238,7 @@ class Hypergraph:
         more efficient when scoring many candidate hyperedges.
 
         Returns:
-            A dictionary mapping each node ID to its set of neighbors.
+            neighbors: A dictionary mapping each node ID to its set of neighbors.
         """
         nodes: set[int] = set()
         for hyperedge in self.hyperedges:
@@ -332,7 +332,7 @@ class Hypergraph:
             hyperedge_index: Tensor of shape (2, |E|) representing hyperedges, where each column is (node, hyperedge).
 
         Returns:
-            Hypergraph instance
+            hypergraph: Hypergraph instance
         """
         if hyperedge_index.size(1) < 1:
             return cls(hyperedges=[])
@@ -361,7 +361,7 @@ class Hypergraph:
             drop_rate: Randomly dropout the connections in the smoothing matrix with probability ``drop_rate``. Defaults to ``0.0``.
 
         Returns:
-            The smoothed feature matrix. Size ``(num_nodes, C)``.
+            x: The smoothed feature matrix. Size ``(num_nodes, C)``.
         """
         if drop_rate > 0.0:
             matrix = sparse_dropout(matrix, drop_rate)
@@ -453,7 +453,7 @@ class HyperedgeIndex:
             num_nodes: The total number of nodes in the hypergraph, including isolated nodes.
 
         Returns:
-            The number of nodes in the hypergraph, which is the maximum of the number of unique nodes in the hyperedge index and the provided ``num_nodes``.
+            num_nodes: The number of nodes in the hypergraph, which is the maximum of the number of unique nodes in the hyperedge index and the provided ``num_nodes``.
         """
         return max(self.num_nodes, num_nodes)
 
@@ -469,7 +469,7 @@ class HyperedgeIndex:
                 If ``None``, inferred from the unique node IDs in ``hyperedge_index``.
 
         Returns:
-            A list where ``adjacency[node_id]`` is the set of nodes adjacent to ``node_id``.
+            adjacency: A list where ``adjacency[node_id]`` is the set of nodes adjacent to ``node_id``.
         """
         num_nodes = num_nodes if num_nodes is not None else self.num_nodes
         adjacency_list: list[set[int]] = [set() for _ in range(num_nodes)]
@@ -506,7 +506,7 @@ class HyperedgeIndex:
             num_hyperedges: Total number of hyperedges. If ``None``, inferred from hyperedge index.
 
         Returns:
-            The sparse incidence matrix H of shape ``(num_nodes, num_hyperedges)``.
+            incidence_matrix: The sparse incidence matrix H of shape ``(num_nodes, num_hyperedges)``.
         """
         device = self.__hyperedge_index.device
         num_nodes = num_nodes if num_nodes is not None else self.num_nodes
@@ -536,7 +536,7 @@ class HyperedgeIndex:
             num_nodes: Total number of nodes. If ``None``, inferred from hyperedge index.
 
         Returns:
-            The sparse diagonal matrix of shape ``(num_nodes, num_nodes)``.
+            degree_matrix: The sparse diagonal matrix of shape ``(num_nodes, num_nodes)``.
         """
         device = self.__hyperedge_index.device
         num_nodes = num_nodes if num_nodes is not None else self.num_nodes
@@ -568,7 +568,7 @@ class HyperedgeIndex:
             num_nodes: Total number of nodes. If ``None``, inferred from hyperedge index.
 
         Returns:
-            The sparse diagonal matrix D_n^-1 of shape ``(num_nodes, num_nodes)``.
+            degree_matrix: The sparse diagonal matrix D_n^-1 of shape ``(num_nodes, num_nodes)``.
         """
         # Example: hyperedge_index = [[0, 1, 2, 0],
         #                             [0, 0, 0, 1]]
@@ -600,7 +600,7 @@ class HyperedgeIndex:
             num_nodes: Total number of nodes. If ``None``, inferred from hyperedge index.
 
         Returns:
-            The sparse diagonal matrix D_n^-1/2 of shape ``(num_nodes, num_nodes)``.
+            degree_matrix: The sparse diagonal matrix D_n^-1/2 of shape ``(num_nodes, num_nodes)``.
         """
         # Example: hyperedge_index = [[0, 1, 2, 0],
         #                             [0, 0, 0, 1]]
@@ -633,7 +633,7 @@ class HyperedgeIndex:
             num_hyperedges: Total number of hyperedges. If ``None``, inferred from hyperedge index.
 
         Returns:
-            The sparse diagonal matrix D_e^-1 of shape ``(num_hyperedges, num_hyperedges)``.
+            degree_matrix: The sparse diagonal matrix D_e^-1 of shape ``(num_hyperedges, num_hyperedges)``.
         """
         device = self.__hyperedge_index.device
         num_hyperedges = num_hyperedges if num_hyperedges is not None else self.num_hyperedges
@@ -687,7 +687,7 @@ class HyperedgeIndex:
             num_hyperedges: Total number of hyperedges. If ``None``, inferred from hyperedge index.
 
         Returns:
-            The sparse HGNN Laplacian matrix of shape ``(num_nodes, num_nodes)``.
+            laplacian: The sparse HGNN Laplacian matrix of shape ``(num_nodes, num_nodes)``.
         """
         num_nodes = num_nodes if num_nodes is not None else self.num_nodes
         num_hyperedges = num_hyperedges if num_hyperedges is not None else self.num_hyperedges
@@ -733,7 +733,7 @@ class HyperedgeIndex:
             num_hyperedges: Total number of hyperedges. If ``None``, inferred from hyperedge index.
 
         Returns:
-            The sparse HGNN+ smoothing matrix of shape ``(num_nodes, num_nodes)``.
+            laplacian: The sparse HGNN+ smoothing matrix of shape ``(num_nodes, num_nodes)``.
         """
         num_nodes = num_nodes if num_nodes is not None else self.num_nodes
         num_hyperedges = num_hyperedges if num_hyperedges is not None else self.num_hyperedges
@@ -766,7 +766,7 @@ class HyperedgeIndex:
             **kwargs: Additional keyword arguments for specific strategies.
 
         Returns:
-            The edge index of the reduced graph. Size ``(2, num_edges)``.
+            edge_index: The edge index of the reduced graph. Size ``(2, num_edges)``.
         """
         match strategy:
             case _:
@@ -782,7 +782,7 @@ class HyperedgeIndex:
         the sparse incidence matrix of shape ``[num_nodes, num_hyperedges]`` and ``A`` is the adjacency matrix of the clique-expanded graph.
 
         Returns:
-            The edge index of the clique-expanded graph. Size ``(2, |E'|)``.
+            edge_index: The edge index of the clique-expanded graph. Size ``(2, |E'|)``.
         """
         incidence_matrix = self.get_sparse_incidence_matrix()
 
@@ -827,7 +827,7 @@ class HyperedgeIndex:
             return_weights: Whether to return the DHG-style reduced-edge weights alongside the edge index. Defaults to ``False``.
 
         Returns:
-            A tuple ``(edge_index, edge_weights)`` where:
+            reduced_graph: A tuple ``(edge_index, edge_weights)`` where:
             - ``edge_index`` has size ``(2, |num_edges|)``.
             - ``edge_weights`` has size ``(|num_edges|,)`` when ``return_weights=True``, otherwise ``None``.
 
@@ -923,7 +923,7 @@ class HyperedgeIndex:
             k: The minimum number of nodes a hyperedge must contain to be kept.
 
         Returns:
-            A new :class:`HyperedgeIndex` instance with hyperedges containing fewer than k nodes.
+            hyperedge_index: A new `HyperedgeIndex` instance with hyperedges containing fewer than k nodes.
         """
         _, idx_to_hyperedge_id, num_nodes_per_hyperedge = torch.unique(
             self.all_hyperedge_ids,
@@ -949,7 +949,7 @@ class HyperedgeIndex:
                 If ``None``, all hyperedge IDs in the hyperedge index will be rebased to 0-based format based on their unique sorted order.
 
         Returns:
-            A new :class:`HyperedgeIndex` instance with the hyperedge index converted to 0-based format.
+            hyperedge_index: A new `HyperedgeIndex` instance with the hyperedge index converted to 0-based format.
         """
         # Example: hyperedge_index after sorting: [[0, 0, 1, 2, 3, 4],
         #                                          [3, 4, 4, 3, 4, 3]]

@@ -68,7 +68,7 @@ class HyperGCN(nn.Module):
             hyperedge_index: The hyperedge indices of the hypergraph. Size ``(2, num_hyperedges)``.
 
         Returns:
-            The output node feature matrix. Size ``(num_nodes, num_classes)``.
+            x: The output node feature matrix. Size ``(num_nodes, num_classes)``.
         """
         if not self.fast:
             for layer in self.layers:

@@ -114,7 +114,7 @@ class HData:
     @classmethod
     def cat_same_node_space(cls, hdatas: Sequence["HData"], x: Tensor | None = None) -> "HData":
         """
-        Concatenate :class:`HData` instances that share the same node space, meaning nodes with the same ID in different instances are the same node.
+        Concatenate `HData` instances that share the same node space, meaning nodes with the same ID in different instances are the same node.
         This is useful when combining positive and negative hyperedges that reference the same set of nodes.
 
         Notes:
@@ -133,12 +133,12 @@ class HData:
             >>> new.num_hyperedges  # 4 — hyperedges [0, 1, 2, 3]
 
         Args:
-            hdatas: One or more :class:`HData` instances sharing the same node space.
-            x: Optional node feature matrix to use for the resulting :class:`HData`.
+            hdatas: One or more `HData` instances sharing the same node space.
+            x: Optional node feature matrix to use for the resulting `HData`.
                 If ``None``, the node features from the instance with the largest number of nodes will be used.
 
         Returns:
-            A new :class:`HData` with shared nodes and concatenated hyperedges.
+            hdata: A new `HData` with shared nodes and concatenated hyperedges.
 
         Raises:
             ValueError: If the node counts do not match across inputs.
@@ -187,14 +187,14 @@ class HData:
         seed: int | None = None,
     ) -> "HData":
         """
-        Return a new :class:`HData` with sampled negative hyperedges added.
+        Return a new `HData` with sampled negative hyperedges added.
 
         Args:
             negative_sampler: Sampler used to generate negative hyperedges from this instance.
             seed: Optional random seed used for both negative sampling and the final shuffle.
 
         Returns:
-            A new :class:`HData` containing the original hyperedges and sampled negatives.
+            hdata: A new `HData` containing the original hyperedges and sampled negatives.
         """
         neg_hdata = negative_sampler.sample(self, seed=seed)
         hdata_with_negatives = self.cat_same_node_space([self, neg_hdata])
@@ -216,7 +216,7 @@ class HData:
     @classmethod
     def from_hyperedge_index(cls, hyperedge_index: Tensor) -> "HData":
         """
-        Build an :class:`HData` from a given hyperedge index, with empty node features and hyperedge attributes.
+        Build an `HData` from a given hyperedge index, with empty node features and hyperedge attributes.
 
         - Node features are initialized as an empty tensor of shape ``[0, 0]``.
         - Hyperedge attributes are set to ``None``.
@@ -236,7 +236,7 @@ class HData:
             hyperedge_index: Tensor of shape ``[2, num_incidences]`` representing the hypergraph connectivity.
 
         Returns:
-            An :class:`HData` instance with the given hyperedge index and default values for other attributes.
+            hdata: An `HData` instance with the given hyperedge index and default values for other attributes.
         """
         return cls(
             x=empty_nodefeatures(),
@@ -255,7 +255,7 @@ class HData:
         node_space_setting: NodeSpaceSetting = "transductive",
     ) -> "HData":
         """
-        Build an :class:`HData` for a single split from the given hyperedge IDs.
+        Build an `HData` for a single split from the given hyperedge IDs.
 
         Examples:
             Transductive split (default) preserving the full node space:
@@ -270,14 +270,14 @@ class HData:
             ... 2
 
         Args:
-            hdata: The original :class:`HData` containing the full hypergraph.
+            hdata: The original `HData` containing the full hypergraph.
             split_hyperedge_ids: Tensor of hyperedge IDs to include in this split.
             node_space_setting: Whether to preserve the full node space in the splits.
                 ``transductive`` (default) ensures all nodes are present in every split,
                 while ``inductive`` allows splits to have disjoint node spaces.
 
         Returns:
-            The splitted instance with remapped node and hyperedge IDs.
+            hdata: The splitted instance with remapped node and hyperedge IDs.
         """
         # Mask to keep only incidences belonging to selected hyperedges
         # Example: hyperedge_index = [[0, 0, 1, 2, 3, 4],
@@ -396,7 +396,7 @@ class HData:
         fill_value: NodeSpaceFiller | None = None,
     ) -> "HData":
         """
-        Copy node features from another :class:`HData` by aligning features by ``global_node_ids``.
+        Copy node features from another `HData` by aligning features by ``global_node_ids``.
 
         Examples:
             Transductive enrichment (default) expecting the same node space in both source and target:
@@ -417,14 +417,14 @@ class HData:
             ... )
 
         Args:
-            hdata_with_features: Source :class:`HData` providing node features.
+            hdata_with_features: Source `HData` providing node features.
             node_space_setting: The setting for the node space, determining how nodes are handled.
                 If ``"transductive"``, every target node is expected to exist in the source.
                 If ``"inductive"``, the target dataset may have a different node space, and missing nodes are filled using ``fill_value``.
             fill_value: Scalar or vector used to fill missing node features when ``node_space_setting`` is not transductive.
 
         Returns:
-            A new :class:`HData` with node features copied from ``hdata_with_features``.
+            hdata: A new `HData` with node features copied from ``hdata_with_features``.
 
         Raises:
             ValueError: If either instance lacks ``global_node_ids``, if the source feature rows
@@ -582,7 +582,7 @@ class HData:
         If there are no tensors or if they are on different devices, return CPU.
 
         Returns:
-            The common device if all tensors are on the same device, otherwise CPU.
+            device: The common device if all tensors are on the same device, otherwise CPU.
 
         Raises:
             ValueError: If tensors are on different devices.
@@ -631,7 +631,7 @@ class HData:
 
     def shuffle(self, seed: int | None = None) -> "HData":
         """
-        Return a new :class:`HData` instance with hyperedge IDs randomly reassigned.
+        Return a new `HData` instance with hyperedge IDs randomly reassigned.
 
         Each hyperedge keeps its original set of nodes, but is assigned a new ID via a random permutation.
         ``y`` and ``hyperedge_attr`` are reordered to match, so that ``y[new_id]`` still corresponds to the correct hyperedge.
@@ -652,7 +652,7 @@ class HData:
             seed: Optional random seed for reproducibility. If ``None``, the shuffle will be non-deterministic.
 
         Returns:
-            A new :class:`HData` instance with hyperedge IDs, ``y``, and ``hyperedge_attr`` permuted.
+            hdata: A new `HData` instance with hyperedge IDs, ``y``, and ``hyperedge_attr`` permuted.
         """
         generator = torch.Generator(device=self.device)
         if seed is not None:
@@ -704,10 +704,10 @@ class HData:
 
     def clone(self) -> "HData":
         """
-        Return a deep copy of this :class:`HData`.
+        Return a deep copy of this `HData`.
 
         Returns:
-            A new :class:`HData` that is a deep copy of this instance.
+            hdata: A new `HData` that is a deep copy of this instance.
         """
         cloned_hyperedge_weights = (
             self.hyperedge_weights.clone() if self.hyperedge_weights is not None else None
@@ -738,7 +738,7 @@ class HData:
             non_blocking: If ``True`` and the source and destination devices are both CUDA, the copy will be non-blocking.
 
         Returns:
-            The :class:`HData` instance with all tensors moved to the specified device.
+            hdata: The `HData` instance with all tensors moved to the specified device.
         """
         self.x = self.x.to(device=device, non_blocking=non_blocking)
         self.hyperedge_index = self.hyperedge_index.to(device=device, non_blocking=non_blocking)
@@ -766,7 +766,7 @@ class HData:
             value: The value to set for all entries in the y attribute.
 
         Returns:
-            A new :class:`HData` instance with the same attributes except for y, which is set to a tensor of the given value.
+            hdata: A new `HData` instance with the same attributes except for y, which is set to a tensor of the given value.
         """
         return self.__class__(
             x=self.x,
@@ -810,7 +810,7 @@ class HData:
         - ``distribution_hyperedge_size_hist``: A dictionary where the keys are hyperedge sizes and the values are the count of hyperedges with that size.
 
         Returns:
-            A dictionary containing various statistics about the hypergraph.
+            stats: A dictionary containing various statistics about the hypergraph.
         """
 
         node_ids = self.hyperedge_index[0]

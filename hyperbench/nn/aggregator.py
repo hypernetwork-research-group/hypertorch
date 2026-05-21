@@ -63,7 +63,7 @@ class HyperedgeAggregator:
             aggregation: Reduction applied across the nodes belonging to each hyperedge.
 
         Returns:
-            A hyperedge embedding matrix of shape ``(num_hyperedges, num_channels)``.
+            hyperedge_embeddings: A hyperedge embedding matrix of shape ``(num_hyperedges, num_channels)``.
         """
         # Gather the embeddings for each incidence.
         # A node appearing in multiple hyperedges is repeated, once per incidence.
@@ -165,7 +165,7 @@ class NodeAggregator:
             aggregation: Reduction applied across the hyperedges incident to each node.
 
         Returns:
-            A node embedding matrix of shape ``(num_nodes, num_channels)``.
+            node_embeddings: A node embedding matrix of shape ``(num_nodes, num_channels)``.
         """
         # Gather the embeddings for each incidence.
         # A hyperedge appearing in multiple node incidences is repeated, once per incidence.

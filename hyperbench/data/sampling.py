@@ -22,7 +22,7 @@ class BaseSampler(ABC):
             hdata: The original HData to sample from.
 
         Returns:
-            A new HData instance containing only the sampled items and their associated data.
+            hdata: A new HData instance containing only the sampled items and their associated data.
         """
         raise NotImplementedError("Subclasses must implement the sample method.")
 
@@ -45,7 +45,7 @@ class BaseSampler(ABC):
             size: The total number of sampleable items (e.g., nodes or hyperedges) for validation.
 
         Returns:
-            List of IDs to sample.
+            ids: List of IDs to sample.
 
         Raises:
             ValueError: If the provided index is invalid (e.g., empty list or list length exceeds number of sampleable items).
@@ -73,7 +73,7 @@ class BaseSampler(ABC):
             sampled_hyperedge_ids: A tensor containing the IDs of hyperedges to sample.
 
         Returns:
-            A new hyperedge index tensor containing only the incidences of the sampled hyperedges.
+            hyperedge_index: A new hyperedge index tensor containing only the incidences of the sampled hyperedges.
         """
         hyperedge_ids = hyperedge_index[1]
 
@@ -128,7 +128,7 @@ class HyperedgeSampler(BaseSampler):
             hdata: The original HData to sample from.
 
         Returns:
-            An HData instance containing only the sampled hyperedges and their incident nodes.
+            hdata: An HData instance containing only the sampled hyperedges and their incident nodes.
 
         Raises:
             ValueError: If the provided index is invalid (e.g., empty list or list length exceeds number of hyperedges).
@@ -161,7 +161,7 @@ class HyperedgeSampler(BaseSampler):
             hdata: The HData to query for the number of hyperedges.
 
         Returns:
-            The number of hyperedges in the HData.
+            num_hyperedges: The number of hyperedges in the HData.
         """
         return hdata.num_hyperedges
 
@@ -186,7 +186,7 @@ class NodeSampler(BaseSampler):
             hdata: The original HData to sample from.
 
         Returns:
-            An HData instance containing only the sampled nodes and their incident hyperedges.
+            hdata: An HData instance containing only the sampled nodes and their incident hyperedges.
 
         Raises:
             ValueError: If the provided index is invalid (e.g., empty list or list length exceeds number of nodes).
@@ -231,7 +231,7 @@ class NodeSampler(BaseSampler):
             hdata: The HData to query for the number of nodes.
 
         Returns:
-            The number of nodes in the HData.
+            num_nodes: The number of nodes in the HData.
         """
         return hdata.num_nodes
 
@@ -244,7 +244,7 @@ def create_sampler_from_strategy(strategy: SamplingStrategy) -> BaseSampler:
         strategy: An instance of SamplingStrategy enum indicating which sampling strategy to use.
 
     Returns:
-        An instance of a subclass of BaseSampler corresponding to the specified strategy. If strategy is not recognized, defaults to ``HyperedgeSampler``.
+        sampler: An instance of a subclass of BaseSampler corresponding to the specified strategy. If strategy is not recognized, defaults to ``HyperedgeSampler``.
     """
     match strategy:
         case SamplingStrategy.NODE:

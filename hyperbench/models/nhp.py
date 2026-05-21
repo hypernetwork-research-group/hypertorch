@@ -76,7 +76,7 @@ class NHP(nn.Module):
             hyperedge_index: Incidence tensor of shape ``(2, num_incidences)``.
 
         Returns:
-            Scores of shape ``(num_hyperedges,)``.
+            scores: Scores of shape ``(num_hyperedges,)``.
         """
         if hyperedge_index.numel() == 0:
             return x.new_empty((0,))

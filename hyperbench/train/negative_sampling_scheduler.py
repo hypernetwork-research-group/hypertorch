@@ -55,7 +55,7 @@ class NegativeSamplingScheduler:
             epoch: The current epoch number, used to determine if sampling should occur based on the schedule.
 
         Returns:
-            True if negatives should be resampled for the current epoch, False otherwise.
+            should_sample: True if negatives should be resampled for the current epoch, False otherwise.
         """
         match self.negative_sampling_schedule:
             case NegativeSamplingSchedule.EVERY_N_EPOCHS:
@@ -74,7 +74,7 @@ class NegativeSamplingScheduler:
             epoch: The current epoch number, used to determine if sampling should occur based on the schedule.
 
         Returns:
-            A batch of negative samples, either freshly sampled or from cache.
+            negatives: A batch of negative samples, either freshly sampled or from cache.
         """
         if self.should_sample(epoch):
             self.__cached_negative_samples = self.negative_sampler.sample(batch)

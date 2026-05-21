@@ -9,7 +9,7 @@ def decompress_zst(zst_path: str) -> str:
     Args:
         zst_path: The path to the .zst file to decompress.
     Returns:
-        The path to the decompressed JSON file.
+        path: The path to the decompressed JSON file.
     """
     dctx = zstd.ZstdDecompressor()
     with (
@@ -28,7 +28,7 @@ def compress_to_zst(json_path: str) -> bytes:
     Args:
         json_path: The path to the JSON file to compress.
     Returns:
-        The compressed content as bytes.
+        content: The compressed content as bytes.
     """
     cctx = zstd.ZstdCompressor()
     with open(json_path, "rb") as input_f:

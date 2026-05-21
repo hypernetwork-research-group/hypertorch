@@ -48,7 +48,7 @@ class Graph:
         Remove self-loops from the graph.
 
         Returns:
-            List of edges without self-loops.
+            edges: List of edges without self-loops.
         """
         if self.num_edges == 0:
             return self
@@ -119,7 +119,7 @@ class Graph:
             drop_rate: Randomly dropout the connections in the Laplacian with probability ``drop_rate``. Defaults to ``0.0``.
 
         Returns:
-            The smoothed feature matrix. Size ``(num_nodes, C)``.
+            x: The smoothed feature matrix. Size ``(num_nodes, C)``.
         """
         if drop_rate > 0.0:
             laplacian_matrix = utils.sparse_dropout(laplacian_matrix, drop_rate)
@@ -218,7 +218,7 @@ class EdgeIndex:
             with_duplicate_removal: Whether to remove duplicate edges after adding self-loops. Defaults to ``True``.
 
         Returns:
-            This :class:`EdgeIndex` instance with self-loops added.
+            edge_index: This `EdgeIndex` instance with self-loops added.
 
         Raises:
             ValueError: If the input edge index has no edges (i.e., ``shape (2, 0)``).
@@ -298,7 +298,7 @@ class EdgeIndex:
                 If ``False``, all edges will have weight 1. Defaults to ``False``.
 
         Returns:
-            The sparse adjacency matrix of shape ``(num_nodes, num_nodes)``.
+            adjacency: The sparse adjacency matrix of shape ``(num_nodes, num_nodes)``.
         """
         device = self.__edge_index.device
         src, dest = self.__edge_index
@@ -346,7 +346,7 @@ class EdgeIndex:
                 If ``None``, it will be inferred from ``self.num_nodes``.
 
         Returns:
-            The sparse identity matrix I of shape ``(num_nodes, num_nodes)``.
+            identity: The sparse identity matrix I of shape ``(num_nodes, num_nodes)``.
         """
         device = self.__edge_index.device
         num_nodes = self.num_nodes if num_nodes is None else num_nodes
@@ -383,7 +383,7 @@ class EdgeIndex:
             use_edge_weights: If ``True``, use the edge weights from ``self.edge_weights``. If ``False``, all edges use weight 1.
 
         Returns:
-            The sparse normalized degree matrix D^-1/2 of shape ``(num_nodes, num_nodes)``.
+            degree_matrix: The sparse normalized degree matrix D^-1/2 of shape ``(num_nodes, num_nodes)``.
         """
         device = self.__edge_index.device
 
@@ -436,7 +436,7 @@ class EdgeIndex:
                 it will be inferred from ``self.num_nodes``.
 
         Returns:
-            The sparse symmetric normalized Laplacian matrix of shape ``(num_nodes, num_nodes)``.
+            laplacian: The sparse symmetric normalized Laplacian matrix of shape ``(num_nodes, num_nodes)``.
         """
         self.to_undirected(with_selfloops=False)
 
@@ -475,7 +475,7 @@ class EdgeIndex:
             use_edge_weights: If ``True``, use the edge weights from ``self.edge_weights``. If ``False``, all edges use weight 1.
 
         Returns:
-            The sparse symmetrically normalized Laplacian matrix of shape ``(num_nodes, num_nodes)``.
+            laplacian: The sparse symmetrically normalized Laplacian matrix of shape ``(num_nodes, num_nodes)``.
         """
         self.to_undirected(with_selfloops=True, num_nodes=num_nodes)
 
@@ -518,7 +518,7 @@ class EdgeIndex:
                 as it ensures that the resulting Laplacian matrix has the correct size and includes all nodes. For instance, for self-loops.
 
         Returns:
-            This :class:`EdgeIndex` instance with duplicate edges removed.
+            edge_index: This `EdgeIndex` instance with duplicate edges removed.
         """
         # Example: edge_index = [[0, 1, 2, 2, 0, 3, 2],
         #                        [1, 0, 3, 2, 1, 2, 2]], shape (2, |E| = 7)
@@ -572,7 +572,7 @@ class EdgeIndex:
                 as it ensures that the resulting Laplacian matrix has the correct size and includes all nodes. For instance, for self-loops.
 
         Returns:
-            This :class:`EdgeIndex` instance converted to undirected.
+            edge_index: This `EdgeIndex` instance converted to undirected.
         """
         device = self.__edge_index.device
         num_nodes = self.num_nodes if num_nodes is None else num_nodes

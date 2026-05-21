@@ -62,7 +62,7 @@ class _VilLainTrainer:
             hyperedge_index: Hyperedge index used only to select the output device.
 
         Returns:
-            Empty tensor of shape ``(0, embedding_dim)``.
+            x: Empty tensor of shape ``(0, embedding_dim)``.
         """
         return torch.empty((0, self.embedding_dim), device=hyperedge_index.device)
 
@@ -74,7 +74,7 @@ class _VilLainTrainer:
             hyperedge_index: Hyperedge index tensor used to infer the hyperedge count when no explicit count was provided.
 
         Returns:
-            Total number of hyperedges to preserve during VilLain propagation.
+            num_hyperedges: Total number of hyperedges to preserve during VilLain propagation.
         """
         return (
             self.num_hyperedges
@@ -90,7 +90,7 @@ class _VilLainTrainer:
             hyperedge_index: Hyperedge index tensor used to infer the node count when no explicit count was provided.
 
         Returns:
-            Total number of nodes to preserve during VilLain training and embedding generation.
+            num_nodes: Total number of nodes to preserve during VilLain training and embedding generation.
         """
         return HyperedgeIndex(hyperedge_index).num_nodes_if_isolated_exist(self.num_nodes)
 
@@ -102,7 +102,7 @@ class _VilLainTrainer:
             hyperedge_index: Hyperedge index tensor of shape ``(2, num_incidences)``.
 
         Returns:
-            Trained VilLain model ready to generate node or hyperedge embeddings.
+            model: Trained VilLain model ready to generate node or hyperedge embeddings.
         """
         # We need it here to avoid circular imports,
         # this is internal logic anyway and not part of the public API of this module.

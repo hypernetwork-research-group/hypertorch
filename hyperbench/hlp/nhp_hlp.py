@@ -40,7 +40,7 @@ class NHPHlpModule(HlpModule):
 
     Args:
         encoder_config: Configuration for the NHP encoder/scorer.
-        loss_fn: Loss function. Defaults to :class:`NHPRankingLoss`.
+        loss_fn: Loss function. Defaults to `NHPRankingLoss`.
         lr: Learning rate for the optimizer. Defaults to ``0.001``.
         weight_decay: L2 regularization. Defaults to ``5e-4``.
         metrics: Optional metric collection for evaluation.
@@ -82,7 +82,7 @@ class NHPHlpModule(HlpModule):
             hyperedge_index: Hyperedge connectivity of shape ``(2, num_incidences)``.
 
         Returns:
-            Scores of shape ``(num_hyperedges,)``.
+            scores: Scores of shape ``(num_hyperedges,)``.
         """
         if self.encoder is None:
             raise ValueError("Encoder is not defined for this HLP module.")

@@ -61,7 +61,7 @@ class Dataset(TorchDataset):
             index: An integer or a list of integers representing node or hyperedge IDs to sample, depending on the sampling strategy.
 
         Returns:
-            An HData instance containing the sampled sub-hypergraph.
+            hdata: An HData instance containing the sampled sub-hypergraph.
 
         Raises:
             ValueError: If the provided index is invalid (e.g., empty list or list length exceeds number of nodes/hyperedges).
@@ -76,14 +76,14 @@ class Dataset(TorchDataset):
         sampling_strategy: SamplingStrategy = SamplingStrategy.HYPEREDGE,
     ) -> "Dataset":
         """
-        Create a :class:`Dataset` instance from an :class:`HData` object.
+        Create a `Dataset` instance from an `HData` object.
 
         Args:
-            hdata: :class:`HData` object containing the hypergraph data.
+            hdata: `HData` object containing the hypergraph data.
             sampling_strategy: The sampling strategy to use for the dataset. If not provided, defaults to ``SamplingStrategy.HYPEREDGE``.
 
         Returns:
-            The :class:`Dataset` instance with the provided :class:`HData`.
+            dataset: The `Dataset` instance with the provided `HData`.
         """
         return cls(hdata=hdata, sampling_strategy=sampling_strategy)
 
@@ -95,7 +95,7 @@ class Dataset(TorchDataset):
         save_on_disk: bool = False,
     ) -> "Dataset":
         """
-        Create a :class:`Dataset` instance by loading a hypergraph from a URL pointing to a .json or .json.zst file in HIF format.
+        Create a `Dataset` instance by loading a hypergraph from a URL pointing to a .json or .json.zst file in HIF format.
 
         Args:
             url: The URL to the .json or .json.zst file containing the HIF hypergraph data.
@@ -103,7 +103,7 @@ class Dataset(TorchDataset):
             save_on_disk: Whether to save the downloaded file on disk.
 
         Returns:
-            The :class:`Dataset` instance with the loaded hypergraph data.
+            dataset: The `Dataset` instance with the loaded hypergraph data.
         """
         hdata = HIFLoader.load_from_url(url=url, save_on_disk=save_on_disk)
         dataset = cls.from_hdata(hdata=hdata, sampling_strategy=sampling_strategy)
@@ -116,14 +116,14 @@ class Dataset(TorchDataset):
         sampling_strategy: SamplingStrategy = SamplingStrategy.HYPEREDGE,
     ) -> "Dataset":
         """
-        Create a :class:`Dataset` instance by loading a hypergraph from a local file path pointing to a .json or .json.zst file in HIF format.
+        Create a `Dataset` instance by loading a hypergraph from a local file path pointing to a .json or .json.zst file in HIF format.
 
         Args:
             filepath: The local file path to the .json or .json.zst file containing the HIF hypergraph data.
             sampling_strategy: The sampling strategy to use for the dataset. If not provided, defaults to ``SamplingStrategy.HYPEREDGE``.
 
         Returns:
-            The :class:`Dataset` instance with the loaded hypergraph data.
+            dataset: The `Dataset` instance with the loaded hypergraph data.
         """
         hypergraph = HIFLoader.load_from_path(filepath=filepath)
         dataset = cls.from_hdata(hdata=hypergraph, sampling_strategy=sampling_strategy)
@@ -213,13 +213,13 @@ class Dataset(TorchDataset):
 
     def update_from_hdata(self, hdata: HData) -> "Dataset":
         """
-        Create a :class:`Dataset` instance from an :class:`HData` object.
+        Create a `Dataset` instance from an `HData` object.
 
         Args:
-            hdata: :class:`HData` object containing the hypergraph data.
+            hdata: `HData` object containing the hypergraph data.
 
         Returns:
-            The :class:`Dataset` instance with the provided :class:`HData`.
+            dataset: The `Dataset` instance with the provided `HData`.
         """
         return self.__class__(hdata=hdata, sampling_strategy=self.sampling_strategy)
 
@@ -229,14 +229,14 @@ class Dataset(TorchDataset):
         seed: int | None = None,
     ) -> "Dataset":
         """
-        Create a new :class:`Dataset` with sampled negative hyperedges added.
+        Create a new `Dataset` with sampled negative hyperedges added.
 
         Args:
             negative_sampler: Sampler used to generate negative hyperedges from this dataset's ``hdata``.
             seed: Optional random seed used for both negative sampling and the final shuffle.
 
         Returns:
-            A new :class:`Dataset` instance with positives and sampled negatives.
+            dataset: A new `Dataset` instance with positives and sampled negatives.
         """
         hdata_with_negatives = self.hdata.clone()
         hdata_with_negatives = hdata_with_negatives.add_negative_samples(
@@ -304,7 +304,7 @@ class Dataset(TorchDataset):
                 ``first`` preserves only the first returned split. ``all`` preserves all splits.
 
         Returns:
-            List of Dataset objects, one per split, each with contiguous IDs.
+            datasets: List of Dataset objects, one per split, each with contiguous IDs.
         """
         # Allow small imprecision in sum of ratios, but raise error if it's significant
         # Example: ratios = [0.8, 0.1, 0.1] -> sum = 1.0 (valid)
@@ -380,7 +380,7 @@ class Dataset(TorchDataset):
             device: The target device (e.g., ``torch.device('cuda')`` or ``torch.device('cpu')``).
 
         Returns:
-            The Dataset instance moved to the specified device.
+            dataset: The Dataset instance moved to the specified device.
         """
         self.hdata = self.hdata.to(device)
         return self
@@ -422,7 +422,7 @@ class Dataset(TorchDataset):
         - ``distribution_hyperedge_size_hist``: A dictionary where the keys are hyperedge sizes and the values are the count of hyperedges with that size.
 
         Returns:
-            A dictionary containing various statistics about the hypergraph.
+            stats: A dictionary containing various statistics about the hypergraph.
         """
 
         return self.hdata.stats()

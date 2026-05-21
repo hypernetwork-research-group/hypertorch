@@ -33,7 +33,7 @@ class NegativeSampler(ABC):
             seed: Optional random seed for reproducible negative sampling.
 
         Returns:
-            The negative samples as a new :class:`HData` object.
+            hdata: The negative samples as a new `HData` object.
 
         Raises:
             NotImplementedError: If the method is not implemented in a subclass.
@@ -55,7 +55,7 @@ class NegativeSampler(ABC):
             negative_hyperedge_ids: Tensor of negative hyperedge IDs.
 
         Returns:
-            The concatenated, sorted, and remapped hyperedge index tensor.
+            hyperedge_index: The concatenated, sorted, and remapped hyperedge index tensor.
             If ``self.return_0based_negatives`` is ``True``, the returned tensor will have 0-based node and hyperedge IDs.
             Otherwise, it will retain the original global node and hyperedge IDs from the input data.
         """
@@ -83,7 +83,7 @@ class NegativeSampler(ABC):
             negative_node_ids: Tensor of negative node IDs.
 
         Returns:
-            The global node IDs for the negative samples, or ``None`` if the input global node IDs are ``None``.
+            global_node_ids: The global node IDs for the negative samples, or ``None`` if the input global node IDs are ``None``.
         """
         if global_node_ids is None:
             return None
@@ -102,7 +102,7 @@ class NegativeSampler(ABC):
             hyperedge_attr: The original hyperedge attributes from the input data.
 
         Returns:
-            The concatenated hyperedge attribute tensor for the negative samples.
+            hyperedge_attr: The concatenated hyperedge attribute tensor for the negative samples.
         """
         if hyperedge_attr is None or len(sampled_hyperedge_attrs) < 1:
             return None
@@ -119,11 +119,11 @@ class NegativeSampler(ABC):
         Generate enriched hyperedge attributes for the negative samples.
 
         Args:
-            hyperedge_attr_enricher: An optional :class:`HyperedgeAttrsEnricher` to generate attributes for the new hyperedges.
+            hyperedge_attr_enricher: An optional `HyperedgeAttrsEnricher` to generate attributes for the new hyperedges.
             negative_hyperedge_index: The index tensor for the negative hyperedges.
 
         Returns:
-            The enriched hyperedge attribute tensor for the negative samples, or ``None`` if the enricher is not provided.
+            hyperedge_attr: The enriched hyperedge attribute tensor for the negative samples, or ``None`` if the enricher is not provided.
         """
         if hyperedge_attr_enricher is None:
             return None
@@ -142,11 +142,11 @@ class NegativeSampler(ABC):
         Generate enriched hyperedge weights for the negative samples.
 
         Args:
-            hyperedge_weights_enricher: An optional :class:`HyperedgeWeightsEnricher` to generate weights for the new hyperedges.
+            hyperedge_weights_enricher: An optional `HyperedgeWeightsEnricher` to generate weights for the new hyperedges.
             negative_hyperedge_index: The index tensor for the negative hyperedges.
 
         Returns:
-            The enriched hyperedge weight tensor for the negative samples, or ``None`` if the enricher is not provided.
+            hyperedge_weights: The enriched hyperedge weight tensor for the negative samples, or ``None`` if the enricher is not provided.
         """
         if hyperedge_weights_enricher is None:
             return None
@@ -165,7 +165,7 @@ class NegativeSampler(ABC):
             negative_node_ids: Tensor of negative node IDs.
 
         Returns:
-            The node feature matrix for the negative samples and the number of negative nodes.
+            x_and_num_negative_nodes: The node feature matrix for the negative samples and the number of negative nodes.
         """
         return x[negative_node_ids], len(negative_node_ids)
 
@@ -185,7 +185,7 @@ class NegativeSampler(ABC):
             device: Device where the returned tensor should be allocated.
 
         Returns:
-            A tensor containing consecutive negative hyperedge IDs.
+            hyperedge_ids: A tensor containing consecutive negative hyperedge IDs.
         """
         # Example: new_hyperedge_id_offset = 3 (if hdata.num_hyperedges was 3)
         #          num_negative_samples = 2
@@ -206,7 +206,7 @@ class NegativeSampler(ABC):
                 and hyperedge IDs.
 
         Returns:
-            A set of sorted node ID tuples, one tuple per hyperedge.
+            signatures: A set of sorted node ID tuples, one tuple per hyperedge.
         """
         all_hyperedge_ids = hyperedge_index[1]
         unique_hyperedge_ids = all_hyperedge_ids.unique().tolist()
@@ -229,7 +229,7 @@ class NegativeSampler(ABC):
             node_ids: A tensor or sequence containing node IDs for one hyperedge.
 
         Returns:
-            A sorted tuple of Python ``int`` values.
+            signature: A sorted tuple of Python ``int`` values.
         """
         if isinstance(node_ids, Tensor):
             return tuple(sorted(int(node_id) for node_id in node_ids.tolist()))
@@ -241,8 +241,8 @@ class SameNodeSpaceNegativeSampler(NegativeSampler, ABC):
     Base class for negative samplers that sample only from existing nodes.
 
     Args:
-        hyperedge_attr_enricher: An optional :class:`HyperedgeAttrsEnricher` to generate attributes for the new hyperedges.
-        hyperedge_weights_enricher: An optional :class:`HyperedgeWeightsEnricher` to generate weights for the new hyperedges.
+        hyperedge_attr_enricher: An optional `HyperedgeAttrsEnricher` to generate attributes for the new hyperedges.
+        hyperedge_weights_enricher: An optional `HyperedgeWeightsEnricher` to generate weights for the new hyperedges.
         return_0based_negatives:
             - If ``True``, the negative samples returned by the ``sample`` method will have 0-based node and hyperedge IDs.
             - If ``False``, the negative samples will retain the original global node and hyperedge IDs from the input data.
@@ -264,9 +264,9 @@ class GeneratedNodesNegativeSampler(NegativeSampler, ABC):
     Base class for negative samplers that generate new nodes instead of sampling from existing ones.
 
     Args:
-        node_feature_enricher: A :class:`NodeEnricher` to generate features for the new nodes.
-        hyperedge_attr_enricher: An optional :class:`HyperedgeAttrsEnricher` to generate attributes for the new hyperedges.
-        hyperedge_weights_enricher: An optional :class:`HyperedgeWeightsEnricher` to generate weights for the new hyperedges.
+        node_feature_enricher: A `NodeEnricher` to generate features for the new nodes.
+        hyperedge_attr_enricher: An optional `HyperedgeAttrsEnricher` to generate attributes for the new hyperedges.
+        hyperedge_weights_enricher: An optional `HyperedgeWeightsEnricher` to generate weights for the new hyperedges.
         return_0based_negatives:
             - If ``True``, the negative samples returned by the ``sample`` method will have 0-based node and hyperedge IDs.
             - If ``False``, the negative samples will retain the original global node and hyperedge IDs from the input data.
@@ -288,16 +288,16 @@ class GeneratedNodesNegativeSampler(NegativeSampler, ABC):
 class RandomNegativeSampler(SameNodeSpaceNegativeSampler):
     """
     A random negative sampler. Negatives generated with ``return_0based_negatives = False`` aren't usable standalone
-    as they have global node and hyperedge IDs. They must be concatenated with the original :class:`HData` object
+    as they have global node and hyperedge IDs. They must be concatenated with the original `HData` object
     that is provided as input to the ``sample`` method, as it contains the global node and hyperedge IDs and features
     that can be indexed with the negative samples' IDs.
 
     Args:
         num_negative_samples: Number of negative hyperedges to generate.
         num_nodes_per_sample: Number of nodes per negative hyperedge.
-        hyperedge_attr_enricher: An optional :class:`HyperedgeAttrsEnricher` to generate attributes for the new hyperedges.
+        hyperedge_attr_enricher: An optional `HyperedgeAttrsEnricher` to generate attributes for the new hyperedges.
             If not provided, random attributes will be generated for the negative hyperedges if the input data has hyperedge attributes.
-        hyperedge_weights_enricher: An optional :class:`HyperedgeEnricher` to generate weights for the new hyperedges.
+        hyperedge_weights_enricher: An optional `HyperedgeEnricher` to generate weights for the new hyperedges.
             If not provided, the negative hyperedges will not have weights.
         return_0based_negatives:
             - If ``True``, the negative samples returned by the ``sample`` method will have 0-based node and hyperedge IDs.
@@ -339,7 +339,7 @@ class RandomNegativeSampler(SameNodeSpaceNegativeSampler):
         Generate negative hyperedges by randomly sampling unique node IDs.
         Node IDs are sampled from the same node space as the input data, and the new negative hyperedge IDs
         start from the original number of hyperedges in the input data to avoid ID conflicts.
-        The resulting negative samples are returned as a new :class:`HData` object with remapped 0-based node and hyperedge IDs, if ``self.return_0based_negatives == True``.
+        The resulting negative samples are returned as a new `HData` object with remapped 0-based node and hyperedge IDs, if ``self.return_0based_negatives == True``.
         Otherwise, the negative samples retain their original global node and hyperedge IDs from the input data.
 
         Examples:
@@ -372,7 +372,7 @@ class RandomNegativeSampler(SameNodeSpaceNegativeSampler):
             seed: Optional random seed for reproducible negative sampling.
 
         Returns:
-            A new :class:`HData` instance containing the negative samples.
+            hdata: A new `HData` instance containing the negative samples.
 
         Raises:
             ValueError: If ``num_nodes_per_sample`` is greater than the number of available nodes.
@@ -467,7 +467,7 @@ class RandomNegativeSampler(SameNodeSpaceNegativeSampler):
             seed: Optional random seed for reproducible sampling.
 
         Returns:
-            A tuple containing sampled hyperedge index tensors, sampled hyperedge attribute
+            samples: A tuple containing sampled hyperedge index tensors, sampled hyperedge attribute
             tensors, sampled node IDs, and the first negative hyperedge ID.
 
         Raises:
@@ -650,7 +650,7 @@ class CliqueNegativeSampler(SameNodeSpaceNegativeSampler):
             seed: Optional random seed for reproducible candidate selection.
 
         Returns:
-            A new :class:`HData` instance containing only sampled negative hyperedges.
+            hdata: A new `HData` instance containing only sampled negative hyperedges.
 
         Raises:
             ValueError: If too few nodes or valid clique negatives are available.
@@ -762,7 +762,7 @@ class CliqueNegativeSampler(SameNodeSpaceNegativeSampler):
             enumerated_candidates: Number of full-size clique candidates visited so far.
 
         Returns:
-            Updated number of full-size clique candidates visited.
+            visited: Updated number of full-size clique candidates visited.
 
         Raises:
             ValueError: If ``max_candidates`` is set and clique enumeration exceeds it.
@@ -818,7 +818,7 @@ class CliqueNegativeSampler(SameNodeSpaceNegativeSampler):
             positive_hyperedge_signatures: Positive hyperedge node signatures with the requested sample size.
 
         Returns:
-            Clique node signatures that are not positive hyperedges.
+            candidates: Clique node signatures that are not positive hyperedges.
 
         Raises:
             ValueError: If fewer valid clique negatives exist than requested, or if
@@ -864,7 +864,7 @@ class CliqueNegativeSampler(SameNodeSpaceNegativeSampler):
             seed: Optional seed for reproducible candidate shuffling and random attributes.
 
         Returns:
-            A tuple containing sampled hyperedge index tensors, sampled hyperedge
+            samples: A tuple containing sampled hyperedge index tensors, sampled hyperedge
             attribute tensors, sampled node IDs, and the first negative hyperedge ID.
         """
         device = hdata.device
