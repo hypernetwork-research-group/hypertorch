@@ -2,6 +2,7 @@ import pytest
 import torch
 import re
 
+from pathlib import Path
 from unittest.mock import patch
 from torch import Tensor
 from hyperbench.data import (
@@ -55,17 +56,19 @@ def test_abstract_enricher_base_classes_cannot_be_instantiated(base_class) -> No
 )
 def test_fill_value_hyperedge_attrs_enricher_returns_fixed_attrs(
     mock_two_hyperedge_index: Tensor,
+    tmp_path: Path,
     fill_value: float,
     expected: list[list[float]],
 ) -> None:
+    cache_dir = tmp_path / "hyperbench-cache"
     enricher = FillValueHyperedgeAttrsEnricher(
-        cache_dir="/tmp/hyperbench-cache",
+        cache_dir=str(cache_dir),
         fill_value=fill_value,
     )
 
     result = enricher.enrich(mock_two_hyperedge_index)
 
-    assert enricher.cache_dir == "/tmp/hyperbench-cache"
+    assert enricher.cache_dir == str(cache_dir)
     assert result.shape == (2, 1)
     assert result.device == mock_two_hyperedge_index.device
     assert torch.equal(result, torch.tensor(expected))
