@@ -5,7 +5,6 @@ import torch
 from typing import TYPE_CHECKING, Any
 from torch import Tensor
 from torch.utils.data import Dataset as TorchDataset
-from hyperbench.data.enricher import EnrichmentMode, HyperedgeEnricher, NodeEnricher
 from hyperbench.types import HData
 from hyperbench.utils import (
     NodeSpaceFiller,
@@ -18,7 +17,14 @@ from hyperbench.data.sampler import SamplingStrategy, create_sampler_from_strate
 from hyperbench.data.splitter import HyperedgeIDSplitter
 
 if TYPE_CHECKING:
-    from hyperbench.data import NegativeSampler
+    from hyperbench.data import (
+        EnrichmentMode,
+        HyperedgeEnricher,
+        NegativeSampler,
+        NodeEnricher,
+        HIFLoader,
+        HIFProcessor,
+    )
 
 
 class Dataset(TorchDataset):
