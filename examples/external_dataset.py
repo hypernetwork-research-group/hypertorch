@@ -9,9 +9,9 @@ from torchmetrics.classification import (
 from hyperbench.hlp import CommonNeighborsHlpModule, MLPHlpModule
 from hyperbench.train import MultiModelTrainer
 from hyperbench.types import ModelConfig
-from hyperbench.data import Dataset
 from hyperbench.data import (
     DataLoader,
+    Dataset,
     LaplacianPositionalEncodingEnricher,
     RandomNegativeSampler,
     SamplingStrategy,
