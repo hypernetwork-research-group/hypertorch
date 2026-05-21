@@ -22,8 +22,6 @@ if TYPE_CHECKING:
         HyperedgeEnricher,
         NegativeSampler,
         NodeEnricher,
-        HIFLoader,
-        HIFProcessor,
     )
 
 
