@@ -6,8 +6,10 @@ import zstandard as zstd
 def decompress_zst(zst_path: str) -> str:
     """
     Decompresses a .zst file and returns the path to the decompressed JSON file.
+
     Args:
         zst_path: The path to the .zst file to decompress.
+
     Returns:
         path: The path to the decompressed JSON file.
     """
@@ -27,6 +29,7 @@ def compress_to_zst(json_path: str) -> bytes:
 
     Args:
         json_path: The path to the JSON file to compress.
+
     Returns:
         content: The compressed content as bytes.
     """
@@ -39,6 +42,7 @@ def compress_to_zst(json_path: str) -> bytes:
 def write_to_disk(dataset_name: str, content: bytes, output_dir: str | None = None) -> None:
     """
     Writes the compressed content to disk in the specified output directory or a default location.
+
     Args:
         dataset_name: The name of the dataset.
         content: The compressed content as bytes.
