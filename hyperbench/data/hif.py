@@ -241,9 +241,11 @@ class HIFLoader:
     def load_from_url(cls, url: str, save_on_disk: bool = False) -> HData:
         """
         Load a hypergraph from a given URL pointing to a .json or .json.zst file in HIF format.
+
         Args:
             url (str): The URL to the .json or .json.zst file containing the HIF hypergraph data.
             save_on_disk (bool): Whether to save the downloaded file on disk.
+
         Returns:
             hdata: The loaded hypergraph object.
         """
@@ -282,9 +284,11 @@ class HIFLoader:
     def load_from_path(cls, filepath: str) -> HData:
         """
         Load a hypergraph from a local file path pointing to a .json or .json.zst file in HIF format.
+
         Args:
             filepath (str): The local file path to the .json or .json.zst file
                 containing the HIF hypergraph data.
+
         Returns:
             hdata: The loaded hypergraph object.
         """
