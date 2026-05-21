@@ -17,7 +17,7 @@ class CommonNeighborsHlpModule(HlpModule):
 
     Args:
         aggregation: The aggregation method for common neighbors ("mean", "min", or "sum").
-        decoder: An optional decoder module. Defaults to :class:`CommonNeighbors`.
+        decoder: An optional decoder module. Defaults to `CommonNeighbors`.
         loss_fn: An optional loss function. Defaults to ``BCEWithLogitsLoss``.
         metrics: An optional dictionary of metric functions.
     """
@@ -85,7 +85,7 @@ class CommonNeighborsHlpModule(HlpModule):
         Shared evaluation logic for all stages.
 
         Args:
-            batch: :class:`HData` object containing the hypergraph.
+            batch: `HData` object containing the hypergraph.
             stage: The current stage of evaluation (e.g., ``Stage.TRAIN``, ``Stage.VAL``, ``Stage.TEST``).
 
         Returns:

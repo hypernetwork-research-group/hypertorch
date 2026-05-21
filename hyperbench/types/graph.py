@@ -218,7 +218,7 @@ class EdgeIndex:
             with_duplicate_removal: Whether to remove duplicate edges after adding self-loops. Defaults to ``True``.
 
         Returns:
-            edge_index: This :class:`EdgeIndex` instance with self-loops added.
+            edge_index: This `EdgeIndex` instance with self-loops added.
 
         Raises:
             ValueError: If the input edge index has no edges (i.e., ``shape (2, 0)``).
@@ -518,7 +518,7 @@ class EdgeIndex:
                 as it ensures that the resulting Laplacian matrix has the correct size and includes all nodes. For instance, for self-loops.
 
         Returns:
-            edge_index: This :class:`EdgeIndex` instance with duplicate edges removed.
+            edge_index: This `EdgeIndex` instance with duplicate edges removed.
         """
         # Example: edge_index = [[0, 1, 2, 2, 0, 3, 2],
         #                        [1, 0, 3, 2, 1, 2, 2]], shape (2, |E| = 7)
@@ -572,7 +572,7 @@ class EdgeIndex:
                 as it ensures that the resulting Laplacian matrix has the correct size and includes all nodes. For instance, for self-loops.
 
         Returns:
-            edge_index: This :class:`EdgeIndex` instance converted to undirected.
+            edge_index: This `EdgeIndex` instance converted to undirected.
         """
         device = self.__edge_index.device
         num_nodes = self.num_nodes if num_nodes is None else num_nodes

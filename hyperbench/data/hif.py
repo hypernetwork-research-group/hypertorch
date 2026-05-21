@@ -23,7 +23,7 @@ GITHUB_COMMIT_SHA = "3879b2ce84750e54f984ca06ce3246dff22c71c7"
 
 
 class HIFProcessor:
-    """A utility class to process HIF hypergraph data into :class:`HData` format."""
+    """A utility class to process HIF hypergraph data into `HData` format."""
 
     @staticmethod
     def transform_attrs(
@@ -60,7 +60,7 @@ class HIFProcessor:
     @classmethod
     def process_hypergraph(cls, hypergraph: HIFHypergraph) -> HData:
         """
-        Process the loaded hypergraph into :class:`HData` format, mapping HIF structure to tensors.
+        Process the loaded hypergraph into `HData` format, mapping HIF structure to tensors.
 
         Returns:
             hdata: The processed hypergraph data.

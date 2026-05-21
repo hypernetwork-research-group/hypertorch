@@ -923,7 +923,7 @@ class HyperedgeIndex:
             k: The minimum number of nodes a hyperedge must contain to be kept.
 
         Returns:
-            hyperedge_index: A new :class:`HyperedgeIndex` instance with hyperedges containing fewer than k nodes.
+            hyperedge_index: A new `HyperedgeIndex` instance with hyperedges containing fewer than k nodes.
         """
         _, idx_to_hyperedge_id, num_nodes_per_hyperedge = torch.unique(
             self.all_hyperedge_ids,
@@ -949,7 +949,7 @@ class HyperedgeIndex:
                 If ``None``, all hyperedge IDs in the hyperedge index will be rebased to 0-based format based on their unique sorted order.
 
         Returns:
-            hyperedge_index: A new :class:`HyperedgeIndex` instance with the hyperedge index converted to 0-based format.
+            hyperedge_index: A new `HyperedgeIndex` instance with the hyperedge index converted to 0-based format.
         """
         # Example: hyperedge_index after sorting: [[0, 0, 1, 2, 3, 4],
         #                                          [3, 4, 4, 3, 4, 3]]
