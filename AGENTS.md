@@ -69,13 +69,14 @@ Write `HyperBench` when referring to the project, repository, organization, or p
 
 - **Location:** Tests live under `hyperbench/tests/` and should mirror the package layout they exercise.
 - **Execution:** Prefer:
-  - `make test`
-  - `make stest T=<path-within-hyperbench/tests>`
-  - `uv run pytest ...` only for targeted one-off invocations
+    - `make test`
+    - `make stest T=<path-within-hyperbench/tests>`
+    - `uv run pytest ...` only for targeted one-off invocations
 - **Style:** Use pytest function tests and fixtures. Prefer `pytest.mark.parametrize` with readable `id=` values in `pytest.param(..., id=...)`.
 - **Determinism:** Avoid network access, sleeps, and external services. Patch HTTP calls, filesystem state, and subprocesses as needed.
 - **Fixtures:** Keep fixture scope as small as practical. Put shared fixtures in `conftest.py`.
-- **Regression coverage:** Add tests for new behavior, edge cases, and failure paths when code changes.
+- **Coverage:** Add tests for new behavior, edge cases, and failure paths when code changes.
+    - Always ensure 100% coverage for new or refactored code. Run `make test` to see coverage reports and identify untested lines.
 
 ## Security model
 
