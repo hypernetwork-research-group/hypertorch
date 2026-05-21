@@ -27,7 +27,7 @@ class NHPRankingLoss(nn.Module):
             labels: Binary labels indicating positive (1) and negative (0) hyperedges, of shape ``(num_hyperedges,)``.
 
         Returns:
-            Scalar loss value.
+            loss: Scalar loss value.
         """
         # Split logits by label as we need to compare positive scores against negative scores.
         # Example: logits = [2.0, 1.0, -1.0]
@@ -94,7 +94,7 @@ class VilLainLoss:
             hyperedge_embeddings: Propagated hyperedge states with the same channel dimension as ``node_embeddings``.
 
         Returns:
-            Scalar tensor containing node plus hyperedge entropy losses.
+            loss: Scalar tensor containing node plus hyperedge entropy losses.
         """
         return self.entropy_loss(node_embeddings) + self.entropy_loss(hyperedge_embeddings)
 
@@ -110,7 +110,7 @@ class VilLainLoss:
             hyperedge_embeddings: Propagated hyperedge states with the same channel dimension as ``node_embeddings``.
 
         Returns:
-            Scalar tensor containing node plus hyperedge global losses.
+            loss: Scalar tensor containing node plus hyperedge global losses.
         """
         return (
             self.balance_loss(node_embeddings)
@@ -128,7 +128,7 @@ class VilLainLoss:
             global_loss: Accumulated balance plus distinctiveness loss.
 
         Returns:
-            Scalar tensor to minimize.
+            loss: Scalar tensor to minimize.
         """
         return local_loss + global_loss
 
@@ -140,7 +140,7 @@ class VilLainLoss:
             x: Flattened virtual-label probabilities of shape ``(num_items, num_subspaces * labels_per_subspace)``.
 
         Returns:
-            Scalar entropy loss.
+            loss: Scalar entropy loss.
         """
         if x.size(0) == 0:
             return x.sum() * 0.0
@@ -168,7 +168,7 @@ class VilLainLoss:
             x: Flattened virtual-label probabilities of shape ``(num_items, num_subspaces * labels_per_subspace)``.
 
         Returns:
-            Scalar balance loss.
+            loss: Scalar balance loss.
         """
         if x.size(0) == 0:
             return x.sum() * 0.0
@@ -198,7 +198,7 @@ class VilLainLoss:
             x: Flattened virtual-label probabilities of shape ``(num_items, num_subspaces * labels_per_subspace)``.
 
         Returns:
-            Scalar distinctiveness loss.
+            loss: Scalar distinctiveness loss.
         """
         if x.size(0) == 0:
             return x.sum() * 0.0

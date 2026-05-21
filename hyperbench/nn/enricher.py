@@ -78,7 +78,7 @@ class FillValueHyperedgeAttrsEnricher(HyperedgeAttrsEnricher):
             hyperedge_index: Hyperedge index tensor of shape ``(2, num_hyperedges)``.
 
         Returns:
-            Tensor of shape ``(num_hyperedges, 1)`` containing the generated attribute for each hyperedge.
+            hyperedge_attr: Tensor of shape ``(num_hyperedges, 1)`` containing the generated attribute for each hyperedge.
         """
         num_hyperedges = HyperedgeIndex(hyperedge_index).num_hyperedges
         hyperedge_attrs = torch.full(
@@ -150,7 +150,7 @@ class VilLainHyperedgeAttrsEnricher(_VilLainTrainer, HyperedgeAttrsEnricher):
             hyperedge_index: Hyperedge index tensor of shape ``(2, num_hyperedges)``.
 
         Returns:
-            Tensor of shape ``(num_hyperedges, num_features)`` containing VilLain hyperedge embeddings.
+            hyperedge_embeddings: Tensor of shape ``(num_hyperedges, num_features)`` containing VilLain hyperedge embeddings.
         """
         num_hyperedges = self._num_hyperedges(hyperedge_index)
         if num_hyperedges == 0:
@@ -202,7 +202,7 @@ class ABHyperedgeWeightsEnricher(HyperedgeWeightsEnricher):
             hyperedge_index: Hyperedge index tensor of shape ``(2, num_hyperedges)``.
 
         Returns:
-            Tensor of shape ``(num_hyperedges,)`` containing the weight of each hyperedge.
+            hyperedge_weight: Tensor of shape ``(num_hyperedges,)`` containing the weight of each hyperedge.
         """
         # Count the number of nodes in each hyperedge by counting occurrences of each hyperedge index.
         # Example: if hyperedge_index[1] = [0, 0, 1, 1, 1], then we have 2 nodes in hyperedge 0 and 3 nodes in hyperedge 1.
@@ -306,7 +306,7 @@ class Node2VecEnricher(NodeEnricher):
             hyperedge_index: Hyperedge index tensor of shape ``(2, num_hyperedges)``.
 
         Returns:
-            Tensor of shape ``(num_nodes, embedding_dim)`` containing the Node2Vec embeddings for each node.
+            x: Tensor of shape ``(num_nodes, embedding_dim)`` containing the Node2Vec embeddings for each node.
         """
         device = hyperedge_index.device
 
@@ -418,7 +418,7 @@ class LaplacianPositionalEncodingEnricher(NodeEnricher):
             hyperedge_index: Hyperedge index tensor of shape ``(2, num_hyperedges)``.
 
         Returns:
-            Tensor of shape ``(num_nodes, num_features)``.
+            node_features: Tensor of shape ``(num_nodes, num_features)``.
         """
         edge_index = HyperedgeIndex(hyperedge_index).reduce_to_edge_index_on_clique_expansion()
         edge_index_wrapper = EdgeIndex(edge_index)
@@ -524,7 +524,7 @@ class VilLainEnricher(_VilLainTrainer, NodeEnricher):
             hyperedge_index: Hyperedge index tensor of shape ``(2, num_hyperedges)``.
 
         Returns:
-            Tensor of shape ``(num_nodes, num_features)`` containing VilLain node embeddings.
+            node_embeddings: Tensor of shape ``(num_nodes, num_features)`` containing VilLain node embeddings.
         """
         num_nodes = self._num_nodes(hyperedge_index)
         if num_nodes == 0:

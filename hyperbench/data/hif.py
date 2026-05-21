@@ -39,7 +39,7 @@ class HIFProcessor:
             attr_keys: Optional list of attribute keys to encode. If provided, ensures consistent ordering and fill missing with ``0.0``.
 
         Returns:
-            Tensor of numeric attribute values
+            attrs: Tensor of numeric attribute values
         """
         numeric_attrs = {
             key: value
@@ -63,7 +63,7 @@ class HIFProcessor:
         Process the loaded hypergraph into :class:`HData` format, mapping HIF structure to tensors.
 
         Returns:
-            The processed hypergraph data.
+            hdata: The processed hypergraph data.
         """
 
         num_nodes = len(hypergraph.nodes)
@@ -132,7 +132,7 @@ class HIFProcessor:
             attr_keys: List of attribute dictionaries.
 
         Returns:
-            List of unique numeric attribute keys.
+            attr_keys: List of unique numeric attribute keys.
         """
         unique_keys = []
         for attrs in attr_keys:
@@ -245,7 +245,7 @@ class HIFLoader:
             url (str): The URL to the .json or .json.zst file containing the HIF hypergraph data.
             save_on_disk (bool): Whether to save the downloaded file on disk.
         Returns:
-            HData: The loaded hypergraph object.
+            hdata: The loaded hypergraph object.
         """
         url = validate_http_url(url)
 
@@ -286,7 +286,7 @@ class HIFLoader:
             filepath (str): The local file path to the .json or .json.zst file
                 containing the HIF hypergraph data.
         Returns:
-            HData: The loaded hypergraph object.
+            hdata: The loaded hypergraph object.
         """
         if not os.path.exists(filepath):
             raise ValueError(f"File '{filepath}' does not exist.")

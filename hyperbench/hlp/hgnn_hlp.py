@@ -118,7 +118,7 @@ class HGNNHlpModule(HlpModule):
                 with row 0 containing global node IDs and row 1 hyperedge IDs.
 
         Returns:
-            Logit scores of shape ``(num_hyperedges,)``. Pass through sigmoid to get
+            scores: Logit scores of shape ``(num_hyperedges,)``. Pass through sigmoid to get
             probabilities, or use directly with ``BCEWithLogitsLoss``.
         """
         if self.encoder is None:

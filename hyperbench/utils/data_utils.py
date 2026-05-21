@@ -39,7 +39,7 @@ def to_0based_ids(original_ids: Tensor, ids_to_rebase: Tensor | None = None) -> 
         ids_to_rebase: Optional tensor of IDs to keep and remap. If None, all unique IDs are used.
 
     Returns:
-        Tensor of 0-based IDs.
+        ids: Tensor of 0-based IDs.
     """
     if ids_to_rebase is None:
         sorted_unique_original_ids = original_ids.unique(sorted=True)

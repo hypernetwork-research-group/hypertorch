@@ -43,7 +43,7 @@ def maxmin_scatter(
             If not provided, it will be inferred from the maximum index value.
 
     Returns:
-        A tensor containing the max-min values for each index group.
+        values: A tensor containing the max-min values for each index group.
     """
     max_embeddings = scatter(src=src, index=index, dim=dim, dim_size=dim_size, reduce="max")
     min_embeddings = scatter(src=src, index=index, dim=dim, dim_size=dim_size, reduce="min")

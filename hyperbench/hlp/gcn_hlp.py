@@ -107,7 +107,7 @@ class GCNHlpModule(HlpModule):
             hyperedge_index: Hyperedge connectivity of shape ``(2, num_incidences)``.
 
         Returns:
-            Logit scores of shape ``(num_hyperedges,)``.
+            scores: Logit scores of shape ``(num_hyperedges,)``.
         """
         if self.encoder is None:
             raise ValueError("Encoder is not defined for this HLP module.")

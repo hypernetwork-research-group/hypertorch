@@ -89,7 +89,7 @@ class CommonNeighborsHlpModule(HlpModule):
             stage: The current stage of evaluation (e.g., ``Stage.TRAIN``, ``Stage.VAL``, ``Stage.TEST``).
 
         Returns:
-            The computed loss.
+            loss: The computed loss.
         """
         scores = self.forward(batch.hyperedge_index)
         labels = batch.y

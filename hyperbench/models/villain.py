@@ -91,7 +91,7 @@ class VilLain(nn.Module):
                 If not provided, the hyperedge count is inferred from ``hyperedge_index``.
 
         Returns:
-            Node embeddings of shape ``(num_local_nodes, embedding_dim)``.
+            node_embeddings: Node embeddings of shape ``(num_local_nodes, embedding_dim)``.
         """
         return self.loss(
             hyperedge_index=hyperedge_index,
@@ -117,7 +117,7 @@ class VilLain(nn.Module):
                 If not provided, the hyperedge count is inferred from ``hyperedge_index``.
 
         Returns:
-            A tuple ``(total_loss, loss_parts)`` where ``loss_parts`` contains ``local_loss`` and ``global_loss`` scalar tensors.
+            loss: A tuple ``(total_loss, loss_parts)`` where ``loss_parts`` contains ``local_loss`` and ``global_loss`` scalar tensors.
         """
         node_embeddings = self.__get_initial_virtual_node_features(node_ids=node_ids)
         actual_num_hyperedges = self.__num_hyperedges(hyperedge_index, num_hyperedges)
@@ -159,7 +159,7 @@ class VilLain(nn.Module):
                 If not provided, the hyperedge count is inferred from ``hyperedge_index``.
 
         Returns:
-            Hyperedge embeddings of shape ``(num_hyperedges, embedding_dim)``.
+            hyperedge_embeddings: Hyperedge embeddings of shape ``(num_hyperedges, embedding_dim)``.
         """
         return self.__embeddings(
             hyperedge_index=hyperedge_index,
@@ -186,7 +186,7 @@ class VilLain(nn.Module):
                 If not provided, the hyperedge count is inferred from ``hyperedge_index``.
 
         Returns:
-            Node embeddings of shape ``(num_local_nodes, embedding_dim)``.
+            node_embeddings: Node embeddings of shape ``(num_local_nodes, embedding_dim)``.
         """
         return self.__embeddings(
             hyperedge_index=hyperedge_index,
@@ -216,7 +216,7 @@ class VilLain(nn.Module):
             mode: Selects whether to accumulate propagated node states or hyperedge states.
 
         Returns:
-            Averaged embeddings truncated to ``embedding_dim``.
+            embeddings: Averaged embeddings truncated to ``embedding_dim``.
         """
         with torch.no_grad():
             x = self.__get_initial_virtual_node_features(node_ids=node_ids)
@@ -257,7 +257,7 @@ class VilLain(nn.Module):
                 If ``None``, all node rows are used.
 
         Returns:
-            A tensor of shape ``(num_selected_nodes, raw_embedding_dim)``.
+            x: A tensor of shape ``(num_selected_nodes, raw_embedding_dim)``.
         """
         logits = self.node_embedding if node_ids is None else self.node_embedding[node_ids]
 
@@ -298,7 +298,7 @@ class VilLain(nn.Module):
             num_hyperedges: Total number of hyperedges.
 
         Returns:
-            The updated node and hyperedge embeddings after one round of message passing.
+            embeddings: The updated node and hyperedge embeddings after one round of message passing.
         """
         hyperedge_embeddings = HyperedgeAggregator(
             hyperedge_index=hyperedge_index,

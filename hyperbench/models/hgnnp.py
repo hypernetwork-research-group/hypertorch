@@ -58,7 +58,7 @@ class HGNNP(nn.Module):
                 where row 0 contains node IDs and row 1 contains hyperedge IDs.
 
         Returns:
-            The output node feature matrix. Size ``(num_nodes, num_classes)``.
+            x: The output node feature matrix. Size ``(num_nodes, num_classes)``.
         """
         for layer in self.layers:
             x = layer(x, hyperedge_index)

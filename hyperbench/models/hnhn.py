@@ -58,7 +58,7 @@ class HNHN(nn.Module):
             hyperedge_index: Hyperedge incidence in COO format of size ``(2, num_incidences)``.
 
         Returns:
-            The output node feature matrix of size ``(num_nodes, num_classes)``.
+            x: The output node feature matrix of size ``(num_nodes, num_classes)``.
         """
         for layer in self.layers:
             x = layer(x, hyperedge_index)

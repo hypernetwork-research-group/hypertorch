@@ -100,7 +100,7 @@ class HGNNPHlpModule(HlpModule):
                 with row 0 containing global node IDs and row 1 hyperedge IDs.
 
         Returns:
-            Logit scores of shape ``(num_hyperedges,)``.
+            scores: Logit scores of shape ``(num_hyperedges,)``.
         """
         if self.encoder is None:
             raise ValueError("Encoder is not defined for this HLP module.")

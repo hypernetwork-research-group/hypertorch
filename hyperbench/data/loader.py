@@ -67,7 +67,7 @@ class DataLoader(TorchDataLoader):
             batch: List of :class:`HData objects to collate.
 
         Returns:
-            A single :class:`HData` object containing the collated data.
+            hdata: A single :class:`HData` object containing the collated data.
         """
         if self.__sample_full_hypergraph:
             return self.__cached_dataset_hdata.clone().to(batch[0].device)

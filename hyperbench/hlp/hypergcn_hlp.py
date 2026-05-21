@@ -117,7 +117,7 @@ class HyperGCNHlpModule(HlpModule):
                 with **global** node IDs.
 
         Returns:
-            Scores of shape ``(num_hyperedges,)``.
+            scores: Scores of shape ``(num_hyperedges,)``.
         """
         if self.encoder is None:
             raise ValueError("Encoder is not defined for this HLP module.")

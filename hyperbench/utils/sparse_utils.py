@@ -19,7 +19,7 @@ def sparse_dropout(
         fill_value: The fill value for dropped elements. Defaults to ``0.0``.
 
     Returns:
-        A new sparse matrix with the same shape as the input sparse matrix, but with some elements dropped out.
+        matrix: A new sparse matrix with the same shape as the input sparse matrix, but with some elements dropped out.
     """
     device = sparse_tensor.device
 

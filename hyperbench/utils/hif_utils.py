@@ -18,7 +18,7 @@ def validate_hif_json(filename: str) -> bool:
         filename: Path to the JSON file to validate.
 
     Returns:
-        ``True`` if the file is valid HIF, ``False`` otherwise.
+        valid: ``True`` if the file is valid HIF, ``False`` otherwise.
     """
     url = f"https://raw.githubusercontent.com/HIF-org/HIF-standard/{HIF_SCHEMA_COMMIT_SHA}/schemas/hif_schema.json"
     try:

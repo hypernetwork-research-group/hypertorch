@@ -116,7 +116,7 @@ class MarkdownTableLogger(Logger):
         - anything else (e.g., "epoch") --> ignored
 
         Returns:
-            Tuple of (test_results, train_results, val_results), where each is a dict
+            results: Tuple of (test_results, train_results, val_results), where each is a dict
             mapping model names to their respective metric dicts. Models with no metrics
             in a category are excluded from that category's dict.
         """
@@ -186,7 +186,7 @@ class MarkdownTableLogger(Logger):
             precision: Number of decimal places for numeric metric values.
 
         Returns:
-            Markdown table string. Returns an empty string if ``results`` is empty.
+            table: Markdown table string. Returns an empty string if ``results`` is empty.
 
 
         """
@@ -241,7 +241,7 @@ class MarkdownTableLogger(Logger):
             precision: Decimal places for metric values.
 
         Returns:
-            Path to the written file.
+            path: Path to the written file.
         """
         sections = []
 
