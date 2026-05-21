@@ -1,8 +1,7 @@
 from enum import Enum
 from typing import Any
-
-from hyperbench.data.negative_sampler import NegativeSampler
-from hyperbench.types.hdata import HData
+from hyperbench.types import HData
+from hyperbench.data import NegativeSampler
 
 
 class NegativeSamplingSchedule(Enum):

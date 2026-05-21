@@ -3,7 +3,7 @@ import torch
 from abc import ABC, abstractmethod
 from math import comb
 from torch import Tensor
-from hyperbench.data.enricher import (
+from hyperbench.data import (
     HyperedgeAttrsEnricher,
     HyperedgeWeightsEnricher,
     NodeEnricher,
