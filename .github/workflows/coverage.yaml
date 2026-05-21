@@ -29,7 +29,7 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          uv run pytest --cov --cov-branch --cov-report=xml -m "not integration"
+          uv run pytest -n auto --cov --cov-branch --cov-report=xml -m "not integration"
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
@@ -38,7 +38,7 @@ jobs:
 
       - name: Test with pytest
         run: |
-          uv run pytest --cov --junitxml=junit.xml -m "not integration"
+          uv run pytest -n auto --cov --junitxml=junit.xml -m "not integration"
 
       - name: Upload test results to Codecov
         uses: codecov/codecov-action@v5

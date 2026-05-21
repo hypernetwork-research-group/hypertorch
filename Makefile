@@ -1,5 +1,5 @@
-.PHONY: all build setup setup-tensorboard clean destroy \
-		test stest run \
+.PHONY: all release build setup setup-tensorboard clean destroy \
+		test stest integration-test run \
 		check format typecheck lint lint-fix lint-rule lint-rule-fix \
 		docs docs-build docs-serve \
 		loc help
@@ -13,6 +13,8 @@ ZENSICAL_CONFIG=zensical.toml
 DOCS_ADDR=127.0.0.1:8000
 
 all: clean setup check test
+
+release: clean setup check test integration-test
 
 build: clean setup
 
@@ -108,6 +110,7 @@ help:
 	@echo "Usage: make [target]"
 	@echo "Targets:"
 	@echo "  all                     - Clean, setup, lint, typecheck, test"
+	@echo "  release                 - Clean, setup, lint, typecheck, test, integration-test"
 	@echo "  build                   - Clean and setup"
 	@echo "  setup                   - Install dependencies"
 	@echo "  setup-tensorboard       - Install optional TensorBoard dependency"

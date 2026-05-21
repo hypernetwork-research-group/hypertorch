@@ -16,7 +16,7 @@ repos:
         args:
           - --fix=lf
       - id: name-tests-test
-        exclude: "hyperbench/tests/mock/"
+        exclude: "hyperbench/tests/mock/|hyperbench/tests/integration/common.py"
       - id: pretty-format-json
         args:
           - --autofix

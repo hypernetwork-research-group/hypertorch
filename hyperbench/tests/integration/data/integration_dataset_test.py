@@ -1,4 +1,5 @@
 import pytest
+import torch
 
 from hyperbench.data import (
     AlgebraDataset,
@@ -26,7 +27,12 @@ from hyperbench.data import (
     TwitterDataset,
     VegasBarsReviewsDataset,
 )
+from hyperbench.types import HData
+from hyperbench.tests.integration.common import gcn_model
 
+pytestmark = pytest.mark.filterwarnings(
+    "ignore:Failing to pass a value to the 'type_params' parameter of 'typing._eval_type' is deprecated.*:DeprecationWarning"
+)
 
 SUPPORTED_DATASETS = (
     AlgebraDataset,
@@ -55,6 +61,20 @@ SUPPORTED_DATASETS = (
 )
 
 
+@pytest.fixture
+def mock_hdata() -> HData:
+    x = torch.ones((3, 1), dtype=torch.float)
+    hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 1]], dtype=torch.long)
+    hyperedge_weights = torch.tensor([0.5, 0.7], dtype=torch.float)
+    hyperedge_attr = torch.tensor([[0.5], [0.7], [0.9]], dtype=torch.float)
+    return HData(
+        x=x,
+        hyperedge_index=hyperedge_index,
+        hyperedge_weights=hyperedge_weights,
+        hyperedge_attr=hyperedge_attr,
+    )
+
+
 @pytest.mark.parametrize(
     "dataset_cls",
     [pytest.param(dataset_cls, id=dataset_cls.DATASET_NAME) for dataset_cls in SUPPORTED_DATASETS],
@@ -75,6 +95,12 @@ def test_all_supported_datasets_load(dataset_cls):
     assert len(dataset) > 0
 
 
+@pytest.mark.integration
+def test_model_gcn():
+    gcn_model()
+
+
+# TODO: remove before merge
 if __name__ == "__main__":
     for dataset_cls in SUPPORTED_DATASETS:
         print(f"Testing dataset: {dataset_cls.DATASET_NAME}")
