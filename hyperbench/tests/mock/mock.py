@@ -1,12 +1,13 @@
 import torch
 
 from os import PathLike
+from torch import Tensor
 from typing import IO, Any
 from collections.abc import Iterator
 from unittest.mock import MagicMock
 from contextlib import contextmanager
-from hyperbench.train import NegativeSampler
 from hyperbench.types import HData
+from hyperbench.data import NegativeSampler
 
 
 MOCK_BASE_PATH = "hyperbench/tests/mock"
@@ -19,6 +20,43 @@ def new_mock_trainer() -> MagicMock:
     trainer.strategy = MagicMock()
     trainer.strategy.root_device = "cpu"
     return trainer
+
+
+def new_mock_pyg_node2vec() -> MagicMock:
+    weight = torch.nn.Parameter(torch.tensor(1.0))
+
+    model = MagicMock()
+    model.to.return_value = model
+    model.loader.return_value = [
+        (
+            torch.tensor([[0, 1]], dtype=torch.long),
+            torch.tensor([[2, 3]], dtype=torch.long),
+        )
+    ]
+    model.parameters.return_value = [weight]
+    model.return_value = (weight * torch.ones((4, 2))).requires_grad_(True)
+
+    def loss(positive_random_walk: Tensor, negative_random_walk: Tensor) -> Tensor:
+        return weight * (positive_random_walk.float().sum() + negative_random_walk.float().sum())
+
+    model.loss.side_effect = loss
+    return model
+
+
+def new_mock_villain() -> MagicMock:
+    weight = torch.nn.Parameter(torch.tensor(1.0))
+
+    model = MagicMock()
+    model.to.return_value = model
+    model.parameters.return_value = [weight]
+    model.hyperedge_embeddings.return_value = torch.ones((2, 3), requires_grad=True)
+    model.node_embeddings.return_value = torch.ones((4, 2), requires_grad=True)
+
+    def loss(hyperedge_index: Tensor, num_hyperedges: int) -> tuple[Tensor, dict[str, Any]]:
+        return weight * 2.0, {}
+
+    model.loss.side_effect = loss
+    return model
 
 
 @contextmanager

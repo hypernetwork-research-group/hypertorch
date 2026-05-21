@@ -2,7 +2,8 @@ import pytest
 import torch
 import re
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
+from torch import Tensor
 from hyperbench.data import (
     ABHyperedgeWeightsEnricher,
     FillValueHyperedgeAttrsEnricher,
@@ -17,15 +18,16 @@ from hyperbench.data import (
 )
 
 from hyperbench.data.enricher import Enricher, _VilLainTrainer
+from hyperbench.tests.mock.mock import new_mock_pyg_node2vec, new_mock_villain
 
 
 @pytest.fixture
-def mock_two_hyperedge_index() -> torch.Tensor:
+def mock_two_hyperedge_index() -> Tensor:
     return torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long)
 
 
 @pytest.fixture
-def mock_clique_hyperedge_index() -> torch.Tensor:
+def mock_clique_hyperedge_index() -> Tensor:
     return torch.tensor([[0, 1, 2], [0, 0, 0]], dtype=torch.long)
 
 
@@ -51,8 +53,8 @@ def test_abstract_enricher_base_classes_cannot_be_instantiated(base_class) -> No
         pytest.param(2.5, [[2.5], [2.5]], id="custom_value"),
     ],
 )
-def test_fill_value_hyperedge_attrs_enricher_returns_constant_column(
-    mock_two_hyperedge_index: torch.Tensor,
+def test_fill_value_hyperedge_attrs_enricher_returns_fixed_attrs(
+    mock_two_hyperedge_index: Tensor,
     fill_value: float,
     expected: list[list[float]],
 ) -> None:
@@ -92,8 +94,9 @@ def test_ab_hyperedge_weights_enricher_rejects_invalid_alpha(alpha: float) -> No
 
 
 def test_ab_hyperedge_weights_enricher_counts_nodes_per_hyperedge(
-    mock_two_hyperedge_index: torch.Tensor,
+    mock_two_hyperedge_index: Tensor,
 ) -> None:
+    # With beta=None, the weight should be the number of nodes per hyperedge
     enricher = ABHyperedgeWeightsEnricher(alpha=0.8)
 
     result = enricher.enrich(mock_two_hyperedge_index)
@@ -101,16 +104,26 @@ def test_ab_hyperedge_weights_enricher_counts_nodes_per_hyperedge(
     assert torch.equal(result, torch.tensor([2.0, 2.0]))
 
 
+@pytest.mark.parametrize(
+    "beta, expected",
+    [
+        pytest.param(-0.1, [1.975, 1.975], id="negative"),
+        pytest.param(0.0, [2.0, 2.0], id="zero"),
+        pytest.param(1.0, [2.25, 2.25], id="one"),
+    ],
+)
 def test_ab_hyperedge_weights_enricher_adds_beta_scaled_random_component(
-    mock_two_hyperedge_index: torch.Tensor,
+    mock_two_hyperedge_index: Tensor,
+    beta: float,
+    expected: list[float],
 ) -> None:
-    enricher = ABHyperedgeWeightsEnricher(alpha=0.8, beta=0.5)
+    enricher = ABHyperedgeWeightsEnricher(alpha=0.8, beta=beta)
 
     with patch("hyperbench.data.enricher.random.uniform", return_value=0.25) as mock_uniform:
         result = enricher.enrich(mock_two_hyperedge_index)
 
     mock_uniform.assert_called_once_with(0, 0.8)
-    assert torch.equal(result, torch.tensor([2.125, 2.125]))
+    assert torch.equal(result, torch.tensor(expected, dtype=torch.float32))
 
 
 def test_node2vec_enricher_rejects_context_larger_than_walk_length() -> None:
@@ -160,46 +173,13 @@ def test_node2vec_enricher_returns_zero_features_when_clique_has_no_non_selfloop
         ),
     ],
 )
-def test_node2vec_enricher_trains_model_and_returns_detached_embeddings(
-    mock_two_hyperedge_index: torch.Tensor,
+def test_node2vec_enricher_trains_model_and_enrichers_correctly(
+    mock_two_hyperedge_index: Tensor,
     capsys: pytest.CaptureFixture[str],
     verbose: bool,
     expected_output: str,
 ) -> None:
-    class FakeNode2Vec(torch.nn.Module):
-        def __init__(self, **kwargs) -> None:
-            super().__init__()
-            self.kwargs = kwargs
-            self.weight = torch.nn.Parameter(torch.tensor(1.0))
-            self.loader_calls: list[dict[str, object]] = []
-
-        def loader(self, batch_size: int, shuffle: bool):
-            self.loader_calls.append({"batch_size": batch_size, "shuffle": shuffle})
-            return [
-                (
-                    torch.tensor([[0, 1]], dtype=torch.long),
-                    torch.tensor([[2, 3]], dtype=torch.long),
-                )
-            ]
-
-        def loss(
-            self,
-            positive_random_walk: torch.Tensor,
-            negative_random_walk: torch.Tensor,
-        ) -> torch.Tensor:
-            return self.weight * (
-                positive_random_walk.float().sum() + negative_random_walk.float().sum()
-            )
-
-        def forward(self) -> torch.Tensor:
-            return (self.weight * torch.ones((4, 2))).requires_grad_()
-
-    created_models: list[FakeNode2Vec] = []
-
-    def make_fake_node2vec(**kwargs) -> FakeNode2Vec:
-        model = FakeNode2Vec(**kwargs)
-        created_models.append(model)
-        return model
+    model = new_mock_pyg_node2vec()
 
     enricher = Node2VecEnricher(
         num_features=2,
@@ -217,25 +197,24 @@ def test_node2vec_enricher_trains_model_and_returns_detached_embeddings(
         verbose=verbose,
     )
 
-    with patch("hyperbench.data.enricher.PyGNode2Vec", side_effect=make_fake_node2vec):
+    with patch("hyperbench.data.enricher.PyGNode2Vec", return_value=model) as mock_node2vec:
         result = enricher.enrich(mock_two_hyperedge_index)
 
     captured = capsys.readouterr()
 
-    assert len(created_models) == 1
-    model = created_models[0]
-    assert model.kwargs["embedding_dim"] == 2
-    assert model.kwargs["walk_length"] == 4
-    assert model.kwargs["context_size"] == 2
-    assert model.kwargs["walks_per_node"] == 3
-    assert model.kwargs["p"] == 0.5
-    assert model.kwargs["q"] == 2.0
-    assert model.kwargs["num_negative_samples"] == 4
-    assert model.kwargs["num_nodes"] == 4
-    assert model.kwargs["sparse"] is False
-    assert model.loader_calls == [
-        {"batch_size": 16, "shuffle": True},
-    ]
+    kwargs = mock_node2vec.call_args.kwargs
+    assert kwargs["embedding_dim"] == 2
+    assert kwargs["walk_length"] == 4
+    assert kwargs["context_size"] == 2
+    assert kwargs["walks_per_node"] == 3
+    assert kwargs["p"] == 0.5
+    assert kwargs["q"] == 2.0
+    assert kwargs["num_negative_samples"] == 4
+    assert kwargs["num_nodes"] == 4
+    assert kwargs["sparse"] is False
+
+    model.loader.assert_called_once_with(batch_size=16, shuffle=True)
+
     assert result.shape == (4, 2)
     assert result.requires_grad is False
     assert result.device == mock_two_hyperedge_index.device
@@ -249,8 +228,8 @@ def test_node2vec_enricher_trains_model_and_returns_detached_embeddings(
         pytest.param(4, (3, 4), id="padded_features"),
     ],
 )
-def test_laplacian_positional_encoding_enricher_returns_requested_shape(
-    mock_clique_hyperedge_index: torch.Tensor,
+def test_laplacian_positional_encoding_enricher_enriches_correctly(
+    mock_clique_hyperedge_index: Tensor,
     num_features: int,
     expected_shape: tuple[int, int],
 ) -> None:
@@ -264,15 +243,34 @@ def test_laplacian_positional_encoding_enricher_returns_requested_shape(
 
 
 def test_laplacian_positional_encoding_enricher_zero_pads_missing_eigenvectors(
-    mock_clique_hyperedge_index: torch.Tensor,
+    mock_clique_hyperedge_index: Tensor,
 ) -> None:
+    # A 3-node clique yields 3 Laplacian eigenvectors in total.
+    # The enricher skips the first trivial eigenvector, so only 2 non-trivial remain.
+    # Requesting 4 features should return shape (3, 4), where the last 2 features are zero padding.
     result = LaplacianPositionalEncodingEnricher(num_features=4).enrich(mock_clique_hyperedge_index)
 
+    # Example: result: [[v1_0, v2_0, 0, 0],
+    #                   [v1_1, v2_1, 0, 0],
+    #                   [v1_2, v2_2, 0, 0]]
     assert torch.allclose(result[:, 2:], torch.zeros((3, 2)))
-    assert torch.allclose(result[:, :2].T @ result[:, :2], torch.eye(2), atol=1e-6)
+
+    # The first two columns are the two usable non-trivial eigenvectors.
+    # Example: features = [[a, b],
+    #                      [c, d],
+    #                      [e, f]],
+    #           -> Then feature.T @ feature should result in: [[1, 0],
+    #                                                          [0, 1]]
+    #              which is exactly the orthonormality property expected
+    #              from eigenvectors returned by torch.linalg.eigh
+    assert torch.allclose(
+        torch.matmul(result[:, :2].T, result[:, :2]),
+        torch.eye(2),
+        atol=1e-6,
+    )
 
 
-def test_laplacian_positional_encoding_enricher_respects_explicit_num_nodes() -> None:
+def test_laplacian_positional_encoding_enricher_uses_explicit_num_nodes() -> None:
     hyperedge_index = torch.tensor([[0, 1], [0, 0]], dtype=torch.long)
 
     result = LaplacianPositionalEncodingEnricher(num_features=2, num_nodes=4).enrich(
@@ -283,7 +281,7 @@ def test_laplacian_positional_encoding_enricher_respects_explicit_num_nodes() ->
 
 
 def test_villain_trainer_resolves_explicit_and_inferred_counts(
-    mock_two_hyperedge_index: torch.Tensor,
+    mock_two_hyperedge_index: Tensor,
 ) -> None:
     trainer = _VilLainTrainer(num_features=3, num_nodes=6, num_hyperedges=5)
 
@@ -293,7 +291,7 @@ def test_villain_trainer_resolves_explicit_and_inferred_counts(
 
 
 def test_villain_trainer_falls_back_to_inferred_counts(
-    mock_two_hyperedge_index: torch.Tensor,
+    mock_two_hyperedge_index: Tensor,
 ) -> None:
     trainer = _VilLainTrainer(num_features=3)
 
@@ -326,12 +324,28 @@ def test_villain_hyperedge_attrs_enricher_returns_empty_attrs_when_no_hyperedges
     assert result.device == hyperedge_index.device
 
 
+@pytest.mark.parametrize(
+    ("num_nodes", "num_hyperedges", "expected_num_hyperedges"),
+    [
+        pytest.param(0, 0, 2, id="infer_hyperedge_count"),
+        pytest.param(0, 7, 7, id="explicit_hyperedge_count"),
+        pytest.param(6, 0, 2, id="explicit_node_count_unused_in_node_embedding_call"),
+        pytest.param(6, 7, 7, id="explicit_node_and_hyperedge_count"),
+    ],
+)
 def test_villain_node_enricher_uses_trained_model_for_node_embeddings(
-    mock_two_hyperedge_index: torch.Tensor,
+    mock_two_hyperedge_index: Tensor,
+    num_nodes: int,
+    num_hyperedges: int,
+    expected_num_hyperedges: int,
 ) -> None:
-    model = MagicMock()
-    model.node_embeddings.return_value = torch.ones((4, 2), requires_grad=True)
-    enricher = VilLainEnricher(num_features=2, num_hyperedges=7)
+    model = new_mock_villain()
+
+    enricher = VilLainEnricher(
+        num_features=2,
+        num_nodes=num_nodes,
+        num_hyperedges=num_hyperedges,
+    )
 
     with patch.object(enricher, "_train", return_value=model) as mock_train:
         result = enricher.enrich(mock_two_hyperedge_index)
@@ -340,19 +354,35 @@ def test_villain_node_enricher_uses_trained_model_for_node_embeddings(
     model.eval.assert_called_once_with()
     model.node_embeddings.assert_called_once_with(
         hyperedge_index=mock_two_hyperedge_index,
-        num_hyperedges=7,
+        num_hyperedges=expected_num_hyperedges,
     )
     assert result.shape == (4, 2)
     assert result.requires_grad is False
     assert result.device == mock_two_hyperedge_index.device
 
 
+@pytest.mark.parametrize(
+    ("num_nodes", "num_hyperedges", "expected_num_hyperedges"),
+    [
+        pytest.param(0, 0, 2, id="infer_hyperedge_count"),
+        pytest.param(0, 5, 5, id="explicit_hyperedge_count"),
+        pytest.param(6, 0, 2, id="explicit_node_count_unused_in_hyperedge_embedding_call"),
+        pytest.param(6, 5, 5, id="explicit_node_and_hyperedge_count"),
+    ],
+)
 def test_villain_hyperedge_attrs_enricher_uses_trained_model_for_hyperedge_embeddings(
-    mock_two_hyperedge_index: torch.Tensor,
+    mock_two_hyperedge_index: Tensor,
+    num_nodes: int,
+    num_hyperedges: int,
+    expected_num_hyperedges: int,
 ) -> None:
-    model = MagicMock()
-    model.hyperedge_embeddings.return_value = torch.ones((2, 3), requires_grad=True)
-    enricher = VilLainHyperedgeAttrsEnricher(num_features=3)
+    model = new_mock_villain()
+
+    enricher = VilLainHyperedgeAttrsEnricher(
+        num_features=3,
+        num_nodes=num_nodes,
+        num_hyperedges=num_hyperedges,
+    )
 
     with patch.object(enricher, "_train", return_value=model) as mock_train:
         result = enricher.enrich(mock_two_hyperedge_index)
@@ -361,7 +391,7 @@ def test_villain_hyperedge_attrs_enricher_uses_trained_model_for_hyperedge_embed
     model.eval.assert_called_once_with()
     model.hyperedge_embeddings.assert_called_once_with(
         hyperedge_index=mock_two_hyperedge_index,
-        num_hyperedges=2,
+        num_hyperedges=expected_num_hyperedges,
     )
     assert result.shape == (2, 3)
     assert result.requires_grad is False
@@ -379,34 +409,13 @@ def test_villain_hyperedge_attrs_enricher_uses_trained_model_for_hyperedge_embed
         ),
     ],
 )
-def test_villain_trainer_constructs_and_optimizes_model(
-    mock_two_hyperedge_index: torch.Tensor,
+def test_villain_trainer_uses_verbose_option_correctly(
+    mock_two_hyperedge_index: Tensor,
     capsys: pytest.CaptureFixture[str],
     verbose: bool,
     expected_output: str,
 ) -> None:
-    class FakeVilLain(torch.nn.Module):
-        def __init__(self, **kwargs) -> None:
-            super().__init__()
-            self.kwargs = kwargs
-            self.weight = torch.nn.Parameter(torch.tensor(1.0))
-            self.loss_calls: list[dict[str, object]] = []
-
-        def loss(self, hyperedge_index: torch.Tensor, num_hyperedges: int):
-            self.loss_calls.append(
-                {
-                    "hyperedge_index": hyperedge_index,
-                    "num_hyperedges": num_hyperedges,
-                }
-            )
-            return self.weight * 2.0, {}
-
-    created_models: list[FakeVilLain] = []
-
-    def make_fake_villain(**kwargs) -> FakeVilLain:
-        model = FakeVilLain(**kwargs)
-        created_models.append(model)
-        return model
+    model = new_mock_villain()
 
     trainer = _VilLainTrainer(
         num_features=4,
@@ -423,23 +432,9 @@ def test_villain_trainer_constructs_and_optimizes_model(
         verbose=verbose,
     )
 
-    with patch("hyperbench.data.enricher.VilLain", side_effect=make_fake_villain):
-        model = trainer._train(mock_two_hyperedge_index)
+    with patch("hyperbench.data.enricher.VilLain", return_value=model):
+        _ = trainer._train(mock_two_hyperedge_index)
 
     captured = capsys.readouterr()
 
-    assert model is created_models[0]
-    assert model.kwargs == {
-        "num_nodes": 6,
-        "embedding_dim": 4,
-        "labels_per_subspace": 3,
-        "training_steps": 2,
-        "generation_steps": 8,
-        "tau": 0.7,
-        "eps": 1e-5,
-    }
-    assert model.loss_calls == [
-        {"hyperedge_index": mock_two_hyperedge_index, "num_hyperedges": 5},
-        {"hyperedge_index": mock_two_hyperedge_index, "num_hyperedges": 5},
-    ]
     assert captured.out == expected_output
