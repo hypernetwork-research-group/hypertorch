@@ -7,12 +7,13 @@ You can always run `make help` to see the latest list.
 > Notes
 >
 > - These are the explicit CLI commands that each `make` target runs.
-> - `make all`, `make build`, `make check`, `make docs` are composites (they run multiple steps).
+> - `make all`, `make release`, `make build`, `make check`, `make docs` are composites (they run multiple steps).
 
 | Target | Description |
 |---|---|
 | `make help` | Print available targets |
 | `make all` | Clean, setup, check, test |
+| `make release` | Clean, setup, check, test, integration-test |
 | `make build` | Clean and setup |
 | `make setup` | Install dependencies (via `uv`) and install HyperBench in editable mode |
 | `make setup-tensorboard` | Install optional TensorBoard extra |
@@ -26,6 +27,8 @@ You can always run `make help` to see the latest list.
 | `make docstring-check` | Check docstring formatting |
 | `make test` | Run all tests (with coverage) |
 | `make stest T=<test_path>` | Run a single test file/folder under `hyperbench/tests/` |
+| `make integration-test` | Run all integration tests |
+| `make sintegration-test T=<test_path>` | Run a single integration test file/folder under `hyperbench/integration_tests/` |
 | `make run <file.py>` | Run a single Python file (for example: `make run examples/gcn.py`) |
 | `make docs` | Build and serve documentation |
 | `make docs-build` | Build documentation without serving |
@@ -197,6 +200,7 @@ You can always run `make help` to see the latest list.
 Utility targets that run multiple steps in sequence.
 
 - `make all`: Clean, setup, check, test
+- `make release`: Clean, setup, check, test, integration-test
 - `make build`: Clean and setup
 - `make check`: Run lint + format + typecheck
 - `make docs`: Build and serve documentation

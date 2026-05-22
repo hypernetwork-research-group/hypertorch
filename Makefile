@@ -129,6 +129,7 @@ help:
 	@echo "  test                    - Run all tests in parallel"
 	@echo "  stest T=<test_name>     - Run a single test"
 	@echo "  integration-test        - Run integration tests in parallel"
+	@echo "  sintegration-test T=<test_name> - Run a single integration test"
 	@echo "  run <file.py>           - Run a single file"
 	@echo "  docs                    - Build and serve documentation"
 	@echo "  docs-build              - Build documentation without serving"
