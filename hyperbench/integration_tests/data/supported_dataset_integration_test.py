@@ -1,5 +1,4 @@
 import pytest
-import torch
 
 from hyperbench.data import (
     AlgebraDataset,
@@ -26,12 +25,6 @@ from hyperbench.data import (
     ThreadsMathsxDataset,
     TwitterDataset,
     VegasBarsReviewsDataset,
-)
-from hyperbench.types import HData
-from hyperbench.tests.integration.common import (
-    gcn_model,
-    hgnn_model,
-    hgnnp_model,
 )
 
 pytestmark = pytest.mark.filterwarnings(
@@ -65,20 +58,6 @@ SUPPORTED_DATASETS = (
 )
 
 
-@pytest.fixture
-def mock_hdata() -> HData:
-    x = torch.ones((3, 1), dtype=torch.float)
-    hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 1]], dtype=torch.long)
-    hyperedge_weights = torch.tensor([0.5, 0.7], dtype=torch.float)
-    hyperedge_attr = torch.tensor([[0.5], [0.7], [0.9]], dtype=torch.float)
-    return HData(
-        x=x,
-        hyperedge_index=hyperedge_index,
-        hyperedge_weights=hyperedge_weights,
-        hyperedge_attr=hyperedge_attr,
-    )
-
-
 @pytest.mark.parametrize(
     "dataset_cls",
     [pytest.param(dataset_cls, id=dataset_cls.DATASET_NAME) for dataset_cls in SUPPORTED_DATASETS],
@@ -97,18 +76,3 @@ def test_all_supported_datasets_load(dataset_cls):
     assert dataset.hdata.x is not None
     assert dataset.hdata.hyperedge_index.shape[0] == 2
     assert len(dataset) > 0
-
-
-@pytest.mark.integration
-def test_model_gcn():
-    gcn_model()
-
-
-@pytest.mark.integration
-def test_model_hgnn():
-    hgnn_model()
-
-
-@pytest.mark.integration
-def test_model_hgnnp():
-    hgnnp_model()

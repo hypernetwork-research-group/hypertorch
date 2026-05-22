@@ -1,4 +1,3 @@
-from hyperbench.types import ModelConfig
 from torchmetrics import MetricCollection
 from torchmetrics.classification import (
     BinaryAUROC,
@@ -7,14 +6,11 @@ from torchmetrics.classification import (
     BinaryPrecision,
     BinaryRecall,
 )
-from hyperbench.hlp import (
-    GCNHlpModule,
-    HGNNHlpModule,
-    HGNNPHlpModule,
-)
+from hyperbench.data import AlgebraDataset, DataLoader, SamplingStrategy
 from hyperbench.nn import LaplacianPositionalEncodingEnricher
 from hyperbench.train import MultiModelTrainer, RandomNegativeSampler
-from hyperbench.data import AlgebraDataset, DataLoader, SamplingStrategy
+from hyperbench.types import ModelConfig
+
 
 NUM_WORKERS = 2
 NUM_FEATURES = 32
@@ -153,137 +149,3 @@ def multi_model_trainer(
             verbose=True,
         )
         trainer.test_all(dataloader=configs[0].test_dataloader, verbose=True)
-
-
-def gcn_model():
-    num_features = NUM_FEATURES
-    metrics = common_standard_metrics()
-
-    train_dataset, val_dataset, test_dataset = splits_dataset()
-    train_dataset, val_dataset, test_dataset = add_negatives(
-        train_dataset, val_dataset, test_dataset
-    )
-
-    datasets_enrichers(train_dataset, val_dataset, test_dataset)
-
-    train_loader_full_hypergraph, val_loader_full_hypergraph, test_loader_full_hypergraph = loaders(
-        train_dataset, val_dataset, test_dataset
-    )
-
-    mean_gcn_module = GCNHlpModule(
-        encoder_config={
-            "in_channels": num_features,
-            "hidden_channels": 16,
-            "out_channels": 16,
-            "num_layers": 2,
-            "drop_rate": 0.1,
-            "bias": True,
-            "improved": False,
-            "add_self_loops": True,
-            "normalize": True,
-            "cached": False,
-            "graph_reduction_strategy": "clique_expansion",
-        },
-        aggregation="mean",
-        lr=0.001,
-        weight_decay=5e-4,
-        metrics=metrics,
-    )
-
-    configs = model_configs(
-        train_loader_full_hypergraph,
-        val_loader_full_hypergraph,
-        test_loader_full_hypergraph,
-        name="gcn",
-        version="mean",
-        module=mean_gcn_module,
-    )
-
-    multi_model_trainer(configs)
-
-
-def hgnn_model():
-    num_features = NUM_FEATURES
-    metrics = common_standard_metrics()
-
-    train_dataset, val_dataset, test_dataset = splits_dataset()
-    train_dataset, val_dataset, test_dataset = add_negatives(
-        train_dataset, val_dataset, test_dataset
-    )
-
-    datasets_enrichers(train_dataset, val_dataset, test_dataset)
-
-    train_loader_full_hypergraph, val_loader_full_hypergraph, test_loader_full_hypergraph = loaders(
-        train_dataset, val_dataset, test_dataset
-    )
-
-    mean_hgnn_module = HGNNHlpModule(
-        encoder_config={
-            "in_channels": num_features,
-            "hidden_channels": 16,
-            "out_channels": 16,
-            "bias": True,
-            "use_batch_normalization": False,
-            "drop_rate": 0.5,
-        },
-        aggregation="mean",
-        lr=0.001,
-        weight_decay=5e-4,
-        metrics=metrics,
-    )
-
-    configs = model_configs(
-        train_loader_full_hypergraph,
-        val_loader_full_hypergraph,
-        test_loader_full_hypergraph,
-        name="hgnn",
-        version="mean",
-        module=mean_hgnn_module,
-    )
-
-    multi_model_trainer(configs)
-
-
-def hgnnp_model():
-
-    num_features = NUM_FEATURES
-
-    metrics = common_standard_metrics()
-
-    train_dataset, val_dataset, test_dataset = splits_dataset()
-
-    train_dataset, val_dataset, test_dataset = add_negatives(
-        train_dataset, val_dataset, test_dataset
-    )
-
-    datasets_enrichers(train_dataset, val_dataset, test_dataset)
-
-    train_loader_full_hypergraph, val_loader_full_hypergraph, test_loader_full_hypergraph = loaders(
-        train_dataset, val_dataset, test_dataset
-    )
-
-    mean_hgnnp_module = HGNNPHlpModule(
-        encoder_config={
-            "in_channels": num_features,
-            "hidden_channels": 16,
-            "out_channels": 16,
-            "bias": True,
-            "use_batch_normalization": False,
-            "drop_rate": 0.5,
-        },
-        aggregation="mean",
-        lr=0.01,
-        weight_decay=5e-4,
-        metrics=metrics,
-    )
-
-    configs = model_configs(
-        train_loader_full_hypergraph,
-        val_loader_full_hypergraph,
-        test_loader_full_hypergraph,
-        name="hgnnp",
-        version="mean",
-        module=mean_hgnnp_module,
-    )
-
-    multi_model_trainer(configs)

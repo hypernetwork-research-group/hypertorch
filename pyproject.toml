@@ -56,7 +56,7 @@ addopts = [
     "--tb=short",
     "--strict-markers",
 ]
-testpaths = ["hyperbench/tests"]
+testpaths = ["hyperbench/tests", "hyperbench/integration_tests"]
 markers = [
     "integration: tests that use real workflows",
 ]
@@ -73,6 +73,7 @@ filterwarnings = [
 source = ["hyperbench"]
 branch = true
 omit = [
+    "hyperbench/integration_tests/*",
     "hyperbench/tests/*",
     "hyperbench/nn/*",
     "hyperbench/models/*",
