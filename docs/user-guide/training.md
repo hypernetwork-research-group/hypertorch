@@ -88,6 +88,9 @@ with MultiModelTrainer(
     trainer.test_all(dataloader=test_loader)
 ```
 
+Transductive splits may move hyperedges into the first split to cover every node.
+Use `split_with_ratios(...)` instead of `split(...)` when you need the final hyperedge ratios after that rebalancing.
+
 ## Next steps
 
 - Comparing multiple models consistently: [Benchmarking](benchmarking.md).
