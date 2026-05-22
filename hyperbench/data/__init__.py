@@ -1,4 +1,5 @@
 from .dataset import Dataset
+
 from .hif import HIFLoader, HIFProcessor
 
 from .supported_datasets import (
@@ -84,9 +85,9 @@ __all__ = [
     "GeometryDataset",
     "HIFLoader",
     "HIFProcessor",
-    "HyperedgeIDSplitter",
     "HyperedgeAttrsEnricher",
     "HyperedgeEnricher",
+    "HyperedgeIDSplitter",
     "HyperedgeSampler",
     "HyperedgeWeightsEnricher",
     "IMDBDataset",

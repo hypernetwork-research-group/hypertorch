@@ -323,7 +323,7 @@ class Dataset(TorchDataset):
         shuffle: bool | None = False,
         seed: int | None = None,
         node_space_setting: NodeSpaceSetting = "transductive",
-    ) -> tuple[list["Dataset"], list[float]]:
+    ) -> tuple[list[Dataset], list[float]]:
         """Split the dataset and return the final hyperedge ratios.
 
         Final ratios are computed from split hyperedge counts after ratio
