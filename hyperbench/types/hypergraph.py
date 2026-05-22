@@ -507,10 +507,27 @@ class HyperedgeIndex:
 
         Returns:
             incidence_matrix: The sparse incidence matrix H of shape ``(num_nodes, num_hyperedges)``.
+
+        Raises:
+            ValueError: If the provided dimensions cannot contain the raw node or hyperedge IDs.
         """
         device = self.__hyperedge_index.device
         num_nodes = num_nodes if num_nodes is not None else self.num_nodes
         num_hyperedges = num_hyperedges if num_hyperedges is not None else self.num_hyperedges
+        if self.num_incidences > 0:
+            max_node_id = int(self.all_node_ids.max().item())
+            if max_node_id >= num_nodes:
+                raise ValueError(
+                    "num_nodes is too small for the hyperedge index. "
+                    f"Got num_nodes={num_nodes}, but max node id is {max_node_id}."
+                )
+            max_hyperedge_id = int(self.all_hyperedge_ids.max().item())
+            if max_hyperedge_id >= num_hyperedges:
+                raise ValueError(
+                    "num_hyperedges is too small for the hyperedge index. "
+                    f"Got num_hyperedges={num_hyperedges}, "
+                    f"but max hyperedge id is {max_hyperedge_id}."
+                )
 
         incidence_values = torch.ones(self.num_incidences, dtype=torch.float, device=device)
         incidence_indices = torch.stack([self.all_node_ids, self.all_hyperedge_ids], dim=0)
@@ -770,9 +787,13 @@ class HyperedgeIndex:
         """
         match strategy:
             case _:
-                return self.reduce_to_edge_index_on_clique_expansion()
+                return self.reduce_to_edge_index_on_clique_expansion(**kwargs)
 
-    def reduce_to_edge_index_on_clique_expansion(self) -> Tensor:
+    def reduce_to_edge_index_on_clique_expansion(
+        self,
+        num_nodes: int | None = None,
+        num_hyperedges: int | None = None,
+    ) -> Tensor:
         """
         Construct a graph from a hypergraph via clique expansion using ``H @ H^T``, where ``H`` is the incidence matrix of the hypergraph.
         In clique expansion, each hyperedge is replaced by a clique connecting all its member nodes.
@@ -781,10 +802,17 @@ class HyperedgeIndex:
         This is computed efficiently using the incidence matrix: ``A = H @ H^T``, where ``H`` is
         the sparse incidence matrix of shape ``[num_nodes, num_hyperedges]`` and ``A`` is the adjacency matrix of the clique-expanded graph.
 
+        Args:
+            num_nodes: Total number of nodes. If ``None``, inferred from hyperedge index.
+            num_hyperedges: Total number of hyperedges. If ``None``, inferred from hyperedge index.
+
         Returns:
             edge_index: The edge index of the clique-expanded graph. Size ``(2, |E'|)``.
         """
-        incidence_matrix = self.get_sparse_incidence_matrix()
+        incidence_matrix = self.get_sparse_incidence_matrix(
+            num_nodes=num_nodes,
+            num_hyperedges=num_hyperedges,
+        )
 
         # A = H @ H^T gives adjacency with self-loops on diagonal
         # Example: For hyperedge_index = [[0, 1, 2, 0],
@@ -807,7 +835,7 @@ class HyperedgeIndex:
         adj_matrix = torch.sparse.mm(incidence_matrix, incidence_matrix.t()).coalesce()
 
         # Extract edge_index, make undirected, and deduplicate
-        return EdgeIndex(adj_matrix.indices()).to_undirected().item
+        return EdgeIndex(adj_matrix.indices()).to_undirected(num_nodes=num_nodes).item
 
     def reduce_to_edge_index_on_random_direction(
         self,

@@ -266,9 +266,9 @@ class Dataset(TorchDataset):
         Boundaries are computed using cumulative floor to prevent early splits from
         over-consuming edges. The last split absorbs any rounding remainder. In the
         transductive setting, the first split is rebalanced with real hyperedges
-        from later splits when needed to cover the full node space. Splits that
-        would end with zero hyperedges are rejected. Use
-        :meth:`split_with_ratios` to get the final ratios after splitting.
+        from later splits when needed to cover the full node space.
+        Splits that would end with zero hyperedges are rejected.
+        Use ``split_with_ratios`` to get the final ratios after splitting.
 
         Examples:
             Transductive split keeping and covering the full node space on the first split:
