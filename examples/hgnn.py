@@ -48,9 +48,6 @@ if __name__ == "__main__":
         print(f"Val dataset:\n {val_dataset.hdata}\n")
         print(f"Test dataset:\n {test_dataset.hdata}\n")
 
-    # Save train hyperedge index before adding negatives (for CommonNeighbors)
-    train_hyperedge_index = train_dataset.hdata.hyperedge_index
-
     # Add negative samples to all splits
     for name, ds in [("Train", train_dataset), ("Val", val_dataset), ("Test", test_dataset)]:
         num_negative_samples = (

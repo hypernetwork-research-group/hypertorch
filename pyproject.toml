@@ -33,11 +33,6 @@ url = "https://data.pyg.org/whl/torch-2.11.0+cpu.html"
 format = "flat"
 explicit = true
 
-[tool.uv.workspace]
-members = [
-    "cora",
-]
-
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["hyperbench"]

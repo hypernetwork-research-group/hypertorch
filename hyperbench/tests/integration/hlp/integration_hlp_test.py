@@ -28,7 +28,11 @@ from hyperbench.data import (
     VegasBarsReviewsDataset,
 )
 from hyperbench.types import HData
-from hyperbench.tests.integration.common import gcn_model
+from hyperbench.tests.integration.common import (
+    gcn_model,
+    hgnn_model,
+    hgnnp_model,
+)
 
 pytestmark = pytest.mark.filterwarnings(
     "ignore:Failing to pass a value to the 'type_params' parameter of 'typing._eval_type' is deprecated.*:DeprecationWarning"
@@ -100,21 +104,11 @@ def test_model_gcn():
     gcn_model()
 
 
-# TODO: remove before merge
-if __name__ == "__main__":
-    for dataset_cls in SUPPORTED_DATASETS:
-        print(f"Testing dataset: {dataset_cls.DATASET_NAME}")
-        hdata = HIFLoader.load_by_name(
-            dataset_cls.DATASET_NAME,
-            hf_sha=dataset_cls.HF_SHA,
-            save_on_disk=False,
-        )
-        dataset = dataset_cls(hdata=hdata)
-        stats = dataset.stats()
-        # pretty print stats
-        print(f"Stats for {dataset_cls.DATASET_NAME}:")
-        for key, value in stats.items():
-            if key.startswith("distribution_"):
-                continue
-            print(f"  {key}: {value}")
-        print("\n")
+@pytest.mark.integration
+def test_model_hgnn():
+    hgnn_model()
+
+
+@pytest.mark.integration
+def test_model_hgnnp():
+    hgnnp_model()
