@@ -22,15 +22,11 @@ from .nn_utils import (
     maxmin_scatter,
 )
 from .node_utils import (
-    NodeSpaceAssignment,
     NodeSpaceFiller,
     NodeSpaceSetting,
     assign_hyperedge_label_to_nodes,
-    is_assigned_to_all,
-    is_assigned_to_first,
     is_inductive_setting,
     is_transductive_setting,
-    is_transductive_split,
 )
 from .random_utils import create_seeded_torch_generator
 from .sparse_utils import sparse_dropout
@@ -40,7 +36,6 @@ from .file_utils import decompress_zst, compress_to_zst, write_to_disk, named_te
 __all__ = [
     "INPUT_LAYER",
     "ActivationFn",
-    "NodeSpaceAssignment",
     "NodeSpaceFiller",
     "NodeSpaceSetting",
     "NormalizationFn",
@@ -56,13 +51,10 @@ __all__ = [
     "get_gh_datasets_shas",
     "get_hf_dataset_sha",
     "get_hf_datasets_shas",
-    "is_assigned_to_all",
-    "is_assigned_to_first",
     "is_inductive_setting",
     "is_input_layer",
     "is_layer",
     "is_transductive_setting",
-    "is_transductive_split",
     "maxmin_scatter",
     "named_temporary_file",
     "sparse_dropout",
