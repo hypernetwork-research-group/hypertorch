@@ -7,6 +7,10 @@ from hyperbench.types import HData
 
 
 class Splitter(ABC):
+    """
+    Abstract base class for splitters.
+    """
+
     @abstractmethod
     def split(self, to_split: Tensor, ratios: list[float]) -> tuple[list[Tensor], list[float]]:
         """
@@ -24,6 +28,13 @@ class Splitter(ABC):
 
 
 class HyperedgeIDSplitter(Splitter):
+    """
+    Initialize a splitter for hyperedge-ID based dataset partitioning.
+
+    Args:
+        hdata: Hypergraph data whose hyperedges and node coverage drive the split logic.
+    """
+
     def __init__(self, hdata: HData) -> None:
         self.hdata = hdata
 
@@ -32,6 +43,23 @@ class HyperedgeIDSplitter(Splitter):
         hyperedge_ids_by_split: list[Tensor],
         split_idx: int = 0,
     ) -> tuple[list[Tensor], list[float]]:
+        """
+        Rebalance a split until its hyperedges cover every node in the hypergraph.
+
+        Hyperedges are moved from the other splits into the target split, always
+        choosing the donor hyperedge that covers the largest number of currently missing nodes.
+
+        Args:
+            hyperedge_ids_by_split: Hyperedge IDs assigned to each split.
+            split_idx: Index of the split that must cover the full node space.
+
+        Returns:
+            hyperedge_ids_by_split: The updated hyperedge IDs for each split.
+            ratios: The final ratios of hyperedges in each split after rebalancing.
+
+        Raises:
+            ValueError: If one or more nodes do not appear in any hyperedge of the source hypergraph.
+        """
         required_node_ids = torch.arange(self.hdata.num_nodes, device=self.hdata.device)
         available_node_ids = self.hdata.hyperedge_index[0].unique()
         missing_from_hypergraph_mask = torch.logical_not(
@@ -52,6 +80,7 @@ class HyperedgeIDSplitter(Splitter):
             donor_split_idx, hyperedge_id = self.__pick_covering_hyperedge(
                 hyperedge_ids_by_split=hyperedge_ids_by_split,
                 missing_node_ids=missing_node_ids,
+                split_to_cover_idx=split_idx,
             )
             hyperedge_ids_by_split[split_idx] = torch.cat(
                 [hyperedge_ids_by_split[split_idx], hyperedge_id.view(1)]
@@ -68,6 +97,15 @@ class HyperedgeIDSplitter(Splitter):
         return hyperedge_ids_by_split, self.get_split_ratios(hyperedge_ids_by_split)
 
     def validate_splits_have_hyperedges(self, hyperedge_ids_by_split: list[Tensor]) -> None:
+        """
+        Validate that every split retains at least one hyperedge.
+
+        Args:
+            hyperedge_ids_by_split: Hyperedge IDs assigned to each split.
+
+        Raises:
+            ValueError: If any split is empty after splitting or rebalancing.
+        """
         empty_split_indices = [
             split_idx
             for split_idx, split_hyperedge_ids in enumerate(hyperedge_ids_by_split)
@@ -81,6 +119,16 @@ class HyperedgeIDSplitter(Splitter):
             )
 
     def get_hyperedge_ids_permutation(self, shuffle: bool | None, seed: int | None) -> Tensor:
+        """
+        Return hyperedge IDs in deterministic or shuffled order.
+
+        Args:
+            shuffle: Whether to randomly permute the hyperedge IDs.
+            seed: Optional random seed used when ``shuffle`` is truthy.
+
+        Returns:
+            hyperedge_ids_permutation: Ordered or shuffled hyperedge IDs on the HData device.
+        """
         device = self.hdata.device
         num_hyperedges = self.hdata.num_hyperedges
 
@@ -101,6 +149,15 @@ class HyperedgeIDSplitter(Splitter):
         return ranged_hyperedge_ids_permutation
 
     def get_split_ratios(self, hyperedge_ids_by_split: list[Tensor]) -> list[float]:
+        """
+        Compute realized split ratios from hyperedge counts.
+
+        Args:
+            hyperedge_ids_by_split: Hyperedge IDs assigned to each split.
+
+        Returns:
+            ratios: Ratios derived from the number of hyperedges in each split.
+        """
         num_hyperedges_by_split = [
             int(split_hyperedge_ids.numel()) for split_hyperedge_ids in hyperedge_ids_by_split
         ]
@@ -114,6 +171,20 @@ class HyperedgeIDSplitter(Splitter):
         ]
 
     def split(self, to_split: Tensor, ratios: list[float]) -> tuple[list[Tensor], list[float]]:
+        """
+        Split hyperedge IDs by cumulative ratio boundaries.
+
+        Early splits use cumulative floor boundaries to avoid over-consuming hyperedges.
+        The final split receives any remaining hyperedges caused by rounding.
+
+        Args:
+            to_split: Hyperedge IDs to partition.
+            ratios: Requested split ratios.
+
+        Returns:
+            hyperedge_ids_by_split: The updated hyperedge IDs for each split.
+            ratios: The final ratios of hyperedges in each split after rebalancing.
+        """
         # Cumulative floor boundaries keep early splits from over-consuming hyperedges.
         # The last split absorbs any rounding remainder.
         num_hyperedges = int(to_split.size(0))
@@ -134,12 +205,31 @@ class HyperedgeIDSplitter(Splitter):
         return hyperedge_ids_by_split, self.get_split_ratios(hyperedge_ids_by_split)
 
     def __missing_node_ids(self, hyperedge_ids: Tensor, required_node_ids: Tensor) -> Tensor:
+        """
+        Return the node IDs not covered by the given hyperedges.
+
+        Args:
+            hyperedge_ids: Hyperedge IDs whose node coverage should be inspected.
+            required_node_ids: Node IDs that must be covered.
+
+        Returns:
+            missing_node_ids: Required node IDs that are still uncovered.
+        """
         covered_node_ids = self.__nodes_covered_by_hyperedges(hyperedge_ids)
         covered_node_ids_mask = torch.isin(required_node_ids, covered_node_ids)
         not_covered_node_ids_mask = torch.logical_not(covered_node_ids_mask)
         return required_node_ids[not_covered_node_ids_mask]
 
     def __nodes_covered_by_hyperedges(self, hyperedge_ids: Tensor) -> Tensor:
+        """
+        Collect unique node IDs incident to the provided hyperedges.
+
+        Args:
+            hyperedge_ids: Hyperedge IDs to inspect.
+
+        Returns:
+            nodes_covered_by_hyperedge: Unique node IDs covered by the input hyperedges.
+        """
         all_hyperedge_ids = self.hdata.hyperedge_index[1]
         nodes_in_input_hyperedges_mask = torch.isin(all_hyperedge_ids, hyperedge_ids)
         all_node_ids = self.hdata.hyperedge_index[0]
@@ -149,15 +239,27 @@ class HyperedgeIDSplitter(Splitter):
         self,
         hyperedge_ids_by_split: list[Tensor],
         missing_node_ids: Tensor,
+        split_to_cover_idx: int,
     ) -> tuple[int, Tensor]:
+        """
+        Choose the donor hyperedge that covers the most currently missing nodes.
+
+        Args:
+            hyperedge_ids_by_split: Hyperedge IDs assigned to each split.
+            missing_node_ids: Node IDs still missing from the target split.
+            split_to_cover_idx: Index of the split being rebalanced.
+
+        Returns:
+            split_idx: The index of the donor split containing the selected hyperedge.
+            hyperedge_id: The ID of the selected hyperedge.
+        """
         best_gain = 0
         best_split_idx: int | None = None
         best_hyperedge_id: Tensor | None = None
+        for split_idx, split_hyperedge_ids in enumerate(hyperedge_ids_by_split):
+            if split_idx == split_to_cover_idx:
+                continue
 
-        for split_idx, split_hyperedge_ids in enumerate(
-            hyperedge_ids_by_split[1:],
-            start=1,
-        ):
             for hyperedge_id in split_hyperedge_ids:
                 covered_node_ids = self.__nodes_covered_by_hyperedges(hyperedge_id.view(1))
                 missing_nodes_in_covered_nodes_mask = torch.isin(covered_node_ids, missing_node_ids)
