@@ -13,7 +13,7 @@ from hyperbench.train import MultiModelTrainer, RandomNegativeSampler
 from hyperbench.data import AlgebraDataset, DataLoader, SamplingStrategy
 
 
-def mock_standard_metrics() -> MetricCollection:
+def common_standard_metrics() -> MetricCollection:
     return MetricCollection(
         {
             "auc": BinaryAUROC(),
@@ -29,7 +29,7 @@ def gcn_model():
     num_workers = 2
     num_features = 32
     sampling_strategy = SamplingStrategy.HYPEREDGE
-    metrics = mock_standard_metrics()
+    metrics = common_standard_metrics()
 
     dataset = AlgebraDataset(sampling_strategy=sampling_strategy)
 

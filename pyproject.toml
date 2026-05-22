@@ -33,6 +33,11 @@ url = "https://data.pyg.org/whl/torch-2.11.0+cpu.html"
 format = "flat"
 explicit = true
 
+[tool.uv.workspace]
+members = [
+    "cora",
+]
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["hyperbench"]
@@ -43,10 +48,10 @@ dev = [
     "pre-commit==4.5.1",
     "pytest==9.0.3",
     "pytest-cov==7.1.0",
-    "pytest-xdist>=3.8.0",
+    "pytest-xdist==3.8.0",
     "ruff==0.15.11",
     "ty==0.0.34",
-    "zensical==0.0.42",
+    "zensical==0.0.43",
 ]
 
 [tool.pytest.ini_options]
