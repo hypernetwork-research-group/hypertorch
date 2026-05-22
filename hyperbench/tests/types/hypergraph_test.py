@@ -612,6 +612,15 @@ def test_clique_expansion_overlapping_hyperedges():
     assert (2, 1) in edges
 
 
+def test_clique_expansion_uses_explicit_transductive_num_nodes():
+    hyperedge_index = torch.tensor([[0, 3], [0, 0]], dtype=torch.long)
+
+    result = HyperedgeIndex(hyperedge_index).reduce_to_edge_index_on_clique_expansion(num_nodes=5)
+    edges = set(zip(result[0].tolist(), result[1].tolist(), strict=True))
+
+    assert edges == {(0, 0), (0, 3), (3, 0), (3, 3)}
+
+
 @pytest.mark.parametrize(
     "hyperedge_index_tensor, num_nodes, expected_adjacency",
     [
@@ -1272,6 +1281,20 @@ def test_get_sparse_incidence_matrix_sums_duplicate_incidences_when_coalesced():
     assert incidence_matrix.is_sparse
     assert incidence_matrix.shape == (2, 2)
     assert torch.allclose(incidence_matrix.to_dense(), expected_incidence_matrix, atol=1e-6)
+
+
+def test_get_sparse_incidence_matrix_rejects_explicit_num_nodes_too_small():
+    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1, 2], [0, 0, 0]], dtype=torch.long))
+
+    with pytest.raises(ValueError, match="num_nodes is too small"):
+        hyperedge_index.get_sparse_incidence_matrix(num_nodes=2)
+
+
+def test_get_sparse_incidence_matrix_rejects_explicit_num_hyperedges_too_small():
+    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long))
+
+    with pytest.raises(ValueError, match="num_hyperedges is too small"):
+        hyperedge_index.get_sparse_incidence_matrix(num_hyperedges=1)
 
 
 def test_get_sparse_symnormalized_node_degree_matrix_is_expected_diagonal():

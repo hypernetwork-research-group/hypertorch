@@ -273,7 +273,7 @@ class HData:
             hdata: The original `HData` containing the full hypergraph.
             split_hyperedge_ids: Tensor of hyperedge IDs to include in this split.
             node_space_setting: Whether to preserve the full node space in the splits.
-                ``transductive`` (default) ensures all nodes are present in every split,
+                ``transductive`` (default) ensures all node features are present in the split,
                 while ``inductive`` allows splits to have disjoint node spaces.
 
         Returns:
@@ -306,7 +306,7 @@ class HData:
         if hdata.hyperedge_weights is not None:
             split_hyperedge_weights = hdata.hyperedge_weights[split_unique_hyperedge_ids]
 
-        # We don't need to split nodes, so we split only hyperedges and rebase their IDs to 0-based
+        # We don't rebase nodes as they are all present in a transductive setting
         if is_transductive_setting(node_space_setting):
             # Example: split_unique_hyperedge_ids = [2, 5]
             #          -> hyperedge 2 -> 0, hyperedge 5 -> 1

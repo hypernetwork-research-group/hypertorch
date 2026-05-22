@@ -323,7 +323,10 @@ class Node2VecEnricher(NodeEnricher):
             )
             return torch.empty((0, self.embedding_dim), device=device)
 
-        reduced_edge_index = hyperedge_index_wrapper.reduce(self.graph_reduction_strategy)
+        reduced_edge_index = hyperedge_index_wrapper.reduce(
+            self.graph_reduction_strategy,
+            num_nodes=num_nodes,
+        )
         edge_index_wrapper = EdgeIndex(reduced_edge_index).remove_selfloops()
         if edge_index_wrapper.num_edges == 0:
             warnings.warn(
@@ -420,9 +423,11 @@ class LaplacianPositionalEncodingEnricher(NodeEnricher):
         Returns:
             node_features: Tensor of shape ``(num_nodes, num_features)``.
         """
-        edge_index = HyperedgeIndex(hyperedge_index).reduce_to_edge_index_on_clique_expansion()
-        edge_index_wrapper = EdgeIndex(edge_index)
         num_nodes = self.num_nodes if self.num_nodes > 0 else None
+        edge_index = HyperedgeIndex(hyperedge_index).reduce_to_edge_index_on_clique_expansion(
+            num_nodes=num_nodes
+        )
+        edge_index_wrapper = EdgeIndex(edge_index)
         laplacian_matrix = edge_index_wrapper.get_sparse_normalized_laplacian(num_nodes=num_nodes)
         laplacian_matrix_dense = (
             laplacian_matrix.to_dense()  # torch.linalg.eigh only works on dense tensors
