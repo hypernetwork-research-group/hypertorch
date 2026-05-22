@@ -37,6 +37,8 @@ from .sampling import (
     create_sampler_from_strategy,
 )
 
+from .splitter import HyperedgeIDSplitter, Splitter
+
 __all__ = [
     "AlgebraDataset",
     "AmazonDataset",
@@ -54,6 +56,7 @@ __all__ = [
     "GeometryDataset",
     "HIFLoader",
     "HIFProcessor",
+    "HyperedgeIDSplitter",
     "HyperedgeSampler",
     "IMDBDataset",
     "MusicBluesReviewsDataset",
@@ -65,6 +68,7 @@ __all__ = [
     "PubmedDataset",
     "RestaurantReviewsDataset",
     "SamplingStrategy",
+    "Splitter",
     "ThreadsAskUbuntuDataset",
     "ThreadsMathsxDataset",
     "TwitterDataset",
