@@ -69,6 +69,10 @@ integration-test:
 	@echo '=== Running integration tests in parallel ==='
 	$(UV) run $(PYTEST) -n auto -m "integration"
 
+s-integration-test:
+	@echo '=== Single integration test for $(T) ==='
+	$(UV) run $(PYTEST) -s $(PROJECT_NAME)/integration_tests/$(T) -m "integration"
+
 # If the first argument is run...
 ifeq ($(firstword $(MAKECMDGOALS)),run)
   # use the rest as arguments for run...

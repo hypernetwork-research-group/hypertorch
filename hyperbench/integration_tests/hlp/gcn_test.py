@@ -10,6 +10,10 @@ from hyperbench.integration_tests.common import (
 )
 from hyperbench.hlp import GCNHlpModule
 
+pytestmark = pytest.mark.filterwarnings(
+    "ignore:Failing to pass a value to the 'type_params' parameter of 'typing._eval_type' is deprecated.*:DeprecationWarning"
+)
+
 NUM_FEATURES = 8
 
 
