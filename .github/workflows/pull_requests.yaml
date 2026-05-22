@@ -6,8 +6,6 @@ on:
 
 jobs:
   label:
-    environment:
-      name: management
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -20,8 +18,6 @@ jobs:
           sync-labels: true
 
   assignees:
-    environment:
-      name: management
     runs-on: ubuntu-latest
     permissions:
       contents: read

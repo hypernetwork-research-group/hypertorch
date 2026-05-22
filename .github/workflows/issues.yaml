@@ -6,8 +6,6 @@ on:
 
 jobs:
   validate-issue-labels:
-    environment:
-      name: management
     runs-on: ubuntu-latest
     permissions:
       issues: write

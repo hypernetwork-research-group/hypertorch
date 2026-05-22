@@ -27,10 +27,6 @@ from hyperbench.data import (
     VegasBarsReviewsDataset,
 )
 
-pytestmark = pytest.mark.filterwarnings(
-    "ignore:Failing to pass a value to the 'type_params' parameter of 'typing._eval_type' is deprecated.*:DeprecationWarning"
-)
-
 SUPPORTED_DATASETS = (
     AlgebraDataset,
     AmazonDataset,

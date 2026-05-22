@@ -13,7 +13,6 @@ from hyperbench.types import ModelConfig
 
 
 NUM_WORKERS = 2
-NUM_FEATURES = 32
 SAMPLING_STRATEGY = SamplingStrategy.HYPEREDGE
 
 
@@ -63,42 +62,71 @@ def add_negatives(train_dataset, val_dataset, test_dataset):
     return train_dataset, val_dataset, test_dataset
 
 
-def datasets_enrichers(train_dataset, val_dataset, test_dataset):
-    train_dataset.enrich_node_features(
-        enricher=LaplacianPositionalEncodingEnricher(
-            num_features=NUM_FEATURES,
-            # In transductive setting, use total number of nodes to ensure consistent encoding across splits
-            # as the train dataset contain all nodes but may have no hyperedges where they appear
-            num_nodes=train_dataset.hdata.num_nodes,
-        ),
-        enrichment_mode="replace",
-    )
+def datasets_enrichers(train_dataset, val_dataset, test_dataset, num_features=32, enricher=None):
+    if enricher is None:
+        train_dataset.enrich_node_features(
+            enricher=LaplacianPositionalEncodingEnricher(
+                num_features=num_features,
+                # In transductive setting, use total number of nodes to ensure consistent encoding across splits
+                # as the train dataset contain all nodes but may have no hyperedges where they appear
+                num_nodes=train_dataset.hdata.num_nodes,
+            ),
+            enrichment_mode="replace",
+        )
+    else:
+        train_dataset.enrich_node_features(
+            enricher=enricher,
+            enrichment_mode="replace",
+        )
     val_dataset.enrich_node_features_from(train_dataset)
     test_dataset.enrich_node_features_from(train_dataset)
 
 
-def loaders(train_dataset, val_dataset, test_dataset):
-    train_loader_full_hypergraph = DataLoader(
-        train_dataset,
-        sample_full_hypergraph=True,
-        shuffle=False,
-        num_workers=NUM_WORKERS,
-        persistent_workers=True,
-    )
-    val_loader_full_hypergraph = DataLoader(
-        val_dataset,
-        sample_full_hypergraph=True,
-        shuffle=False,
-        num_workers=NUM_WORKERS,
-        persistent_workers=True,
-    )
-    test_loader_full_hypergraph = DataLoader(
-        test_dataset,
-        sample_full_hypergraph=True,
-        shuffle=False,
-        num_workers=NUM_WORKERS,
-        persistent_workers=True,
-    )
+def loaders(train_dataset, val_dataset, test_dataset, batch=False, batch_size=128):
+    if not batch:
+        train_loader_full_hypergraph = DataLoader(
+            train_dataset,
+            sample_full_hypergraph=True,
+            shuffle=False,
+            num_workers=NUM_WORKERS,
+            persistent_workers=True,
+        )
+        val_loader_full_hypergraph = DataLoader(
+            val_dataset,
+            sample_full_hypergraph=True,
+            shuffle=False,
+            num_workers=NUM_WORKERS,
+            persistent_workers=True,
+        )
+        test_loader_full_hypergraph = DataLoader(
+            test_dataset,
+            sample_full_hypergraph=True,
+            shuffle=False,
+            num_workers=NUM_WORKERS,
+            persistent_workers=True,
+        )
+    else:
+        train_loader_full_hypergraph = DataLoader(
+            train_dataset,
+            batch_size=batch_size,
+            shuffle=False,
+            num_workers=NUM_WORKERS,
+            persistent_workers=True,
+        )
+        val_loader_full_hypergraph = DataLoader(
+            val_dataset,
+            batch_size=batch_size,
+            shuffle=False,
+            num_workers=NUM_WORKERS,
+            persistent_workers=True,
+        )
+        test_loader_full_hypergraph = DataLoader(
+            test_dataset,
+            batch_size=batch_size,
+            shuffle=False,
+            num_workers=NUM_WORKERS,
+            persistent_workers=True,
+        )
 
     return train_loader_full_hypergraph, val_loader_full_hypergraph, test_loader_full_hypergraph
 
@@ -122,6 +150,27 @@ def model_configs(
         )
     ]
 
+    return configs
+
+
+def add_model_configs(
+    configs,
+    train_loader_full_hypergraph,
+    val_loader_full_hypergraph,
+    test_loader_full_hypergraph,
+    name,
+    version,
+    module,
+) -> list[ModelConfig]:
+    new_config = ModelConfig(
+        name=name,
+        version=version,
+        model=module,
+        train_dataloader=train_loader_full_hypergraph,
+        val_dataloader=val_loader_full_hypergraph,
+        test_dataloader=test_loader_full_hypergraph,
+    )
+    configs.append(new_config)
     return configs
 
 

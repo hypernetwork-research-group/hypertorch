@@ -8,13 +8,13 @@ from hyperbench.integration_tests.common import (
     add_negatives,
     loaders,
 )
-from hyperbench.hlp import GCNHlpModule
+from hyperbench.hlp import HGNNHlpModule
 
-NUM_FEATURES = 32
+NUM_FEATURES = 8
 
 
 @pytest.mark.integration
-def test_model_gcn():
+def test_model_hgnn():
     num_features = NUM_FEATURES
     metrics = common_standard_metrics()
 
@@ -23,25 +23,20 @@ def test_model_gcn():
         train_dataset, val_dataset, test_dataset
     )
 
-    datasets_enrichers(train_dataset, val_dataset, test_dataset)
+    datasets_enrichers(train_dataset, val_dataset, test_dataset, num_features=num_features)
 
     train_loader_full_hypergraph, val_loader_full_hypergraph, test_loader_full_hypergraph = loaders(
         train_dataset, val_dataset, test_dataset
     )
 
-    mean_gcn_module = GCNHlpModule(
+    mean_hgnn_module = HGNNHlpModule(
         encoder_config={
             "in_channels": num_features,
             "hidden_channels": 16,
             "out_channels": 16,
-            "num_layers": 2,
-            "drop_rate": 0.1,
             "bias": True,
-            "improved": False,
-            "add_self_loops": True,
-            "normalize": True,
-            "cached": False,
-            "graph_reduction_strategy": "clique_expansion",
+            "use_batch_normalization": False,
+            "drop_rate": 0.5,
         },
         aggregation="mean",
         lr=0.001,
@@ -53,9 +48,9 @@ def test_model_gcn():
         train_loader_full_hypergraph,
         val_loader_full_hypergraph,
         test_loader_full_hypergraph,
-        name="gcn",
+        name="hgnn",
         version="mean",
-        module=mean_gcn_module,
+        module=mean_hgnn_module,
     )
 
     multi_model_trainer(configs)

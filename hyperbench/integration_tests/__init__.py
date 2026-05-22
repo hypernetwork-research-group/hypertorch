@@ -6,9 +6,11 @@ from .common import (
     splits_dataset,
     datasets_enrichers,
     add_negatives,
+    add_model_configs,
 )
 
 __all__ = [
+    "add_model_configs",
     "add_negatives",
     "common_standard_metrics",
     "datasets_enrichers",
