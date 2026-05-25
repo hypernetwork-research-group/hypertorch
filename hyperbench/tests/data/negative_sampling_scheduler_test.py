@@ -2,7 +2,7 @@ import pytest
 import torch
 
 from unittest.mock import MagicMock
-from hyperbench.train import NegativeSampler, NegativeSamplingSchedule, NegativeSamplingScheduler
+from hyperbench.data import NegativeSampler, NegativeSamplingSchedule, NegativeSamplingScheduler
 from hyperbench.types import HData
 
 

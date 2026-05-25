@@ -7,10 +7,15 @@ from torchmetrics.classification import (
 )
 from lightning.pytorch.callbacks import EarlyStopping
 from hyperbench.hlp import MLPHlpModule
-from hyperbench.nn import LaplacianPositionalEncodingEnricher
-from hyperbench.train import MultiModelTrainer, RandomNegativeSampler
+from hyperbench.train import MultiModelTrainer
 from hyperbench.types import ModelConfig
-from hyperbench.data import AlgebraDataset, DataLoader, SamplingStrategy
+from hyperbench.data import (
+    AlgebraDataset,
+    DataLoader,
+    LaplacianPositionalEncodingEnricher,
+    RandomNegativeSampler,
+    SamplingStrategy,
+)
 
 
 if __name__ == "__main__":

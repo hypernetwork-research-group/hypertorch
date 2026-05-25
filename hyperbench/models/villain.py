@@ -62,7 +62,9 @@ class VilLain(nn.Module):
 
         self.num_subspaces = math.ceil(embedding_dim / labels_per_subspace)
         self.raw_embedding_dim = self.num_subspaces * labels_per_subspace
-        self.node_embedding = nn.Parameter(torch.empty(size=(num_nodes, self.raw_embedding_dim)))
+        self.node_embedding = nn.Parameter(
+            torch.empty(size=(self.num_nodes, self.raw_embedding_dim))
+        )
 
         self.loss_fn = VilLainLoss(
             num_subspaces=self.num_subspaces,

@@ -7,11 +7,16 @@ from torchmetrics.classification import (
     BinaryRecall,
 )
 from hyperbench.hlp import CommonNeighborsHlpModule, MLPHlpModule
-from hyperbench.nn import LaplacianPositionalEncodingEnricher
-from hyperbench.train import MultiModelTrainer, RandomNegativeSampler
+from hyperbench.train import MultiModelTrainer
 from hyperbench.types import ModelConfig
-from hyperbench.data import DataLoader, SamplingStrategy
-from hyperbench.data import Dataset
+from hyperbench.data import (
+    DataLoader,
+    Dataset,
+    LaplacianPositionalEncodingEnricher,
+    RandomNegativeSampler,
+    SamplingStrategy,
+)
+
 
 if __name__ == "__main__":
     verbose = False

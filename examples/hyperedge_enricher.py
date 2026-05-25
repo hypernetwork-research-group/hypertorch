@@ -1,9 +1,10 @@
-from hyperbench.nn import (
+from hyperbench.data import (
     ABHyperedgeWeightsEnricher,
+    AlgebraDataset,
     FillValueHyperedgeAttrsEnricher,
+    SamplingStrategy,
     VilLainHyperedgeAttrsEnricher,
 )
-from hyperbench.data import AlgebraDataset, SamplingStrategy
 
 
 if __name__ == "__main__":

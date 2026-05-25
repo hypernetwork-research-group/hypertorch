@@ -3,8 +3,11 @@ import torch
 from abc import ABC, abstractmethod
 from math import comb
 from torch import Tensor
-from hyperbench.nn import NodeEnricher
-from hyperbench.nn.enricher import HyperedgeAttrsEnricher, HyperedgeWeightsEnricher
+from hyperbench.data import (
+    HyperedgeAttrsEnricher,
+    HyperedgeWeightsEnricher,
+    NodeEnricher,
+)
 from hyperbench.types import HData, HyperedgeIndex
 from hyperbench.utils import create_seeded_torch_generator
 

@@ -4,7 +4,7 @@ import lightning as L
 from torch import Tensor, nn
 from typing import Any
 from torchmetrics import MetricCollection
-from hyperbench.train import NegativeSampler, NegativeSamplingSchedule, NegativeSamplingScheduler
+from hyperbench.data import NegativeSampler, NegativeSamplingSchedule, NegativeSamplingScheduler
 from hyperbench.types import HData
 from hyperbench.utils import Stage
 

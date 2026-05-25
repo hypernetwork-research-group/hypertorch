@@ -1,9 +1,10 @@
-from hyperbench.nn import (
+from hyperbench.data import (
+    AlgebraDataset,
     LaplacianPositionalEncodingEnricher,
     Node2VecEnricher,
+    SamplingStrategy,
     VilLainEnricher,
 )
-from hyperbench.data import AlgebraDataset, SamplingStrategy
 
 
 if __name__ == "__main__":

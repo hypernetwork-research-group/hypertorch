@@ -2,12 +2,11 @@ import re
 import pytest
 import torch
 
-from typing import cast
 from unittest.mock import MagicMock
+from typing import cast
 from torch import Tensor
 from hyperbench import utils
-from hyperbench.nn import NodeEnricher, HyperedgeEnricher
-from hyperbench.train import NegativeSampler, RandomNegativeSampler
+from hyperbench.data import HyperedgeEnricher, NegativeSampler, NodeEnricher, RandomNegativeSampler
 from hyperbench.types import HData
 from hyperbench.utils import assign_hyperedge_label_to_nodes
 

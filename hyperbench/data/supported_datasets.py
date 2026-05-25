@@ -1,6 +1,6 @@
 from hyperbench.data.hif import HIFLoader
 from hyperbench.data.dataset import Dataset
-from hyperbench.data.sampling import SamplingStrategy
+from hyperbench.data.sampler import SamplingStrategy
 
 
 class _PreloadedDataset(Dataset):
