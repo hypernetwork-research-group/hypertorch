@@ -1,3 +1,5 @@
+from functools import cache
+from pathlib import Path
 import lightning as L
 from torchmetrics import MetricCollection
 from torchmetrics.classification import (
@@ -22,10 +24,22 @@ from hyperbench.types import ModelConfig
 
 
 NUM_WORKERS = 2
-SAMPLING_STRATEGY = SamplingStrategy.HYPEREDGE
 
 
-def common_standard_metrics() -> MetricCollection:
+@cache
+def _cached_split_datasets(
+    sampling_strategy: SamplingStrategy,
+) -> tuple[Dataset, Dataset, Dataset]:
+    dataset = AlgebraDataset(sampling_strategy=sampling_strategy)
+
+    train_dataset, val_dataset, test_dataset = dataset.split(
+        ratios=[0.7, 0.1, 0.2], shuffle=True, seed=42, node_space_setting="transductive"
+    )
+
+    return train_dataset, val_dataset, test_dataset
+
+
+def common_metrics() -> MetricCollection:
     return MetricCollection(
         {
             "auc": BinaryAUROC(),
@@ -37,14 +51,14 @@ def common_standard_metrics() -> MetricCollection:
     )
 
 
-def splits_dataset():
-    dataset = AlgebraDataset(sampling_strategy=SAMPLING_STRATEGY)
+def splits_dataset(sampling_strategy: SamplingStrategy) -> tuple[Dataset, Dataset, Dataset]:
+    train_dataset, val_dataset, test_dataset = _cached_split_datasets(sampling_strategy)
 
-    train_dataset, val_dataset, test_dataset = dataset.split(
-        ratios=[0.7, 0.1, 0.2], shuffle=True, seed=42, node_space_setting="transductive"
+    return (
+        train_dataset.update_from_hdata(train_dataset.hdata.clone()),
+        val_dataset.update_from_hdata(val_dataset.hdata.clone()),
+        test_dataset.update_from_hdata(test_dataset.hdata.clone()),
     )
-
-    return train_dataset, val_dataset, test_dataset
 
 
 def add_negatives(
@@ -205,6 +219,8 @@ def multi_model_trainer(
     enable_checkpointing=False,
     auto_start_tensorboard=False,
     auto_wait=False,
+    path: Path | str | None = None,
+    experiment_name: str = "integration_test",
 ):
     with MultiModelTrainer(
         model_configs=configs,
@@ -214,6 +230,8 @@ def multi_model_trainer(
         enable_checkpointing=enable_checkpointing,
         auto_start_tensorboard=auto_start_tensorboard,
         auto_wait=auto_wait,
+        default_root_dir=path,
+        experiment_name=experiment_name,
     ) as trainer:
         trainer.fit_all(
             train_dataloader=configs[0].train_dataloader,

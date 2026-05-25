@@ -1,5 +1,5 @@
 from .common import (
-    common_standard_metrics,
+    common_metrics,
     loaders,
     model_configs,
     multi_model_trainer,
@@ -12,7 +12,7 @@ from .common import (
 __all__ = [
     "add_model_configs",
     "add_negatives",
-    "common_standard_metrics",
+    "common_metrics",
     "enrich_datasets",
     "loaders",
     "model_configs",
