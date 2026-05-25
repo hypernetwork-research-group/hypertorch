@@ -48,14 +48,6 @@ def mock_hdata_isolated_hyperedges() -> HData:
 
 
 @pytest.fixture
-def mock_hdata_three_nodes_weighted() -> HData:
-    x = torch.ones((3, 1), dtype=torch.float)
-    hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 1]], dtype=torch.long)
-    hyperedge_weights = torch.tensor([1.0, 2.0], dtype=torch.float)
-    return HData(x=x, hyperedge_index=hyperedge_index, hyperedge_weights=hyperedge_weights)
-
-
-@pytest.fixture
 def mock_hdata_four_nodes() -> HData:
     x = torch.ones((4, 1), dtype=torch.float)
     hyperedge_index = torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long)
@@ -110,14 +102,6 @@ def mock_hdata_transductive_multiple_hyperedges_attrs() -> HData:
 
 
 @pytest.fixture
-def mock_hdata_two_hyperedge_attrs_weighted() -> HData:
-    x = torch.ones((3, 1), dtype=torch.float)
-    hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 1]], dtype=torch.long)
-    hyperedge_weights = torch.tensor([1.0, 3.0], dtype=torch.float)
-    return HData(x=x, hyperedge_index=hyperedge_index, hyperedge_weights=hyperedge_weights)
-
-
-@pytest.fixture
 def mock_negative_sampler() -> tuple[NegativeSampler, MagicMock]:
     sampler = new_mock_negative_sampler()
     return cast(NegativeSampler, sampler), sampler
@@ -161,20 +145,14 @@ def test_dataset_process_no_incidences(mock_hdata_isolated_hyperedges):
         assert dataset.hdata.hyperedge_attr is None
 
 
-def test_dataset_process_with_hyperedge_attributes(mock_hdata_two_hyperedge_attrs_weighted):
-    with patch.object(
-        HIFLoader, "load_by_name", return_value=mock_hdata_two_hyperedge_attrs_weighted
-    ):
+def test_dataset_process_with_hyperedge_attributes(mock_hdata_with_hyperedge_attr):
+    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_with_hyperedge_attr):
         dataset = AlgebraDataset()
 
     assert dataset.hdata is not None
-    assert dataset.hdata.x.shape[0] == 3
+    assert dataset.hdata.hyperedge_attr is not None
     assert dataset.hdata.hyperedge_index.shape[0] == 2
-    assert dataset.hdata.hyperedge_index.shape[1] == 3
-    assert dataset.hdata.hyperedge_attr is None
-    assert dataset.hdata.hyperedge_weights is not None
-    assert dataset.hdata.hyperedge_weights.shape == (2,)
-    assert torch.allclose(dataset.hdata.hyperedge_weights, torch.tensor([1.0, 3.0]))
+    assert torch.allclose(dataset.hdata.hyperedge_attr, torch.ones((2, 1), dtype=torch.float))
 
 
 def test_dataset_process_without_hyperedge_attributes(mock_hdata):
@@ -327,14 +305,17 @@ def test_getitem_when_list_index_provided(
         pytest.param(SamplingStrategy.HYPEREDGE, id="hyperedge_strategy"),
     ],
 )
-def test_getitem_with_hyperedge_attr(mock_hdata_three_nodes_weighted, strategy):
-    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_three_nodes_weighted):
+def test_getitem_with_hyperedge_attr(mock_hdata_with_hyperedge_attr, strategy):
+    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_with_hyperedge_attr):
         dataset = AlgebraDataset(sampling_strategy=strategy)
 
     data = dataset[0]
 
     assert data.hyperedge_index.shape == (2, 2)
     assert data.num_hyperedges == 1
+
+    # Even though the original hypergraph has edge attributes, __getitem__ should return hyperedge_attr as None
+    # as the hyperedge attributes are handled by the loader's collate function during batching
     assert data.hyperedge_attr is None
 
 
@@ -372,6 +353,42 @@ def test_getitem_with_multiple_hyperedge_attr(mock_hdata_multiple_hyperedge_attr
     # Even though the original hypergraph has edge attributes, __getitem__ should return hyperedge_attr as None
     # as the hyperedge attributes are handled by the loader's collate function during batching
     assert data.hyperedge_attr is None
+
+
+@pytest.mark.parametrize(
+    "strategy",
+    [
+        pytest.param(SamplingStrategy.NODE, id="node_strategy"),
+        pytest.param(SamplingStrategy.HYPEREDGE, id="hyperedge_strategy"),
+    ],
+)
+def test_getitem_with_hyperedge_weights(mock_hdata_with_hyperedge_weights, strategy):
+    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_with_hyperedge_weights):
+        dataset = AlgebraDataset(sampling_strategy=strategy)
+
+    data = dataset[0]
+
+    assert data.hyperedge_index.shape == (2, 2)
+    assert data.num_hyperedges == 1
+
+    # Even though the original hypergraph has edge attributes, __getitem__ should return hyperedge_weights as None
+    # as the hyperedge weights are handled by the loader's collate function during batching
+    assert data.hyperedge_weights is None
+
+
+@pytest.mark.parametrize(
+    "strategy",
+    [
+        pytest.param(SamplingStrategy.NODE, id="node_strategy"),
+        pytest.param(SamplingStrategy.HYPEREDGE, id="hyperedge_strategy"),
+    ],
+)
+def test_getitem_without_hyperedge_weights(mock_hdata, strategy):
+    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata):
+        dataset = AlgebraDataset(sampling_strategy=strategy)
+
+    data = dataset[0]
+    assert data.hyperedge_weights is None
 
 
 @pytest.mark.parametrize(
