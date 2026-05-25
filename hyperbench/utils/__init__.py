@@ -1,4 +1,5 @@
 from .data_utils import (
+    clone_optional_tensor,
     empty_edgeattr,
     empty_hyperedgeindex,
     empty_nodefeatures,
@@ -48,6 +49,7 @@ __all__ = [
     "NormalizationFn",
     "Stage",
     "assign_hyperedge_label_to_nodes",
+    "clone_optional_tensor",
     "compress_to_zst",
     "create_seeded_torch_generator",
     "decompress_zst",
