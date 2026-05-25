@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import lightning as L
 
 from typing import TYPE_CHECKING, Literal, TypeAlias
