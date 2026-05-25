@@ -67,6 +67,7 @@ filterwarnings = [
     "ignore:.*isinstance.*LeafSpec.*is deprecated.*",
     "ignore:Sparse CSR tensor support is in beta state",
     "ignore:Sparse invariant checks are implicitly disabled",
+    "ignore:Failing to pass a value to the 'type_params' parameter of 'typing._eval_type' is deprecated.*"
 ]
 
 [tool.coverage.run]

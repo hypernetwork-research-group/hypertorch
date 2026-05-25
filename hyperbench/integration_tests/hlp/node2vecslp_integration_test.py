@@ -1,7 +1,7 @@
 import pytest
 from hyperbench.integration_tests.common import (
     common_standard_metrics,
-    datasets_enrichers,
+    enrich_datasets,
     splits_dataset,
     add_negatives,
     loaders,
@@ -10,7 +10,7 @@ from hyperbench.integration_tests.common import (
     multi_model_trainer,
 )
 from hyperbench.data import Node2VecEnricher
-from hyperbench.hlp import Node2VecGCNHlpModule, Node2VecGCNHlpConfig
+from hyperbench.hlp import Node2VecSLPHlpModule
 
 pytestmark = pytest.mark.filterwarnings(
     "ignore:Failing to pass a value to the 'type_params' parameter of 'typing._eval_type' is deprecated.*:DeprecationWarning"
@@ -20,7 +20,7 @@ NUM_FEATURES = 8
 
 
 @pytest.mark.integration
-def test_model_node2vecgcn():
+def test_model_node2vecslp():
     num_features = NUM_FEATURES
     metrics = common_standard_metrics()
 
@@ -43,7 +43,7 @@ def test_model_node2vecgcn():
         sparse=False,
     )
 
-    datasets_enrichers(
+    enrich_datasets(
         train_dataset,
         val_dataset,
         test_dataset,
@@ -51,29 +51,15 @@ def test_model_node2vecgcn():
         enricher=node2vec_enricher,
     )
 
-    train_loader_batch_hypergraph, val_loader_batch_hypergraph, test_loader_batch_hypergraph = (
-        loaders(train_dataset, val_dataset, test_dataset, batch=True, batch_size=128)
+    train_loader, val_loader, test_loader = loaders(
+        train_dataset, val_dataset, test_dataset, batch=True, batch_size=128
     )
 
-    gcn_config: Node2VecGCNHlpConfig = {
-        "out_channels": num_features,
-        "hidden_channels": num_features,
-        "num_layers": 2,
-        "drop_rate": 0.1,
-        "bias": True,
-        "improved": False,
-        "add_self_loops": True,
-        "normalize": True,
-        "cached": False,
-        "graph_reduction_strategy": "clique_expansion",
-    }
-
-    precomputed_node2vecgcn_module = Node2VecGCNHlpModule(
+    precomputed_node2vecslp_module = Node2VecSLPHlpModule(
         encoder_config={
             "mode": "precomputed",
             "num_features": num_features,
             "node2vec_config": {},
-            "gcn_config": gcn_config,
         },
         aggregation="mean",
         lr=0.001,
@@ -82,7 +68,7 @@ def test_model_node2vecgcn():
     )
 
     train_hyperedge_index = train_dataset.hdata.hyperedge_index
-    joint_node2vecgcn_module = Node2VecGCNHlpModule(
+    joint_node2vecslp_module = Node2VecSLPHlpModule(
         encoder_config={
             "mode": "joint",
             "num_features": num_features,
@@ -100,7 +86,6 @@ def test_model_node2vecgcn():
                 # We count the node2vec loss as 40% of the total loss (the rest is the SLP loss)
                 "node2vec_loss_weight": 0.4,
             },
-            "gcn_config": gcn_config,
         },
         aggregation="mean",
         lr=0.001,
@@ -109,21 +94,21 @@ def test_model_node2vecgcn():
     )
 
     configs = model_configs(
-        train_loader_batch_hypergraph,
-        val_loader_batch_hypergraph,
-        test_loader_batch_hypergraph,
-        name="node2vecgcn",
+        train_loader,
+        val_loader,
+        test_loader,
+        name="node2vecslp",
         version="precomputed",
-        module=precomputed_node2vecgcn_module,
+        model=precomputed_node2vecslp_module,
     )
     configs = add_model_configs(
         configs,
-        train_loader_batch_hypergraph,
-        val_loader_batch_hypergraph,
-        test_loader_batch_hypergraph,
-        name="node2vecgcn",
+        train_loader,
+        val_loader,
+        test_loader,
+        name="node2vecslp",
         version="joint",
-        module=joint_node2vecgcn_module,
+        model=joint_node2vecslp_module,
     )
 
     multi_model_trainer(configs)

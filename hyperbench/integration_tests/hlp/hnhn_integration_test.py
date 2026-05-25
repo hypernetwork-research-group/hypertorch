@@ -1,59 +1,56 @@
 import pytest
 from hyperbench.integration_tests.common import (
     common_standard_metrics,
-    datasets_enrichers,
+    enrich_datasets,
     model_configs,
     multi_model_trainer,
     splits_dataset,
     add_negatives,
     loaders,
 )
-from hyperbench.hlp import HGNNPHlpModule
+from hyperbench.hlp import HNHNHlpModule
 
 NUM_FEATURES = 8
 
 
 @pytest.mark.integration
-def test_model_hgnnp():
-
+def test_model_hnhn():
     num_features = NUM_FEATURES
-
     metrics = common_standard_metrics()
 
     train_dataset, val_dataset, test_dataset = splits_dataset()
-
     train_dataset, val_dataset, test_dataset = add_negatives(
         train_dataset, val_dataset, test_dataset
     )
 
-    datasets_enrichers(train_dataset, val_dataset, test_dataset, num_features=num_features)
+    enrich_datasets(train_dataset, val_dataset, test_dataset, num_features=num_features)
 
-    train_loader_full_hypergraph, val_loader_full_hypergraph, test_loader_full_hypergraph = loaders(
-        train_dataset, val_dataset, test_dataset
-    )
+    train_loader, val_loader, test_loader = loaders(train_dataset, val_dataset, test_dataset)
 
-    mean_hgnnp_module = HGNNPHlpModule(
+    mean_hnhn_module = HNHNHlpModule(
         encoder_config={
             "in_channels": num_features,
             "hidden_channels": 16,
             "out_channels": 16,
             "bias": True,
             "use_batch_normalization": False,
-            "drop_rate": 0.5,
+            "drop_rate": 0.3,
         },
         aggregation="mean",
-        lr=0.01,
+        lr=0.04,
         weight_decay=5e-4,
+        scheduler_step_size=100,
+        scheduler_gamma=0.51,
         metrics=metrics,
     )
 
     configs = model_configs(
-        train_loader_full_hypergraph,
-        val_loader_full_hypergraph,
-        test_loader_full_hypergraph,
-        name="hgnnp",
+        train_loader,
+        val_loader,
+        test_loader,
+        name="hnhn",
         version="mean",
-        module=mean_hgnnp_module,
+        model=mean_hnhn_module,
     )
 
     multi_model_trainer(configs)

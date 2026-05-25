@@ -1,30 +1,7 @@
-import inspect
-import sys
-
+from typing import ClassVar
 from hyperbench.data.hif import HIFLoader
 from hyperbench.data.dataset import Dataset
 from hyperbench.data.sampler import SamplingStrategy
-
-
-def list_datasets():
-    """
-    Return a sorted list of available dataset names discovered from the
-    classes exported in this module.
-
-    This inspects the module for classes that subclass `_PreloadedDataset`
-    and expose a non-empty `DATASET_NAME` attribute. It avoids requiring an
-    explicit exported mapping.
-    """
-    mod = sys.modules[__name__]
-    names: list[str] = []
-    for _, obj in inspect.getmembers(mod, inspect.isclass):
-        if issubclass(obj, _PreloadedDataset) and obj is not _PreloadedDataset:
-            ds_name = getattr(obj, "DATASET_NAME", None)
-            if isinstance(ds_name, str) and ds_name:
-                names.append(ds_name)
-
-    # Return deterministic ordering
-    return sorted(set(names))
 
 
 class _PreloadedDataset(Dataset):
@@ -38,24 +15,73 @@ class _PreloadedDataset(Dataset):
         sampling_strategy: The sampling strategy to use for this dataset. Default is ``SamplingStrategy.HYPEREDGE``.
     """
 
-    DATASET_NAME = ""
-    HF_SHA = None
+    DATASET_NAME: ClassVar[str] = ""
+    HF_SHA: ClassVar[str | None] = None
+
+    # Keys are public dataset names, values are the concrete dataset classes.
+    _registry: ClassVar[dict[str, type["_PreloadedDataset"]]] = {}
+
+    def __init_subclass__(cls) -> None:
+        super().__init_subclass__()
+
+        dataset_name = cls.DATASET_NAME
+        if not dataset_name:
+            return
+
+        # No duplicate DATASET_NAME should exist
+        existing_cls = _PreloadedDataset._registry.get(dataset_name)
+        if existing_cls is not None:
+            raise ValueError(
+                f"Duplicate preloaded dataset name {dataset_name!r}: "
+                f"{existing_cls.__name__} and {cls.__name__}"
+            )
+
+        # Register the subclass as soon as Python creates the class object.
+        # This happens when the module is imported, before users call list_datasets().
+        _PreloadedDataset._registry[dataset_name] = cls
 
     def __init__(
         self,
         hdata=None,
         sampling_strategy: SamplingStrategy = SamplingStrategy.HYPEREDGE,
     ) -> None:
+        self.__validate()
         super().__init__(hdata=hdata, sampling_strategy=sampling_strategy)
         if hdata is None:
             self.hdata = HIFLoader.load_by_name(
-                self.DATASET_NAME, hf_sha=self.HF_SHA, save_on_disk=True
+                self.DATASET_NAME,
+                hf_sha=self.HF_SHA,
+                save_on_disk=True,
+            )
+
+    def __validate(self) -> None:
+
+        dataset_name = getattr(self, "DATASET_NAME", None)
+        if not isinstance(dataset_name, str):
+            raise ValueError(
+                f"Invalid dataset name {dataset_name!r} for class {self.__class__.__name__}. "
+                "DATASET_NAME must be a string."
+            )
+
+        hf_sha = getattr(self, "HF_SHA", None)
+        if hf_sha is not None and not isinstance(hf_sha, str):
+            raise ValueError(
+                f"Invalid HF_SHA {hf_sha!r} for class {self.__class__.__name__}. "
+                "HF_SHA must be a string or None."
             )
 
 
+def list_datasets() -> list[str]:
+    """Return supported preloaded dataset names in deterministic order."""
+
+    # Iterating over a dict yields its keys.
+    # Sorting keeps the public result stable across runs.
+    return sorted(_PreloadedDataset._registry)
+
+
 class AlgebraDataset(_PreloadedDataset):
-    DATASET_NAME = "algebra"
-    HF_SHA = "2bb641461e00c103fb5ef4fe6a30aad42500fc21"
+    DATASET_NAME: ClassVar[str] = "algebra"
+    HF_SHA: ClassVar[str | None] = "2bb641461e00c103fb5ef4fe6a30aad42500fc21"
 
 
 class AmazonDataset(_PreloadedDataset):

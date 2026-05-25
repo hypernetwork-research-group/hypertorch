@@ -1,5 +1,5 @@
 .PHONY: all release build setup setup-tensorboard clean destroy \
-		test stest integration-test run \
+		test stest i-test si-test run \
 		check format typecheck lint lint-fix lint-rule lint-rule-fix \
 		docs docs-build docs-serve \
 		loc help
@@ -65,11 +65,11 @@ stest:
 	@echo '=== Test for $(T) ==='
 	$(UV) run $(PYTEST) -s $(PROJECT_NAME)/tests/$(T)
 
-integration-test:
+i-test:
 	@echo '=== Running integration tests in parallel ==='
 	$(UV) run $(PYTEST) -n auto -m "integration"
 
-s-integration-test:
+si-test:
 	@echo '=== Single integration test for $(T) ==='
 	$(UV) run $(PYTEST) -s $(PROJECT_NAME)/integration_tests/$(T) -m "integration"
 
@@ -128,8 +128,8 @@ help:
 	@echo "  lint-rule-fix R=<rule>  - Run linting for a specific rule and fix issues"
 	@echo "  test                    - Run all tests in parallel"
 	@echo "  stest T=<test_name>     - Run a single test"
-	@echo "  integration-test        - Run integration tests in parallel"
-	@echo "  sintegration-test T=<test_name> - Run a single integration test"
+	@echo "  i-test                  - Run integration tests in parallel"
+	@echo "  si-test T=<test_name>   - Run a single integration test"
 	@echo "  run <file.py>           - Run a single file"
 	@echo "  docs                    - Build and serve documentation"
 	@echo "  docs-build              - Build documentation without serving"

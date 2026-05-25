@@ -1,7 +1,7 @@
 import pytest
 from hyperbench.integration_tests.common import (
     common_standard_metrics,
-    datasets_enrichers,
+    enrich_datasets,
     splits_dataset,
     add_negatives,
     loaders,
@@ -43,7 +43,7 @@ def test_model_nhp():
         sparse=False,
     )
 
-    datasets_enrichers(
+    enrich_datasets(
         train_dataset,
         val_dataset,
         test_dataset,
@@ -51,8 +51,8 @@ def test_model_nhp():
         enricher=node2vec_enricher,
     )
 
-    train_loader_batch_hypergraph, val_loader_batch_hypergraph, test_loader_batch_hypergraph = (
-        loaders(train_dataset, val_dataset, test_dataset, batch=True, batch_size=64)
+    train_loader, val_loader, test_loader = loaders(
+        train_dataset, val_dataset, test_dataset, batch=True, batch_size=64
     )
 
     maxmin_nhp_module = NHPHlpModule(
@@ -78,21 +78,21 @@ def test_model_nhp():
     )
 
     configs = model_configs(
-        train_loader_batch_hypergraph,
-        val_loader_batch_hypergraph,
-        test_loader_batch_hypergraph,
+        train_loader,
+        val_loader,
+        test_loader,
         name="nhp",
         version="maxmin",
-        module=maxmin_nhp_module,
+        model=maxmin_nhp_module,
     )
     configs = add_model_configs(
         configs,
-        train_loader_batch_hypergraph,
-        val_loader_batch_hypergraph,
-        test_loader_batch_hypergraph,
+        train_loader,
+        val_loader,
+        test_loader,
         name="nhp",
         version="mean",
-        module=mean_nhp_module,
+        model=mean_nhp_module,
     )
 
     multi_model_trainer(configs)

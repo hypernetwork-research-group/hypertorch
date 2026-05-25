@@ -1,7 +1,7 @@
 import pytest
 from hyperbench.integration_tests.common import (
     common_standard_metrics,
-    datasets_enrichers,
+    enrich_datasets,
     splits_dataset,
     add_negatives,
     loaders,
@@ -30,10 +30,10 @@ def test_model_mlp():
         train_dataset, val_dataset, test_dataset
     )
 
-    datasets_enrichers(train_dataset, val_dataset, test_dataset, num_features=num_features)
+    enrich_datasets(train_dataset, val_dataset, test_dataset, num_features=num_features)
 
-    train_loader_batch_hypergraph, val_loader_batch_hypergraph, test_loader_batch_hypergraph = (
-        loaders(train_dataset, val_dataset, test_dataset, batch=True, batch_size=128)
+    train_loader, val_loader, test_loader = loaders(
+        train_dataset, val_dataset, test_dataset, batch=True, batch_size=128
     )
 
     mean_cn_module = CommonNeighborsHlpModule(
@@ -74,8 +74,8 @@ def test_model_mlp():
         auto_wait=True,
     ) as trainer:
         trainer.fit_all(
-            train_dataloader=train_loader_batch_hypergraph,
-            val_dataloader=val_loader_batch_hypergraph,
+            train_dataloader=train_loader,
+            val_dataloader=val_loader,
             verbose=True,
         )
-        trainer.test_all(dataloader=test_loader_batch_hypergraph, verbose=True)
+        trainer.test_all(dataloader=test_loader, verbose=True)

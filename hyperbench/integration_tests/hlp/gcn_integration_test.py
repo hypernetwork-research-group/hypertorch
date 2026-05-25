@@ -1,7 +1,7 @@
 import pytest
 from hyperbench.integration_tests.common import (
     common_standard_metrics,
-    datasets_enrichers,
+    enrich_datasets,
     model_configs,
     multi_model_trainer,
     splits_dataset,
@@ -9,10 +9,6 @@ from hyperbench.integration_tests.common import (
     loaders,
 )
 from hyperbench.hlp import GCNHlpModule
-
-pytestmark = pytest.mark.filterwarnings(
-    "ignore:Failing to pass a value to the 'type_params' parameter of 'typing._eval_type' is deprecated.*:DeprecationWarning"
-)
 
 NUM_FEATURES = 8
 
@@ -27,11 +23,9 @@ def test_model_gcn():
         train_dataset, val_dataset, test_dataset
     )
 
-    datasets_enrichers(train_dataset, val_dataset, test_dataset, num_features=num_features)
+    enrich_datasets(train_dataset, val_dataset, test_dataset, num_features=num_features)
 
-    train_loader_full_hypergraph, val_loader_full_hypergraph, test_loader_full_hypergraph = loaders(
-        train_dataset, val_dataset, test_dataset
-    )
+    train_loader, val_loader, test_loader = loaders(train_dataset, val_dataset, test_dataset)
 
     mean_gcn_module = GCNHlpModule(
         encoder_config={
@@ -54,12 +48,12 @@ def test_model_gcn():
     )
 
     configs = model_configs(
-        train_loader_full_hypergraph,
-        val_loader_full_hypergraph,
-        test_loader_full_hypergraph,
+        train_loader,
+        val_loader,
+        test_loader,
         name="gcn",
         version="mean",
-        module=mean_gcn_module,
+        model=mean_gcn_module,
     )
 
     multi_model_trainer(configs)

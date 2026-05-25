@@ -1,3 +1,4 @@
+import lightning as L
 from torchmetrics import MetricCollection
 from torchmetrics.classification import (
     BinaryAUROC,
@@ -6,11 +7,14 @@ from torchmetrics.classification import (
     BinaryPrecision,
     BinaryRecall,
 )
+
 from hyperbench.data import (
+    Dataset,
     AlgebraDataset,
     DataLoader,
     SamplingStrategy,
     LaplacianPositionalEncodingEnricher,
+    NodeEnricher,
     RandomNegativeSampler,
 )
 from hyperbench.train import MultiModelTrainer
@@ -43,7 +47,9 @@ def splits_dataset():
     return train_dataset, val_dataset, test_dataset
 
 
-def add_negatives(train_dataset, val_dataset, test_dataset):
+def add_negatives(
+    train_dataset: Dataset, val_dataset: Dataset, test_dataset: Dataset
+) -> tuple[Dataset, Dataset, Dataset]:
     # Add negative samples to all splits
     for name, ds in [("Train", train_dataset), ("Val", val_dataset), ("Test", test_dataset)]:
         num_negative_samples = (
@@ -67,7 +73,13 @@ def add_negatives(train_dataset, val_dataset, test_dataset):
     return train_dataset, val_dataset, test_dataset
 
 
-def datasets_enrichers(train_dataset, val_dataset, test_dataset, num_features=32, enricher=None):
+def enrich_datasets(
+    train_dataset: Dataset,
+    val_dataset: Dataset,
+    test_dataset: Dataset,
+    num_features: int = 32,
+    enricher: NodeEnricher | None = None,
+) -> None:
     if enricher is None:
         train_dataset.enrich_node_features(
             enricher=LaplacianPositionalEncodingEnricher(
@@ -87,23 +99,29 @@ def datasets_enrichers(train_dataset, val_dataset, test_dataset, num_features=32
     test_dataset.enrich_node_features_from(train_dataset)
 
 
-def loaders(train_dataset, val_dataset, test_dataset, batch=False, batch_size=128):
+def loaders(
+    train_dataset: Dataset,
+    val_dataset: Dataset,
+    test_dataset: Dataset,
+    batch=False,
+    batch_size: int = 128,
+) -> tuple[DataLoader, DataLoader, DataLoader]:
     if not batch:
-        train_loader_full_hypergraph = DataLoader(
+        train_loader = DataLoader(
             train_dataset,
             sample_full_hypergraph=True,
             shuffle=False,
             num_workers=NUM_WORKERS,
             persistent_workers=True,
         )
-        val_loader_full_hypergraph = DataLoader(
+        val_loader = DataLoader(
             val_dataset,
             sample_full_hypergraph=True,
             shuffle=False,
             num_workers=NUM_WORKERS,
             persistent_workers=True,
         )
-        test_loader_full_hypergraph = DataLoader(
+        tests_loader = DataLoader(
             test_dataset,
             sample_full_hypergraph=True,
             shuffle=False,
@@ -111,21 +129,21 @@ def loaders(train_dataset, val_dataset, test_dataset, batch=False, batch_size=12
             persistent_workers=True,
         )
     else:
-        train_loader_full_hypergraph = DataLoader(
+        train_loader = DataLoader(
             train_dataset,
             batch_size=batch_size,
             shuffle=False,
             num_workers=NUM_WORKERS,
             persistent_workers=True,
         )
-        val_loader_full_hypergraph = DataLoader(
+        val_loader = DataLoader(
             val_dataset,
             batch_size=batch_size,
             shuffle=False,
             num_workers=NUM_WORKERS,
             persistent_workers=True,
         )
-        test_loader_full_hypergraph = DataLoader(
+        tests_loader = DataLoader(
             test_dataset,
             batch_size=batch_size,
             shuffle=False,
@@ -133,25 +151,25 @@ def loaders(train_dataset, val_dataset, test_dataset, batch=False, batch_size=12
             persistent_workers=True,
         )
 
-    return train_loader_full_hypergraph, val_loader_full_hypergraph, test_loader_full_hypergraph
+    return train_loader, val_loader, tests_loader
 
 
 def model_configs(
-    train_loader_full_hypergraph,
-    val_loader_full_hypergraph,
-    test_loader_full_hypergraph,
-    name,
-    version,
-    module,
+    train_loader: DataLoader,
+    val_loader: DataLoader,
+    tests_loader: DataLoader,
+    name: str,
+    version: str,
+    model: L.LightningModule,
 ) -> list[ModelConfig]:
     configs = [
         ModelConfig(
             name=name,
             version=version,
-            model=module,
-            train_dataloader=train_loader_full_hypergraph,
-            val_dataloader=val_loader_full_hypergraph,
-            test_dataloader=test_loader_full_hypergraph,
+            model=model,
+            train_dataloader=train_loader,
+            val_dataloader=val_loader,
+            test_dataloader=tests_loader,
         )
     ]
 
@@ -159,34 +177,34 @@ def model_configs(
 
 
 def add_model_configs(
-    configs,
-    train_loader_full_hypergraph,
-    val_loader_full_hypergraph,
-    test_loader_full_hypergraph,
-    name,
-    version,
-    module,
+    configs: list[ModelConfig],
+    train_loader: DataLoader,
+    val_loader: DataLoader,
+    tests_loader: DataLoader,
+    name: str,
+    version: str,
+    model: L.LightningModule,
 ) -> list[ModelConfig]:
     new_config = ModelConfig(
         name=name,
         version=version,
-        model=module,
-        train_dataloader=train_loader_full_hypergraph,
-        val_dataloader=val_loader_full_hypergraph,
-        test_dataloader=test_loader_full_hypergraph,
+        model=model,
+        train_dataloader=train_loader,
+        val_dataloader=val_loader,
+        test_dataloader=tests_loader,
     )
     configs.append(new_config)
     return configs
 
 
 def multi_model_trainer(
-    configs,
-    max_epochs=5,
+    configs: list[ModelConfig],
+    max_epochs=3,
     accelerator="auto",
     log_every_n_steps=1,
     enable_checkpointing=False,
     auto_start_tensorboard=False,
-    auto_wait=True,
+    auto_wait=False,
 ):
     with MultiModelTrainer(
         model_configs=configs,
