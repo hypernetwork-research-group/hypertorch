@@ -14,7 +14,7 @@ DOCS_ADDR=127.0.0.1:8000
 
 all: clean setup check test
 
-release: clean setup check test integration-test
+release: clean setup check test i-test
 
 build: clean setup
 
@@ -114,7 +114,7 @@ help:
 	@echo "Usage: make [target]"
 	@echo "Targets:"
 	@echo "  all                     - Clean, setup, lint, typecheck, test"
-	@echo "  release                 - Clean, setup, lint, typecheck, test, integration-test"
+	@echo "  release                 - Clean, setup, lint, typecheck, test, i-test"
 	@echo "  build                   - Clean and setup"
 	@echo "  setup                   - Install dependencies"
 	@echo "  setup-tensorboard       - Install optional TensorBoard dependency"

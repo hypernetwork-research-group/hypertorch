@@ -10,8 +10,8 @@
 - Prefer Makefile targets:
   - `make test`
   - `make stest T=<path-within-hyperbench/tests>`
-  - `make integration-test`
-  - `make sintegration-test T=<path-within-hyperbench/integration_tests>`
+  - `make i-test`
+  - `make si-test T=<path-within-hyperbench/integration_tests>`
 - Use `uv run pytest` only for targeted one-off runs.
 - Run `make test` to see coverage reports and identify untested lines.
 

@@ -67,7 +67,7 @@ jobs:
 
       - name: Run integration tests with pytest
         run: |
-          make integration-test
+          make i-test
 
   test-arm:
     runs-on: ${{ matrix.os }}
