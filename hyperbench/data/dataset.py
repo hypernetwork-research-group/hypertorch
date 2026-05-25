@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import torch
 
 from typing import TYPE_CHECKING, Any
@@ -10,6 +11,7 @@ from hyperbench.utils import (
     NodeSpaceFiller,
     NodeSpaceSetting,
     is_transductive_setting,
+    validate_node_space_setting,
 )
 
 from hyperbench.data.hif import HIFLoader, HIFProcessor
@@ -148,6 +150,7 @@ class Dataset(TorchDataset):
             enrichment_mode: How to combine generated features with existing ``hdata.x``.
                 ``concatenate`` appends new features to the existing ones as additional columns.
                 ``replace`` substitutes ``hdata.x`` entirely.
+                Defaults to ``replace`` if not provided.
         """
         self.hdata = self.hdata.enrich_node_features(enricher, enrichment_mode)
 
@@ -199,6 +202,7 @@ class Dataset(TorchDataset):
             enrichment_mode: How to combine generated attributes with existing ``hdata.hyperedge_attr``.
                 ``concatenate`` appends new attributes to the existing ones as additional columns.
                 ``replace`` substitutes ``hdata.hyperedge_attr`` entirely.
+                Defaults to ``replace`` if not provided.
         """
         self.hdata = self.hdata.enrich_hyperedge_attr(enricher, enrichment_mode)
 
@@ -214,6 +218,7 @@ class Dataset(TorchDataset):
             enrichment_mode: How to combine generated weights with existing ``hdata.hyperedge_weights``.
                 ``concatenate`` appends new weights to the existing ones as additional columns.
                 ``replace`` substitutes ``hdata.hyperedge_weights`` entirely.
+                Defaults to ``replace`` if not provided.
         """
         self.hdata = self.hdata.enrich_hyperedge_weights(enricher, enrichment_mode)
 
@@ -325,7 +330,8 @@ class Dataset(TorchDataset):
         seed: int | None = None,
         node_space_setting: NodeSpaceSetting = "transductive",
     ) -> tuple[list[Dataset], list[float]]:
-        """Split the dataset and return the final hyperedge ratios.
+        """
+        Split the dataset and return the final hyperedge ratios.
 
         Final ratios are computed from split hyperedge counts after ratio
         boundaries and any transductive rebalancing have been applied.
@@ -350,12 +356,8 @@ class Dataset(TorchDataset):
                 hyperedges, or a transductive first split cannot cover the full
                 node space.
         """
-        # Allow small imprecision in sum of ratios, but raise error if it's significant
-        # Example: ratios = [0.8, 0.1, 0.1] -> sum = 1.0 (valid)
-        #          ratios = [0.8, 0.1, 0.05] -> sum = 0.95 (invalid, raises ValueError)
-        #          ratios = [0.8, 0.1, 0.1, 0.0000001] -> sum = 1.0000001 (valid, allows small imprecision)
-        if abs(sum(ratios) - 1.0) > 1e-6:
-            raise ValueError(f"Split ratios must sum to 1.0, got {sum(ratios)}.")
+        validate_node_space_setting(node_space_setting)
+        self.__validate_split_ratios(ratios)
         device = self.hdata.device
 
         hyperedge_splitter = HyperedgeIDSplitter(self.hdata)
@@ -445,3 +447,22 @@ class Dataset(TorchDataset):
         """
 
         return self.hdata.stats()
+
+    @staticmethod
+    def __validate_split_ratios(ratios: list[float]) -> None:
+        if len(ratios) < 1:
+            raise ValueError("Split ratios cannot be empty.")
+
+        for ratio in ratios:
+            if not math.isfinite(float(ratio)):
+                raise ValueError(f"Split ratios must be finite, got {ratio}.")
+            if ratio <= 0.0:
+                raise ValueError(f"Split ratios must be positive, got {ratio}.")
+
+        # Allow small imprecision in sum of ratios, but raise error if it's significant
+        # Example: ratios = [0.8, 0.1, 0.1] -> sum = 1.0 (valid)
+        #          ratios = [0.8, 0.1, 0.05] -> sum = 0.95 (invalid, raises ValueError)
+        #          ratios = [0.8, 0.1, 0.1, 0.0000001] -> sum = 1.0000001 (valid, allows small imprecision)
+        ratio_sum = float(sum(ratios))
+        if abs(ratio_sum - 1.0) > 1e-6:
+            raise ValueError(f"Split ratios must sum to 1.0, got {ratio_sum}.")

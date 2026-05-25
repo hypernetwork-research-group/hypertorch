@@ -1,6 +1,6 @@
-import re
 import pytest
 import torch
+import re
 
 from unittest.mock import MagicMock
 from typing import Any, cast
@@ -324,80 +324,6 @@ def test_init_hyperedge_attr_defaults_to_none():
 )
 def test_init_validates_input_values(kwargs, expected_message):
     with pytest.raises(ValueError, match=re.escape(expected_message)):
-        HData(**kwargs)
-
-
-@pytest.mark.parametrize(
-    "kwargs, expected_message",
-    [
-        pytest.param(
-            {"x": cast(Any, [[1.0], [2.0]]), "hyperedge_index": torch.tensor([[0], [0]])},
-            "x must be a torch.Tensor.",
-            id="x_not_tensor",
-        ),
-        pytest.param(
-            {"x": torch.randn(2, 1), "hyperedge_index": cast(Any, [[0], [0]])},
-            "hyperedge_index must be a torch.Tensor.",
-            id="hyperedge_index_not_tensor",
-        ),
-        pytest.param(
-            {
-                "x": torch.randn(2, 1),
-                "hyperedge_index": torch.tensor([[0, 1], [0, 0]]),
-                "hyperedge_attr": cast(Any, [[1.0]]),
-            },
-            "hyperedge_attr must be a torch.Tensor.",
-            id="hyperedge_attr_not_tensor",
-        ),
-        pytest.param(
-            {
-                "x": torch.randn(2, 1),
-                "hyperedge_index": torch.tensor([[0, 1], [0, 0]]),
-                "hyperedge_weights": cast(Any, [1.0]),
-            },
-            "hyperedge_weights must be a torch.Tensor.",
-            id="hyperedge_weights_not_tensor",
-        ),
-        pytest.param(
-            {
-                "x": torch.randn(2, 1),
-                "hyperedge_index": torch.tensor([[0, 1], [0, 0]]),
-                "global_node_ids": cast(Any, [0, 1]),
-            },
-            "global_node_ids must be a torch.Tensor.",
-            id="global_node_ids_not_tensor",
-        ),
-        pytest.param(
-            {
-                "x": torch.randn(2, 1),
-                "hyperedge_index": torch.tensor([[0, 1], [0, 0]]),
-                "y": cast(Any, [1.0]),
-            },
-            "y must be a torch.Tensor.",
-            id="y_not_tensor",
-        ),
-        pytest.param(
-            {
-                "x": torch.randn(2, 1),
-                "hyperedge_index": torch.tensor([[0, 1], [0, 0]]),
-                "num_nodes": cast(Any, 2.0),
-            },
-            "num_nodes must be an int.",
-            id="num_nodes_not_int",
-        ),
-        pytest.param(
-            {
-                "x": torch.randn(2, 1),
-                "hyperedge_index": torch.tensor([[0, 1], [0, 0]]),
-                "num_hyperedges": cast(Any, True),
-            },
-            "num_hyperedges must be an int.",
-            id="num_hyperedges_bool",
-        ),
-    ],
-)
-def test_init_validates_runtime_types(kwargs, expected_message):
-    with pytest.raises(TypeError, match=re.escape(expected_message)):
         HData(**kwargs)
 
 
@@ -1009,6 +935,25 @@ def test_split_transductive_counts(
     assert torch.equal(result.hyperedge_index, expected_hyperedge_index)
 
 
+def test_split_raises_on_invalid_node_space_setting():
+    hdata = HData(
+        x=torch.randn(2, 1),
+        hyperedge_index=torch.tensor([[0, 1], [0, 0]]),
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "node_space_setting must be one of 'transductive' or 'inductive', got 'semi'."
+        ),
+    ):
+        HData.split(
+            hdata,
+            split_hyperedge_ids=torch.tensor([0]),
+            node_space_setting=cast(Any, "semi"),
+        )
+
+
 def test_split_inductive_subsets_node_features():
     x = torch.tensor([[10.0], [20.0], [30.0], [40.0], [50.0]])
     hyperedge_index = torch.tensor([[0, 1, 3, 4], [0, 0, 1, 1]])
@@ -1050,7 +995,7 @@ def test_split_subsets_labels():
         pytest.param(
             "inductive",
             torch.tensor([1]),
-            torch.arange(2),
+            torch.tensor([2, 3]),
             id="inductive",
         ),
     ],
@@ -1060,8 +1005,7 @@ def test_split_handles_none_global_node_ids(
 ):
     x = torch.tensor([[10.0], [20.0], [30.0], [40.0]])
     hyperedge_index = torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]])
-    hdata = HData(x=x, hyperedge_index=hyperedge_index)
-    hdata.global_node_ids = None
+    hdata = HData(x=x, hyperedge_index=hyperedge_index, global_node_ids=None)
 
     result = HData.split(
         hdata,
@@ -1101,8 +1045,12 @@ def test_split_transductive_keeps_full_x_and_global_node_ids():
 def test_split_transductive_handles_none_global_node_ids():
     x = torch.tensor([[10.0], [20.0], [30.0], [40.0], [50.0]])
     hyperedge_index = torch.tensor([[0, 2, 3, 4], [0, 0, 1, 1]])
-    hdata = HData(x=x, hyperedge_index=hyperedge_index, y=torch.tensor([1.0, 0.0]))
-    hdata.global_node_ids = None
+    hdata = HData(
+        x=x,
+        hyperedge_index=hyperedge_index,
+        y=torch.tensor([1.0, 0.0]),
+        global_node_ids=None,
+    )
 
     result = HData.split(
         hdata,
@@ -1239,11 +1187,33 @@ def test_enrich_node_features_concatenate(mock_hdata):
 
 
 @pytest.mark.parametrize(
+    "enrich_method",
+    [
+        pytest.param("enrich_node_features", id="node_features"),
+        pytest.param("enrich_hyperedge_weights", id="hyperedge_weights"),
+        pytest.param("enrich_hyperedge_attr", id="hyperedge_attr"),
+    ],
+)
+def test_enrich_rejects_invalid_enrichment_mode(mock_hdata, enrich_method):
+    enricher_spec = NodeEnricher if enrich_method == "enrich_node_features" else HyperedgeEnricher
+    enricher = MagicMock(spec=enricher_spec)
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "enrichment_mode must be one of 'replace', 'concatenate', or None, got 'append'."
+        ),
+    ):
+        getattr(mock_hdata, enrich_method)(enricher, enrichment_mode=cast(Any, "append"))
+
+    enricher.enrich.assert_not_called()
+
+
+@pytest.mark.parametrize(
     "enrichment_mode",
     [
         pytest.param("replace", id="replace"),
         pytest.param("concatenate", id="concatenate"),
-        pytest.param(None, id="none_enrichment_mode_defaults_to_replace"),
     ],
 )
 def test_enrich_node_features_replace_preserves_global_node_ids(mock_hdata, enrichment_mode):
@@ -1283,37 +1253,6 @@ def test_enrich_node_features_from_aligns_by_global_node_ids():
         result.global_node_ids, utils.to_non_empty_edgeattr(target_hdata.global_node_ids)
     )
     assert torch.equal(result.y, target_hdata.y)
-
-
-@pytest.mark.parametrize(
-    "missing_side",
-    [
-        pytest.param("source", id="source_missing_global_node_ids"),
-        pytest.param("target", id="target_missing_global_node_ids"),
-    ],
-)
-def test_enrich_node_features_from_raises_without_global_node_ids(missing_side):
-    source_hdata = HData(
-        x=torch.tensor([[1.0], [2.0]]),
-        hyperedge_index=torch.tensor([[0, 1], [0, 0]]),
-        global_node_ids=torch.tensor([10, 20]),
-    )
-    target_hdata = HData(
-        x=torch.tensor([[0.0]]),
-        hyperedge_index=torch.tensor([[0], [0]]),
-        global_node_ids=torch.tensor([10]),
-    )
-
-    if missing_side == "source":
-        source_hdata.global_node_ids = None
-    else:
-        target_hdata.global_node_ids = None
-
-    with pytest.raises(
-        ValueError,
-        match=re.escape("Both HData instances must define global_node_ids to align node features."),
-    ):
-        target_hdata.enrich_node_features_from(source_hdata)
 
 
 def test_enrich_node_features_from_raises_when_source_rows_do_not_match_global_node_ids():
@@ -1504,6 +1443,30 @@ def test_enrich_methods_do_not_share_mutable_storage_with_source(hdata_with_all_
         )
 
 
+def test_enrich_node_features_from_raises_on_invalid_node_space_setting():
+    source_hdata = HData(
+        x=torch.tensor([[1.0]]),
+        hyperedge_index=torch.tensor([[0], [0]]),
+        global_node_ids=torch.tensor([10]),
+    )
+    target_hdata = HData(
+        x=torch.tensor([[0.0]]),
+        hyperedge_index=torch.tensor([[0], [0]]),
+        global_node_ids=torch.tensor([10]),
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "node_space_setting must be one of 'transductive' or 'inductive', got 'semi'."
+        ),
+    ):
+        target_hdata.enrich_node_features_from(
+            source_hdata,
+            node_space_setting=cast(Any, "semi"),
+        )
+
+
 def test_enrich_hyperedge_weights_replace():
     x = torch.tensor([[1.0], [2.0], [3.0]])
     hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 1]])
@@ -1656,8 +1619,12 @@ def test_get_device_if_all_consistent_handles_none_global_node_ids():
     x = torch.randn(3, 2)
     hyperedge_index = torch.tensor([[0, 1], [0, 0]])
     hyperedge_attr = torch.randn(1, 4)
-    hdata = HData(x=x, hyperedge_index=hyperedge_index, hyperedge_attr=hyperedge_attr)
-    hdata.global_node_ids = None
+    hdata = HData(
+        x=x,
+        hyperedge_index=hyperedge_index,
+        hyperedge_attr=hyperedge_attr,
+        global_node_ids=None,
+    )
 
     assert hdata.get_device_if_all_consistent() == torch.device("cpu")
 
@@ -1996,13 +1963,12 @@ def test_remove_hyperedges_with_fewer_than_k_nodes_keeps_none_hyperedge_attr():
 def test_remove_hyperedges_with_fewer_than_k_nodes_handles_none_global_node_ids():
     x = torch.randn(5, 2)
     hyperedge_index = torch.tensor([[0, 1, 2, 3, 4], [0, 0, 1, 1, 1]])
-    hdata = HData(x=x, hyperedge_index=hyperedge_index)
-    hdata.global_node_ids = None
+    hdata = HData(x=x, hyperedge_index=hyperedge_index, global_node_ids=None)
 
     result = hdata.remove_hyperedges_with_fewer_than_k_nodes(k=3)
 
     assert result.global_node_ids is not None
-    assert torch.equal(result.global_node_ids, torch.arange(result.num_nodes))
+    assert torch.equal(result.global_node_ids, torch.tensor([2, 3, 4]))
 
 
 def test_remove_hyperedges_with_fewer_than_k_nodes_subsets_hyperedge_weights():

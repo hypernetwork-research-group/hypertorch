@@ -788,8 +788,13 @@ class HyperedgeIndex:
             edge_index: The edge index of the reduced graph. Size ``(2, num_edges)``.
         """
         match strategy:
-            case _:
+            case "clique_expansion":
                 return self.reduce_to_edge_index_on_clique_expansion(**kwargs)
+            case _:
+                raise ValueError(
+                    f"Unsupported reduction strategy: {strategy}. "
+                    "Supported strategies: ['clique_expansion']"
+                )
 
     def reduce_to_edge_index_on_clique_expansion(
         self,

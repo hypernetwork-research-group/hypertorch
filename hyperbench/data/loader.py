@@ -83,10 +83,7 @@ class DataLoader(TorchDataLoader):
 
         collated_x = self.__cached_dataset_hdata.x[node_ids]
         collated_y = self.__cached_dataset_hdata.y[hyperedge_ids]
-
-        collated_global_node_ids = None
-        if self.__cached_dataset_hdata.global_node_ids is not None:
-            collated_global_node_ids = self.__cached_dataset_hdata.global_node_ids[node_ids]
+        collated_global_node_ids = self.__cached_dataset_hdata.global_node_ids[node_ids]
 
         collated_hyperedge_attr = None
         if self.__cached_dataset_hdata.hyperedge_attr is not None:

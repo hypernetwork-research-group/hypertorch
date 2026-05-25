@@ -26,3 +26,21 @@ def is_inductive_setting(node_space_setting: NodeSpaceSetting | None) -> bool:
 
 def is_transductive_setting(node_space_setting: NodeSpaceSetting | None) -> bool:
     return node_space_setting == "transductive"
+
+
+def validate_node_space_setting(node_space_setting: NodeSpaceSetting) -> None:
+    """
+    Validate that the node space setting is one of the supported values.
+
+    Args:
+        node_space_setting: The node space setting to validate, which should be either "inductive" or "transductive".
+
+    Raises:
+        ValueError: If the node space setting is not one of the supported values.
+    """
+    if is_transductive_setting(node_space_setting) or is_inductive_setting(node_space_setting):
+        return
+
+    raise ValueError(
+        f"node_space_setting must be one of 'transductive' or 'inductive', got {node_space_setting!r}."
+    )

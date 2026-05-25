@@ -188,8 +188,10 @@ class NHP(nn.Module):
                 max_embeddings = incidence_aggregator.pool("max")
                 min_embeddings = incidence_aggregator.pool("min")
                 hyperedge_embeddings = max_embeddings - min_embeddings
-            case _:
+            case "mean":
                 hyperedge_embeddings = incidence_aggregator.pool("mean")
+            case _:
+                raise ValueError(f"Invalid aggregation method: {self.aggregation}")
 
         # Decode: linear projection to scalar score per hyperedge
         # shape: (num_hyperedges, 1) -> squeeze -> (num_hyperedges,)

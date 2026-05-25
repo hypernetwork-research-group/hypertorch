@@ -4,6 +4,7 @@ import re
 import pytest
 import torch
 
+from typing import Any, cast
 from unittest.mock import patch
 from hyperbench.types import HIFHypergraph, Hypergraph, HyperedgeIndex
 from hyperbench.tests import MOCK_BASE_PATH
@@ -570,6 +571,16 @@ def test_reduce_with_clique_expansion_matches_specialized_reducer():
     expected = hyperedge_index_wrapper.reduce_to_edge_index_on_clique_expansion()
 
     assert torch.equal(result, expected)
+
+
+def test_reduce_rejects_unsupported_strategy():
+    hyperedge_index = torch.tensor([[0, 1], [0, 0]], dtype=torch.long)
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape("Unsupported reduction strategy: fancy_expansion. "),
+    ):
+        HyperedgeIndex(hyperedge_index).reduce(cast(Any, "fancy_expansion"))
 
 
 @pytest.mark.parametrize(

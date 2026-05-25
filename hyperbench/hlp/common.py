@@ -20,8 +20,8 @@ class HlpModule(L.LightningModule):
         metrics: Optional ``MetricCollection`` of torchmetrics to compute during evaluation.
             Cloned per stage (train, val, test) for independent state accumulation.
         negative_sampler: Optional negative sampler. If ``None``, no negative sampling is performed.
-        negative_sampling_schedule: When to perform negative sampling during training. Defaults to ``EVERY_EPOCH``.
-        negative_sampling_every_n: If using ``EVERY_N_EPOCHS`` schedule, how many epochs between negative sampling runs. Defaults to ``1``.
+        negative_sampling_schedule: When to perform negative sampling during training. Defaults to ``"every_epoch"``.
+        negative_sampling_every_n: If using ``"every_n_epochs"`` schedule, how many epochs between negative sampling runs. Defaults to ``1``.
     """
 
     def __init__(
@@ -31,7 +31,7 @@ class HlpModule(L.LightningModule):
         encoder: nn.Module | None = None,
         metrics: MetricCollection | None = None,
         negative_sampler: NegativeSampler | None = None,
-        negative_sampling_schedule: NegativeSamplingSchedule = NegativeSamplingSchedule.EVERY_EPOCH,
+        negative_sampling_schedule: NegativeSamplingSchedule = "every_epoch",
         negative_sampling_every_n: int = 1,
     ):
         super().__init__()

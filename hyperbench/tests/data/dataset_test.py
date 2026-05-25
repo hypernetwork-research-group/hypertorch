@@ -2,7 +2,7 @@ import pytest
 import torch
 import re
 
-from typing import cast
+from typing import Any, cast
 from unittest.mock import patch, MagicMock
 from hyperbench.types import HData
 from hyperbench.data import (
@@ -691,6 +691,41 @@ def test_split_raises_when_ratios_do_not_sum_to_one(mock_hdata_four_nodes):
         dataset.split([0.8, 0.1, 0.05])
 
 
+@pytest.mark.parametrize(
+    "ratios, expected_exception, expected_message",
+    [
+        pytest.param([], ValueError, "Split ratios cannot be empty.", id="empty"),
+        pytest.param(
+            [0.5, 0.0, 0.5], ValueError, "Split ratios must be positive, got 0.0.", id="zero"
+        ),
+        pytest.param(
+            [0.5, float("inf")], ValueError, "Split ratios must be finite, got inf.", id="infinite"
+        ),
+    ],
+)
+def test_split_validates_ratio_values(
+    mock_hdata_four_nodes, ratios, expected_exception, expected_message
+):
+    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_four_nodes):
+        dataset = AlgebraDataset()
+
+    with pytest.raises(expected_exception, match=re.escape(expected_message)):
+        dataset.split(cast(Any, ratios))
+
+
+def test_split_raises_on_invalid_node_space_setting(mock_hdata_four_nodes):
+    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_four_nodes):
+        dataset = AlgebraDataset()
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "node_space_setting must be one of 'transductive' or 'inductive', got 'semi'."
+        ),
+    ):
+        dataset.split([0.5, 0.5], node_space_setting=cast(Any, "semi"))
+
+
 def test_split_raises_when_a_split_has_zero_hyperedges(mock_hdata_four_nodes):
     with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_four_nodes):
         dataset = AlgebraDataset()
@@ -1153,30 +1188,6 @@ def test_enrich_node_features_from_dataset():
     target_dataset.enrich_node_features_from(source_dataset)
 
     assert torch.equal(target_dataset.hdata.x, torch.tensor([[3.0, 30.0], [1.0, 10.0]]))
-
-
-def test_enrich_node_features_from_propagates_hdata_validation_errors():
-    source_dataset = Dataset.from_hdata(
-        HData(
-            x=torch.tensor([[1.0], [2.0]]),
-            hyperedge_index=torch.tensor([[0, 1], [0, 0]]),
-            global_node_ids=torch.tensor([10, 20]),
-        )
-    )
-    target_dataset = Dataset.from_hdata(
-        HData(
-            x=torch.tensor([[0.0]]),
-            hyperedge_index=torch.tensor([[0], [0]]),
-            global_node_ids=torch.tensor([10]),
-        )
-    )
-    target_dataset.hdata.global_node_ids = None
-
-    with pytest.raises(
-        ValueError,
-        match=re.escape("Both HData instances must define global_node_ids to align node features."),
-    ):
-        target_dataset.enrich_node_features_from(source_dataset)
 
 
 def test_enrich_node_features_from_dataset_with_fill_value():
