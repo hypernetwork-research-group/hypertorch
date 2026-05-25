@@ -64,7 +64,7 @@ class HData:
     ):
         self.x: Tensor = x
         self.hyperedge_index: Tensor = hyperedge_index
-        self.__validate_required_tensors_type_and_dim()
+        self.__validate_x_and_hyperedge_index_type_and_dim()
 
         self.hyperedge_weights: Tensor | None = hyperedge_weights
         self.hyperedge_attr: Tensor | None = hyperedge_attr
@@ -982,7 +982,7 @@ class HData:
         return fill_features
 
     def __validate(self) -> None:
-        self.__validate_node_features()
+        self.__validate_x()
         self.__validate_hyperedge_index()
         self.__validate_hyperedge_attr()
         self.__validate_hyperedge_weights()
@@ -1078,7 +1078,7 @@ class HData:
                 f"Got {self.y.size(0)} entries but num_hyperedges={self.num_hyperedges}."
             )
 
-    def __validate_node_features(self) -> None:
+    def __validate_x(self) -> None:
         if self.x.size(0) not in (0, self.num_nodes):
             raise ValueError(
                 "x must have one feature row per node, or be 'torch.empty((0, 0))' if there are no nodes. "
@@ -1109,7 +1109,7 @@ class HData:
         if self.num_hyperedges < 0:
             raise ValueError(f"num_hyperedges must be non-negative, got {self.num_hyperedges}.")
 
-    def __validate_required_tensors_type_and_dim(self) -> None:
+    def __validate_x_and_hyperedge_index_type_and_dim(self) -> None:
         if not isinstance(self.x, Tensor):
             raise TypeError("x must be a torch.Tensor.")
         if not isinstance(self.hyperedge_index, Tensor):

@@ -708,6 +708,7 @@ def test_cat_same_node_space_uses_largest_x_when_not_provided():
         global_node_ids=global_node_ids,
     )
     hdata2 = HData(x=x_small, hyperedge_index=torch.tensor([[0, 2], [1, 1]]))
+
     expected_hyperedge_index = torch.tensor([[0, 1, 2, 0, 2], [0, 0, 0, 1, 1]])
 
     result = HData.cat_same_node_space([hdata1, hdata2])
@@ -725,6 +726,7 @@ def test_cat_same_node_space_uses_provided_x_and_global_node_ids():
 
     custom_x = torch.randn(4, 4)
     custom_global_node_ids = torch.tensor([10, 20, 30, 40])
+
     result = HData.cat_same_node_space(
         hdatas=[hdata1, hdata2],
         x=custom_x,
