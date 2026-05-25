@@ -146,7 +146,7 @@ class Dataset(TorchDataset):
         Args:
             enricher: An instance of NodeEnricher to generate structural node features from hypergraph topology.
             enrichment_mode: How to combine generated features with existing ``hdata.x``.
-                ``concatenate`` appends new features as additional columns.
+                ``concatenate`` appends new features to the existing ones as additional columns.
                 ``replace`` substitutes ``hdata.x`` entirely.
         """
         self.hdata = self.hdata.enrich_node_features(enricher, enrichment_mode)
@@ -197,7 +197,7 @@ class Dataset(TorchDataset):
         Args:
             enricher: An instance of HyperedgeEnricher to generate structural hyperedge attributes from hypergraph topology.
             enrichment_mode: How to combine generated attributes with existing ``hdata.hyperedge_attr``.
-                ``concatenate`` appends new features as additional columns.
+                ``concatenate`` appends new attributes to the existing ones as additional columns.
                 ``replace`` substitutes ``hdata.hyperedge_attr`` entirely.
         """
         self.hdata = self.hdata.enrich_hyperedge_attr(enricher, enrichment_mode)
@@ -212,7 +212,7 @@ class Dataset(TorchDataset):
         Args:
             enricher: An instance of HyperedgeEnricher to generate structural hyperedge weights from hypergraph topology.
             enrichment_mode: How to combine generated weights with existing ``hdata.hyperedge_weights``.
-                ``concatenate`` appends new weights to the existing ones.
+                ``concatenate`` appends new weights to the existing ones as additional columns.
                 ``replace`` substitutes ``hdata.hyperedge_weights`` entirely.
         """
         self.hdata = self.hdata.enrich_hyperedge_weights(enricher, enrichment_mode)
