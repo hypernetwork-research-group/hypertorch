@@ -59,7 +59,7 @@ def test_markdown_table_logger_finalize_does_not_save_when_no_results(tmp_path):
     )
     logger.finalize("success")
 
-    assert not (tmp_path / "comparison" / "results.md").exists()
+    assert not (tmp_path / "comparison" / "overall.md").exists()
 
 
 def test_save_comparison_tables_no_test_results(tmp_path):
@@ -73,7 +73,7 @@ def test_save_comparison_tables_no_test_results(tmp_path):
     logger.log_metrics({"train_loss": 0.254, "val_loss": 0.312})
     logger.finalize("success")
 
-    content = (tmp_path / "comparison" / "results.md").read_text()
+    content = (tmp_path / "comparison" / "overall.md").read_text()
     assert "## Test Results" not in content
     assert "## Train Results" in content
     assert "## Val Results" in content
@@ -92,7 +92,7 @@ def test_save_comparison_tables_no_train_results(tmp_path):
     logger.log_metrics({"test_auc": 0.254, "val_loss": 0.312})
     logger.finalize("success")
 
-    content = (tmp_path / "comparison" / "results.md").read_text()
+    content = (tmp_path / "comparison" / "overall.md").read_text()
     assert "## Test Results" in content
     assert "## Train Results" not in content
     assert "## Val Results" in content
@@ -145,7 +145,7 @@ def test_build_comparison_table_correct_trail(tmp_path):
         """
     ).lstrip()
 
-    table = (tmp_path / "comparison" / "results.md").read_text()
+    table = (tmp_path / "comparison" / "overall.md").read_text()
     assert table == expected_table
 
 
@@ -170,7 +170,7 @@ def test_finalize_train_val_section_branches(tmp_path, metrics, expect_train, ex
     logger.log_metrics(metrics)
     logger.finalize("success")
 
-    content = (tmp_path / "comparison" / "results.md").read_text()
+    content = (tmp_path / "comparison" / "overall.md").read_text()
 
     assert "## Test Results" in content
 
@@ -197,7 +197,7 @@ def test_finalize_no_relevant_metrics_writes_no_file(tmp_path):
     logger.log_metrics({"epoch": 1})  # ignored by split logic
     logger.finalize("success")
 
-    assert not (tmp_path / "comparison" / "results.md").exists()
+    assert not (tmp_path / "comparison" / "overall.md").exists()
 
 
 def test_finalize_writes_train_and_val_sections_and_file(tmp_path):
@@ -212,7 +212,7 @@ def test_finalize_writes_train_and_val_sections_and_file(tmp_path):
     logger.log_metrics({"test_auc": 0.91, "train_loss": 0.25, "val_f1": 0.88})
     logger.finalize("success")
 
-    result_path = tmp_path / "comparison" / "results.md"
+    result_path = tmp_path / "comparison" / "overall.md"
     assert result_path.exists()
 
     content = result_path.read_text()
@@ -233,7 +233,7 @@ def test_finalize_writes_val_section_when_train_missing(tmp_path):
     logger.log_metrics({"test_auc": 0.91, "val_f1": 0.88})
     logger.finalize("success")
 
-    result_path = tmp_path / "comparison" / "results.md"
+    result_path = tmp_path / "comparison" / "overall.md"
     assert result_path.exists()
 
     content = result_path.read_text()
