@@ -6,9 +6,14 @@ from torchmetrics.classification import (
     BinaryPrecision,
     BinaryRecall,
 )
-from hyperbench.data import AlgebraDataset, DataLoader, SamplingStrategy
-from hyperbench.nn import LaplacianPositionalEncodingEnricher
-from hyperbench.train import MultiModelTrainer, RandomNegativeSampler
+from hyperbench.data import (
+    AlgebraDataset,
+    DataLoader,
+    SamplingStrategy,
+    LaplacianPositionalEncodingEnricher,
+    RandomNegativeSampler,
+)
+from hyperbench.train import MultiModelTrainer
 from hyperbench.types import ModelConfig
 
 

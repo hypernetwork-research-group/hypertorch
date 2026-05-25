@@ -9,7 +9,7 @@ from hyperbench.integration_tests.common import (
     add_model_configs,
     multi_model_trainer,
 )
-from hyperbench.nn import Node2VecEnricher
+from hyperbench.data import Node2VecEnricher
 from hyperbench.hlp import Node2VecGCNHlpModule, Node2VecGCNHlpConfig
 
 pytestmark = pytest.mark.filterwarnings(
