@@ -210,9 +210,9 @@ class Dataset(TorchDataset):
         """Enrich hyperedge weights using the provided hyperedge weight enricher.
 
         Args:
-            enricher: An instance of HyperedgeEnricher to generate structural hyperedge features from hypergraph topology.
-            enrichment_mode: How to combine generated features with existing ``hdata.hyperedge_weights``.
-                ``concatenate`` appends new features as additional columns.
+            enricher: An instance of HyperedgeEnricher to generate structural hyperedge weights from hypergraph topology.
+            enrichment_mode: How to combine generated weights with existing ``hdata.hyperedge_weights``.
+                ``concatenate`` appends new weights to the existing 1D tensor.
                 ``replace`` substitutes ``hdata.hyperedge_weights`` entirely.
         """
         self.hdata = self.hdata.enrich_hyperedge_weights(enricher, enrichment_mode)

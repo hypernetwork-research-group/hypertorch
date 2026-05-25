@@ -28,7 +28,7 @@ def mock_hdata() -> HData:
 def mock_hdata_with_hyperedge_attr() -> HData:
     x = torch.ones((3, 1), dtype=torch.float)
     hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 1]], dtype=torch.long)
-    hyperedge_attr = torch.ones((3, 1), dtype=torch.float)
+    hyperedge_attr = torch.ones((2, 1), dtype=torch.float)
     return HData(x=x, hyperedge_index=hyperedge_index, hyperedge_attr=hyperedge_attr)
 
 
@@ -36,7 +36,7 @@ def mock_hdata_with_hyperedge_attr() -> HData:
 def mock_hdata_with_hyperedge_weights() -> HData:
     x = torch.ones((3, 1), dtype=torch.float)
     hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 1]], dtype=torch.long)
-    hyperedge_weights = torch.tensor([1.0, 2.0, 3.0], dtype=torch.float)
+    hyperedge_weights = torch.tensor([1.0, 2.0], dtype=torch.float)
     return HData(x=x, hyperedge_index=hyperedge_index, hyperedge_weights=hyperedge_weights)
 
 
@@ -51,7 +51,7 @@ def mock_hdata_isolated_hyperedges() -> HData:
 def mock_hdata_three_nodes_weighted() -> HData:
     x = torch.ones((3, 1), dtype=torch.float)
     hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 1]], dtype=torch.long)
-    hyperedge_weights = torch.tensor([[1.0], [2.0]], dtype=torch.float)
+    hyperedge_weights = torch.tensor([1.0, 2.0], dtype=torch.float)
     return HData(x=x, hyperedge_index=hyperedge_index, hyperedge_weights=hyperedge_weights)
 
 
@@ -86,8 +86,8 @@ def mock_hdata_no_hyperedge_attr() -> HData:
 def mock_hdata_multiple_hyperedge_attrs() -> HData:
     x = torch.ones((4, 1), dtype=torch.float)
     hyperedge_index = torch.tensor([[0, 1, 2, 3], [0, 0, 1, 2]], dtype=torch.long)
-    hyperedge_weights = torch.tensor([[1.0], [2.0], [3.0]], dtype=torch.float)
-    hyperedge_attr = torch.ones((4, 1), dtype=torch.float)
+    hyperedge_weights = torch.tensor([1.0, 2.0, 3.0], dtype=torch.float)
+    hyperedge_attr = torch.ones((3, 1), dtype=torch.float)
     return HData(
         x=x,
         hyperedge_index=hyperedge_index,
@@ -106,7 +106,7 @@ def mock_hdata_transductive_multiple_hyperedges_attrs() -> HData:
         ],
         dtype=torch.long,
     )
-    hyperedge_weights = torch.tensor([[1.0], [2.0], [3.0]], dtype=torch.float)
+    hyperedge_weights = torch.tensor([1.0, 2.0, 3.0], dtype=torch.float)
     hyperedge_attr = torch.ones((3, 1), dtype=torch.float)
     return HData(
         x=x,
@@ -120,7 +120,7 @@ def mock_hdata_transductive_multiple_hyperedges_attrs() -> HData:
 def mock_hdata_two_hyperedge_attrs_weighted() -> HData:
     x = torch.ones((3, 1), dtype=torch.float)
     hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 1]], dtype=torch.long)
-    hyperedge_weights = torch.tensor([[1.0, 2.0], [3.0, 0.1]], dtype=torch.float)
+    hyperedge_weights = torch.tensor([1.0, 3.0], dtype=torch.float)
     return HData(x=x, hyperedge_index=hyperedge_index, hyperedge_weights=hyperedge_weights)
 
 
@@ -180,9 +180,8 @@ def test_dataset_process_with_edge_attributes(mock_hdata_two_hyperedge_attrs_wei
     assert dataset.hdata.hyperedge_index.shape[1] == 3
     assert dataset.hdata.hyperedge_attr is None
     assert dataset.hdata.hyperedge_weights is not None
-    assert dataset.hdata.hyperedge_weights.shape == (2, 2)
-    assert torch.allclose(dataset.hdata.hyperedge_weights[0], torch.tensor([1.0, 2.0]))
-    assert torch.allclose(dataset.hdata.hyperedge_weights[1], torch.tensor([3.0, 0.1]))
+    assert dataset.hdata.hyperedge_weights.shape == (2,)
+    assert torch.allclose(dataset.hdata.hyperedge_weights, torch.tensor([1.0, 3.0]))
 
 
 def test_dataset_process_without_edge_attributes(mock_hdata_no_hyperedge_attr):
@@ -450,7 +449,7 @@ def test_enrich_hyperedge_attr_replace(mock_hdata):
     dataset = Dataset.from_hdata(mock_hdata)
 
     enricher = MagicMock(spec=HyperedgeEnricher)
-    enriched_x = torch.randn(3, 4)
+    enriched_x = torch.randn(2, 4)
     enricher.enrich.return_value = enriched_x
 
     dataset.enrich_hyperedge_attr(enricher)
@@ -468,7 +467,7 @@ def test_enrich_hyperedge_attr_concatenate(mock_hdata_with_hyperedge_attr):
     original_hyperedge_attr = original_hyperedge_attr.clone()
 
     enricher = MagicMock(spec=HyperedgeEnricher)
-    enriched_x = torch.randn(3, 4)
+    enriched_x = torch.randn(2, 4)
     enricher.enrich.return_value = enriched_x
 
     dataset.enrich_hyperedge_attr(enricher, enrichment_mode="concatenate")
@@ -478,14 +477,14 @@ def test_enrich_hyperedge_attr_concatenate(mock_hdata_with_hyperedge_attr):
     hyperedge_attr = dataset.hdata.hyperedge_attr
     assert hyperedge_attr is not None
     assert torch.equal(hyperedge_attr, expected_x)
-    assert hyperedge_attr.shape == (3, 5)  # 1 original + 4 enriched
+    assert hyperedge_attr.shape == (2, 5)  # 1 original + 4 enriched
 
 
 def test_enrich_hyperedge_weights_replace(mock_hdata):
     dataset = Dataset.from_hdata(mock_hdata)
 
     enricher = MagicMock(spec=HyperedgeEnricher)
-    enriched_weights = torch.randn(3)
+    enriched_weights = torch.randn(2)
     enricher.enrich.return_value = enriched_weights
 
     dataset.enrich_hyperedge_weights(enricher)
@@ -496,24 +495,24 @@ def test_enrich_hyperedge_weights_replace(mock_hdata):
     assert torch.equal(hyperedge_weights, enriched_weights)
 
 
-def test_enrich_hyperedge_weights_concatenate(mock_hdata_with_hyperedge_weights):
+def test_enrich_hyperedge_weights_concatenate(
+    mock_hdata_with_hyperedge_weights,
+):
     dataset = Dataset.from_hdata(mock_hdata_with_hyperedge_weights)
-    original_weights = dataset.hdata.hyperedge_weights
-    assert original_weights is not None
-    original_weights = original_weights.clone()
+    dataset.hdata.hyperedge_index = torch.tensor([[0, 1, 2, 0], [0, 0, 1, 2]])
+    dataset.hdata.num_hyperedges = 3
+    dataset.hdata.y = torch.ones(3, dtype=torch.float)
 
     enricher = MagicMock(spec=HyperedgeEnricher)
-    enriched_weights = torch.randn(3)
+    enriched_weights = torch.tensor([3.0])
     enricher.enrich.return_value = enriched_weights
 
     dataset.enrich_hyperedge_weights(enricher, enrichment_mode="concatenate")
 
-    enricher.enrich.assert_called_once_with(mock_hdata_with_hyperedge_weights.hyperedge_index)
-    expected_weights = torch.cat([original_weights, enriched_weights], dim=0)
-    hyperedge_weights = dataset.hdata.hyperedge_weights
-    assert hyperedge_weights is not None
-    assert torch.equal(hyperedge_weights, expected_weights)
-    assert hyperedge_weights.shape == (6,)  # 3 original + 3 enriched
+    enricher.enrich.assert_called_once_with(dataset.hdata.hyperedge_index)
+    assert dataset.hdata.hyperedge_weights is not None
+    assert torch.equal(dataset.hdata.hyperedge_weights, torch.tensor([1.0, 2.0, 3.0]))
+    assert dataset.hdata.hyperedge_weights.shape == (3,)
 
 
 @pytest.mark.parametrize(

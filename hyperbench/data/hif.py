@@ -151,8 +151,7 @@ class HIFProcessor:
         hyperedge_id_to_idx: dict[Any, int],
         num_hyperedges: int,
     ) -> Tensor | None:
-        # hyperedge-attr: shape [num_hyperedges, num_hyperedge_attributes]
-        hyperedge_attr = None
+        hyperedge_attr = None  # shape [num_hyperedges, num_hyperedge_attributes]
         has_hyperedges = hypergraph.hyperedges is not None and len(hypergraph.hyperedges) > 0
         has_any_hyperedge_attrs = has_hyperedges and any(
             "attrs" in edge for edge in hypergraph.hyperedges
@@ -233,7 +232,7 @@ class HIFProcessor:
             edge_attrs = hyperedge_id_to_attrs.get(edge_id, {})
             weights.append(float(edge_attrs.get("weight", 1.0)))
 
-        return torch.tensor(weights, dtype=torch.float)
+        return torch.tensor(weights, dtype=torch.float)  # shape [num_hyperedges,]
 
 
 class HIFLoader:

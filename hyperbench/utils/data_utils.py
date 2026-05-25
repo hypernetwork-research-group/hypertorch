@@ -8,15 +8,15 @@ def clone_optional_tensor(tensor: Tensor | None) -> Tensor | None:
 
 
 def empty_nodefeatures() -> Tensor:
-    return torch.empty((0, 0))
+    return torch.empty((0, 0), dtype=torch.float)
 
 
 def empty_hyperedgeindex() -> Tensor:
-    return torch.empty((2, 0))
+    return torch.empty((2, 0), dtype=torch.long)
 
 
 def empty_edgeattr(num_edges: int) -> Tensor:
-    return torch.empty((num_edges, 0))
+    return torch.empty((num_edges, 0), dtype=torch.float)
 
 
 def to_non_empty_edgeattr(edge_attr: Tensor | None) -> Tensor:

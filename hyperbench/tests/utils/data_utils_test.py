@@ -37,35 +37,39 @@ def test_clone_optional_tensor_with_tensor_does_not_share_storage():
     assert tensor[0, 0] == 1.0
 
 
-def test_empty_edgeindex():
+def test_empty_hyperedgeindex():
     result = empty_hyperedgeindex()
 
     assert result.shape == (2, 0)
-    assert result.dtype == torch.float32
+    assert result.dtype == torch.long
 
 
 def test_empty_edgeattr_zero_edges():
     result = empty_edgeattr(num_edges=0)
 
     assert result.shape == (0, 0)
+    assert result.dtype == torch.float
 
 
 def test_empty_edgeattr_single_edge():
     result = empty_edgeattr(num_edges=1)
 
     assert result.shape == (1, 0)
+    assert result.dtype == torch.float
 
 
 def test_empty_edgeattr_with_edges():
     result = empty_edgeattr(num_edges=5)
 
     assert result.shape == (5, 0)
+    assert result.dtype == torch.float
 
 
 def test_to_non_empty_edgeattr_with_none():
     result = to_non_empty_edgeattr(edge_attr=None)
 
     assert result.shape == (0, 0)
+    assert result.dtype == torch.float
 
 
 def test_to_non_empty_edgeattr_with_tensor():
@@ -74,6 +78,7 @@ def test_to_non_empty_edgeattr_with_tensor():
 
     assert torch.equal(result, edge_attr)
     assert result.shape == (3, 1)
+    assert result.dtype == torch.float
 
 
 def test_to_non_empty_edgeattr_with_empty_tensor():
@@ -82,6 +87,7 @@ def test_to_non_empty_edgeattr_with_empty_tensor():
 
     assert torch.equal(result, edge_attr)
     assert result.shape == (0, 3)
+    assert result.dtype == torch.float
 
 
 def test_to_non_empty_edgeattr_with_multi_dimensional():
@@ -90,12 +96,14 @@ def test_to_non_empty_edgeattr_with_multi_dimensional():
 
     assert torch.equal(result, edge_attr)
     assert result.shape == (2, 3)
+    assert result.dtype == torch.float
 
 
 def test_empty_nodefeatures():
     result = empty_nodefeatures()
 
     assert result.shape == (0, 0)
+    assert result.dtype == torch.float
 
 
 @pytest.mark.parametrize(
