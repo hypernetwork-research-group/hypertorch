@@ -239,7 +239,7 @@ class HData:
             hyperedge_attr=None,
             num_nodes=0,
             num_hyperedges=0,
-            global_node_ids=torch.empty(size=(0,), dtype=torch.long),
+            global_node_ids=None,
             y=None,
         )
 

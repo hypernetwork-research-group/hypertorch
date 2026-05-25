@@ -4,7 +4,6 @@ import torch
 
 from unittest.mock import MagicMock
 from typing import Any, cast
-from torch import Tensor
 from hyperbench import utils
 from hyperbench.data import HyperedgeEnricher, NegativeSampler, NodeEnricher, RandomNegativeSampler
 from hyperbench.types import HData
@@ -452,16 +451,22 @@ def test_empty_returns_empty_hdata():
     data = HData.empty()
 
     assert data.x is not None
-    assert isinstance(data.x, Tensor)
     assert data.x.shape == (0, 0)
 
     assert data.hyperedge_index is not None
-    assert isinstance(data.hyperedge_index, Tensor)
     assert data.hyperedge_index.shape == (2, 0)
 
     assert data.hyperedge_attr is None
+    assert data.hyperedge_weights is None
+
     assert data.num_nodes == 0
     assert data.num_hyperedges == 0
+
+    assert data.global_node_ids is not None
+    assert data.global_node_ids.shape == (0,)
+
+    assert data.y is not None
+    assert data.y.shape == (0,)
 
 
 @pytest.mark.parametrize(
