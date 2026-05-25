@@ -195,8 +195,8 @@ class Dataset(TorchDataset):
         """Enrich hyperedge features using the provided hyperedge feature enricher.
 
         Args:
-            enricher: An instance of HyperedgeEnricher to generate structural hyperedge features from hypergraph topology.
-            enrichment_mode: How to combine generated features with existing ``hdata.hyperedge_attr``.
+            enricher: An instance of HyperedgeEnricher to generate structural hyperedge attributes from hypergraph topology.
+            enrichment_mode: How to combine generated attributes with existing ``hdata.hyperedge_attr``.
                 ``concatenate`` appends new features as additional columns.
                 ``replace`` substitutes ``hdata.hyperedge_attr`` entirely.
         """
