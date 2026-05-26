@@ -690,19 +690,17 @@ def test_split_raises_when_ratios_do_not_sum_to_one(mock_hdata_four_nodes):
     with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_four_nodes):
         dataset = AlgebraDataset()
 
-    with pytest.raises(ValueError, match=re.escape("Split ratios must sum to 1.0")):
+    with pytest.raises(ValueError, match=re.escape("'ratios' must sum to 1.0")):
         dataset.split([0.8, 0.1, 0.05])
 
 
 @pytest.mark.parametrize(
     "ratios, expected_exception, expected_message",
     [
-        pytest.param([], ValueError, "Split ratios cannot be empty.", id="empty"),
+        pytest.param([], ValueError, "'ratios' cannot be empty.", id="empty"),
+        pytest.param([0.5, 0.0, 0.5], ValueError, "'ratios' must be positive, got 0.0.", id="zero"),
         pytest.param(
-            [0.5, 0.0, 0.5], ValueError, "Split ratios must be positive, got 0.0.", id="zero"
-        ),
-        pytest.param(
-            [0.5, float("inf")], ValueError, "Split ratios must be finite, got inf.", id="infinite"
+            [0.5, float("inf")], ValueError, "'ratios' must be finite, got inf.", id="infinite"
         ),
     ],
 )

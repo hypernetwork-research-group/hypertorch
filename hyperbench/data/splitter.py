@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from typing import cast
 from torch import Tensor
 from hyperbench.types import HData
+from hyperbench.utils import validate_is_non_empty, validate_split_ratios
 
 
 class Splitter(ABC):
@@ -60,6 +61,13 @@ class HyperedgeIDSplitter(Splitter):
         Raises:
             ValueError: If one or more nodes do not appear in any hyperedge of the source hypergraph.
         """
+        validate_is_non_empty("hyperedge_ids_by_split", hyperedge_ids_by_split)
+        if split_idx < 0 or split_idx >= len(hyperedge_ids_by_split):
+            raise ValueError(
+                f"split_idx must reference an existing split, got {split_idx} "
+                f"for {len(hyperedge_ids_by_split)} splits."
+            )
+
         required_node_ids = torch.arange(self.hdata.num_nodes, device=self.hdata.device)
         available_node_ids = self.hdata.hyperedge_index[0].unique()
         missing_from_hypergraph_mask = torch.logical_not(
@@ -185,6 +193,8 @@ class HyperedgeIDSplitter(Splitter):
             hyperedge_ids_by_split: The updated hyperedge IDs for each split.
             ratios: The final ratios of hyperedges in each split after rebalancing.
         """
+        validate_split_ratios(ratios)
+
         # Cumulative floor boundaries keep early splits from over-consuming hyperedges.
         # The last split absorbs any rounding remainder.
         num_hyperedges = int(to_split.size(0))

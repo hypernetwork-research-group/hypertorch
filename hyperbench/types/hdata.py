@@ -14,6 +14,9 @@ from hyperbench.utils import (
     is_inductive_setting,
     is_transductive_setting,
     to_0based_ids,
+    validate_is_non_empty,
+    validate_is_non_negative,
+    validate_is_positive,
     validate_node_space_setting,
 )
 
@@ -78,10 +81,12 @@ class HData:
             # as each isolated node gets its own self-loop hyperedge
             else hyperedge_index_wrapper.num_nodes_if_isolated_exist(num_nodes=x.size(0))
         )
+        validate_is_non_negative("num_nodes", self.num_nodes)
+
         self.num_hyperedges: int = (
             num_hyperedges if num_hyperedges is not None else hyperedge_index_wrapper.num_hyperedges
         )
-        self.__validate_number_of_nodes_and_hyperedges()
+        validate_is_non_negative("num_hyperedges", self.num_hyperedges)
 
         self.global_node_ids = (
             # torch.arange is to handle isolated nodes, as they are already considered
@@ -166,17 +171,8 @@ class HData:
             ValueError: If no HData instances are provided, if there are overlapping hyperedge IDs across instances,
                 or if ``x`` and ``global_node_ids`` are not both provided when one of them is provided.
         """
-        if len(hdatas) < 1:
-            raise ValueError("At least one instance is required.")
-
-        joint_hyperedge_ids = torch.cat([hdata.hyperedge_index[1].unique() for hdata in hdatas])
-        unique_joint_hyperedge_ids = joint_hyperedge_ids.unique()
-        if unique_joint_hyperedge_ids.size(0) != joint_hyperedge_ids.size(0):
-            raise ValueError(
-                "Overlapping hyperedge IDs found across instances. Ensure each instance uses distinct hyperedge IDs."
-            )
-
         cls.__validate_can_perform_cat_same_node_space(hdatas, x, global_node_ids)
+
         hdata_with_largest_node_space = max(hdatas, key=lambda hdata: hdata.num_nodes)
         new_x = (x.clone() if x is not None else hdata_with_largest_node_space.x).clone()
         new_global_node_ids = (
@@ -644,6 +640,8 @@ class HData:
         return devices.pop() if len(devices) == 1 else torch.device("cpu")
 
     def remove_hyperedges_with_fewer_than_k_nodes(self, k: int) -> HData:
+        validate_is_positive("k", k)
+
         hyperedge_index_wrapper = HyperedgeIndex(
             self.hyperedge_index.clone()
         ).remove_hyperedges_with_fewer_than_k_nodes(k)
@@ -939,8 +937,7 @@ class HData:
         x: Tensor | None,
         global_node_ids: Tensor | None,
     ) -> None:
-        if len(hdatas) < 1:
-            raise ValueError("At least one instance is required.")
+        validate_is_non_empty("hdatas", hdatas)
 
         if x is not None and global_node_ids is None:
             raise ValueError(
@@ -1114,13 +1111,6 @@ class HData:
             "node_space_setting must be one of 'transductive' or 'inductive', "
             f"got {node_space_setting!r}."
         )
-
-    def __validate_number_of_nodes_and_hyperedges(self) -> None:
-        # Check on bool as bool is a subclass of int
-        if self.num_nodes < 0:
-            raise ValueError(f"num_nodes must be non-negative, got {self.num_nodes}.")
-        if self.num_hyperedges < 0:
-            raise ValueError(f"num_hyperedges must be non-negative, got {self.num_hyperedges}.")
 
     def __validate_x_and_hyperedge_index_type_and_dim(self) -> None:
         if self.x.dim() != 2:

@@ -3,6 +3,7 @@ import torch
 import re
 
 from pathlib import Path
+from collections.abc import Callable
 from unittest.mock import patch
 from torch import Tensor
 from hyperbench.data import (
@@ -17,7 +18,6 @@ from hyperbench.data import (
     VilLainEnricher,
     VilLainHyperedgeAttrsEnricher,
 )
-
 from hyperbench.data.enricher import Enricher, _VilLainTrainer
 from hyperbench.tests.mock.mock import new_mock_pyg_node2vec, new_mock_villain
 
@@ -92,8 +92,13 @@ def test_fill_value_hyperedge_attrs_enricher_returns_empty_attrs_for_empty_input
     ],
 )
 def test_ab_hyperedge_weights_enricher_rejects_invalid_alpha(alpha: float) -> None:
-    with pytest.raises(ValueError, match=re.escape("Alpha must be between 0.0 and 1.0.")):
+    with pytest.raises(ValueError, match=re.escape("'alpha' must be between 0.0 and 1.0")):
         ABHyperedgeWeightsEnricher(alpha=alpha)
+
+
+def test_ab_hyperedge_weights_enricher_rejects_non_finite_beta() -> None:
+    with pytest.raises(ValueError, match=re.escape("'beta' must be finite when provided")):
+        ABHyperedgeWeightsEnricher(beta=float("inf"))
 
 
 def test_ab_hyperedge_weights_enricher_counts_nodes_per_hyperedge(
@@ -135,6 +140,74 @@ def test_node2vec_enricher_rejects_context_larger_than_walk_length() -> None:
         match=re.escape("Expected walk_length >= context_size, got walk_length=2, context_size=3."),
     ):
         Node2VecEnricher(num_features=4, walk_length=2, context_size=3)
+
+
+@pytest.mark.parametrize(
+    ("build_invalid_enricher", "expected_message"),
+    [
+        pytest.param(
+            lambda: Node2VecEnricher(num_features=0),
+            "'num_features' must be positive",
+            id="features",
+        ),
+        pytest.param(
+            lambda: Node2VecEnricher(num_features=3, walk_length=0),
+            "'walk_length' must be positive",
+            id="walk_length",
+        ),
+        pytest.param(
+            lambda: Node2VecEnricher(num_features=3, context_size=0),
+            "'context_size' must be positive",
+            id="context_size",
+        ),
+        pytest.param(
+            lambda: Node2VecEnricher(num_features=3, num_walks_per_node=0),
+            "'num_walks_per_node' must be positive",
+            id="walks_per_node",
+        ),
+        pytest.param(
+            lambda: Node2VecEnricher(num_features=3, p=0.0),
+            "'p' must be positive",
+            id="p",
+        ),
+        pytest.param(
+            lambda: Node2VecEnricher(num_features=3, q=0.0),
+            "'q' must be positive",
+            id="q",
+        ),
+        pytest.param(
+            lambda: Node2VecEnricher(num_features=3, num_negative_samples=0),
+            "'num_negative_samples' must be positive",
+            id="negative_samples",
+        ),
+        pytest.param(
+            lambda: Node2VecEnricher(num_features=3, num_nodes=-1),
+            "'num_nodes' must be non-negative",
+            id="num_nodes",
+        ),
+        pytest.param(
+            lambda: Node2VecEnricher(num_features=3, num_epochs=0),
+            "'num_epochs' must be positive",
+            id="epochs",
+        ),
+        pytest.param(
+            lambda: Node2VecEnricher(num_features=3, learning_rate=float("nan")),
+            "'learning_rate' must be finite",
+            id="learning_rate_finite",
+        ),
+        pytest.param(
+            lambda: Node2VecEnricher(num_features=3, batch_size=0),
+            "'batch_size' must be positive",
+            id="batch_size",
+        ),
+    ],
+)
+def test_node2vec_enricher_rejects_invalid_params(
+    build_invalid_enricher: Callable[[], object],
+    expected_message: str,
+) -> None:
+    with pytest.raises(ValueError, match=re.escape(expected_message)):
+        build_invalid_enricher()
 
 
 def test_node2vec_enricher_returns_empty_features_when_no_nodes() -> None:
@@ -283,6 +356,29 @@ def test_laplacian_positional_encoding_enricher_uses_explicit_num_nodes() -> Non
     assert result.shape == (4, 2)
 
 
+@pytest.mark.parametrize(
+    ("build_invalid_enricher", "expected_message"),
+    [
+        pytest.param(
+            lambda: LaplacianPositionalEncodingEnricher(num_features=0),
+            "'num_features' must be positive",
+            id="features",
+        ),
+        pytest.param(
+            lambda: LaplacianPositionalEncodingEnricher(num_features=3, num_nodes=-1),
+            "'num_nodes' must be non-negative",
+            id="num_nodes",
+        ),
+    ],
+)
+def test_laplacian_positional_encoding_enricher_rejects_invalid_semantic_params(
+    build_invalid_enricher: Callable[[], object],
+    expected_message: str,
+) -> None:
+    with pytest.raises(ValueError, match=re.escape(expected_message)):
+        build_invalid_enricher()
+
+
 def test_villain_trainer_resolves_explicit_and_inferred_counts(
     mock_two_hyperedge_index: Tensor,
 ) -> None:
@@ -302,6 +398,94 @@ def test_villain_trainer_falls_back_to_inferred_counts(
     assert trainer._num_hyperedges(mock_two_hyperedge_index) == 2
 
 
+@pytest.mark.parametrize(
+    ("build_invalid_enricher", "expected_message"),
+    [
+        pytest.param(
+            lambda: VilLainEnricher(num_features=0),
+            "'num_features' must be positive",
+            id="features",
+        ),
+        pytest.param(
+            lambda: VilLainEnricher(num_features=3, num_nodes=-1),
+            "'num_nodes' must be non-negative",
+            id="num_nodes",
+        ),
+        pytest.param(
+            lambda: VilLainEnricher(num_features=3, num_hyperedges=-1),
+            "'num_hyperedges' must be non-negative",
+            id="num_hyperedges",
+        ),
+        pytest.param(
+            lambda: VilLainEnricher(num_features=3, labels_per_subspace=1),
+            "'labels_per_subspace' must be at least 2",
+            id="labels_per_subspace",
+        ),
+        pytest.param(
+            lambda: VilLainEnricher(num_features=3, training_steps=0),
+            "'training_steps' must be positive",
+            id="training_steps",
+        ),
+        pytest.param(
+            lambda: VilLainEnricher(num_features=3, generation_steps=0),
+            "'generation_steps' must be positive",
+            id="generation_steps",
+        ),
+        pytest.param(
+            lambda: VilLainEnricher(num_features=3, tau=float("nan")),
+            "'tau' must be finite",
+            id="tau_finite",
+        ),
+        pytest.param(
+            lambda: VilLainEnricher(num_features=3, tau=0.0),
+            "'tau' must be positive",
+            id="tau_positive",
+        ),
+        pytest.param(
+            lambda: VilLainEnricher(num_features=3, eps=float("nan")),
+            "'eps' must be finite",
+            id="eps_finite",
+        ),
+        pytest.param(
+            lambda: VilLainEnricher(num_features=3, eps=0.0),
+            "'eps' must be positive",
+            id="eps_positive",
+        ),
+        pytest.param(
+            lambda: VilLainEnricher(num_features=3, num_epochs=0),
+            "'num_epochs' must be positive",
+            id="num_epochs",
+        ),
+        pytest.param(
+            lambda: VilLainEnricher(num_features=3, learning_rate=float("nan")),
+            "'learning_rate' must be finite",
+            id="learning_rate_finite",
+        ),
+        pytest.param(
+            lambda: VilLainEnricher(num_features=3, learning_rate=0.0),
+            "'learning_rate' must be positive",
+            id="learning_rate_positive",
+        ),
+        pytest.param(
+            lambda: VilLainEnricher(num_features=3, weight_decay=float("nan")),
+            "'weight_decay' must be finite",
+            id="weight_decay_finite",
+        ),
+        pytest.param(
+            lambda: VilLainEnricher(num_features=3, weight_decay=-0.1),
+            "'weight_decay' must be non-negative",
+            id="weight_decay_non_negative",
+        ),
+    ],
+)
+def test_villain_node_enricher_rejects_invalid_params(
+    build_invalid_enricher: Callable[[], object],
+    expected_message: str,
+) -> None:
+    with pytest.raises(ValueError, match=re.escape(expected_message)):
+        build_invalid_enricher()
+
+
 def test_villain_node_enricher_returns_empty_features_when_no_nodes() -> None:
     hyperedge_index = torch.zeros((2, 0), dtype=torch.long)
     enricher = VilLainEnricher(num_features=3)
@@ -311,6 +495,94 @@ def test_villain_node_enricher_returns_empty_features_when_no_nodes() -> None:
 
     assert result.shape == (0, 3)
     assert result.device == hyperedge_index.device
+
+
+@pytest.mark.parametrize(
+    ("build_invalid_enricher", "expected_message"),
+    [
+        pytest.param(
+            lambda: VilLainHyperedgeAttrsEnricher(num_features=0),
+            "'num_features' must be positive",
+            id="features",
+        ),
+        pytest.param(
+            lambda: VilLainHyperedgeAttrsEnricher(num_features=3, num_nodes=-1),
+            "'num_nodes' must be non-negative",
+            id="num_nodes",
+        ),
+        pytest.param(
+            lambda: VilLainHyperedgeAttrsEnricher(num_features=3, num_hyperedges=-1),
+            "'num_hyperedges' must be non-negative",
+            id="num_hyperedges",
+        ),
+        pytest.param(
+            lambda: VilLainHyperedgeAttrsEnricher(num_features=3, labels_per_subspace=1),
+            "'labels_per_subspace' must be at least 2",
+            id="labels_per_subspace",
+        ),
+        pytest.param(
+            lambda: VilLainHyperedgeAttrsEnricher(num_features=3, training_steps=0),
+            "'training_steps' must be positive",
+            id="training_steps",
+        ),
+        pytest.param(
+            lambda: VilLainHyperedgeAttrsEnricher(num_features=3, generation_steps=0),
+            "'generation_steps' must be positive",
+            id="generation_steps",
+        ),
+        pytest.param(
+            lambda: VilLainHyperedgeAttrsEnricher(num_features=3, tau=float("nan")),
+            "'tau' must be finite",
+            id="tau_finite",
+        ),
+        pytest.param(
+            lambda: VilLainHyperedgeAttrsEnricher(num_features=3, tau=0.0),
+            "'tau' must be positive",
+            id="tau_positive",
+        ),
+        pytest.param(
+            lambda: VilLainHyperedgeAttrsEnricher(num_features=3, eps=float("nan")),
+            "'eps' must be finite",
+            id="eps_finite",
+        ),
+        pytest.param(
+            lambda: VilLainHyperedgeAttrsEnricher(num_features=3, eps=0.0),
+            "'eps' must be positive",
+            id="eps_positive",
+        ),
+        pytest.param(
+            lambda: VilLainHyperedgeAttrsEnricher(num_features=3, num_epochs=0),
+            "'num_epochs' must be positive",
+            id="num_epochs",
+        ),
+        pytest.param(
+            lambda: VilLainHyperedgeAttrsEnricher(num_features=3, learning_rate=float("nan")),
+            "'learning_rate' must be finite",
+            id="learning_rate_finite",
+        ),
+        pytest.param(
+            lambda: VilLainHyperedgeAttrsEnricher(num_features=3, learning_rate=0.0),
+            "'learning_rate' must be positive",
+            id="learning_rate_positive",
+        ),
+        pytest.param(
+            lambda: VilLainHyperedgeAttrsEnricher(num_features=3, weight_decay=float("nan")),
+            "'weight_decay' must be finite",
+            id="weight_decay_finite",
+        ),
+        pytest.param(
+            lambda: VilLainHyperedgeAttrsEnricher(num_features=3, weight_decay=-0.1),
+            "'weight_decay' must be non-negative",
+            id="weight_decay_non_negative",
+        ),
+    ],
+)
+def test_villain_hyperedge_attrs_enricher_rejects_invalid_params(
+    build_invalid_enricher: Callable[[], object],
+    expected_message: str,
+) -> None:
+    with pytest.raises(ValueError, match=re.escape(expected_message)):
+        build_invalid_enricher()
 
 
 def test_villain_hyperedge_attrs_enricher_returns_empty_attrs_when_no_hyperedges() -> None:

@@ -5,6 +5,13 @@ from .data_utils import (
     empty_nodefeatures,
     to_non_empty_edgeattr,
     to_0based_ids,
+    validate_is_between,
+    validate_is_finite,
+    validate_is_finite_when_provided,
+    validate_is_non_empty,
+    validate_is_non_negative,
+    validate_is_positive,
+    validate_split_ratios,
 )
 
 from .hif_utils import (
@@ -88,7 +95,14 @@ __all__ = [
     "validate_hif_data",
     "validate_hif_json",
     "validate_http_url",
+    "validate_is_between",
+    "validate_is_finite",
+    "validate_is_finite_when_provided",
+    "validate_is_non_empty",
+    "validate_is_non_negative",
+    "validate_is_positive",
     "validate_node_space_setting",
+    "validate_split_ratios",
     "write_dataset_to_disk_as_zst",
     "write_zst_file_to_disk",
 ]

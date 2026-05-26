@@ -1,5 +1,7 @@
+import math
 import torch
 
+from collections.abc import Sequence
 from torch import Tensor
 
 
@@ -53,3 +55,54 @@ def to_0based_ids(original_ids: Tensor, ids_to_rebase: Tensor | None = None) -> 
     ids_to_keep = original_ids[keep_mask]
     sorted_unique_ids_to_rebase = ids_to_rebase.unique(sorted=True)
     return torch.searchsorted(sorted_unique_ids_to_rebase, ids_to_keep)
+
+
+def validate_is_between(
+    name: str,
+    value: int | float,
+    min_value: int | float,
+    max_value: int | float,
+) -> None:
+    if not math.isfinite(value) or value < min_value or value > max_value:
+        raise ValueError(f"{name!r} must be between {min_value} and {max_value}, got {value}.")
+
+
+def validate_is_finite(name: str, value: int | float) -> None:
+    if not math.isfinite(value):
+        raise ValueError(f"{name!r} must be finite, got {value}.")
+
+
+def validate_is_finite_when_provided(name: str, value: int | float | None) -> None:
+    if value is not None and not math.isfinite(value):
+        raise ValueError(f"{name!r} must be finite when provided, got {value}.")
+
+
+def validate_is_non_negative(name: str, value: int | float) -> None:
+    if value < 0:
+        raise ValueError(f"{name!r} must be non-negative, got {value}.")
+
+
+def validate_is_positive(name: str, value: int | float) -> None:
+    if value <= 0:
+        raise ValueError(f"{name!r} must be positive, got {value}.")
+
+
+def validate_is_non_empty(name: str, value: Sequence) -> None:
+    if len(value) < 1:
+        raise ValueError(f"{name!r} cannot be empty.")
+
+
+def validate_split_ratios(ratios: list[int | float]) -> None:
+    validate_is_non_empty("ratios", ratios)
+
+    for ratio in ratios:
+        validate_is_finite("ratios", ratio)
+        validate_is_positive("ratios", ratio)
+
+    # Allow small imprecision in sum of ratios, but raise error if it's significant
+    # Example: ratios = [0.8, 0.1, 0.1] -> sum = 1.0 (valid)
+    #          ratios = [0.8, 0.1, 0.05] -> sum = 0.95 (invalid, raises ValueError)
+    #          ratios = [0.8, 0.1, 0.1, 0.0000001] -> sum = 1.0000001 (valid, allows small imprecision)
+    ratio_sum = float(sum(ratios))
+    if abs(ratio_sum - 1.0) > 1e-6:
+        raise ValueError(f"'ratios' must sum to 1.0, got {ratio_sum}.")

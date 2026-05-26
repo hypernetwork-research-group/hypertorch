@@ -56,7 +56,7 @@ class Node2Vec(nn.Module):
         super().__init__()
         if walk_length < context_size:
             raise ValueError(
-                f"Expected walk_length >= context_size, got "
+                "Expected walk_length >= context_size, got "
                 f"walk_length={walk_length}, context_size={context_size}."
             )
 

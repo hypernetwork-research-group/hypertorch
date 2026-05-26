@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import math
 import torch
 
 from typing import TYPE_CHECKING, Any
@@ -12,6 +11,7 @@ from hyperbench.utils import (
     NodeSpaceSetting,
     is_transductive_setting,
     validate_node_space_setting,
+    validate_split_ratios,
 )
 
 from hyperbench.data.hif import HIFLoader, HIFProcessor
@@ -357,7 +357,8 @@ class Dataset(TorchDataset):
                 node space.
         """
         validate_node_space_setting(node_space_setting)
-        self.__validate_split_ratios(ratios)
+        validate_split_ratios(ratios)
+
         device = self.hdata.device
 
         hyperedge_splitter = HyperedgeIDSplitter(self.hdata)
@@ -447,22 +448,3 @@ class Dataset(TorchDataset):
         """
 
         return self.hdata.stats()
-
-    @staticmethod
-    def __validate_split_ratios(ratios: list[float]) -> None:
-        if len(ratios) < 1:
-            raise ValueError("Split ratios cannot be empty.")
-
-        for ratio in ratios:
-            if not math.isfinite(float(ratio)):
-                raise ValueError(f"Split ratios must be finite, got {ratio}.")
-            if ratio <= 0.0:
-                raise ValueError(f"Split ratios must be positive, got {ratio}.")
-
-        # Allow small imprecision in sum of ratios, but raise error if it's significant
-        # Example: ratios = [0.8, 0.1, 0.1] -> sum = 1.0 (valid)
-        #          ratios = [0.8, 0.1, 0.05] -> sum = 0.95 (invalid, raises ValueError)
-        #          ratios = [0.8, 0.1, 0.1, 0.0000001] -> sum = 1.0000001 (valid, allows small imprecision)
-        ratio_sum = float(sum(ratios))
-        if abs(ratio_sum - 1.0) > 1e-6:
-            raise ValueError(f"Split ratios must sum to 1.0, got {ratio_sum}.")

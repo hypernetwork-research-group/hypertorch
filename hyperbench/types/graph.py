@@ -3,7 +3,7 @@ from __future__ import annotations
 import torch
 
 from torch import Tensor
-from hyperbench import utils
+from hyperbench.utils import validate_is_non_negative, sparse_dropout
 
 
 class Graph:
@@ -124,7 +124,7 @@ class Graph:
             x: The smoothed feature matrix. Size ``(num_nodes, C)``.
         """
         if drop_rate > 0.0:
-            laplacian_matrix = utils.sparse_dropout(laplacian_matrix, drop_rate)
+            laplacian_matrix = sparse_dropout(laplacian_matrix, drop_rate)
         return laplacian_matrix.matmul(x)
 
 
@@ -227,6 +227,7 @@ class EdgeIndex:
         """
         if self.__edge_index.size(1) < 1:
             raise ValueError("Edge index must have at least one edge to add self-loops.")
+        self.__validate_num_nodes(num_nodes)
 
         device = self.__edge_index.device
         src, dest = self.__edge_index[0], self.__edge_index[1]
@@ -302,6 +303,7 @@ class EdgeIndex:
         Returns:
             adjacency: The sparse adjacency matrix of shape ``(num_nodes, num_nodes)``.
         """
+        self.__validate_num_nodes(num_nodes)
         device = self.__edge_index.device
         src, dest = self.__edge_index
         num_nodes = self.num_nodes if num_nodes is None else num_nodes
@@ -350,6 +352,7 @@ class EdgeIndex:
         Returns:
             identity: The sparse identity matrix I of shape ``(num_nodes, num_nodes)``.
         """
+        self.__validate_num_nodes(num_nodes)
         device = self.__edge_index.device
         num_nodes = self.num_nodes if num_nodes is None else num_nodes
 
@@ -387,6 +390,7 @@ class EdgeIndex:
         Returns:
             degree_matrix: The sparse normalized degree matrix D^-1/2 of shape ``(num_nodes, num_nodes)``.
         """
+        self.__validate_num_nodes(num_nodes)
         device = self.__edge_index.device
 
         num_nodes = self.num_nodes if num_nodes is None else num_nodes
@@ -440,6 +444,7 @@ class EdgeIndex:
         Returns:
             laplacian: The sparse symmetric normalized Laplacian matrix of shape ``(num_nodes, num_nodes)``.
         """
+        self.__validate_num_nodes(num_nodes)
         self.to_undirected(with_selfloops=False)
 
         num_nodes = self.num_nodes if num_nodes is None else num_nodes
@@ -479,6 +484,7 @@ class EdgeIndex:
         Returns:
             laplacian: The sparse symmetrically normalized Laplacian matrix of shape ``(num_nodes, num_nodes)``.
         """
+        self.__validate_num_nodes(num_nodes)
         self.to_undirected(with_selfloops=True, num_nodes=num_nodes)
 
         num_nodes = self.num_nodes if num_nodes is None else num_nodes
@@ -522,6 +528,7 @@ class EdgeIndex:
         Returns:
             edge_index: This `EdgeIndex` instance with duplicate edges removed.
         """
+        self.__validate_num_nodes(num_nodes)
         # Example: edge_index = [[0, 1, 2, 2, 0, 3, 2],
         #                        [1, 0, 3, 2, 1, 2, 2]], shape (2, |E| = 7)
         #          -> after torch.unique(..., dim=1):
@@ -576,6 +583,7 @@ class EdgeIndex:
         Returns:
             edge_index: This `EdgeIndex` instance converted to undirected.
         """
+        self.__validate_num_nodes(num_nodes)
         device = self.__edge_index.device
         num_nodes = self.num_nodes if num_nodes is None else num_nodes
 
@@ -658,4 +666,19 @@ class EdgeIndex:
             raise ValueError(
                 "edge_weights must have the same number of entries as edge_index columns. "
                 f"Got {edge_weights.size(0)} edge weights but {self.__edge_index.size(1)} edge columns."
+            )
+
+    def __validate_num_nodes(self, num_nodes: int | None) -> None:
+        if num_nodes is None:
+            return
+
+        validate_is_non_negative("num_nodes", num_nodes)
+
+        if self.num_edges < 1:
+            return
+
+        if self.max_node_id >= num_nodes:
+            raise ValueError(
+                "'num_nodes' is too small for the edge index. "
+                f"Got num_nodes={num_nodes}, but max node id is {self.max_node_id}."
             )

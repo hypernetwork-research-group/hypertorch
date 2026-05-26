@@ -9,8 +9,7 @@ import lightning as L
 
 from pathlib import Path
 from typing import Any
-from collections.abc import Mapping
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from lightning.pytorch.accelerators import Accelerator
 from lightning.pytorch.callbacks import Callback
 from lightning.pytorch.loggers import CSVLogger, Logger
@@ -18,6 +17,7 @@ from lightning.pytorch.profilers import Profiler
 from lightning.pytorch.strategies import Strategy
 from hyperbench.data import DataLoader
 from hyperbench.types import CkptStrategy, ModelConfig, TestResult
+from hyperbench.utils import validate_is_non_empty, validate_is_non_negative
 
 from hyperbench.train.markdown_logger import MarkdownTableLogger
 from hyperbench.train.latex_logger import LaTexTableLogger
@@ -165,13 +165,17 @@ class MultiModelTrainer:
         auto_wait: bool = False,
         **kwargs,
     ) -> None:
+        self.auto_wait = auto_wait
+        self.__tensorboard_process: subprocess.Popen | None = None
+        validate_is_non_negative("tensorboard_port", tensorboard_port)
+
         self.model_configs = model_configs
+        validate_is_non_empty("model_configs", self.model_configs)
+
         self.log_dir = self.__setup_logdir(default_root_dir, experiment_name)
 
         self.auto_start_tensorboard = auto_start_tensorboard
-        self.auto_wait = auto_wait
         self.tensorboard_port = tensorboard_port
-        self.__tensorboard_process: subprocess.Popen | None = None
 
         for model_config in model_configs:
             if model_config.trainer is None:
@@ -238,9 +242,6 @@ class MultiModelTrainer:
         ckpt_path: CkptStrategy | None = None,
         verbose: bool = True,
     ) -> None:
-        if len(self.model_configs) < 1:
-            raise ValueError("No models to fit.")
-
         for i, config in enumerate(self.model_configs):
             if not config.is_trainable:
                 if verbose:
@@ -281,11 +282,7 @@ class MultiModelTrainer:
         verbose: bool = True,
         verbose_loop: bool = True,
     ) -> Mapping[str, TestResult]:
-        if len(self.model_configs) < 1:
-            raise ValueError("No models to test.")
-
         test_results: dict[str, TestResult] = {}
-
         for i, config in enumerate(self.model_configs):
             if config.trainer is None:
                 raise ValueError(f"Trainer not defined for model {config.full_model_name()}.")

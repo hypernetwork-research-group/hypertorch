@@ -1,5 +1,7 @@
 import re
 
+from collections.abc import Callable
+
 import pytest
 import torch
 
@@ -694,6 +696,71 @@ def test_get_sparse_adjacency_matrix_empty_edge_index():
     dense_adj_matrix = adj_matrix.to_dense()
 
     assert torch.all(dense_adj_matrix == 0)
+
+
+@pytest.mark.parametrize(
+    "call_with_num_nodes",
+    [
+        pytest.param(
+            lambda edge_index, num_nodes: edge_index.add_selfloops(num_nodes=num_nodes),
+            id="add_selfloops",
+        ),
+        pytest.param(
+            lambda edge_index, num_nodes: edge_index.get_sparse_adjacency_matrix(
+                num_nodes=num_nodes
+            ),
+            id="get_sparse_adjacency_matrix",
+        ),
+        pytest.param(
+            lambda edge_index, num_nodes: edge_index.get_sparse_identity_matrix(
+                num_nodes=num_nodes
+            ),
+            id="get_sparse_identity_matrix",
+        ),
+        pytest.param(
+            lambda edge_index, num_nodes: edge_index.get_sparse_normalized_degree_matrix(
+                num_nodes=num_nodes
+            ),
+            id="get_sparse_normalized_degree_matrix",
+        ),
+        pytest.param(
+            lambda edge_index, num_nodes: edge_index.get_sparse_normalized_laplacian(
+                num_nodes=num_nodes
+            ),
+            id="get_sparse_normalized_laplacian",
+        ),
+        pytest.param(
+            lambda edge_index, num_nodes: edge_index.get_sparse_normalized_gcn_laplacian(
+                num_nodes=num_nodes
+            ),
+            id="get_sparse_normalized_gcn_laplacian",
+        ),
+        pytest.param(
+            lambda edge_index, num_nodes: edge_index.remove_duplicate_edges(num_nodes=num_nodes),
+            id="remove_duplicate_edges",
+        ),
+        pytest.param(
+            lambda edge_index, num_nodes: edge_index.to_undirected(num_nodes=num_nodes),
+            id="to_undirected",
+        ),
+    ],
+)
+@pytest.mark.parametrize(
+    ("num_nodes", "expected_message"),
+    [
+        pytest.param(-1, "'num_nodes' must be non-negative", id="negative"),
+        pytest.param(1, "'num_nodes' is too small for the edge index", id="too_small"),
+    ],
+)
+def test_edge_index_methods_reject_invalid_num_nodes(
+    call_with_num_nodes: Callable[[EdgeIndex, int], object],
+    num_nodes: int,
+    expected_message: str,
+):
+    edge_index = EdgeIndex(torch.tensor([[0, 1], [1, 2]], dtype=torch.long))
+
+    with pytest.raises(ValueError, match=expected_message):
+        call_with_num_nodes(edge_index, num_nodes)
 
 
 @pytest.mark.parametrize(

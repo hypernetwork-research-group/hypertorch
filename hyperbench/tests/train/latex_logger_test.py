@@ -1,8 +1,7 @@
 import pytest
+
 from textwrap import dedent
-
-
-from hyperbench.train.latex_logger import (
+from hyperbench.train import (
     LaTexTableConfig,
     LaTexTableLogger,
     colorize_metric_value,
@@ -33,6 +32,17 @@ def test_latex_logger_basics(tmp_path, mock_option_configs):
     assert logger.store == {}
     assert logger.save_dir == str(tmp_path)
     assert logger.experiment_name == "exp1"
+
+
+def test_latex_logger_rejects_negative_precision(tmp_path, mock_option_configs):
+    with pytest.raises(ValueError, match="'precision' must be non-negative"):
+        LaTexTableLogger(
+            save_dir=str(tmp_path),
+            model_name="model_a",
+            experiment_name="negative_precision",
+            precision=-1,
+            options=mock_option_configs,
+        )
 
 
 def test_latex_logger_log_hyperparams_is_noop(tmp_path, mock_option_configs):
@@ -120,6 +130,17 @@ def test_save_comparison_tables_no_val_results(tmp_path, mock_option_configs):
 
     assert (tmp_path / "comparison" / "overall.tex").exists()
     assert (tmp_path / "comparison" / "test.tex").exists()
+
+
+def test_colorize_metric_value_rejects_invalid_sort_order():
+    with pytest.raises(ValueError, match="'sort_order' must be 'asc' or 'des'"):
+        colorize_metric_value(
+            metric="test_auc",
+            value=0.8,
+            text="0.8000",
+            metric_bounds={"test_auc": (0.1, 0.9)},
+            sort_order="invalid",
+        )
 
 
 def test_save_comparison_tables_only_val_results(tmp_path, mock_option_configs):

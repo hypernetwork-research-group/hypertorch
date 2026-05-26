@@ -5,7 +5,13 @@ import torch
 from itertools import combinations
 from torch import Tensor
 from typing import Any, Literal, TypeAlias
-from hyperbench.utils import sparse_dropout, to_0based_ids, create_seeded_torch_generator
+from hyperbench.utils import (
+    create_seeded_torch_generator,
+    sparse_dropout,
+    to_0based_ids,
+    validate_is_non_negative,
+    validate_is_positive,
+)
 
 from hyperbench.types.graph import EdgeIndex, Graph
 
@@ -474,6 +480,8 @@ class HyperedgeIndex:
             adjacency: A list where ``adjacency[node_id]`` is the set of nodes adjacent to ``node_id``.
         """
         num_nodes = num_nodes if num_nodes is not None else self.num_nodes
+        self.__validate_num_nodes(num_nodes)
+
         adjacency_list: list[set[int]] = [set() for _ in range(num_nodes)]
 
         for hyperedge_id in self.hyperedge_ids.tolist():
@@ -513,23 +521,12 @@ class HyperedgeIndex:
         Raises:
             ValueError: If the provided dimensions cannot contain the raw node or hyperedge IDs.
         """
-        device = self.__hyperedge_index.device
         num_nodes = num_nodes if num_nodes is not None else self.num_nodes
         num_hyperedges = num_hyperedges if num_hyperedges is not None else self.num_hyperedges
-        if self.num_incidences > 0:
-            max_node_id = int(self.all_node_ids.max().item())
-            if max_node_id >= num_nodes:
-                raise ValueError(
-                    "num_nodes is too small for the hyperedge index. "
-                    f"Got num_nodes={num_nodes}, but max node id is {max_node_id}."
-                )
-            max_hyperedge_id = int(self.all_hyperedge_ids.max().item())
-            if max_hyperedge_id >= num_hyperedges:
-                raise ValueError(
-                    "num_hyperedges is too small for the hyperedge index. "
-                    f"Got num_hyperedges={num_hyperedges}, but max hyperedge id is {max_hyperedge_id}."
-                )
+        self.__validate_num_nodes(num_nodes)
+        self.__validate_num_hyperedges(num_hyperedges)
 
+        device = self.__hyperedge_index.device
         incidence_values = torch.ones(self.num_incidences, dtype=torch.float, device=device)
         incidence_indices = torch.stack([self.all_node_ids, self.all_hyperedge_ids], dim=0)
         incidence_matrix = torch.sparse_coo_tensor(
@@ -557,7 +554,13 @@ class HyperedgeIndex:
             degree_matrix: The sparse diagonal matrix of shape ``(num_nodes, num_nodes)``.
         """
         device = self.__hyperedge_index.device
-        num_nodes = num_nodes if num_nodes is not None else self.num_nodes
+        num_nodes = num_nodes if num_nodes is not None else int(incidence_matrix.size(0))
+        self.__validate_num_nodes(num_nodes)
+        self.__validate_degree_matrix_dimension(
+            name="num_nodes",
+            value=num_nodes,
+            expected=int(incidence_matrix.size(0)),
+        )
 
         degrees = torch.sparse.sum(incidence_matrix, dim=1).to_dense()
         normalized_degrees = degrees.pow(power)
@@ -654,7 +657,15 @@ class HyperedgeIndex:
             degree_matrix: The sparse diagonal matrix D_e^-1 of shape ``(num_hyperedges, num_hyperedges)``.
         """
         device = self.__hyperedge_index.device
-        num_hyperedges = num_hyperedges if num_hyperedges is not None else self.num_hyperedges
+        num_hyperedges = (
+            num_hyperedges if num_hyperedges is not None else int(incidence_matrix.size(1))
+        )
+        self.__validate_num_hyperedges(num_hyperedges)
+        self.__validate_degree_matrix_dimension(
+            name="num_hyperedges",
+            value=num_hyperedges,
+            expected=int(incidence_matrix.size(1)),
+        )
 
         # Example: hyperedge_index = [[0, 1, 2, 0],
         #                             [0, 0, 0, 1]]
@@ -709,6 +720,8 @@ class HyperedgeIndex:
         """
         num_nodes = num_nodes if num_nodes is not None else self.num_nodes
         num_hyperedges = num_hyperedges if num_hyperedges is not None else self.num_hyperedges
+        self.__validate_num_nodes(num_nodes)
+        self.__validate_num_hyperedges(num_hyperedges)
 
         incidence_matrix = self.get_sparse_incidence_matrix(num_nodes, num_hyperedges)
         node_degree_matrix = self.get_sparse_symnormalized_node_degree_matrix(
@@ -755,6 +768,8 @@ class HyperedgeIndex:
         """
         num_nodes = num_nodes if num_nodes is not None else self.num_nodes
         num_hyperedges = num_hyperedges if num_hyperedges is not None else self.num_hyperedges
+        self.__validate_num_nodes(num_nodes)
+        self.__validate_num_hyperedges(num_hyperedges)
 
         incidence_matrix = self.get_sparse_incidence_matrix(num_nodes, num_hyperedges)
         node_degree_matrix = self.get_sparse_rownormalized_node_degree_matrix(
@@ -815,6 +830,9 @@ class HyperedgeIndex:
         Returns:
             edge_index: The edge index of the clique-expanded graph. Size ``(2, |E'|)``.
         """
+        self.__validate_num_nodes(num_nodes)
+        self.__validate_num_hyperedges(num_hyperedges)
+
         incidence_matrix = self.get_sparse_incidence_matrix(
             num_nodes=num_nodes,
             num_hyperedges=num_hyperedges,
@@ -961,6 +979,8 @@ class HyperedgeIndex:
         Returns:
             hyperedge_index: A new `HyperedgeIndex` instance with hyperedges containing fewer than k nodes.
         """
+        validate_is_positive("k", k)
+
         _, idx_to_hyperedge_id, num_nodes_per_hyperedge = torch.unique(
             self.all_hyperedge_ids,
             return_inverse=True,
@@ -1002,3 +1022,41 @@ class HyperedgeIndex:
         self.__hyperedge_index[1] = to_0based_ids(self.all_hyperedge_ids, hyperedge_ids_to_rebase)
 
         return self
+
+    def __validate_num_hyperedges(self, num_hyperedges: int | None) -> None:
+        if num_hyperedges is None:
+            return
+        validate_is_non_negative("num_hyperedges", num_hyperedges)
+
+        if self.all_hyperedge_ids.numel() < 1:
+            return
+
+        max_hyperedge_id = int(self.all_hyperedge_ids.max().item())
+        if max_hyperedge_id >= num_hyperedges:
+            raise ValueError(
+                f"'num_hyperedges' is too small for the hyperedge index. "
+                f"Got num_hyperedges={num_hyperedges}, but max hyperedge id is {max_hyperedge_id}."
+            )
+
+    def __validate_num_nodes(self, num_nodes: int | None) -> None:
+        if num_nodes is None:
+            return
+        validate_is_non_negative("num_nodes", num_nodes)
+
+        if self.all_node_ids.numel() < 1:
+            return
+
+        max_node_id = int(self.all_node_ids.max().item())
+        if max_node_id >= num_nodes:
+            raise ValueError(
+                f"'num_nodes' is too small for the hyperedge index. "
+                f"Got num_nodes={num_nodes}, but max node id is {max_node_id}."
+            )
+
+    def __validate_degree_matrix_dimension(self, name: str, value: int, expected: int) -> None:
+        validate_is_non_negative(name, value)
+        if value != expected:
+            raise ValueError(
+                f"'{name}' must match the incidence matrix dimension. "
+                f"Got {name}={value}, but expected {expected}."
+            )

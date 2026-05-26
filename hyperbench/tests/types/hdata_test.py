@@ -336,7 +336,7 @@ def test_init_validates_input_values(kwargs, expected_message):
                 "hyperedge_index": torch.empty((2, 0), dtype=torch.long),
                 "num_nodes": -1,
             },
-            "num_nodes must be non-negative, got -1.",
+            "'num_nodes' must be non-negative, got -1.",
             id="negative_num_nodes",
         ),
         pytest.param(
@@ -345,7 +345,7 @@ def test_init_validates_input_values(kwargs, expected_message):
                 "hyperedge_index": torch.empty((2, 0), dtype=torch.long),
                 "num_hyperedges": -1,
             },
-            "num_hyperedges must be non-negative, got -1.",
+            "'num_hyperedges' must be non-negative, got -1.",
             id="negative_num_hyperedges",
         ),
     ],
@@ -567,7 +567,7 @@ def test_hdata_to_mps_handles_none_hyperedge_attr(mock_hdata):
 
 
 def test_cat_same_node_space_raises_on_empty_list():
-    with pytest.raises(ValueError, match=re.escape("At least one instance is required.")):
+    with pytest.raises(ValueError, match=re.escape("'hdatas' cannot be empty.")):
         HData.cat_same_node_space([])
 
 
@@ -1963,6 +1963,15 @@ def test_remove_hyperedges_with_fewer_than_k_nodes_keeps_none_hyperedge_attr():
     result = hdata.remove_hyperedges_with_fewer_than_k_nodes(k=1)
 
     assert result.hyperedge_attr is None
+
+
+def test_remove_hyperedges_with_fewer_than_k_nodes_rejects_invalid_k():
+    x = torch.randn(2, 1)
+    hyperedge_index = torch.tensor([[0, 1], [0, 0]], dtype=torch.long)
+    hdata = HData(x=x, hyperedge_index=hyperedge_index)
+
+    with pytest.raises(ValueError, match="'k' must be positive"):
+        hdata.remove_hyperedges_with_fewer_than_k_nodes(k=0)
 
 
 def test_remove_hyperedges_with_fewer_than_k_nodes_handles_none_global_node_ids():

@@ -1,7 +1,7 @@
-from textwrap import dedent
 import pytest
 
-from hyperbench.train.markdown_logger import MarkdownTableLogger
+from textwrap import dedent
+from hyperbench.train import MarkdownTableLogger
 
 
 def test_markdown_table_logger_basic_functions(tmp_path):
@@ -19,6 +19,16 @@ def test_markdown_table_logger_basic_functions(tmp_path):
     assert logger.version == "model_a"
     assert logger.save_dir == str(tmp_path)
     assert logger.experiment_name == experiment_name
+
+
+def test_markdown_table_logger_rejects_negative_precision(tmp_path):
+    with pytest.raises(ValueError, match="'precision' must be non-negative"):
+        MarkdownTableLogger(
+            save_dir=str(tmp_path),
+            model_name="model_a",
+            experiment_name="negative_precision",
+            precision=-1,
+        )
 
 
 def test_log_hyperparams_is_noop(tmp_path):
