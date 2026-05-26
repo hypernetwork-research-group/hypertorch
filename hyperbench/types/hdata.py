@@ -512,6 +512,7 @@ class HData:
         enrichment_mode: EnrichmentMode | None = None,
     ) -> HData:
         """Enrich hyperedge weights using the provided hyperedge weight enricher.
+
         Args:
             enricher: An instance of HyperedgeEnricher to generate hyperedge weights from hypergraph topology.
             enrichment_mode: How to combine generated weights with existing ``hdata.hyperedge_weights``.

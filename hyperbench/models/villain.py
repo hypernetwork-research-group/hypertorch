@@ -20,7 +20,6 @@ class VilLain(nn.Module):
     2. Propagates them over the incidence structure.
     3. Returns averaged propagated node embeddings.
 
-
     Args:
         num_nodes: Total number of trainable nodes.
         embedding_dim: Returned embedding dimension. Defaults to ``128``.

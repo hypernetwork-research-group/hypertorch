@@ -149,6 +149,7 @@ class MarkdownTableLogger(Logger):
 
     def clear(self, experiment_name: str) -> None:
         """Remove accumulated data for an experiment.
+
         Args:
             experiment_name: The experiment name whose data should be cleared.
 
