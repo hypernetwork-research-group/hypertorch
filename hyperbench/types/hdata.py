@@ -8,6 +8,7 @@ from collections.abc import Sequence
 from hyperbench.utils import (
     NodeSpaceFiller,
     NodeSpaceSetting,
+    clone_optional_tensor,
     empty_hyperedgeindex,
     empty_nodefeatures,
     is_inductive_setting,
@@ -23,7 +24,7 @@ if TYPE_CHECKING:
 
 class HData:
     """
-    Container for hypergraph data.
+    Class for representing hypergraph data in a format suitable for hypergraph learning tasks.
 
     Examples:
         >>> x = torch.randn(10, 16)  # 10 nodes with 16 features each
@@ -154,7 +155,8 @@ class HData:
                 "Overlapping hyperedge IDs found across instances. Ensure each instance uses distinct hyperedge IDs."
             )
 
-        new_x = x if x is not None else max(hdatas, key=lambda hdata: hdata.num_nodes).x
+        hdata_with_largest_node_space = max(hdatas, key=lambda hdata: hdata.num_nodes)
+        new_x = (x if x is not None else hdata_with_largest_node_space.x).clone()
         new_y = torch.cat([hdata.y for hdata in hdatas], dim=0)
         new_hyperedge_index = torch.cat([hdata.hyperedge_index for hdata in hdatas], dim=1)
 
@@ -171,6 +173,7 @@ class HData:
         new_hyperedge_weights = (
             torch.cat(hyperedge_weights, dim=0) if len(hyperedge_weights) > 0 else None
         )
+
         return cls(
             x=new_x,
             hyperedge_index=new_hyperedge_index,
@@ -178,7 +181,7 @@ class HData:
             hyperedge_attr=new_hyperedge_attr,
             num_nodes=new_x.size(0),
             num_hyperedges=new_y.size(0),
-            global_node_ids=max(hdatas, key=lambda hdata: hdata.num_nodes).global_node_ids,
+            global_node_ids=clone_optional_tensor(hdata_with_largest_node_space.global_node_ids),
             y=new_y,
         )
 
@@ -241,7 +244,7 @@ class HData:
         """
         return cls(
             x=empty_nodefeatures(),
-            hyperedge_index=hyperedge_index,
+            hyperedge_index=hyperedge_index.clone(),
             hyperedge_weights=None,
             hyperedge_attr=None,
             global_node_ids=None,
@@ -290,7 +293,7 @@ class HData:
         # Example: hyperedge_index = [[0, 0, 1, 3, 4],
         #                             [0, 0, 0, 2, 2]]
         #          incidence [2, 1] is missing as 1 is not in split_hyperedge_ids = [0, 2]
-        split_hyperedge_index = hdata.hyperedge_index[:, keep_mask].clone()
+        split_hyperedge_index = hdata.hyperedge_index[:, keep_mask]
 
         # Example: split_hyperedge_index = [[2, 3, 4],
         #                                   [2, 2, 5]]
@@ -316,13 +319,13 @@ class HData:
                 ids_to_rebase=split_unique_hyperedge_ids,
             )
             return cls(
-                x=hdata.x,
+                x=hdata.x.clone(),
                 hyperedge_index=split_hyperedge_index,
                 hyperedge_weights=split_hyperedge_weights,
                 hyperedge_attr=split_hyperedge_attr,
                 num_nodes=hdata.num_nodes,
                 num_hyperedges=len(split_unique_hyperedge_ids),
-                global_node_ids=hdata.global_node_ids,
+                global_node_ids=clone_optional_tensor(hdata.global_node_ids),
                 y=split_y,
             )
 
@@ -340,15 +343,13 @@ class HData:
             .item
         )
 
-        split_x = hdata.x[split_unique_node_ids]
-
         split_global_node_ids = None
         if hdata.global_node_ids is not None:
             split_global_node_ids = hdata.global_node_ids[split_unique_node_ids]
 
         return cls(
-            x=split_x,
-            hyperedge_index=split_hyperedge_index,
+            x=hdata.x[split_unique_node_ids],
+            hyperedge_index=split_hyperedge_index.clone(),
             hyperedge_weights=split_hyperedge_weights,
             hyperedge_attr=split_hyperedge_attr,
             num_nodes=len(split_unique_node_ids),
@@ -381,13 +382,13 @@ class HData:
 
         return self.__class__(
             x=x,
-            hyperedge_index=self.hyperedge_index,
-            hyperedge_weights=self.hyperedge_weights,
-            hyperedge_attr=self.hyperedge_attr,
+            hyperedge_index=self.hyperedge_index.clone(),
+            hyperedge_weights=clone_optional_tensor(self.hyperedge_weights),
+            hyperedge_attr=clone_optional_tensor(self.hyperedge_attr),
             num_nodes=self.num_nodes,
             num_hyperedges=self.num_hyperedges,
-            global_node_ids=self.global_node_ids,
-            y=self.y,
+            global_node_ids=clone_optional_tensor(self.global_node_ids),
+            y=self.y.clone(),
         )
 
     def enrich_node_features_from(
@@ -496,13 +497,13 @@ class HData:
 
         return self.__class__(
             x=enriched_x,
-            hyperedge_index=self.hyperedge_index,
-            hyperedge_weights=self.hyperedge_weights,
-            hyperedge_attr=self.hyperedge_attr,
+            hyperedge_index=self.hyperedge_index.clone(),
+            hyperedge_weights=clone_optional_tensor(self.hyperedge_weights),
+            hyperedge_attr=clone_optional_tensor(self.hyperedge_attr),
             num_nodes=self.num_nodes,
             num_hyperedges=self.num_hyperedges,
-            global_node_ids=self.global_node_ids,
-            y=self.y,
+            global_node_ids=clone_optional_tensor(self.global_node_ids),
+            y=self.y.clone(),
         )
 
     def enrich_hyperedge_weights(
@@ -530,14 +531,14 @@ class HData:
                 hyperedge_weights = enriched_weights
 
         return self.__class__(
-            x=self.x,
-            hyperedge_index=self.hyperedge_index,
+            x=self.x.clone(),
+            hyperedge_index=self.hyperedge_index.clone(),
             hyperedge_weights=hyperedge_weights,
-            hyperedge_attr=self.hyperedge_attr,
+            hyperedge_attr=clone_optional_tensor(self.hyperedge_attr),
             num_nodes=self.num_nodes,
             num_hyperedges=self.num_hyperedges,
-            global_node_ids=self.global_node_ids,
-            y=self.y,
+            global_node_ids=clone_optional_tensor(self.global_node_ids),
+            y=self.y.clone(),
         )
 
     def enrich_hyperedge_attr(
@@ -567,14 +568,14 @@ class HData:
                 hyperedge_attr = enriched_features
 
         return self.__class__(
-            x=self.x,
-            hyperedge_index=self.hyperedge_index,
-            hyperedge_weights=self.hyperedge_weights,
+            x=self.x.clone(),
+            hyperedge_index=self.hyperedge_index.clone(),
+            hyperedge_weights=clone_optional_tensor(self.hyperedge_weights),
             hyperedge_attr=hyperedge_attr,
             num_nodes=self.num_nodes,
             num_hyperedges=self.num_hyperedges,
-            global_node_ids=self.global_node_ids,
-            y=self.y,
+            global_node_ids=clone_optional_tensor(self.global_node_ids),
+            y=self.y.clone(),
         )
 
     def get_device_if_all_consistent(self) -> torch.device:
@@ -602,7 +603,7 @@ class HData:
 
     def remove_hyperedges_with_fewer_than_k_nodes(self, k: int) -> HData:
         hyperedge_index_wrapper = HyperedgeIndex(
-            self.hyperedge_index
+            self.hyperedge_index.clone()
         ).remove_hyperedges_with_fewer_than_k_nodes(k)
 
         x = self.x[hyperedge_index_wrapper.node_ids]
@@ -693,13 +694,13 @@ class HData:
         new_y = self.y[permutation]
 
         return self.__class__(
-            x=self.x,
+            x=self.x.clone(),
             hyperedge_index=new_hyperedge_index,
             hyperedge_weights=new_hyperedge_weights,
             hyperedge_attr=new_hyperedge_attr,
             num_nodes=self.num_nodes,
             num_hyperedges=self.num_hyperedges,
-            global_node_ids=self.global_node_ids,
+            global_node_ids=clone_optional_tensor(self.global_node_ids),
             y=new_y,
         )
 
@@ -710,23 +711,14 @@ class HData:
         Returns:
             hdata: A new `HData` that is a deep copy of this instance.
         """
-        cloned_hyperedge_weights = (
-            self.hyperedge_weights.clone() if self.hyperedge_weights is not None else None
-        )
-        cloned_hyperedge_attr = (
-            self.hyperedge_attr.clone() if self.hyperedge_attr is not None else None
-        )
-        cloned_global_node_ids = (
-            self.global_node_ids.clone() if self.global_node_ids is not None else None
-        )
         return self.__class__(
             x=self.x.clone(),
             hyperedge_index=self.hyperedge_index.clone(),
-            hyperedge_weights=cloned_hyperedge_weights,
-            hyperedge_attr=cloned_hyperedge_attr,
+            hyperedge_weights=clone_optional_tensor(self.hyperedge_weights),
+            hyperedge_attr=clone_optional_tensor(self.hyperedge_attr),
             num_nodes=self.num_nodes,
             num_hyperedges=self.num_hyperedges,
-            global_node_ids=cloned_global_node_ids,
+            global_node_ids=clone_optional_tensor(self.global_node_ids),
             y=self.y.clone(),
         )
 
@@ -753,7 +745,8 @@ class HData:
 
         if self.hyperedge_weights is not None:
             self.hyperedge_weights = self.hyperedge_weights.to(
-                device=device, non_blocking=non_blocking
+                device=device,
+                non_blocking=non_blocking,
             )
 
         self.device = device if isinstance(device, torch.device) else torch.device(device)
@@ -770,13 +763,13 @@ class HData:
             hdata: A new `HData` instance with the same attributes except for y, which is set to a tensor of the given value.
         """
         return self.__class__(
-            x=self.x,
-            hyperedge_index=self.hyperedge_index,
-            hyperedge_weights=self.hyperedge_weights,
-            hyperedge_attr=self.hyperedge_attr,
+            x=self.x.clone(),
+            hyperedge_index=self.hyperedge_index.clone(),
+            hyperedge_weights=clone_optional_tensor(self.hyperedge_weights),
+            hyperedge_attr=clone_optional_tensor(self.hyperedge_attr),
             num_nodes=self.num_nodes,
             num_hyperedges=self.num_hyperedges,
-            global_node_ids=self.global_node_ids,
+            global_node_ids=clone_optional_tensor(self.global_node_ids),
             y=torch.full((self.num_hyperedges,), value, dtype=torch.float, device=self.device),
         )
 

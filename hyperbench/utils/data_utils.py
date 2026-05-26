@@ -3,6 +3,10 @@ import torch
 from torch import Tensor
 
 
+def clone_optional_tensor(tensor: Tensor | None) -> Tensor | None:
+    return tensor.clone() if tensor is not None else None
+
+
 def empty_nodefeatures() -> Tensor:
     return torch.empty((0, 0))
 

@@ -2,12 +2,39 @@ import pytest
 import torch
 
 from hyperbench.utils import (
+    clone_optional_tensor,
     empty_nodefeatures,
     empty_hyperedgeindex,
     empty_edgeattr,
     to_non_empty_edgeattr,
     to_0based_ids,
 )
+
+
+def test_clone_optional_tensor_with_none():
+    result = clone_optional_tensor(None)
+
+    assert result is None
+
+
+def test_clone_optional_tensor_with_tensor_preserves_values():
+    tensor = torch.tensor([[1.0, 2.0], [3.0, 4.0]])
+
+    result = clone_optional_tensor(tensor)
+
+    assert result is not None
+    assert torch.equal(result, tensor)
+
+
+def test_clone_optional_tensor_with_tensor_does_not_share_storage():
+    tensor = torch.tensor([[1.0, 2.0], [3.0, 4.0]])
+
+    result = clone_optional_tensor(tensor)
+    assert result is not None
+
+    result[0, 0] = 99.0
+    print(tensor, result)
+    assert tensor[0, 0] == 1.0
 
 
 def test_empty_edgeindex():

@@ -12,11 +12,11 @@ def assign_hyperedge_label_to_nodes(
     y: Tensor,
     num_hyperedges: int,
 ) -> dict[frozenset[int], float]:
-    labels_by_nodes = {}
+    labels_by_nodes: dict[frozenset[int], float] = {}
     for hyperedge_id in range(num_hyperedges):
         mask = hyperedge_index[1] == hyperedge_id
         nodes = frozenset(hyperedge_index[0][mask].tolist())
-        labels_by_nodes[nodes] = y[hyperedge_id]
+        labels_by_nodes[nodes] = y[hyperedge_id].item()
     return labels_by_nodes
 
 
