@@ -1,62 +1,9 @@
 import pytest
 
 from hyperbench.data import (
-    AlgebraDataset,
-    AmazonDataset,
-    ContactHighSchoolDataset,
-    ContactPrimarySchoolDataset,
-    CoraDataset,
-    CourseraDataset,
-    DBLPDataset,
-    EmailEnronDataset,
-    EmailW3CDataset,
-    GOTDataset,
-    GeometryDataset,
-    HIFLoader,
-    IMDBDataset,
-    MusicBluesReviewsDataset,
-    NBADataset,
-    NDCClassesDataset,
-    NDCSubstancesDataset,
-    PatentDataset,
-    PubmedDataset,
-    RestaurantReviewsDataset,
-    ThreadsAskUbuntuDataset,
-    ThreadsMathsxDataset,
-    TwitterDataset,
-    VegasBarsReviewsDataset,
     list_datasets,
+    get_dataset_by_name,
 )
-
-
-SUPPORTED_DATASETS = {
-    dataset_cls.DATASET_NAME: dataset_cls
-    for dataset_cls in (
-        AlgebraDataset,
-        AmazonDataset,
-        ContactHighSchoolDataset,
-        ContactPrimarySchoolDataset,
-        CoraDataset,
-        CourseraDataset,
-        DBLPDataset,
-        EmailEnronDataset,
-        EmailW3CDataset,
-        GeometryDataset,
-        GOTDataset,
-        IMDBDataset,
-        MusicBluesReviewsDataset,
-        NBADataset,
-        NDCClassesDataset,
-        NDCSubstancesDataset,
-        PatentDataset,
-        PubmedDataset,
-        RestaurantReviewsDataset,
-        ThreadsAskUbuntuDataset,
-        ThreadsMathsxDataset,
-        TwitterDataset,
-        VegasBarsReviewsDataset,
-    )
-}
 
 
 @pytest.mark.parametrize(
@@ -65,14 +12,7 @@ SUPPORTED_DATASETS = {
 )
 @pytest.mark.integration
 def test_all_supported_datasets_load(dataset_name):
-    dataset_cls = SUPPORTED_DATASETS[dataset_name]
-    hdata = HIFLoader.load_by_name(
-        dataset_name,
-        hf_sha=dataset_cls.HF_SHA,
-        save_on_disk=False,
-    )
-
-    dataset = dataset_cls(hdata=hdata)
+    dataset = get_dataset_by_name(dataset_name)
 
     assert dataset.hdata is not None
     assert dataset.hdata.x is not None

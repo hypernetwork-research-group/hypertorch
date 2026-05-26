@@ -1,5 +1,5 @@
 import pytest
-from hyperbench.data import AlgebraDataset, list_datasets
+from hyperbench.data import AlgebraDataset, get_dataset_by_name, list_datasets
 from unittest.mock import patch
 
 
@@ -40,7 +40,26 @@ def test_load_dataset_with_invalid_name():
 
 def test_load_dataset_with_invalid_hf_sha():
     with (
-        pytest.raises(ValueError, match=r"Invalid HF_SHA 12345"),
-        patch.object(AlgebraDataset, "HF_SHA", 12345),
+        pytest.raises(ValueError, match=r"Invalid HF_SHA ''"),
+        patch.object(AlgebraDataset, "HF_SHA", ""),
     ):
         AlgebraDataset()
+
+
+def test_get_dataset_by_name_returns_dataset_instance():
+    dataset_name = list_datasets()[0]
+    expected_hdata = object()
+
+    with patch(
+        "hyperbench.data.supported_datasets.HIFLoader.load_by_name",
+        return_value=expected_hdata,
+    ):
+        dataset = get_dataset_by_name(dataset_name)
+
+    assert dataset_name == getattr(dataset, "DATASET_NAME", None)
+    assert dataset.hdata is expected_hdata
+
+
+def test_get_dataset_by_name_rejects_unknown_name():
+    with pytest.raises(ValueError, match=r"Dataset not found: missing-dataset"):
+        get_dataset_by_name("missing-dataset")
