@@ -10,6 +10,7 @@ from hyperbench.integration_tests.common import (
     split_dataset,
     enrich_datasets,
     add_negatives,
+    model_configs_with_single_model,
 )
 
 NUM_FEATURES = 8
@@ -58,6 +59,16 @@ def test_model_cn(tmp_path, sampling_strategy, full, batch_size, request):
             is_trainable=False,
         ),
     ]
+
+    configs = model_configs_with_single_model(
+        train_loader,
+        val_loader,
+        test_loader,
+        name="common_neighbors",
+        version="mean",
+        model=mean_cn_module,
+        is_trainable=False,
+    )
 
     train_test_loop(
         configs,

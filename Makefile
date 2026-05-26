@@ -63,7 +63,7 @@ test:
 
 stest:
 	@echo '=== Running single unit test for $(T) ==='
-	$(UV) run $(PYTEST) -s $(PROJECT_NAME)/tests/$(T)
+	$(UV) run $(PYTEST) -n auto -s $(PROJECT_NAME)/tests/$(T)
 
 i-test:
 	@echo '=== Running integration tests in parallel ==='
@@ -71,7 +71,7 @@ i-test:
 
 si-test:
 	@echo '=== Running single integration test for $(T) ==='
-	$(UV) run $(PYTEST) -s $(PROJECT_NAME)/integration_tests/$(T) -m "integration"
+	$(UV) run $(PYTEST) -n auto -s $(PROJECT_NAME)/integration_tests/$(T) -m "integration"
 
 # If the first argument is run...
 ifeq ($(firstword $(MAKECMDGOALS)),run)

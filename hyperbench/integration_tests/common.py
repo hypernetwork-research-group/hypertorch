@@ -1,3 +1,4 @@
+from typing import Literal
 from collections.abc import Sequence
 import lightning as L
 import torch
@@ -45,27 +46,36 @@ def __create_seeded_torch_generator(
 @cache
 def _cached_split_dataset(
     sampling_strategy: SamplingStrategy,
+    dataset: Dataset | None = None,
+    node_space_setting: Literal["transductive", "inductive"] = "transductive",
 ) -> tuple[Dataset, Dataset, Dataset]:
-    generator = __create_seeded_torch_generator(device=torch.device("cpu"), seed=SEED)
-    x = torch.randn((100, 4), generator=generator)  # 100 nodes with 4 features each
-    hyperedge_index = torch.cat(  # 200 hyperedges, each connecting 5 nodes
-        [
-            torch.stack(
-                [
-                    torch.randint(0, 100, (5,), generator=generator),  # 5 nodes per hyperedge
-                    torch.full((5,), i),  # hyperedge ID
-                ],
-                dim=0,
-            )
-            for i in range(200)
-        ],
-        dim=1,
-    )
+    if dataset is None:
+        generator = __create_seeded_torch_generator(device=torch.device("cpu"), seed=SEED)
+        x = torch.randn((100, 4), generator=generator)  # 100 nodes with 4 features each
+        hyperedge_index = torch.cat(  # 200 hyperedges, each connecting 5 nodes
+            [
+                torch.stack(
+                    [
+                        torch.randint(0, 100, (5,), generator=generator),  # 5 nodes per hyperedge
+                        torch.full((5,), i),  # hyperedge ID
+                    ],
+                    dim=0,
+                )
+                for i in range(200)
+            ],
+            dim=1,
+        )
 
-    hdata = HData(x=x, hyperedge_index=hyperedge_index)
-    dataset = Dataset.from_hdata(hdata, sampling_strategy=sampling_strategy)
+        hdata = HData(x=x, hyperedge_index=hyperedge_index)
+        dataset = Dataset.from_hdata(hdata, sampling_strategy=sampling_strategy)
+
+    stats = dataset.stats()
+    print(f"Dataset stats: {stats['num_nodes']}, {stats['num_hyperedges']}")
     train_dataset, val_dataset, test_dataset = dataset.split(
-        ratios=[0.7, 0.1, 0.2], shuffle=True, seed=SEED, node_space_setting="transductive"
+        ratios=[0.7, 0.1, 0.2],
+        shuffle=True,
+        seed=SEED,
+        node_space_setting=node_space_setting,
     )
     return train_dataset, val_dataset, test_dataset
 
@@ -82,8 +92,14 @@ def common_metrics() -> MetricCollection:
     )
 
 
-def split_dataset(sampling_strategy: SamplingStrategy) -> tuple[Dataset, Dataset, Dataset]:
-    train_dataset, val_dataset, test_dataset = _cached_split_dataset(sampling_strategy)
+def split_dataset(
+    sampling_strategy: SamplingStrategy = SamplingStrategy.HYPEREDGE,
+    dataset: Dataset | None = None,
+    node_space_setting: Literal["transductive", "inductive"] = "transductive",
+) -> tuple[Dataset, Dataset, Dataset]:
+    train_dataset, val_dataset, test_dataset = _cached_split_dataset(
+        sampling_strategy, dataset, node_space_setting
+    )
 
     return (
         train_dataset.update_from_hdata(train_dataset.hdata.clone()),
@@ -184,6 +200,7 @@ def model_configs_with_single_model(
     name: str,
     version: str,
     model: L.LightningModule,
+    is_trainable: bool = True,
 ) -> list[ModelConfig]:
     configs = [
         ModelConfig(
@@ -193,6 +210,7 @@ def model_configs_with_single_model(
             train_dataloader=train_loader,
             val_dataloader=val_loader,
             test_dataloader=tests_loader,
+            is_trainable=is_trainable,
         )
     ]
 
