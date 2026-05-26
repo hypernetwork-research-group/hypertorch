@@ -1,4 +1,7 @@
 import pytest
+
+from hyperbench.data import SamplingStrategy
+from hyperbench.hlp import Node2VecGCNHlpModule, Node2VecGCNHlpConfig
 from hyperbench.integration_tests.common import (
     common_metrics,
     loaders,
@@ -8,8 +11,6 @@ from hyperbench.integration_tests.common import (
     add_negatives,
     model_configs_with_single_model,
 )
-from hyperbench.data import SamplingStrategy
-from hyperbench.hlp import Node2VecGCNHlpModule, Node2VecGCNHlpConfig
 
 NUM_FEATURES = 8
 

@@ -1,4 +1,7 @@
 import pytest
+
+from hyperbench.hlp import HGNNPHlpModule
+from hyperbench.data import SamplingStrategy
 from hyperbench.integration_tests.common import (
     common_metrics,
     enrich_datasets,
@@ -8,8 +11,6 @@ from hyperbench.integration_tests.common import (
     add_negatives,
     loaders,
 )
-from hyperbench.hlp import HGNNPHlpModule
-from hyperbench.data import SamplingStrategy
 
 NUM_FEATURES = 8
 

@@ -1,4 +1,8 @@
 import pytest
+
+from hyperbench.hlp import MLPHlpModule
+from hyperbench.types import ModelConfig
+from hyperbench.data import SamplingStrategy
 from hyperbench.integration_tests.common import (
     common_metrics,
     loaders,
@@ -7,9 +11,6 @@ from hyperbench.integration_tests.common import (
     enrich_datasets,
     add_negatives,
 )
-from hyperbench.hlp import MLPHlpModule
-from hyperbench.types import ModelConfig
-from hyperbench.data import SamplingStrategy
 
 NUM_FEATURES = 8
 
