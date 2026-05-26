@@ -1,6 +1,8 @@
+import lightning as L
+import torch
+
 from functools import cache
 from pathlib import Path
-import lightning as L
 from torchmetrics import MetricCollection
 from torchmetrics.classification import (
     BinaryAUROC,
@@ -21,22 +23,45 @@ from hyperbench.data import (
 )
 from hyperbench.train import MultiModelTrainer
 from hyperbench.types import ModelConfig, HData
-import torch
+from torch import Generator
+
 
 NUM_WORKERS = 2
+
+
+def create_seeded_torch_generator(
+    device: torch.device,
+    seed: int | None,
+) -> Generator | None:
+    """
+    Create a seeded torch generator when a seed is provided.
+
+    Args:
+        device: Device where the generator should be created.
+        seed: Optional seed for deterministic random operations.
+
+    Returns:
+        generator: A seeded torch.Generator when ``seed`` is provided, otherwise ``None``.
+    """
+    if seed is None:
+        return None
+    generator = Generator(device=device)
+    generator.manual_seed(seed)
+    return generator
 
 
 @cache
 def _cached_split_datasets(
     sampling_strategy: SamplingStrategy,
 ) -> tuple[Dataset, Dataset, Dataset]:
+    generator = create_seeded_torch_generator(device=torch.device("cpu"), seed=42)
     # dataset = AlgebraDataset(sampling_strategy=sampling_strategy)
-    x = torch.randn(100, 4)  # 100 nodes with 4 features each
+    x = torch.randn((100, 4), generator=generator)  # 100 nodes with 4 features each
     hyperedge_index = torch.cat(  # 200 hyperedges, each connecting 5 nodes
         [
             torch.stack(
                 [
-                    torch.randint(0, 100, (5,)),  # 5 nodes per hyperedge
+                    torch.randint(0, 100, (5,), generator=generator),  # 5 nodes per hyperedge
                     torch.full((5,), i),  # hyperedge ID
                 ],
                 dim=0,
@@ -45,9 +70,8 @@ def _cached_split_datasets(
         ],
         dim=1,
     )
-    hyperedge_attr = torch.randn(200, 2)  # 200 hyperedges with 2 features each
 
-    hdata = HData(x=x, hyperedge_index=hyperedge_index, hyperedge_attr=hyperedge_attr)
+    hdata = HData(x=x, hyperedge_index=hyperedge_index)
     dataset = AlgebraDataset(hdata=hdata, sampling_strategy=sampling_strategy)
     train_dataset, val_dataset, test_dataset = dataset.split(
         ratios=[0.7, 0.1, 0.2], shuffle=True, seed=42, node_space_setting="transductive"
