@@ -20,8 +20,8 @@ from hyperbench.data import (
     RandomNegativeSampler,
 )
 from hyperbench.train import MultiModelTrainer
-from hyperbench.types import ModelConfig
-
+from hyperbench.types import ModelConfig, HData
+import torch
 
 NUM_WORKERS = 2
 
@@ -30,12 +30,28 @@ NUM_WORKERS = 2
 def _cached_split_datasets(
     sampling_strategy: SamplingStrategy,
 ) -> tuple[Dataset, Dataset, Dataset]:
-    dataset = AlgebraDataset(sampling_strategy=sampling_strategy)
+    # dataset = AlgebraDataset(sampling_strategy=sampling_strategy)
+    x = torch.randn(100, 4)  # 100 nodes with 4 features each
+    hyperedge_index = torch.cat(  # 200 hyperedges, each connecting 5 nodes
+        [
+            torch.stack(
+                [
+                    torch.randint(0, 100, (5,)),  # 5 nodes per hyperedge
+                    torch.full((5,), i),  # hyperedge ID
+                ],
+                dim=0,
+            )
+            for i in range(200)
+        ],
+        dim=1,
+    )
+    hyperedge_attr = torch.randn(200, 2)  # 200 hyperedges with 2 features each
 
+    hdata = HData(x=x, hyperedge_index=hyperedge_index, hyperedge_attr=hyperedge_attr)
+    dataset = AlgebraDataset(hdata=hdata, sampling_strategy=sampling_strategy)
     train_dataset, val_dataset, test_dataset = dataset.split(
         ratios=[0.7, 0.1, 0.2], shuffle=True, seed=42, node_space_setting="transductive"
     )
-
     return train_dataset, val_dataset, test_dataset
 
 
