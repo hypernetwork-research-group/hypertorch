@@ -58,11 +58,11 @@ lint-rule-fix:
 	$(UV) run $(LINTER) check --select $(R) --fix
 
 test:
-	@echo '=== Running tests in parallel ==='
+	@echo '=== Running unit tests in parallel ==='
 	$(UV) run $(PYTEST) -n auto --cov=$(PROJECT_NAME) --cov-report=term-missing -m "not integration"
 
 stest:
-	@echo '=== Test for $(T) ==='
+	@echo '=== Running single unit test for $(T) ==='
 	$(UV) run $(PYTEST) -s $(PROJECT_NAME)/tests/$(T)
 
 i-test:
@@ -70,7 +70,7 @@ i-test:
 	$(UV) run $(PYTEST) -n auto -m "integration"
 
 si-test:
-	@echo '=== Single integration test for $(T) ==='
+	@echo '=== Running single integration test for $(T) ==='
 	$(UV) run $(PYTEST) -s $(PROJECT_NAME)/integration_tests/$(T) -m "integration"
 
 # If the first argument is run...
@@ -126,8 +126,8 @@ help:
 	@echo "  lint-fix                - Run linting and fix issues"
 	@echo "  lint-rule R=<rule>      - Run linting for a specific rule (e.g., R=E501)"
 	@echo "  lint-rule-fix R=<rule>  - Run linting for a specific rule and fix issues"
-	@echo "  test                    - Run all tests in parallel"
-	@echo "  stest T=<test_name>     - Run a single test"
+	@echo "  test                    - Run all unit tests in parallel"
+	@echo "  stest T=<test_name>     - Run a single unit test"
 	@echo "  i-test                  - Run integration tests in parallel"
 	@echo "  si-test T=<test_name>   - Run a single integration test"
 	@echo "  run <file.py>           - Run a single file"

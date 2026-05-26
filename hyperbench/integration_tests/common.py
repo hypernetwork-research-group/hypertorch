@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 import lightning as L
 import torch
 
@@ -14,7 +15,6 @@ from torchmetrics.classification import (
 
 from hyperbench.data import (
     Dataset,
-    AlgebraDataset,
     DataLoader,
     SamplingStrategy,
     LaplacianPositionalEncodingEnricher,
@@ -27,9 +27,10 @@ from torch import Generator
 
 
 NUM_WORKERS = 2
+SEED = 42
 
 
-def create_seeded_torch_generator(
+def __create_seeded_torch_generator(
     device: torch.device,
     seed: int | None,
 ) -> Generator | None:
@@ -51,11 +52,10 @@ def create_seeded_torch_generator(
 
 
 @cache
-def _cached_split_datasets(
+def _cached_split_dataset(
     sampling_strategy: SamplingStrategy,
 ) -> tuple[Dataset, Dataset, Dataset]:
-    generator = create_seeded_torch_generator(device=torch.device("cpu"), seed=42)
-    # dataset = AlgebraDataset(sampling_strategy=sampling_strategy)
+    generator = __create_seeded_torch_generator(device=torch.device("cpu"), seed=SEED)
     x = torch.randn((100, 4), generator=generator)  # 100 nodes with 4 features each
     hyperedge_index = torch.cat(  # 200 hyperedges, each connecting 5 nodes
         [
@@ -72,9 +72,9 @@ def _cached_split_datasets(
     )
 
     hdata = HData(x=x, hyperedge_index=hyperedge_index)
-    dataset = AlgebraDataset(hdata=hdata, sampling_strategy=sampling_strategy)
+    dataset = Dataset.from_hdata(hdata, sampling_strategy=sampling_strategy)
     train_dataset, val_dataset, test_dataset = dataset.split(
-        ratios=[0.7, 0.1, 0.2], shuffle=True, seed=42, node_space_setting="transductive"
+        ratios=[0.7, 0.1, 0.2], shuffle=True, seed=SEED, node_space_setting="transductive"
     )
     return train_dataset, val_dataset, test_dataset
 
@@ -91,8 +91,8 @@ def common_metrics() -> MetricCollection:
     )
 
 
-def splits_dataset(sampling_strategy: SamplingStrategy) -> tuple[Dataset, Dataset, Dataset]:
-    train_dataset, val_dataset, test_dataset = _cached_split_datasets(sampling_strategy)
+def split_dataset(sampling_strategy: SamplingStrategy) -> tuple[Dataset, Dataset, Dataset]:
+    train_dataset, val_dataset, test_dataset = _cached_split_dataset(sampling_strategy)
 
     return (
         train_dataset.update_from_hdata(train_dataset.hdata.clone()),
@@ -138,8 +138,6 @@ def enrich_datasets(
         train_dataset.enrich_node_features(
             enricher=LaplacianPositionalEncodingEnricher(
                 num_features=num_features,
-                # In transductive setting, use total number of nodes to ensure consistent encoding across splits
-                # as the train dataset contain all nodes but may have no hyperedges where they appear
                 num_nodes=train_dataset.hdata.num_nodes,
             ),
             enrichment_mode="replace",
@@ -157,58 +155,38 @@ def loaders(
     train_dataset: Dataset,
     val_dataset: Dataset,
     test_dataset: Dataset,
-    batch=False,
-    batch_size: int = 128,
+    batch_size: int = 1,
+    sample_full_hypergraph: bool = False,
 ) -> tuple[DataLoader, DataLoader, DataLoader]:
-    if not batch:
-        train_loader = DataLoader(
-            train_dataset,
-            sample_full_hypergraph=True,
-            shuffle=False,
-            num_workers=NUM_WORKERS,
-            persistent_workers=True,
-        )
-        val_loader = DataLoader(
-            val_dataset,
-            sample_full_hypergraph=True,
-            shuffle=False,
-            num_workers=NUM_WORKERS,
-            persistent_workers=True,
-        )
-        tests_loader = DataLoader(
-            test_dataset,
-            sample_full_hypergraph=True,
-            shuffle=False,
-            num_workers=NUM_WORKERS,
-            persistent_workers=True,
-        )
-    else:
-        train_loader = DataLoader(
-            train_dataset,
-            batch_size=batch_size,
-            shuffle=False,
-            num_workers=NUM_WORKERS,
-            persistent_workers=True,
-        )
-        val_loader = DataLoader(
-            val_dataset,
-            batch_size=batch_size,
-            shuffle=False,
-            num_workers=NUM_WORKERS,
-            persistent_workers=True,
-        )
-        tests_loader = DataLoader(
-            test_dataset,
-            batch_size=batch_size,
-            shuffle=False,
-            num_workers=NUM_WORKERS,
-            persistent_workers=True,
-        )
 
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=batch_size,
+        sample_full_hypergraph=sample_full_hypergraph,
+        shuffle=False,
+        num_workers=NUM_WORKERS,
+        persistent_workers=True,
+    )
+    val_loader = DataLoader(
+        val_dataset,
+        batch_size=batch_size,
+        sample_full_hypergraph=sample_full_hypergraph,
+        shuffle=False,
+        num_workers=NUM_WORKERS,
+        persistent_workers=True,
+    )
+    tests_loader = DataLoader(
+        test_dataset,
+        batch_size=batch_size,
+        sample_full_hypergraph=sample_full_hypergraph,
+        shuffle=False,
+        num_workers=NUM_WORKERS,
+        persistent_workers=True,
+    )
     return train_loader, val_loader, tests_loader
 
 
-def model_configs(
+def model_configs_with_single_model(
     train_loader: DataLoader,
     val_loader: DataLoader,
     tests_loader: DataLoader,
@@ -230,28 +208,29 @@ def model_configs(
     return configs
 
 
-def add_model_configs(
-    configs: list[ModelConfig],
+def model_configs(
     train_loader: DataLoader,
     val_loader: DataLoader,
     tests_loader: DataLoader,
     name: str,
     version: str,
-    model: L.LightningModule,
+    model: Sequence[L.LightningModule],
 ) -> list[ModelConfig]:
-    new_config = ModelConfig(
-        name=name,
-        version=version,
-        model=model,
-        train_dataloader=train_loader,
-        val_dataloader=val_loader,
-        test_dataloader=tests_loader,
-    )
-    configs.append(new_config)
+    configs = []
+    for m in model:
+        config = ModelConfig(
+            name=name,
+            version=version,
+            model=m,
+            train_dataloader=train_loader,
+            val_dataloader=val_loader,
+            test_dataloader=tests_loader,
+        )
+        configs.append(config)
     return configs
 
 
-def multi_model_trainer(
+def train_test_loop(
     configs: list[ModelConfig],
     max_epochs=3,
     accelerator="auto",
@@ -261,6 +240,9 @@ def multi_model_trainer(
     auto_wait=False,
     path: Path | str | None = None,
     experiment_name: str = "integration_test",
+    train_loader: DataLoader | None = None,
+    val_loader: DataLoader | None = None,
+    test_loader: DataLoader | None = None,
 ):
     with MultiModelTrainer(
         model_configs=configs,
@@ -274,8 +256,8 @@ def multi_model_trainer(
         experiment_name=experiment_name,
     ) as trainer:
         trainer.fit_all(
-            train_dataloader=configs[0].train_dataloader,
-            val_dataloader=configs[0].val_dataloader,
+            train_dataloader=train_loader or configs[0].train_dataloader,
+            val_dataloader=val_loader or configs[0].val_dataloader,
             verbose=True,
         )
-        trainer.test_all(dataloader=configs[0].test_dataloader, verbose=True)
+        trainer.test_all(dataloader=test_loader or configs[0].test_dataloader, verbose=True)

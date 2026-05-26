@@ -64,7 +64,6 @@ __all__ = [
     "is_input_layer",
     "is_layer",
     "is_transductive_setting",
-    "is_transductive_split",
     "maxmin_scatter",
     "named_temporary_file",
     "sparse_dropout",
