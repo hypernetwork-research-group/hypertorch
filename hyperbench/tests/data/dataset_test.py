@@ -535,7 +535,10 @@ def test_enrich_hyperedge_weights_concatenate(
 
     dataset.enrich_hyperedge_weights(enricher, enrichment_mode="concatenate")
 
-    enricher.enrich.assert_called_once_with(dataset.hdata.hyperedge_index)
+    enricher.enrich.assert_called_once()
+    enriched_hyperedge_index = enricher.enrich.call_args.args[0]
+
+    assert torch.equal(enriched_hyperedge_index, dataset.hdata.hyperedge_index)
     assert dataset.hdata.hyperedge_weights is not None
     assert torch.equal(dataset.hdata.hyperedge_weights, torch.tensor([1.0, 2.0, 3.0]))
     assert dataset.hdata.hyperedge_weights.shape == (3,)

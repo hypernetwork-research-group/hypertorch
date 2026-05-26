@@ -784,15 +784,20 @@ def test_cat_same_node_space_does_not_share_mutable_storage_with_inputs(
     __assert_mutating_result_keeps_source_tensors_unchanged(other_hdata, result)
 
 
-def test_cat_same_node_space_clones_provided_x(hdata_with_all_mutable_tensors):
-    hdata = hdata_with_all_mutable_tensors
-    custom_x = torch.full_like(hdata.x, 9.0)
-    original_custom_x = custom_x.clone()
+def test_cat_same_node_space_clones_provided_x_and_global_node_ids(hdata_with_all_mutable_tensors):
+    custom_x = torch.full_like(hdata_with_all_mutable_tensors.x, 9.0)
+    custom_global_node_ids = torch.arange(hdata_with_all_mutable_tensors.num_nodes) + 100
 
-    result = HData.cat_same_node_space([hdata], x=custom_x)
+    original_custom_x = custom_x.clone()
+    original_custom_global_node_ids = custom_global_node_ids.clone()
+
+    result = HData.cat_same_node_space(
+        hdatas=[hdata_with_all_mutable_tensors], x=custom_x, global_node_ids=custom_global_node_ids
+    )
     result.x.flatten()[0].add_(1)
 
     assert torch.equal(custom_x, original_custom_x)
+    assert torch.equal(custom_global_node_ids, original_custom_global_node_ids)
 
 
 def test_add_negative_samples_combines_positive_and_negative_hyperedges(mock_negative_sampler):
