@@ -527,8 +527,7 @@ class HyperedgeIndex:
             if max_hyperedge_id >= num_hyperedges:
                 raise ValueError(
                     "num_hyperedges is too small for the hyperedge index. "
-                    f"Got num_hyperedges={num_hyperedges}, "
-                    f"but max hyperedge id is {max_hyperedge_id}."
+                    f"Got num_hyperedges={num_hyperedges}, but max hyperedge id is {max_hyperedge_id}."
                 )
 
         incidence_values = torch.ones(self.num_incidences, dtype=torch.float, device=device)
