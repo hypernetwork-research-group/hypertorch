@@ -74,8 +74,6 @@ class _PreloadedDataset(Dataset):
 def list_datasets() -> list[str]:
     """Return supported preloaded dataset names in deterministic order."""
 
-    # Iterating over a dict yields its keys.
-    # Sorting keeps the public result stable across runs.
     return sorted(_PreloadedDataset._registry)
 
 
