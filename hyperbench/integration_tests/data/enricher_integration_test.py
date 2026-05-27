@@ -91,6 +91,9 @@ def test_fill_value_hyperedge_enricher(dataset_name):
         pytest.skip(
             f"Dataset {dataset_name} has more than 6000 nodes or hyperedges, skipping FillValueHyperedgeAttrsEnricher test to avoid long runtimes."
         )
+    print(
+        f"dataset_name: {dataset_name}, num_nodes: {dataset.hdata.num_nodes}, num_hyperedges: {dataset.hdata.num_hyperedges}"
+    )
     _, _, to_enrich_dataset = split_dataset(dataset=dataset, node_space_setting="inductive")
     to_enrich_dataset.enrich_hyperedge_attr(
         enricher=FillValueHyperedgeAttrsEnricher(fill_value=1.0),

@@ -13,13 +13,16 @@ def decompress_zst(zst_path: str) -> str:
     Returns:
         path: The path to the decompressed JSON file.
     """
-    dctx = zstd.ZstdDecompressor()
-    with (
-        open(zst_path, "rb") as input_f,
-        tempfile.NamedTemporaryFile(mode="wb", suffix=".json", delete=False) as tmp_file,
-    ):
-        dctx.copy_stream(input_f, tmp_file)
-        output = tmp_file.name
+    try:
+        dctx = zstd.ZstdDecompressor()
+        with (
+            open(zst_path, "rb") as input_f,
+            tempfile.NamedTemporaryFile(mode="wb", suffix=".json", delete=False) as tmp_file,
+        ):
+            dctx.copy_stream(input_f, tmp_file)
+            output = tmp_file.name
+    except Exception as e:
+        raise ValueError(f"Failed to decompress .zst file {zst_path!r}: {e!s}") from e
     return output
 
 
@@ -33,10 +36,13 @@ def compress_to_zst(json_path: str) -> bytes:
     Returns:
         content: The compressed content as bytes.
     """
-    cctx = zstd.ZstdCompressor()
-    with open(json_path, "rb") as input_f:
-        compressed_content = cctx.compress(input_f.read())
-    return compressed_content
+    try:
+        cctx = zstd.ZstdCompressor()
+        with open(json_path, "rb") as input_f:
+            compressed_content = cctx.compress(input_f.read())
+        return compressed_content
+    except Exception as e:
+        raise ValueError(f"Failed to compress JSON file {json_path!r}: {e!s}") from e
 
 
 def write_to_disk(dataset_name: str, content: bytes, output_dir: str | None = None) -> None:
@@ -48,21 +54,33 @@ def write_to_disk(dataset_name: str, content: bytes, output_dir: str | None = No
         content: The compressed content as bytes.
         output_dir: The directory to write the file to. If None, a default location is used.
     """
-    if output_dir is not None:
-        zst_filename = os.path.join(output_dir, f"{dataset_name}.json.zst")
-    else:
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        output_dir = os.path.join(current_dir, "..", "data", "datasets")
-        zst_filename = os.path.join(output_dir, f"{dataset_name}.json.zst")
+    try:
+        if output_dir is not None:
+            zst_filename = os.path.join(output_dir, f"{dataset_name}.json.zst")
+        else:
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            output_dir = os.path.join(current_dir, "..", "data", "datasets")
+            zst_filename = os.path.join(output_dir, f"{dataset_name}.json.zst")
+    except Exception as e:
+        raise ValueError(
+            f"Failed to determine output path for dataset {dataset_name!r}: {e!s}"
+        ) from e
 
-    os.makedirs(output_dir, exist_ok=True)
-
-    with open(zst_filename, "wb") as f:
-        f.write(content)
+    try:
+        os.makedirs(output_dir, exist_ok=True)
+        with open(zst_filename, "wb") as f:
+            f.write(content)
+    except Exception as e:
+        raise ValueError(
+            f"Failed to write file {zst_filename!r} to disk {output_dir!r}: {e!s}"
+        ) from e
 
 
 def named_temporary_file(content: bytes, suffix: str = ".json.zst") -> str:
-    with tempfile.NamedTemporaryFile(mode="wb", suffix=suffix, delete=False) as tmp_zst_file:
-        tmp_zst_file.write(content)
-        zst_filename = tmp_zst_file.name
+    try:
+        with tempfile.NamedTemporaryFile(mode="wb", suffix=suffix, delete=False) as tmp_zst_file:
+            tmp_zst_file.write(content)
+            zst_filename = tmp_zst_file.name
+    except Exception as e:
+        raise ValueError(f"Failed to create temporary file: {e!s}") from e
     return zst_filename

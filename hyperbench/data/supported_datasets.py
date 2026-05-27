@@ -1,4 +1,5 @@
 from typing import ClassVar
+from hyperbench.types import HData
 from hyperbench.data.hif import HIFLoader
 from hyperbench.data.dataset import Dataset
 from hyperbench.data.sampler import SamplingStrategy
@@ -42,16 +43,15 @@ class _PreloadedDataset(Dataset):
 
     def __init__(
         self,
-        hdata=None,
+        hdata: HData | None = None,
         sampling_strategy: SamplingStrategy = SamplingStrategy.HYPEREDGE,
+        save_on_disk: bool = True,
     ) -> None:
         self.__validate()
         super().__init__(hdata=hdata, sampling_strategy=sampling_strategy)
         if hdata is None:
             self.hdata = HIFLoader.load_by_name(
-                self.DATASET_NAME,
-                hf_sha=self.HF_SHA,
-                save_on_disk=True,
+                self.DATASET_NAME, hf_sha=self.HF_SHA, save_on_disk=save_on_disk
             )
 
     def __validate(self) -> None:
@@ -197,3 +197,10 @@ class TwitterDataset(_PreloadedDataset):
 class VegasBarsReviewsDataset(_PreloadedDataset):
     DATASET_NAME: ClassVar[str] = "vegas-bars-reviews"
     HF_SHA: ClassVar[str | None] = "4f1e4e4c87957679efc38c05129a694d315a8c9b"
+
+
+if __name__ == "__main__":
+    datasets = list_datasets()
+    for dataset_name in datasets:
+        d = get_dataset_by_name(dataset_name)
+        print(f"Loaded dataset {dataset_name} with {len(d)} hyperedges")

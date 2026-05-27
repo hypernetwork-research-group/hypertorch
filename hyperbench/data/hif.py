@@ -373,9 +373,14 @@ class HIFLoader:
 
     @classmethod
     def __extract_hif(cls, json_file: str) -> HIFHypergraph:
-        with open(json_file, encoding="utf-8") as f:
-            hiftext = json.load(f)
         if not validate_hif_json(json_file):
             raise ValueError(f"Dataset from file '{json_file}' is not HIF-compliant.")
+
+        try:
+            with open(json_file, encoding="utf-8") as f:
+                hiftext = json.load(f)
+        except Exception as e:
+            raise ValueError(f"Failed to read JSON file {json_file!r}: {e!s}") from e
+
         hypergraph = HIFHypergraph.from_hif(hiftext)
         return hypergraph
