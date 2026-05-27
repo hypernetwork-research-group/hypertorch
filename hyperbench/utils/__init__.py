@@ -13,7 +13,6 @@ from .hif_utils import (
     get_hf_dataset_sha,
     get_gh_datasets_shas,
     get_gh_dataset_sha,
-    get_free_disk_space_mb,
 )
 
 from .nn_utils import (
@@ -40,7 +39,14 @@ from .sparse_utils import sparse_dropout
 
 from .url_utils import validate_http_url
 
-from .file_utils import decompress_zst, compress_to_zst, write_to_disk, named_temporary_file
+from .file_utils import (
+    decompress_zst,
+    compress_to_zst,
+    write_to_disk,
+    named_temporary_file,
+    get_disk_space_stats,
+    pretty_print_disk_space_stats,
+)
 
 __all__ = [
     "INPUT_LAYER",
@@ -57,7 +63,7 @@ __all__ = [
     "empty_edgeattr",
     "empty_hyperedgeindex",
     "empty_nodefeatures",
-    "get_free_disk_space_mb",
+    "get_disk_space_stats",
     "get_gh_dataset_sha",
     "get_gh_datasets_shas",
     "get_hf_dataset_sha",
@@ -68,6 +74,7 @@ __all__ = [
     "is_transductive_setting",
     "maxmin_scatter",
     "named_temporary_file",
+    "pretty_print_disk_space_stats",
     "sparse_dropout",
     "to_0based_ids",
     "to_non_empty_edgeattr",

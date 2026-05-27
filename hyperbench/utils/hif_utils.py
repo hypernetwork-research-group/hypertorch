@@ -1,20 +1,15 @@
 import fastjsonschema
 import json
 import requests
-import shutil
 import warnings
 
 from huggingface_hub import HfApi
 from importlib import resources
 
+from hyperbench.utils.file_utils import pretty_print_disk_space_stats
+
 
 HIF_SCHEMA_COMMIT_SHA = "b691a3d2ec32100c0229ebe1151e9afad015c356"
-
-
-def get_free_disk_space_mb(path: str = ".") -> int:
-    """Return the free disk space for ``path`` in megabytes."""
-
-    return shutil.disk_usage(path).free // (1024 * 1024)
 
 
 def validate_hif_json(filename: str) -> bool:
@@ -48,8 +43,9 @@ def validate_hif_json(filename: str) -> bool:
             except Exception:
                 return False
     except Exception as e:
-        print(f"Free disk space: {get_free_disk_space_mb()} MB")
-        raise ValueError(f"Failed to read JSON file {filename!r}: {e!s}") from e
+        raise ValueError(
+            f"Failed to read JSON file {filename!r}: {e!s}. {pretty_print_disk_space_stats()!s}"
+        ) from e
 
 
 def get_hf_datasets_shas(

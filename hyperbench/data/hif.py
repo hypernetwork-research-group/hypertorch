@@ -16,7 +16,7 @@ from hyperbench.utils import (
     validate_http_url,
     write_to_disk,
     named_temporary_file,
-    get_free_disk_space_mb,
+    pretty_print_disk_space_stats,
 )
 
 
@@ -320,7 +320,6 @@ class HIFLoader:
         zst_filename = os.path.join(current_dir, "datasets", f"{dataset_name}.json.zst")
 
         if not os.path.exists(zst_filename):
-            hf_content_bytes = None
             github_url = f"https://raw.githubusercontent.com/hypernetwork-research-group/datasets/{GITHUB_COMMIT_SHA}/{dataset_name}.json.zst"
             response = requests.get(github_url, timeout=20)
             if response.status_code != 200:
@@ -331,38 +330,60 @@ class HIFLoader:
                     stacklevel=2,
                 )
 
-                with tempfile.NamedTemporaryFile(
-                    mode="wb", suffix=".json.zst", delete=False
-                ) as tmp_hf_file:
-                    if hf_sha is not None:
-                        try:
-                            downloaded_path = hf_hub_download(
-                                repo_id=f"HypernetworkRG/{dataset_name}",
-                                filename=f"{dataset_name}.json.zst",
-                                repo_type="dataset",
-                                revision=hf_sha,
+                try:
+                    with tempfile.NamedTemporaryFile(
+                        mode="wb", suffix=".json.zst", delete=False
+                    ) as tmp_hf_file:
+                        if hf_sha is not None:
+                            try:
+                                downloaded_path = hf_hub_download(
+                                    repo_id=f"HypernetworkRG/{dataset_name}",
+                                    filename=f"{dataset_name}.json.zst",
+                                    repo_type="dataset",
+                                    revision=hf_sha,
+                                )
+                            except Exception as e:
+                                raise ValueError(
+                                    f"Failed to download dataset '{dataset_name}' from GitHub and Hugging Face Hub. GitHub error: {response.status_code} | Hugging Face error: {e!s}. {pretty_print_disk_space_stats()!s}"
+                                ) from e
+                        else:
+                            raise ValueError(
+                                f"Failed to download dataset '{dataset_name}' from GitHub with status code {response.status_code} and no SHA provided for Hugging Face Hub fallback. {pretty_print_disk_space_stats()!s}"
                             )
+
+                        try:
+                            with open(downloaded_path, "rb") as hf_file:
+                                hf_content = hf_file.read()
                         except Exception as e:
                             raise ValueError(
-                                f"Failed to download dataset '{dataset_name}' from GitHub and Hugging Face Hub. GitHub error: {response.status_code} | Hugging Face error: {e!s}"
+                                f"Failed to read downloaded dataset file '{downloaded_path}' from Hugging Face Hub: {e!s}. {pretty_print_disk_space_stats()!s}"
                             ) from e
-                    else:
-                        raise ValueError(
-                            f"Failed to download dataset '{dataset_name}' from GitHub with status code {response.status_code} and no SHA provided for Hugging Face Hub fallback."
-                        )
 
-                    with open(downloaded_path, "rb") as hf_file:
-                        hf_content = hf_file.read()
-                    tmp_hf_file.write(hf_content)
+                        try:
+                            tmp_hf_file.write(hf_content)
+                        except Exception as e:
+                            raise ValueError(
+                                f"Failed to write downloaded dataset content to temporary file '{tmp_hf_file.name}': {e!s}. {pretty_print_disk_space_stats()!s}"
+                            ) from e
 
-                hf_content_bytes = hf_content
+                    hf_content_bytes = hf_content
+                except Exception as e:
+                    raise ValueError(
+                        f"Failed to download dataset '{dataset_name}' from both GitHub and Hugging Face Hub. GitHub error: {response.status_code} | Hugging Face error: {e!s}. {pretty_print_disk_space_stats()!s}"
+                    ) from e
             else:
                 hf_content_bytes = response.content
 
             if save_on_disk:
-                os.makedirs(os.path.join(current_dir, "datasets"), exist_ok=True)
-                with open(zst_filename, "wb") as f:
-                    f.write(hf_content_bytes)
+                try:
+                    os.makedirs(os.path.join(current_dir, "datasets"), exist_ok=True)
+                    with open(zst_filename, "wb") as f:
+                        f.write(hf_content_bytes)
+                except Exception as e:
+                    raise ValueError(
+                        f"Failed to save downloaded dataset '{dataset_name}' to disk at '{zst_filename}': {e!s}. {pretty_print_disk_space_stats()!s}"
+                    ) from e
+
             else:
                 # Create temporary file for downloaded zst content
                 zst_filename = named_temporary_file(content=hf_content_bytes, suffix=".json.zst")
@@ -381,8 +402,9 @@ class HIFLoader:
             with open(json_file, encoding="utf-8") as f:
                 hiftext = json.load(f)
         except Exception as e:
-            print(f"Free disk space: {get_free_disk_space_mb()} MB")
-            raise ValueError(f"Failed to read JSON file {json_file!r}: {e!s}") from e
+            raise ValueError(
+                f"Failed to read JSON file {json_file!r}: {e!s}. {pretty_print_disk_space_stats()!s}"
+            ) from e
 
         hypergraph = HIFHypergraph.from_hif(hiftext)
         return hypergraph

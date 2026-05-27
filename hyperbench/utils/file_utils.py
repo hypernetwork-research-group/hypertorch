@@ -1,3 +1,4 @@
+import shutil
 import os
 import tempfile
 import zstandard as zstd
@@ -84,3 +85,17 @@ def named_temporary_file(content: bytes, suffix: str = ".json.zst") -> str:
     except Exception as e:
         raise ValueError(f"Failed to create temporary file: {e!s}") from e
     return zst_filename
+
+
+def get_disk_space_stats(path: str = ".") -> tuple[float, float, float]:
+    """Return free, used, and total disk space for ``path`` in gigabytes."""
+
+    usage = shutil.disk_usage(path)
+    gigabyte = 1024 * 1024 * 1024
+    return usage.free / gigabyte, usage.used / gigabyte, usage.total / gigabyte
+
+
+def pretty_print_disk_space_stats(path: str = ".") -> None:
+    """Print free, used, and total disk space for ``path`` in gigabytes."""
+    free, used, total = get_disk_space_stats(path)
+    print(f"Disk: [Free: {free:.2f}, Used:{used:.2f}, Total:{total:.2f}]")
