@@ -6,6 +6,20 @@ import zstandard as zstd
 from typing import Any
 
 
+def compress_json_bytes_as_zst(content: bytes) -> bytes:
+    try:
+        return zstd.ZstdCompressor().compress(content)
+    except Exception as e:
+        raise ValueError(f"Failed to compress JSON content: {e!s}.") from e
+
+
+def read_json_bytes(content: bytes) -> dict[str, Any]:
+    try:
+        return json.loads(content.decode("utf-8"))
+    except Exception as e:
+        raise ValueError(f"Failed to read JSON content: {e!s}.") from e
+
+
 def read_json_file(json_filename: str) -> dict[str, Any]:
     try:
         with open(json_filename, encoding="utf-8") as json_file:

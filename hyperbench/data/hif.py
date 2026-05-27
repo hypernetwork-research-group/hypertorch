@@ -1,10 +1,8 @@
-import json
 import os
 import requests
 import shutil
 import torch
 import warnings
-import zstandard as zstd
 
 
 from huggingface_hub import hf_hub_download
@@ -12,6 +10,8 @@ from typing import Any
 from torch import Tensor
 from hyperbench.types import HData, HIFHypergraph
 from hyperbench.utils import (
+    compress_json_bytes_as_zst,
+    read_json_bytes,
     read_json_file,
     read_zst_bytes,
     read_zst_file,
@@ -268,19 +268,16 @@ class HIFLoader:
             hif_data = read_zst_bytes(response.content)
             hdata = cls.__process_hif_data(hif_data)
             if save_on_disk:
-                write_dataset_to_disk_as_zst(os.path.basename(url), response.content)
+                # TODO: Verify this does not save files with double .zst extension
+                # (e.g., dataset.json.zst.zst) due to original filename already having .zst
+                write_dataset_to_disk_as_zst(
+                    dataset_name=os.path.basename(url), content=response.content
+                )
         else:  # json
-            try:
-                hif_data = json.loads(response.content.decode("utf-8"))
-            except Exception as e:
-                raise ValueError(f"Failed to read JSON content for {url!r}: {e!s}.") from e
-
+            hif_data = read_json_bytes(response.content)
             hdata = cls.__process_hif_data(hif_data)
             if save_on_disk:
-                try:
-                    compressed_hif_data = zstd.ZstdCompressor().compress(response.content)
-                except Exception as e:
-                    raise ValueError(f"Failed to compress JSON content for {url!r}: {e!s}.") from e
+                compressed_hif_data = compress_json_bytes_as_zst(response.content)
 
                 # TODO: Verify this does not save files with double .zst extension
                 # (e.g., dataset.json.zst.zst) due to original filename already having .zst

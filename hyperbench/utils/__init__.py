@@ -41,7 +41,9 @@ from .sparse_utils import sparse_dropout
 from .url_utils import validate_http_url
 
 from .file_utils import (
+    compress_json_bytes_as_zst,
     read_json_file,
+    read_json_bytes,
     read_zst_bytes,
     read_zst_file,
     read_zst_stream,
@@ -58,6 +60,7 @@ __all__ = [
     "Stage",
     "assign_hyperedge_label_to_nodes",
     "clone_optional_tensor",
+    "compress_json_bytes_as_zst",
     "create_seeded_torch_generator",
     "empty_edgeattr",
     "empty_hyperedgeindex",
@@ -71,6 +74,7 @@ __all__ = [
     "is_layer",
     "is_transductive_setting",
     "maxmin_scatter",
+    "read_json_bytes",
     "read_json_file",
     "read_zst_bytes",
     "read_zst_file",
