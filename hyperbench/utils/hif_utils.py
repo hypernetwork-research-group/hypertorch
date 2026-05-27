@@ -32,13 +32,16 @@ def validate_hif_json(filename: str) -> bool:
             schema = json.load(f)
     validator = fastjsonschema.compile(schema)
 
-    with open(filename, encoding="utf-8") as f:
-        hiftext = json.load(f)
-        try:
-            validator(hiftext)
-            return True
-        except Exception:
-            return False
+    try:
+        with open(filename, encoding="utf-8") as f:
+            hiftext = json.load(f)
+            try:
+                validator(hiftext)
+                return True
+            except Exception:
+                return False
+    except Exception as e:
+        raise ValueError(f"Failed to read JSON file {filename!r}: {e!s}") from e
 
 
 def get_hf_datasets_shas(
