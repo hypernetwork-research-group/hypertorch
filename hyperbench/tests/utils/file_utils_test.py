@@ -54,7 +54,7 @@ def test_create_named_temporary_file(tmp_path):
         assert temp_file_path.endswith(".txt")
 
 
-def test_decompress_zst_raises_value_error_when_input_missing():
+def test_decompress_zst_raises_value_error_when_input_missing(tmp_path):
     with (
         patch("builtins.open", side_effect=OSError("missing file")),
         patch("hyperbench.utils.file_utils.pretty_print_disk_space_stats") as mock_stats,
@@ -62,10 +62,10 @@ def test_decompress_zst_raises_value_error_when_input_missing():
         mock_stats.return_value = None
 
         with pytest.raises(ValueError, match=r"Failed to decompress \.zst file"):
-            decompress_zst("/tmp/missing.json.zst")
+            decompress_zst(f"{tmp_path}/missing.json.zst")
 
 
-def test_compress_to_zst_raises_value_error_when_input_missing():
+def test_compress_to_zst_raises_value_error_when_input_missing(tmp_path):
     with (
         patch("builtins.open", side_effect=OSError("missing file")),
         patch("hyperbench.utils.file_utils.pretty_print_disk_space_stats") as mock_stats,
@@ -73,7 +73,7 @@ def test_compress_to_zst_raises_value_error_when_input_missing():
         mock_stats.return_value = None
 
         with pytest.raises(ValueError, match=r"Failed to compress JSON file"):
-            compress_to_zst("/tmp/missing.json")
+            compress_to_zst(f"{tmp_path}/missing.json")
 
 
 def test_write_to_disk_raises_value_error_when_output_path_cannot_be_determined():

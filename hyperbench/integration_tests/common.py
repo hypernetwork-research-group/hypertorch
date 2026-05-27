@@ -172,7 +172,6 @@ def loaders(
         batch_size=batch_size,
         sample_full_hypergraph=sample_full_hypergraph,
         shuffle=False,
-        persistent_workers=True,
         generator=generator,
     )
     val_loader = DataLoader(
@@ -180,7 +179,6 @@ def loaders(
         batch_size=batch_size,
         sample_full_hypergraph=sample_full_hypergraph,
         shuffle=False,
-        persistent_workers=True,
         generator=generator,
     )
     tests_loader = DataLoader(
@@ -188,7 +186,6 @@ def loaders(
         batch_size=batch_size,
         sample_full_hypergraph=sample_full_hypergraph,
         shuffle=False,
-        persistent_workers=True,
         generator=generator,
     )
     return train_loader, val_loader, tests_loader
