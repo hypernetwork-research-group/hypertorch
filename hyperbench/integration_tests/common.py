@@ -27,7 +27,6 @@ from hyperbench.types import ModelConfig, HData
 from torch import Generator
 
 
-NUM_WORKERS = 2
 SEED = 42
 
 
@@ -173,7 +172,6 @@ def loaders(
         batch_size=batch_size,
         sample_full_hypergraph=sample_full_hypergraph,
         shuffle=False,
-        num_workers=NUM_WORKERS,
         persistent_workers=True,
         generator=generator,
     )
@@ -182,7 +180,6 @@ def loaders(
         batch_size=batch_size,
         sample_full_hypergraph=sample_full_hypergraph,
         shuffle=False,
-        num_workers=NUM_WORKERS,
         persistent_workers=True,
         generator=generator,
     )
@@ -191,7 +188,6 @@ def loaders(
         batch_size=batch_size,
         sample_full_hypergraph=sample_full_hypergraph,
         shuffle=False,
-        num_workers=NUM_WORKERS,
         persistent_workers=True,
         generator=generator,
     )
