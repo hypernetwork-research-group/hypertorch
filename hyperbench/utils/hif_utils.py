@@ -5,11 +5,20 @@ import warnings
 
 from huggingface_hub import HfApi
 from importlib import resources
-
-from hyperbench.utils.file_utils import pretty_print_disk_space_stats
+from typing import Any
 
 
 HIF_SCHEMA_COMMIT_SHA = "b691a3d2ec32100c0229ebe1151e9afad015c356"
+
+
+def validate_hif_data(hif_data: dict[str, Any]) -> bool:
+    schema = __load_hif_schema()
+    validator = fastjsonschema.compile(schema)
+    try:
+        validator(hif_data)
+        return True
+    except Exception:
+        return False
 
 
 def validate_hif_json(filename: str) -> bool:
@@ -22,30 +31,12 @@ def validate_hif_json(filename: str) -> bool:
     Returns:
         valid: ``True`` if the file is valid HIF, ``False`` otherwise.
     """
-    url = f"https://raw.githubusercontent.com/HIF-org/HIF-standard/{HIF_SCHEMA_COMMIT_SHA}/schemas/hif_schema.json"
-    try:
-        schema = requests.get(url, timeout=10).json()
-    except (requests.RequestException, requests.Timeout):
-        with (
-            resources.files("hyperbench.utils.schema")
-            .joinpath("hif_schema.json")
-            .open("r", encoding="utf-8") as f
-        ):
-            schema = json.load(f)
-    validator = fastjsonschema.compile(schema)
-
     try:
         with open(filename, encoding="utf-8") as f:
             hiftext = json.load(f)
-            try:
-                validator(hiftext)
-                return True
-            except Exception:
-                return False
+            return validate_hif_data(hiftext)
     except Exception as e:
-        raise ValueError(
-            f"Failed to read JSON file {filename!r}: {e!s}. {pretty_print_disk_space_stats()!s}"
-        ) from e
+        raise ValueError(f"Failed to read JSON file {filename!r}: {e!s}.") from e
 
 
 def get_hf_datasets_shas(
@@ -117,3 +108,16 @@ def get_gh_dataset_sha(dataset_name: str, owner: str, repository: str) -> str | 
         )
         return None
     return commit_sha
+
+
+def __load_hif_schema() -> dict[str, Any]:
+    url = f"https://raw.githubusercontent.com/HIF-org/HIF-standard/{HIF_SCHEMA_COMMIT_SHA}/schemas/hif_schema.json"
+    try:
+        return requests.get(url, timeout=10).json()
+    except (requests.RequestException, requests.Timeout):
+        with (
+            resources.files("hyperbench.utils.schema")
+            .joinpath("hif_schema.json")
+            .open("r", encoding="utf-8") as f
+        ):
+            return json.load(f)
