@@ -13,6 +13,7 @@ from .hif_utils import (
     get_hf_dataset_sha,
     get_gh_datasets_shas,
     get_gh_dataset_sha,
+    get_free_disk_space_mb,
 )
 
 from .nn_utils import (
@@ -56,6 +57,7 @@ __all__ = [
     "empty_edgeattr",
     "empty_hyperedgeindex",
     "empty_nodefeatures",
+    "get_free_disk_space_mb",
     "get_gh_dataset_sha",
     "get_gh_datasets_shas",
     "get_hf_dataset_sha",

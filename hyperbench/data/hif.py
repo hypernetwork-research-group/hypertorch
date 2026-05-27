@@ -16,6 +16,7 @@ from hyperbench.utils import (
     validate_http_url,
     write_to_disk,
     named_temporary_file,
+    get_free_disk_space_mb,
 )
 
 
@@ -380,6 +381,7 @@ class HIFLoader:
             with open(json_file, encoding="utf-8") as f:
                 hiftext = json.load(f)
         except Exception as e:
+            print(f"Free disk space: {get_free_disk_space_mb()} MB")
             raise ValueError(f"Failed to read JSON file {json_file!r}: {e!s}") from e
 
         hypergraph = HIFHypergraph.from_hif(hiftext)
