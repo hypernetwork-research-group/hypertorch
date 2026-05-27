@@ -195,7 +195,8 @@ class Dataset(TorchDataset):
         enricher: HyperedgeEnricher,
         enrichment_mode: EnrichmentMode | None = None,
     ) -> None:
-        """Enrich hyperedge features using the provided hyperedge feature enricher.
+        """
+        Enrich hyperedge features using the provided hyperedge feature enricher.
 
         Args:
             enricher: An instance of HyperedgeEnricher to generate structural hyperedge attributes from hypergraph topology.
@@ -211,7 +212,8 @@ class Dataset(TorchDataset):
         enricher: HyperedgeEnricher,
         enrichment_mode: EnrichmentMode | None = None,
     ) -> None:
-        """Enrich hyperedge weights using the provided hyperedge weight enricher.
+        """
+        Enrich hyperedge weights using the provided hyperedge weight enricher.
 
         Args:
             enricher: An instance of HyperedgeEnricher to generate structural hyperedge weights from hypergraph topology.

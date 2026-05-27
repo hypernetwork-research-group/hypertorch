@@ -9,6 +9,7 @@ from hyperbench.utils import (
     NodeSpaceFiller,
     NodeSpaceSetting,
     clone_optional_tensor,
+    create_seeded_torch_generator,
     empty_hyperedgeindex,
     empty_nodefeatures,
     is_inductive_setting,
@@ -694,10 +695,7 @@ class HData:
         Returns:
             hdata: A new `HData` instance with hyperedge IDs, ``y``, and ``hyperedge_attr`` permuted.
         """
-        generator = torch.Generator(device=self.device)
-        if seed is not None:
-            generator.manual_seed(seed)
-
+        generator = create_seeded_torch_generator(device=self.device, seed=seed)
         permutation = torch.randperm(self.num_hyperedges, generator=generator, device=self.device)
 
         # permutation[new_id] = old_id, so y[permutation] puts old labels into new slots

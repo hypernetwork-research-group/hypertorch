@@ -4,7 +4,11 @@ from abc import ABC, abstractmethod
 from typing import cast
 from torch import Tensor
 from hyperbench.types import HData
-from hyperbench.utils import validate_is_non_empty, validate_split_ratios
+from hyperbench.utils import (
+    create_seeded_torch_generator,
+    validate_is_non_empty,
+    validate_split_ratios,
+)
 
 
 class Splitter(ABC):
@@ -142,9 +146,7 @@ class HyperedgeIDSplitter(Splitter):
 
         # Shuffle hyperedge IDs if shuffle is requested, otherwise keep original order for deterministic splits
         if shuffle:
-            generator = torch.Generator(device=device)
-            if seed is not None:
-                generator.manual_seed(seed)
+            generator = create_seeded_torch_generator(device=device, seed=seed)
 
             random_hyperedge_ids_permutation = torch.randperm(
                 n=num_hyperedges,

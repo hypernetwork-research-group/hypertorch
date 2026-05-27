@@ -503,6 +503,12 @@ def test_hifhypergraph_stats_returns_correct_statistics():
             [2, 3],
             id="second_of_two_hyperedges",
         ),
+        pytest.param(
+            torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]]),
+            10,
+            [],
+            id="non_existent_hyperedge_id",
+        ),
     ],
 )
 def test_hyperedge_index_nodes_in(hyperedge_index_tensor, hyperedge_id, expected_nodes):
@@ -510,8 +516,10 @@ def test_hyperedge_index_nodes_in(hyperedge_index_tensor, hyperedge_id, expected
     assert hyperedge_index.nodes_in(hyperedge_id) == expected_nodes
 
 
-def _edge_index_to_edge_set(edge_index: torch.Tensor) -> set[tuple[int, int]]:
-    return set(zip(edge_index[0].tolist(), edge_index[1].tolist(), strict=True))
+def test_hyperedge_index_nodes_in_raises_when_hyperedge_id_is_negative():
+    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1, 2], [0, 0, 0]], dtype=torch.long))
+    with pytest.raises(ValueError, match=re.escape("'hyperedge_id' must be non-negative, got -1")):
+        hyperedge_index.nodes_in(-1)
 
 
 @pytest.mark.parametrize(
@@ -559,7 +567,9 @@ def test_reduce_with_clique_expansion_returns_expected_edges(
 
     assert result.dtype == torch.long
     assert result.shape[0] == 2
-    assert _edge_index_to_edge_set(result) == expected_edges
+
+    edges = set(zip(result[0].tolist(), result[1].tolist(), strict=True))
+    assert edges == expected_edges
 
 
 def test_reduce_with_clique_expansion_matches_specialized_reducer():
