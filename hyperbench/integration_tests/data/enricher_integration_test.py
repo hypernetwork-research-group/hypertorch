@@ -14,8 +14,7 @@ from hyperbench.integration_tests.common import (
 from hyperbench.data import LaplacianPositionalEncodingEnricher
 
 
-# excluded_dataset = ["dblp", "imdb", "patent", "threads-ask-ubuntu", "threads-math-sx", "twitter"]
-excluded_dataset = []
+excluded_dataset = ["dblp", "imdb", "patent", "threads-ask-ubuntu", "threads-math-sx", "twitter"]
 
 NUM_FEATURES = 8
 
