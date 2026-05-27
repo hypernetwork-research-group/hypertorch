@@ -43,6 +43,9 @@ def __create_seeded_torch_generator(
     return generator
 
 
+generator = __create_seeded_torch_generator(device=torch.device("cpu"), seed=SEED)
+
+
 @cache
 def _cached_split_dataset(
     sampling_strategy: SamplingStrategy,
@@ -50,7 +53,6 @@ def _cached_split_dataset(
     node_space_setting: Literal["transductive", "inductive"] = "transductive",
 ) -> tuple[Dataset, Dataset, Dataset]:
     if dataset is None:
-        generator = __create_seeded_torch_generator(device=torch.device("cpu"), seed=SEED)
         x = torch.randn((100, 4), generator=generator)  # 100 nodes with 4 features each
         hyperedge_index = torch.cat(  # 200 hyperedges, each connecting 5 nodes
             [
@@ -173,6 +175,7 @@ def loaders(
         shuffle=False,
         num_workers=NUM_WORKERS,
         persistent_workers=True,
+        generator=generator,
     )
     val_loader = DataLoader(
         val_dataset,
@@ -181,6 +184,7 @@ def loaders(
         shuffle=False,
         num_workers=NUM_WORKERS,
         persistent_workers=True,
+        generator=generator,
     )
     tests_loader = DataLoader(
         test_dataset,
@@ -189,6 +193,7 @@ def loaders(
         shuffle=False,
         num_workers=NUM_WORKERS,
         persistent_workers=True,
+        generator=generator,
     )
     return train_loader, val_loader, tests_loader
 

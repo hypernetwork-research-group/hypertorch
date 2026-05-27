@@ -4,7 +4,8 @@ import pytest
 import requests
 import torch
 
-from unittest.mock import patch
+from io import BytesIO
+from unittest.mock import MagicMock, patch
 from hyperbench.data import HIFLoader, HIFProcessor
 from hyperbench.types import HData, HIFHypergraph
 from hyperbench.tests import new_mock_named_temporary_file
@@ -615,6 +616,98 @@ def test_load_by_name_reads_hf_download_and_saves_its_content(tmp_path, mock_hyp
     assert saved.read_bytes() == hf_content
     assert result.num_nodes == 2
     assert result.num_hyperedges == 1
+
+
+def test_load_by_name_raises_when_downloaded_hf_file_cannot_be_read(tmp_path):
+    hf_sha = "2bb641461e00c103fb5ef4fe6a30aad42500fc21"
+    response = requests.Response()
+    response.status_code = 404
+    response._content = b""
+
+    temp_file = MagicMock()
+    temp_file.name = str(tmp_path / "downloaded.json.zst")
+    temp_context = MagicMock()
+    temp_context.__enter__.return_value = temp_file
+
+    with (
+        patch("hyperbench.data.hif.os.path.exists", return_value=False),
+        patch("hyperbench.data.hif.requests.get", return_value=response),
+        patch("hyperbench.data.hif.hf_hub_download", return_value=temp_file.name) as mock_download,
+        patch("hyperbench.data.hif.tempfile.NamedTemporaryFile", return_value=temp_context),
+        patch("builtins.open", side_effect=OSError("missing file")),
+        pytest.warns(UserWarning, match="GitHub raw download failed"),
+        pytest.raises(
+            ValueError,
+            match=r"Failed to download dataset 'algebra' from both GitHub and Hugging Face Hub\. GitHub error: 404 \| Hugging Face error: Failed to read downloaded dataset file",
+        ),
+    ):
+        HIFLoader.load_by_name("algebra", hf_sha=hf_sha)
+
+    mock_download.assert_called_once_with(
+        repo_id="HypernetworkRG/algebra",
+        filename="algebra.json.zst",
+        repo_type="dataset",
+        revision=hf_sha,
+    )
+
+
+def test_load_by_name_raises_when_downloaded_hf_content_cannot_be_written(tmp_path):
+    hf_sha = "2bb641461e00c103fb5ef4fe6a30aad42500fc21"
+    response = requests.Response()
+    response.status_code = 404
+    response._content = b""
+
+    temp_file = MagicMock()
+    temp_file.name = str(tmp_path / "downloaded.json.zst")
+    temp_file.write.side_effect = OSError("disk full")
+    temp_context = MagicMock()
+    temp_context.__enter__.return_value = temp_file
+
+    with (
+        patch("hyperbench.data.hif.os.path.exists", return_value=False),
+        patch("hyperbench.data.hif.requests.get", return_value=response),
+        patch(
+            "hyperbench.data.hif.hf_hub_download", return_value=str(tmp_path / "fallback.json.zst")
+        ),
+        patch("hyperbench.data.hif.tempfile.NamedTemporaryFile", return_value=temp_context),
+        patch("builtins.open", return_value=BytesIO(b"downloaded-content")),
+        pytest.warns(UserWarning, match="GitHub raw download failed"),
+        pytest.raises(
+            ValueError,
+            match=r"Failed to download dataset 'algebra' from both GitHub and Hugging Face Hub\. GitHub error: 404 \| Hugging Face error: Failed to write downloaded dataset content to temporary file",
+        ),
+    ):
+        HIFLoader.load_by_name("algebra", hf_sha=hf_sha)
+
+
+def test_load_by_name_raises_when_saving_downloaded_dataset_fails(tmp_path):
+    response = requests.Response()
+    response.status_code = 200
+    response._content = b"downloaded-content"
+
+    with (
+        patch("hyperbench.data.hif.os.path.exists", return_value=False),
+        patch("hyperbench.data.hif.requests.get", return_value=response),
+        patch("hyperbench.data.hif.__file__", str(tmp_path / "hif.py")),
+        patch("builtins.open", side_effect=OSError("disk full")),
+        pytest.raises(
+            ValueError,
+            match=r"Failed to save downloaded dataset 'algebra' to disk at '.*algebra\.json\.zst'",
+        ),
+    ):
+        HIFLoader.load_by_name("algebra", save_on_disk=True)
+
+
+def test_extract_hif_raises_when_json_file_cannot_be_read(tmp_path):
+    json_path = tmp_path / "sample.json"
+    json_path.write_text("{}", encoding="utf-8")
+
+    with (
+        patch("hyperbench.data.hif.validate_hif_json", return_value=True),
+        patch("builtins.open", side_effect=OSError("missing file")),
+        pytest.raises(ValueError, match=r"Failed to read JSON file '.*sample\.json'"),
+    ):
+        HIFLoader.load_from_path(str(json_path))
 
 
 def test_hifloader_download_failure_when_hf_fallback_fails():

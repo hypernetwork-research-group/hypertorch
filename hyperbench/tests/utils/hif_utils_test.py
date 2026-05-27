@@ -228,3 +228,14 @@ def test_get_gh_dataset_trigger_no_commit():
         params={"path": "algebra.json.zst", "per_page": 1},
         timeout=10,
     )
+
+
+def test_validate_hif_json_exception_raises_with_invalid_json(tmp_path):
+    path_invalid = tmp_path / "invalid.json"
+    path_invalid.write_text("{not valid json", encoding="utf-8")
+
+    with patch("hyperbench.utils.hif_utils.requests.get") as mock_get:
+        mock_get.side_effect = requests.Timeout("Connection timeout")
+
+        with pytest.raises(ValueError, match="Failed to read JSON file"):
+            validate_hif_json(str(path_invalid))

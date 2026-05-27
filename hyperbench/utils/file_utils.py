@@ -23,7 +23,9 @@ def decompress_zst(zst_path: str) -> str:
             dctx.copy_stream(input_f, tmp_file)
             output = tmp_file.name
     except Exception as e:
-        raise ValueError(f"Failed to decompress .zst file {zst_path!r}: {e!s}") from e
+        raise ValueError(
+            f"Failed to decompress .zst file {zst_path!r}: {e!s}. {pretty_print_disk_space_stats()!s}"
+        ) from e
     return output
 
 
@@ -43,7 +45,9 @@ def compress_to_zst(json_path: str) -> bytes:
             compressed_content = cctx.compress(input_f.read())
         return compressed_content
     except Exception as e:
-        raise ValueError(f"Failed to compress JSON file {json_path!r}: {e!s}") from e
+        raise ValueError(
+            f"Failed to compress JSON file {json_path!r}: {e!s}. {pretty_print_disk_space_stats()!s}"
+        ) from e
 
 
 def write_to_disk(dataset_name: str, content: bytes, output_dir: str | None = None) -> None:
@@ -64,7 +68,7 @@ def write_to_disk(dataset_name: str, content: bytes, output_dir: str | None = No
             zst_filename = os.path.join(output_dir, f"{dataset_name}.json.zst")
     except Exception as e:
         raise ValueError(
-            f"Failed to determine output path for dataset {dataset_name!r}: {e!s}"
+            f"Failed to determine output path for dataset {dataset_name!r}: {e!s}. {pretty_print_disk_space_stats()!s}"
         ) from e
 
     try:
@@ -73,7 +77,7 @@ def write_to_disk(dataset_name: str, content: bytes, output_dir: str | None = No
             f.write(content)
     except Exception as e:
         raise ValueError(
-            f"Failed to write file {zst_filename!r} to disk {output_dir!r}: {e!s}"
+            f"Failed to write file {zst_filename!r} to disk {output_dir!r}: {e!s}. {pretty_print_disk_space_stats()!s}"
         ) from e
 
 
@@ -83,7 +87,9 @@ def named_temporary_file(content: bytes, suffix: str = ".json.zst") -> str:
             tmp_zst_file.write(content)
             zst_filename = tmp_zst_file.name
     except Exception as e:
-        raise ValueError(f"Failed to create temporary file: {e!s}") from e
+        raise ValueError(
+            f"Failed to create temporary file: {e!s}. {pretty_print_disk_space_stats()!s}"
+        ) from e
     return zst_filename
 
 
