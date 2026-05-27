@@ -14,26 +14,9 @@ from hyperbench.integration_tests.common import (
 from hyperbench.data import LaplacianPositionalEncodingEnricher
 
 
-def __find_lowest_limit_to_number_of_nodes_for_50_percent_coverage():
-    dataset_names = list_datasets()
-    node_counts = []
-    map = {}
-    for dataset_name in dataset_names:
-        dataset = get_dataset_by_name(dataset_name)
-        node_counts.append(dataset.hdata.num_nodes)
-        map[dataset_name] = dataset.hdata.num_nodes
+# excluded_dataset = ["dblp", "imdb", "patent", "threads-ask-ubuntu", "threads-math-sx", "twitter"]
+excluded_dataset = []
 
-    node_counts.sort()
-    cutoff_index = int(0.75 * len(node_counts))
-    cutoff_value = node_counts[cutoff_index]
-
-    list_of_datasets_below_cutoff = [
-        dataset_name for dataset_name, node_count in map.items() if node_count <= cutoff_value
-    ]
-    return list_of_datasets_below_cutoff
-
-
-small_datasets = __find_lowest_limit_to_number_of_nodes_for_50_percent_coverage()
 NUM_FEATURES = 8
 
 #### Why we limit the number of nodes and hyperedges in the tests to 6000? ####
@@ -52,7 +35,11 @@ NUM_FEATURES = 8
 
 @pytest.mark.parametrize(
     "dataset_name",
-    [pytest.param(dataset_name, id=f"{dataset_name}") for dataset_name in small_datasets],
+    [
+        pytest.param(dataset_name, id=f"{dataset_name}")
+        for dataset_name in list_datasets()
+        if dataset_name not in excluded_dataset
+    ],
 )
 @pytest.mark.integration
 def test_lpe_node_enricher(dataset_name):
@@ -69,7 +56,11 @@ def test_lpe_node_enricher(dataset_name):
 
 @pytest.mark.parametrize(
     "dataset_name",
-    [pytest.param(dataset_name, id=f"{dataset_name}") for dataset_name in small_datasets],
+    [
+        pytest.param(dataset_name, id=f"{dataset_name}")
+        for dataset_name in list_datasets()
+        if dataset_name not in excluded_dataset
+    ],
 )
 @pytest.mark.integration
 def test_n2v_node_enricher(dataset_name):
@@ -95,7 +86,11 @@ def test_n2v_node_enricher(dataset_name):
 
 @pytest.mark.parametrize(
     "dataset_name",
-    [pytest.param(dataset_name, id=f"{dataset_name}") for dataset_name in small_datasets],
+    [
+        pytest.param(dataset_name, id=f"{dataset_name}")
+        for dataset_name in list_datasets()
+        if dataset_name not in excluded_dataset
+    ],
 )
 @pytest.mark.integration
 def test_fill_value_hyperedge_enricher(dataset_name):
@@ -109,7 +104,11 @@ def test_fill_value_hyperedge_enricher(dataset_name):
 
 @pytest.mark.parametrize(
     "dataset_name",
-    [pytest.param(dataset_name, id=f"{dataset_name}") for dataset_name in small_datasets],
+    [
+        pytest.param(dataset_name, id=f"{dataset_name}")
+        for dataset_name in list_datasets()
+        if dataset_name not in excluded_dataset
+    ],
 )
 @pytest.mark.integration
 def test_villain_hyperedge_enricher(dataset_name):
@@ -133,7 +132,11 @@ def test_villain_hyperedge_enricher(dataset_name):
 
 @pytest.mark.parametrize(
     "dataset_name",
-    [pytest.param(dataset_name, id=f"{dataset_name}") for dataset_name in small_datasets],
+    [
+        pytest.param(dataset_name, id=f"{dataset_name}")
+        for dataset_name in list_datasets()
+        if dataset_name not in excluded_dataset
+    ],
 )
 @pytest.mark.integration
 def test_villain_node_enricher(dataset_name):
