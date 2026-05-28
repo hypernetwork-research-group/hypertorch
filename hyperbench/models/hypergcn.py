@@ -32,11 +32,13 @@ class HyperGCN(nn.Module):
         drop_rate: float = 0.5,
         use_mediator: bool = False,
         fast: bool = True,
+        seed: int | None = None,
     ):
         super().__init__()
         self.fast = fast
         self.use_mediator = use_mediator
         self.cached_gcn_laplacian_matrix: Tensor | None = None
+        self.seed = seed
 
         self.layers = nn.ModuleList(
             [
@@ -91,6 +93,7 @@ class HyperGCN(nn.Module):
                 x=x,
                 with_mediators=self.use_mediator,
                 return_weights=True,
+                seed=self.seed,
             )
 
             self.cached_gcn_laplacian_matrix = EdgeIndex(
