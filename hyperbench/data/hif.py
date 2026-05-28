@@ -11,14 +11,14 @@ from torch import Tensor
 from hyperbench.types import HData, HIFHypergraph
 from hyperbench.utils import (
     compress_json_bytes_as_zst,
-    read_json_bytes,
-    read_json_file,
+    from_bytes_to_json,
+    from_file_to_json,
     from_zst_bytes_to_json,
     from_zst_file_to_json,
     validate_hif_data,
     validate_http_url,
     write_dataset_to_disk_as_zst,
-    save_zst_file,
+    write_zst_file_to_disk,
 )
 
 GITHUB_COMMIT_SHA = "3879b2ce84750e54f984ca06ce3246dff22c71c7"
@@ -279,7 +279,7 @@ class HIFLoader:
                     dataset_name=os.path.basename(url), content=response.content
                 )
         else:  # json
-            hif_data = read_json_bytes(response.content)
+            hif_data = from_bytes_to_json(response.content)
             hdata = cls.__process_hif_data(hif_data)
             if save_on_disk:
                 compressed_hif_data = compress_json_bytes_as_zst(response.content)
@@ -308,7 +308,7 @@ class HIFLoader:
         if filepath.endswith(".zst"):
             hif_data = from_zst_file_to_json(filepath)
         elif filepath.endswith(".json"):
-            hif_data = read_json_file(filepath)
+            hif_data = from_file_to_json(filepath)
         else:
             raise ValueError(
                 f"Unsupported format for file {filepath!r}. Expected .json or .json.zst"
@@ -337,7 +337,7 @@ class HIFLoader:
             hif_data = from_zst_bytes_to_json(dataset_bytes)
             hdata = cls.__process_hif_data(hif_data, dataset_name)
             if save_on_disk:
-                save_zst_file(zst_filename=zst_filename, content=dataset_bytes)
+                write_zst_file_to_disk(zst_filename=zst_filename, content=dataset_bytes)
             return hdata
 
         warnings.warn(
@@ -359,7 +359,7 @@ class HIFLoader:
                 filename=f"{dataset_name}.json.zst",
                 repo_type="dataset",
                 revision=hf_sha,
-                cache_dir=".hf_cache",
+                cache_dir=".hf_cache",  # TODO abs path
             )
         except Exception as e:
             raise ValueError(
@@ -397,9 +397,3 @@ class HIFLoader:
 
         hypergraph = HIFHypergraph.from_hif(hif_data)
         return HIFProcessor.process_hypergraph(hypergraph)
-
-
-if __name__ == "__main__":
-    dataset = HIFLoader.load_from_url(
-        url="https://raw.githubusercontent.com/hypernetwork-research-group/datasets/main/algebra.json.json.zst",
-    )

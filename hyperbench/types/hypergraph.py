@@ -996,11 +996,3 @@ class HyperedgeIndex:
         self.__hyperedge_index[1] = to_0based_ids(self.all_hyperedge_ids, hyperedge_ids_to_rebase)
 
         return self
-
-
-if __name__ == "__main__":
-    x = torch.tensor([[1.0, 0.0], [0.0, 1.0], [1.0, 1.0], [0.0, 0.0], [0.5, 0.5]])
-    hyperedge_index = torch.tensor([[0, 1, 2, 3, 0, 2, 4], [0, 0, 0, 0, 1, 1, 1]])
-    edge_index = HyperedgeIndex(hyperedge_index).reduce_to_edge_index_on_random_direction(
-        x, with_mediators=True, return_weights=False
-    )

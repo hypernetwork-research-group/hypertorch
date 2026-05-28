@@ -42,11 +42,11 @@ from .url_utils import validate_http_url
 
 from .file_utils import (
     compress_json_bytes_as_zst,
-    read_json_file,
-    read_json_bytes,
+    from_file_to_json,
+    from_bytes_to_json,
     from_zst_bytes_to_json,
     from_zst_file_to_json,
-    save_zst_file,
+    write_zst_file_to_disk,
     write_dataset_to_disk_as_zst,
 )
 
@@ -64,6 +64,8 @@ __all__ = [
     "empty_edgeattr",
     "empty_hyperedgeindex",
     "empty_nodefeatures",
+    "from_bytes_to_json",
+    "from_file_to_json",
     "from_zst_bytes_to_json",
     "from_zst_file_to_json",
     "get_gh_dataset_sha",
@@ -75,9 +77,6 @@ __all__ = [
     "is_layer",
     "is_transductive_setting",
     "maxmin_scatter",
-    "read_json_bytes",
-    "read_json_file",
-    "save_zst_file",
     "sparse_dropout",
     "to_0based_ids",
     "to_non_empty_edgeattr",
@@ -85,4 +84,5 @@ __all__ = [
     "validate_hif_json",
     "validate_http_url",
     "write_dataset_to_disk_as_zst",
+    "write_zst_file_to_disk",
 ]

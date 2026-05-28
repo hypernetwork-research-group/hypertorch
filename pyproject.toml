@@ -10,7 +10,7 @@ authors = [
 ]
 dependencies = [
     "fastjsonschema==2.21.2",
-    "huggingface-hub==1.15.0",
+    "huggingface-hub==1.16.4",
     "lightning==2.6.1",
     "numpy==2.2.6 ; python_full_version < '3.11'",
     "numpy==2.4.4 ; python_full_version >= '3.11'",
@@ -69,6 +69,7 @@ filterwarnings = [
     "ignore:Sparse invariant checks are implicitly disabled",
     "ignore:Failing to pass a value to the 'type_params' parameter of 'typing._eval_type' is deprecated.*",
     "ignore:The '(test|train|val)_dataloader' does not have many workers which may be a bottleneck.*",
+
 ]
 
 [tool.coverage.run]

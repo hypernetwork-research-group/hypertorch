@@ -13,14 +13,14 @@ def compress_json_bytes_as_zst(content: bytes) -> bytes:
         raise ValueError(f"Failed to compress JSON content: {e!s}.") from e
 
 
-def read_json_bytes(content: bytes) -> dict[str, Any]:
+def from_bytes_to_json(content: bytes) -> dict[str, Any]:
     try:
         return json.loads(content.decode("utf-8"))
     except Exception as e:
         raise ValueError(f"Failed to read JSON content: {e!s}.") from e
 
 
-def read_json_file(json_filename: str) -> dict[str, Any]:
+def from_file_to_json(json_filename: str) -> dict[str, Any]:
     try:
         with open(json_filename, encoding="utf-8") as json_file:
             return json.load(json_file)
@@ -44,18 +44,7 @@ def from_zst_file_to_json(zst_filename: str) -> dict[str, Any]:
         raise ValueError(f"Failed to read compressed JSON file {zst_filename!r}: {e!s}.") from e
 
 
-def __read_zst_stream(input_zst_file: Any) -> dict[str, Any]:
-    with (
-        zstd.ZstdDecompressor().stream_reader(input_zst_file) as zst_reader,
-        io.TextIOWrapper(zst_reader, encoding="utf-8") as text_reader,
-    ):
-        try:
-            return json.load(text_reader)
-        except Exception as e:
-            raise ValueError(f"Failed to read JSON data for {input_zst_file.name!r}: {e!s}.") from e
-
-
-def save_zst_file(zst_filename: str, content: bytes) -> None:
+def write_zst_file_to_disk(zst_filename: str, content: bytes) -> None:
     try:
         os.makedirs(os.path.dirname(zst_filename), exist_ok=True)
         with open(zst_filename, "wb") as zst_file:
@@ -95,3 +84,14 @@ def write_dataset_to_disk_as_zst(
         raise ValueError(
             f"Failed to write file {zst_filename!r} to disk {output_dir!r}: {e!s}."
         ) from e
+
+
+def __read_zst_stream(input_zst_file: Any) -> dict[str, Any]:
+    with (
+        zstd.ZstdDecompressor().stream_reader(input_zst_file) as zst_reader,
+        io.TextIOWrapper(zst_reader, encoding="utf-8") as text_reader,
+    ):
+        try:
+            return json.load(text_reader)
+        except Exception as e:
+            raise ValueError(f"Failed to read JSON data for {input_zst_file.name!r}: {e!s}.") from e

@@ -6,11 +6,11 @@ import zstandard as zstd
 
 from hyperbench.utils import (
     compress_json_bytes_as_zst,
-    read_json_bytes,
-    read_json_file,
+    from_bytes_to_json,
+    from_file_to_json,
     from_zst_bytes_to_json,
     from_zst_file_to_json,
-    save_zst_file,
+    write_zst_file_to_disk,
     write_dataset_to_disk_as_zst,
 )
 
@@ -55,28 +55,28 @@ def test_compress_json_bytes_as_zst_raises_on_compression_error():
     ],
 )
 def test_read_json_bytes_returns_parsed_data(input_bytes, expected):
-    result = read_json_bytes(input_bytes)
+    result = from_bytes_to_json(input_bytes)
 
     assert result == expected
 
 
 def test_read_json_bytes_raises_on_invalid_json():
     with pytest.raises(ValueError, match="Failed to read JSON content:"):
-        read_json_bytes(b"{not valid json")
+        from_bytes_to_json(b"{not valid json")
 
 
 def test_read_json_file_returns_parsed_data(tmp_path):
     json_path = tmp_path / "sample.json"
     json_path.write_text('{"name": "hyperbench"}', encoding="utf-8")
 
-    result = read_json_file(str(json_path))
+    result = from_file_to_json(str(json_path))
 
     assert result == {"name": "hyperbench"}
 
 
 def test_read_json_file_raises_on_missing_file(tmp_path):
     with pytest.raises(ValueError, match=r"Failed to read JSON file '.*missing\.json'"):
-        read_json_file(str(tmp_path / "missing.json"))
+        from_file_to_json(str(tmp_path / "missing.json"))
 
 
 def test_from_zst_bytes_to_json_returns_parsed_data():
@@ -114,7 +114,7 @@ def test_from_zst_file_to_json_raises_on_invalid_compressed_file(tmp_path):
 def test_save_zst_file_writes_bytes(tmp_path):
     zst_path = tmp_path / "nested" / "sample.json.zst"
 
-    save_zst_file(str(zst_path), b"content")
+    write_zst_file_to_disk(str(zst_path), b"content")
 
     assert zst_path.read_bytes() == b"content"
 
@@ -126,7 +126,7 @@ def test_save_zst_file_raises_on_write_failure(tmp_path):
         patch("builtins.open", side_effect=OSError("disk full")),
         pytest.raises(ValueError, match=r"Failed to save downloaded '.*sample\.json\.zst'"),
     ):
-        save_zst_file(str(zst_path), b"content")
+        write_zst_file_to_disk(str(zst_path), b"content")
 
 
 def test_write_dataset_to_disk_as_zst_writes_to_explicit_output_dir(tmp_path):
