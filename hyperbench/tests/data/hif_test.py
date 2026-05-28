@@ -717,7 +717,6 @@ def test_load_by_name_reads_hf_download_and_saves_its_content(tmp_path, mock_hyp
     response._content = b""
 
     with (
-        patch("hyperbench.data.hif.os.path.exists", return_value=False),
         patch("hyperbench.data.hif.os.path.isdir", return_value=False),
         patch("hyperbench.data.hif.requests.get", return_value=response),
         patch("hyperbench.data.hif.hf_hub_download", return_value=str(fallback_file)),
@@ -731,6 +730,38 @@ def test_load_by_name_reads_hf_download_and_saves_its_content(tmp_path, mock_hyp
     saved = tmp_path / "datasets" / "algebra.json.zst"
     assert saved.exists()
     assert saved.read_bytes() == hf_content
+    assert result.num_nodes == 2
+    assert result.num_hyperedges == 1
+
+
+def test_load_by_name_raises_warn_when_fail_to_cleanup_hf_cache(tmp_path, mock_hypergraph):
+    hf_sha = "2bb641461e00c103fb5ef4fe6a30aad42500fc21"
+    hf_content = b"mock_zst_content"
+    fallback_file = tmp_path / "algebra.json.zst"
+    fallback_file.write_bytes(hf_content)
+    payload = _hif_payload(mock_hypergraph)
+    response = requests.Response()
+    response.status_code = 404
+    response._content = b""
+
+    with (
+        patch("hyperbench.data.hif.os.path.exists", return_value=False),
+        patch("hyperbench.data.hif.os.path.isdir", return_value=True),
+        patch("hyperbench.data.hif.requests.get", return_value=response),
+        patch("hyperbench.data.hif.hf_hub_download", return_value=str(fallback_file)),
+        patch("hyperbench.data.hif.from_zst_file_to_json", return_value=payload),
+        patch("hyperbench.data.hif.validate_hif_data", return_value=True),
+        patch(
+            "hyperbench.data.hif.shutil.rmtree",
+            side_effect=FileNotFoundError(
+                "[Errno 2] No such file or directory: '.hf_cache/datasets--HypernetworkRG--algebra'"
+            ),
+        ),
+        pytest.warns(UserWarning, match="Failed to clean up Hugging Face Hub cache"),
+        pytest.warns(UserWarning, match="GitHub raw download failed"),
+    ):
+        result = HIFLoader.load_by_name("algebra", hf_sha=hf_sha, save_on_disk=False)
+
     assert result.num_nodes == 2
     assert result.num_hyperedges == 1
 

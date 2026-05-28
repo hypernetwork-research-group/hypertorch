@@ -69,7 +69,7 @@ filterwarnings = [
     "ignore:Sparse invariant checks are implicitly disabled",
     "ignore:Failing to pass a value to the 'type_params' parameter of 'typing._eval_type' is deprecated.*",
     "ignore:The '(test|train|val)_dataloader' does not have many workers which may be a bottleneck.*",
-
+    "ignore:.*hf_xet\\.download_files\\(\\) is deprecated.*",
 ]
 
 [tool.coverage.run]
