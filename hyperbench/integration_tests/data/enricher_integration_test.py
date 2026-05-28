@@ -15,17 +15,12 @@ from hyperbench.data import LaplacianPositionalEncodingEnricher
 
 
 excluded_dataset = [
-    "threads-math-sx",
-    "patent",
-    "nba",
-    "dblp",
-    "NDC-classes",
     "NDC-substances",
     "contact-high-school",
     "contact-primary-school",
-    "twitter",
+    "patent",
     "threads-ask-ubuntu",
-    "imdb",
+    "threads-math-sx",
 ]
 
 NUM_FEATURES = 8

@@ -28,23 +28,23 @@ def read_json_file(json_filename: str) -> dict[str, Any]:
         raise ValueError(f"Failed to read JSON file {json_filename!r}: {e!s}.") from e
 
 
-def read_zst_bytes(content: bytes) -> dict[str, Any]:
+def from_zst_bytes_to_json(content: bytes) -> dict[str, Any]:
     try:
         with io.BytesIO(content) as input_zst_file:
-            return read_zst_stream(input_zst_file, source=input_zst_file.name)
+            return __read_zst_stream(input_zst_file)
     except Exception as e:
         raise ValueError(f"Failed to read compressed JSON byte data: {e!s}.") from e
 
 
-def read_zst_file(zst_filename: str) -> dict[str, Any]:
+def from_zst_file_to_json(zst_filename: str) -> dict[str, Any]:
     try:
         with open(zst_filename, "rb") as input_zst_file:
-            return read_zst_stream(input_zst_file, source=zst_filename)
+            return __read_zst_stream(input_zst_file)
     except Exception as e:
         raise ValueError(f"Failed to read compressed JSON file {zst_filename!r}: {e!s}.") from e
 
 
-def read_zst_stream(input_zst_file: Any, source: str) -> dict[str, Any]:
+def __read_zst_stream(input_zst_file: Any) -> dict[str, Any]:
     with (
         zstd.ZstdDecompressor().stream_reader(input_zst_file) as zst_reader,
         io.TextIOWrapper(zst_reader, encoding="utf-8") as text_reader,
@@ -52,7 +52,7 @@ def read_zst_stream(input_zst_file: Any, source: str) -> dict[str, Any]:
         try:
             return json.load(text_reader)
         except Exception as e:
-            raise ValueError(f"Failed to read JSON data for {source!r}: {e!s}.") from e
+            raise ValueError(f"Failed to read JSON data for {input_zst_file.name!r}: {e!s}.") from e
 
 
 def save_zst_file(zst_filename: str, content: bytes) -> None:

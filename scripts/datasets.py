@@ -42,4 +42,14 @@ def __datasets_below_node_and_hyperedge_cutoff(threshold_nodes=6500, threshold_h
     to_exclude = set(list_datasets()) - set(datasets_below_node_cutoff).intersection(
         set(datasets_below_hyperedge_cutoff)
     )
-    return to_exclude
+    sorted_to_exclude = sorted(to_exclude)
+    return sorted_to_exclude
+
+
+if __name__ == "__main__":
+    print("Datasets to exclude based on node and hyperedge count cutoffs:")
+    print(
+        __datasets_below_node_and_hyperedge_cutoff(
+            threshold_nodes=75000, threshold_hyperedges=50000
+        )
+    )

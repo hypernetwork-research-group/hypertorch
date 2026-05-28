@@ -4,11 +4,9 @@ import pytest
 import requests
 import torch
 
-from io import BytesIO
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 from hyperbench.data import HIFLoader, HIFProcessor
 from hyperbench.types import HData, HIFHypergraph
-from hyperbench.tests import new_mock_named_temporary_file
 
 
 @pytest.fixture
@@ -147,16 +145,20 @@ def mock_hdata() -> HData:
 
 def _write_hif_json(tmp_path, hypergraph: HIFHypergraph, filename: str = "sample.json") -> str:
     path = tmp_path / filename
-    payload = {
+    payload = _hif_payload(hypergraph)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(payload, f)
+    return str(path)
+
+
+def _hif_payload(hypergraph: HIFHypergraph) -> dict:
+    return {
         "network-type": hypergraph.network_type,
         "metadata": hypergraph.metadata,
         "nodes": hypergraph.nodes,
         "edges": hypergraph.hyperedges,
         "incidences": hypergraph.incidences,
     }
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(payload, f)
-    return str(path)
 
 
 def test_transform_attrs_empty_attrs():
@@ -217,7 +219,10 @@ def test_load_from_path_raises_for_unsupported_extension(tmp_path):
     invalid = tmp_path / "sample.txt"
     invalid.write_text("{}")
 
-    with pytest.raises(ValueError, match="Unsupported file format"):
+    with pytest.raises(
+        ValueError,
+        match=r"Unsupported format for file '.*sample\.txt'. Expected \.json or \.json\.zst",
+    ):
         HIFLoader.load_from_path(str(invalid))
 
 
@@ -245,7 +250,7 @@ def test_load_from_path_processes_hypergraph_cases(
     hypergraph = request.getfixturevalue(fixture_name)
     json_path = _write_hif_json(tmp_path, hypergraph, filename=f"{fixture_name}.json")
 
-    with patch("hyperbench.data.hif.validate_hif_json", return_value=True):
+    with patch("hyperbench.data.hif.validate_hif_data", return_value=True):
         hdata = HIFLoader.load_from_path(json_path)
 
     assert hdata.num_nodes == expected_nodes
@@ -264,7 +269,7 @@ def test_load_from_path_reads_utf8_json(tmp_path):
     )
     json_path = _write_hif_json(tmp_path, hypergraph, filename="utf8.json")
 
-    with patch("hyperbench.data.hif.validate_hif_json", return_value=True):
+    with patch("hyperbench.data.hif.validate_hif_data", return_value=True):
         hdata = HIFLoader.load_from_path(json_path)
 
     assert hdata.num_nodes == 1
@@ -275,15 +280,17 @@ def test_load_from_path_reads_utf8_json(tmp_path):
 def test_load_from_path_zst_uses_decompress(tmp_path, mock_hypergraph):
     zst_path = tmp_path / "sample.json.zst"
     zst_path.write_bytes(b"dummy")
-    json_path = _write_hif_json(tmp_path, mock_hypergraph)
+    payload = _hif_payload(mock_hypergraph)
 
     with (
-        patch("hyperbench.data.hif.decompress_zst", return_value=json_path) as mock_decompress,
-        patch("hyperbench.data.hif.validate_hif_json", return_value=True),
+        patch(
+            "hyperbench.data.hif.from_zst_file_to_json", return_value=payload
+        ) as mock_from_zst_file_to_json,
+        patch("hyperbench.data.hif.validate_hif_data", return_value=True),
     ):
         hdata = HIFLoader.load_from_path(str(zst_path))
 
-    mock_decompress.assert_called_once_with(str(zst_path))
+    mock_from_zst_file_to_json.assert_called_once_with(str(zst_path))
     assert hdata.num_nodes == 2
     assert hdata.num_hyperedges == 1
 
@@ -292,7 +299,7 @@ def test_load_from_path_raises_for_non_hif_compliant_json(tmp_path, mock_hypergr
     json_path = _write_hif_json(tmp_path, mock_hypergraph)
 
     with (
-        patch("hyperbench.data.hif.validate_hif_json", return_value=False),
+        patch("hyperbench.data.hif.validate_hif_data", return_value=False),
         pytest.raises(ValueError, match="is not HIF-compliant"),
     ):
         HIFLoader.load_from_path(json_path)
@@ -301,13 +308,15 @@ def test_load_from_path_raises_for_non_hif_compliant_json(tmp_path, mock_hypergr
 def test_load_from_url_processes_zst_and_saves_to_disk(tmp_path, mock_hypergraph):
     unique_name = f"algebra_{tmp_path.name}.json.zst"
     url = f"https://example.com/{unique_name}"
-    json_path = _write_hif_json(tmp_path, mock_hypergraph)
+    payload = _hif_payload(mock_hypergraph)
 
     with (
         patch("hyperbench.data.hif.requests.get") as mock_get,
-        patch("hyperbench.data.hif.decompress_zst", return_value=json_path),
-        patch("hyperbench.data.hif.validate_hif_json", return_value=True),
-        patch("hyperbench.data.hif.write_to_disk") as mock_write_to_disk,
+        patch(
+            "hyperbench.data.hif.from_zst_bytes_to_json", return_value=payload
+        ) as mock_from_zst_bytes_to_json,
+        patch("hyperbench.data.hif.validate_hif_data", return_value=True),
+        patch("hyperbench.data.hif.write_dataset_to_disk_as_zst") as mock_write_to_disk,
     ):
         mock_response = mock_get.return_value
         mock_response.status_code = 200
@@ -315,7 +324,37 @@ def test_load_from_url_processes_zst_and_saves_to_disk(tmp_path, mock_hypergraph
 
         hdata = HIFLoader.load_from_url(url, save_on_disk=True)
 
-    mock_write_to_disk.assert_called_once_with(unique_name, b"mock-zst-content")
+    mock_from_zst_bytes_to_json.assert_called_once_with(b"mock-zst-content")
+    mock_write_to_disk.assert_called_once_with(
+        dataset_name=unique_name,
+        content=b"mock-zst-content",
+    )
+    assert hdata.num_nodes == 2
+    assert hdata.num_hyperedges == 1
+
+
+def test_load_from_url_processes_zst_and_not_saves_to_disk(tmp_path, mock_hypergraph):
+    unique_name = f"algebra_{tmp_path.name}.json.zst"
+    url = f"https://example.com/{unique_name}"
+    payload = _hif_payload(mock_hypergraph)
+
+    with (
+        patch("hyperbench.data.hif.requests.get") as mock_get,
+        patch(
+            "hyperbench.data.hif.from_zst_bytes_to_json", return_value=payload
+        ) as mock_from_zst_bytes_to_json,
+        patch("hyperbench.data.hif.validate_hif_data", return_value=True),
+        patch("hyperbench.data.hif.write_dataset_to_disk_as_zst") as mock_write_to_disk,
+    ):
+        mock_response = mock_get.return_value
+        mock_response.status_code = 200
+        mock_response.content = b"mock-zst-content"
+
+        hdata = HIFLoader.load_from_url(url, save_on_disk=False)
+
+    mock_from_zst_bytes_to_json.assert_called_once_with(b"mock-zst-content")
+    mock_write_to_disk.assert_not_called()
+
     assert hdata.num_nodes == 2
     assert hdata.num_hyperedges == 1
 
@@ -323,23 +362,16 @@ def test_load_from_url_processes_zst_and_saves_to_disk(tmp_path, mock_hypergraph
 def test_load_from_url_processes_json_and_saves_compressed_copy(tmp_path, mock_hypergraph):
     unique_name = f"algebra_{tmp_path.name}.json"
     url = f"https://example.com/{unique_name}"
-    payload = {
-        "network-type": mock_hypergraph.network_type,
-        "metadata": mock_hypergraph.metadata,
-        "nodes": mock_hypergraph.nodes,
-        "edges": mock_hypergraph.hyperedges,
-        "incidences": mock_hypergraph.incidences,
-    }
+    payload = _hif_payload(mock_hypergraph)
 
     with (
         patch("hyperbench.data.hif.requests.get") as mock_get,
+        patch("hyperbench.data.hif.read_json_bytes", return_value=payload) as mock_read_json_bytes,
         patch(
-            "hyperbench.data.hif.tempfile.NamedTemporaryFile",
-            return_value=new_mock_named_temporary_file(tmp_path / "downloaded.json"),
-        ),
-        patch("hyperbench.data.hif.compress_to_zst", return_value=b"compressed") as mock_compress,
-        patch("hyperbench.data.hif.validate_hif_json", return_value=True),
-        patch("hyperbench.data.hif.write_to_disk") as mock_write_to_disk,
+            "hyperbench.data.hif.compress_json_bytes_as_zst", return_value=b"compressed"
+        ) as mock_compress,
+        patch("hyperbench.data.hif.validate_hif_data", return_value=True),
+        patch("hyperbench.data.hif.write_dataset_to_disk_as_zst") as mock_write_to_disk,
     ):
         mock_response = mock_get.return_value
         mock_response.status_code = 200
@@ -347,8 +379,12 @@ def test_load_from_url_processes_json_and_saves_compressed_copy(tmp_path, mock_h
 
         hdata = HIFLoader.load_from_url(url, save_on_disk=True)
 
-    mock_compress.assert_called_once_with(str(tmp_path / "downloaded.json"))
-    mock_write_to_disk.assert_called_once_with(unique_name, b"compressed")
+    mock_read_json_bytes.assert_called_once_with(json.dumps(payload).encode("utf-8"))
+    mock_compress.assert_called_once_with(json.dumps(payload).encode("utf-8"))
+    mock_write_to_disk.assert_called_once_with(
+        dataset_name=unique_name,
+        content=b"compressed",
+    )
     assert hdata.num_nodes == 2
     assert hdata.num_hyperedges == 1
 
@@ -356,13 +392,15 @@ def test_load_from_url_processes_json_and_saves_compressed_copy(tmp_path, mock_h
 def test_load_from_url_processes_zst_without_saving_to_disk(tmp_path, mock_hypergraph):
     unique_name = f"algebra_{tmp_path.name}.json.zst"
     url = f"https://example.com/{unique_name}"
-    json_path = _write_hif_json(tmp_path, mock_hypergraph)
+    payload = _hif_payload(mock_hypergraph)
 
     with (
         patch("hyperbench.data.hif.requests.get") as mock_get,
-        patch("hyperbench.data.hif.decompress_zst", return_value=json_path) as mock_decompress,
-        patch("hyperbench.data.hif.validate_hif_json", return_value=True),
-        patch("hyperbench.data.hif.write_to_disk") as mock_write_to_disk,
+        patch(
+            "hyperbench.data.hif.from_zst_bytes_to_json", return_value=payload
+        ) as mock_from_zst_bytes_to_json,
+        patch("hyperbench.data.hif.validate_hif_data", return_value=True),
+        patch("hyperbench.data.hif.write_dataset_to_disk_as_zst") as mock_write_to_disk,
     ):
         mock_response = mock_get.return_value
         mock_response.status_code = 200
@@ -371,7 +409,7 @@ def test_load_from_url_processes_zst_without_saving_to_disk(tmp_path, mock_hyper
         hdata = HIFLoader.load_from_url(url, save_on_disk=False)
 
     mock_write_to_disk.assert_not_called()
-    mock_decompress.assert_called_once()
+    mock_from_zst_bytes_to_json.assert_called_once_with(b"mock-zst-content")
     assert hdata.num_nodes == 2
     assert hdata.num_hyperedges == 1
 
@@ -379,23 +417,14 @@ def test_load_from_url_processes_zst_without_saving_to_disk(tmp_path, mock_hyper
 def test_load_from_url_processes_json_without_saving_to_disk(tmp_path, mock_hypergraph):
     unique_name = f"algebra_{tmp_path.name}.json"
     url = f"https://example.com/{unique_name}"
-    payload = {
-        "network-type": mock_hypergraph.network_type,
-        "metadata": mock_hypergraph.metadata,
-        "nodes": mock_hypergraph.nodes,
-        "edges": mock_hypergraph.hyperedges,
-        "incidences": mock_hypergraph.incidences,
-    }
+    payload = _hif_payload(mock_hypergraph)
 
     with (
         patch("hyperbench.data.hif.requests.get") as mock_get,
-        patch(
-            "hyperbench.data.hif.tempfile.NamedTemporaryFile",
-            return_value=new_mock_named_temporary_file(tmp_path / "downloaded_no_save.json"),
-        ),
-        patch("hyperbench.data.hif.compress_to_zst") as mock_compress,
-        patch("hyperbench.data.hif.validate_hif_json", return_value=True),
-        patch("hyperbench.data.hif.write_to_disk") as mock_write_to_disk,
+        patch("hyperbench.data.hif.read_json_bytes", return_value=payload) as mock_read_json_bytes,
+        patch("hyperbench.data.hif.compress_json_bytes_as_zst") as mock_compress,
+        patch("hyperbench.data.hif.validate_hif_data", return_value=True),
+        patch("hyperbench.data.hif.write_dataset_to_disk_as_zst") as mock_write_to_disk,
     ):
         mock_response = mock_get.return_value
         mock_response.status_code = 200
@@ -403,6 +432,7 @@ def test_load_from_url_processes_json_without_saving_to_disk(tmp_path, mock_hype
 
         hdata = HIFLoader.load_from_url(url, save_on_disk=False)
 
+    mock_read_json_bytes.assert_called_once_with(json.dumps(payload).encode("utf-8"))
     mock_compress.assert_not_called()
     mock_write_to_disk.assert_not_called()
     assert hdata.num_nodes == 2
@@ -421,7 +451,7 @@ def test_load_from_path_processes_node_numeric_attrs_into_features(tmp_path):
     )
     json_path = _write_hif_json(tmp_path, hypergraph, filename="nodes_with_attrs.json")
 
-    with patch("hyperbench.data.hif.validate_hif_json", return_value=True):
+    with patch("hyperbench.data.hif.validate_hif_data", return_value=True):
         hdata = HIFLoader.load_from_path(json_path)
 
     assert hdata.x.shape == (2, 2)
@@ -430,13 +460,7 @@ def test_load_from_path_processes_node_numeric_attrs_into_features(tmp_path):
 
 
 def test_load_from_url_raises_for_unsupported_temp_extension(tmp_path):
-    with (
-        patch("hyperbench.data.hif.requests.get") as mock_get,
-        patch(
-            "hyperbench.data.hif.tempfile.NamedTemporaryFile",
-            return_value=new_mock_named_temporary_file(tmp_path / "downloaded.bin"),
-        ),
-    ):
+    with patch("hyperbench.data.hif.requests.get") as mock_get:
         mock_response = mock_get.return_value
         mock_response.status_code = 200
         mock_response.content = b"bytes"
@@ -446,17 +470,20 @@ def test_load_from_url_raises_for_unsupported_temp_extension(tmp_path):
 
 
 def test_load_skips_download_when_file_exists(tmp_path, mock_hypergraph):
-    json_path = _write_hif_json(tmp_path, mock_hypergraph)
+    payload = _hif_payload(mock_hypergraph)
 
     with (
         patch("hyperbench.data.hif.os.path.exists", return_value=True),
         patch("hyperbench.data.hif.requests.get") as mock_get,
-        patch("hyperbench.data.hif.decompress_zst", return_value=json_path),
-        patch("hyperbench.data.hif.validate_hif_json", return_value=True),
+        patch(
+            "hyperbench.data.hif.from_zst_file_to_json", return_value=payload
+        ) as mock_from_zst_file_to_json,
+        patch("hyperbench.data.hif.validate_hif_data", return_value=True),
     ):
         result = HIFLoader.load_by_name("algebra", save_on_disk=True)
 
     mock_get.assert_not_called()
+    mock_from_zst_file_to_json.assert_called_once()
     assert result.num_nodes == 2
     assert result.num_hyperedges == 1
 
@@ -466,14 +493,14 @@ def test_hifloader_falls_back_to_hf_hub_download_when_github_raw_download_fails(
 ):
     fallback_file = tmp_path / "algebra.json.zst"
     fallback_file.write_bytes(b"mock_zst_content")
-    json_path = _write_hif_json(tmp_path, mock_hypergraph)
+    payload = _hif_payload(mock_hypergraph)
 
     with (
         patch("hyperbench.data.hif.os.path.exists", return_value=False),
         patch("hyperbench.data.hif.requests.get") as mock_get,
         patch("hyperbench.data.hif.hf_hub_download", return_value=str(fallback_file)) as _,
-        patch("hyperbench.data.hif.decompress_zst", return_value=json_path),
-        patch("hyperbench.data.hif.validate_hif_json", return_value=True),
+        patch("hyperbench.data.hif.from_zst_file_to_json", return_value=payload),
+        patch("hyperbench.data.hif.validate_hif_data", return_value=True),
         pytest.warns(UserWarning, match="GitHub raw download failed"),
         pytest.raises(
             ValueError,
@@ -503,14 +530,15 @@ def test_hifloader_from_url_raise_error_on_wrong_extension():
 
 
 def test_load_saves_downloaded_dataset_on_disk(tmp_path, mock_hypergraph):
-    json_path = _write_hif_json(tmp_path, mock_hypergraph)
+    payload = _hif_payload(mock_hypergraph)
 
     with (
         patch("hyperbench.data.hif.os.path.exists", return_value=False),
         patch("hyperbench.data.hif.requests.get") as mock_get,
-        patch("hyperbench.data.hif.decompress_zst", return_value=json_path),
-        patch("hyperbench.data.hif.validate_hif_json", return_value=True),
+        patch("hyperbench.data.hif.from_zst_bytes_to_json", return_value=payload),
+        patch("hyperbench.data.hif.validate_hif_data", return_value=True),
         patch("hyperbench.data.hif.os.path.abspath", return_value=str(tmp_path / "hif.py")),
+        patch("hyperbench.data.hif.save_zst_file") as mock_save_zst_file,
     ):
         mock_response = mock_get.return_value
         mock_response.status_code = 200
@@ -518,9 +546,28 @@ def test_load_saves_downloaded_dataset_on_disk(tmp_path, mock_hypergraph):
 
         result = HIFLoader.load_by_name("algebra", save_on_disk=True)
 
-    saved = tmp_path / "datasets" / "algebra.json.zst"
-    assert saved.exists()
-    assert saved.read_bytes() == b"downloaded-content"
+    mock_save_zst_file.assert_called_once()
+    assert result.num_nodes == 2
+    assert result.num_hyperedges == 1
+
+
+def test_load_skips_saving_downloaded_dataset_when_save_on_disk_is_false(tmp_path, mock_hypergraph):
+    payload = _hif_payload(mock_hypergraph)
+
+    with (
+        patch("hyperbench.data.hif.os.path.exists", return_value=False),
+        patch("hyperbench.data.hif.requests.get") as mock_get,
+        patch("hyperbench.data.hif.from_zst_bytes_to_json", return_value=payload),
+        patch("hyperbench.data.hif.validate_hif_data", return_value=True),
+        patch("hyperbench.data.hif.save_zst_file") as mock_save_zst_file,
+    ):
+        mock_response = mock_get.return_value
+        mock_response.status_code = 200
+        mock_response.content = b"downloaded-content"
+
+        result = HIFLoader.load_by_name("algebra", save_on_disk=False)
+
+    mock_save_zst_file.assert_not_called()
     assert result.num_nodes == 2
     assert result.num_hyperedges == 1
 
@@ -541,7 +588,7 @@ def test_load_by_name_uses_hf_revision_when_github_download_fails(tmp_path, mock
     hf_sha = "2bb641461e00c103fb5ef4fe6a30aad42500fc21"
     fallback_file = tmp_path / "algebra.json.zst"
     fallback_file.write_bytes(b"mock_zst_content")
-    json_path = _write_hif_json(tmp_path, mock_hypergraph)
+    payload = _hif_payload(mock_hypergraph)
 
     response = requests.Response()
     response.status_code = 404
@@ -553,8 +600,8 @@ def test_load_by_name_uses_hf_revision_when_github_download_fails(tmp_path, mock
         patch(
             "hyperbench.data.hif.hf_hub_download", return_value=str(fallback_file)
         ) as mock_hf_hub_download,
-        patch("hyperbench.data.hif.decompress_zst", return_value=json_path),
-        patch("hyperbench.data.hif.validate_hif_json", return_value=True),
+        patch("hyperbench.data.hif.from_zst_file_to_json", return_value=payload),
+        patch("hyperbench.data.hif.validate_hif_data", return_value=True),
         pytest.warns(UserWarning, match="GitHub raw download failed"),
     ):
         result = HIFLoader.load_by_name("algebra", hf_sha=hf_sha, save_on_disk=False)
@@ -594,7 +641,7 @@ def test_load_by_name_reads_hf_download_and_saves_its_content(tmp_path, mock_hyp
     hf_content = b"mock_zst_content"
     fallback_file = tmp_path / "algebra.json.zst"
     fallback_file.write_bytes(hf_content)
-    json_path = _write_hif_json(tmp_path, mock_hypergraph)
+    payload = _hif_payload(mock_hypergraph)
 
     response = requests.Response()
     response.status_code = 404
@@ -604,8 +651,8 @@ def test_load_by_name_reads_hf_download_and_saves_its_content(tmp_path, mock_hyp
         patch("hyperbench.data.hif.os.path.exists", return_value=False),
         patch("hyperbench.data.hif.requests.get", return_value=response),
         patch("hyperbench.data.hif.hf_hub_download", return_value=str(fallback_file)),
-        patch("hyperbench.data.hif.decompress_zst", return_value=json_path),
-        patch("hyperbench.data.hif.validate_hif_json", return_value=True),
+        patch("hyperbench.data.hif.from_zst_file_to_json", return_value=payload),
+        patch("hyperbench.data.hif.validate_hif_data", return_value=True),
         patch("hyperbench.data.hif.__file__", str(tmp_path / "hif.py")),
         pytest.warns(UserWarning, match="GitHub raw download failed"),
     ):
@@ -624,21 +671,23 @@ def test_load_by_name_raises_when_downloaded_hf_file_cannot_be_read(tmp_path):
     response.status_code = 404
     response._content = b""
 
-    temp_file = MagicMock()
-    temp_file.name = str(tmp_path / "downloaded.json.zst")
-    temp_context = MagicMock()
-    temp_context.__enter__.return_value = temp_file
-
     with (
         patch("hyperbench.data.hif.os.path.exists", return_value=False),
         patch("hyperbench.data.hif.requests.get", return_value=response),
-        patch("hyperbench.data.hif.hf_hub_download", return_value=temp_file.name) as mock_download,
-        patch("hyperbench.data.hif.tempfile.NamedTemporaryFile", return_value=temp_context),
-        patch("builtins.open", side_effect=OSError("missing file")),
+        patch(
+            "hyperbench.data.hif.hf_hub_download",
+            return_value=str(tmp_path / "downloaded.json.zst"),
+        ) as mock_download,
+        patch(
+            "hyperbench.data.hif.from_zst_file_to_json",
+            side_effect=ValueError(
+                "Failed to read compressed JSON file 'downloaded.json.zst': missing file."
+            ),
+        ),
         pytest.warns(UserWarning, match="GitHub raw download failed"),
         pytest.raises(
             ValueError,
-            match=r"Failed to download dataset 'algebra' from both GitHub and Hugging Face Hub\. GitHub error: 404 \| Hugging Face error: Failed to read downloaded dataset file",
+            match=r"Failed to read compressed JSON file 'downloaded\.json\.zst': missing file\.",
         ),
     ):
         HIFLoader.load_by_name("algebra", hf_sha=hf_sha)
@@ -656,12 +705,14 @@ def test_load_by_name_raises_when_downloaded_hf_content_cannot_be_written(tmp_pa
     response = requests.Response()
     response.status_code = 404
     response._content = b""
-
-    temp_file = MagicMock()
-    temp_file.name = str(tmp_path / "downloaded.json.zst")
-    temp_file.write.side_effect = OSError("disk full")
-    temp_context = MagicMock()
-    temp_context.__enter__.return_value = temp_file
+    payload = _hif_payload(
+        HIFHypergraph(
+            network_type="undirected",
+            nodes=[{"node": "0", "attrs": {}}],
+            hyperedges=[{"edge": "0", "attrs": {}}],
+            incidences=[{"node": "0", "edge": "0"}],
+        )
+    )
 
     with (
         patch("hyperbench.data.hif.os.path.exists", return_value=False),
@@ -669,15 +720,16 @@ def test_load_by_name_raises_when_downloaded_hf_content_cannot_be_written(tmp_pa
         patch(
             "hyperbench.data.hif.hf_hub_download", return_value=str(tmp_path / "fallback.json.zst")
         ),
-        patch("hyperbench.data.hif.tempfile.NamedTemporaryFile", return_value=temp_context),
-        patch("builtins.open", return_value=BytesIO(b"downloaded-content")),
+        patch("hyperbench.data.hif.from_zst_file_to_json", return_value=payload),
+        patch("hyperbench.data.hif.validate_hif_data", return_value=True),
+        patch("hyperbench.data.hif.shutil.copyfile", side_effect=OSError("disk full")),
         pytest.warns(UserWarning, match="GitHub raw download failed"),
         pytest.raises(
             ValueError,
-            match=r"Failed to download dataset 'algebra' from both GitHub and Hugging Face Hub\. GitHub error: 404 \| Hugging Face error: Failed to write downloaded dataset content to temporary file",
+            match=r"Failed to save downloaded dataset 'algebra' to disk at '.*algebra\.json\.zst': disk full\.",
         ),
     ):
-        HIFLoader.load_by_name("algebra", hf_sha=hf_sha)
+        HIFLoader.load_by_name("algebra", hf_sha=hf_sha, save_on_disk=True)
 
 
 def test_load_by_name_raises_when_saving_downloaded_dataset_fails(tmp_path):
@@ -688,11 +740,25 @@ def test_load_by_name_raises_when_saving_downloaded_dataset_fails(tmp_path):
     with (
         patch("hyperbench.data.hif.os.path.exists", return_value=False),
         patch("hyperbench.data.hif.requests.get", return_value=response),
-        patch("hyperbench.data.hif.__file__", str(tmp_path / "hif.py")),
-        patch("builtins.open", side_effect=OSError("disk full")),
+        patch(
+            "hyperbench.data.hif.from_zst_bytes_to_json",
+            return_value=_hif_payload(
+                HIFHypergraph(
+                    network_type="undirected",
+                    nodes=[{"node": "0", "attrs": {}}],
+                    hyperedges=[{"edge": "0", "attrs": {}}],
+                    incidences=[{"node": "0", "edge": "0"}],
+                )
+            ),
+        ),
+        patch("hyperbench.data.hif.validate_hif_data", return_value=True),
+        patch(
+            "hyperbench.data.hif.save_zst_file",
+            side_effect=ValueError("Failed to save downloaded 'algebra.json.zst'"),
+        ),
         pytest.raises(
             ValueError,
-            match=r"Failed to save downloaded dataset 'algebra' to disk at '.*algebra\.json\.zst'",
+            match=r"Failed to save downloaded 'algebra\.json\.zst'",
         ),
     ):
         HIFLoader.load_by_name("algebra", save_on_disk=True)
@@ -703,7 +769,7 @@ def test_extract_hif_raises_when_json_file_cannot_be_read(tmp_path):
     json_path.write_text("{}", encoding="utf-8")
 
     with (
-        patch("hyperbench.data.hif.validate_hif_json", return_value=True),
+        patch("hyperbench.data.hif.validate_hif_data", return_value=True),
         patch("builtins.open", side_effect=OSError("missing file")),
         pytest.raises(ValueError, match=r"Failed to read JSON file '.*sample\.json'"),
     ):

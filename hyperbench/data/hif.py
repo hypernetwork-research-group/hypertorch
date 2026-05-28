@@ -13,8 +13,8 @@ from hyperbench.utils import (
     compress_json_bytes_as_zst,
     read_json_bytes,
     read_json_file,
-    read_zst_bytes,
-    read_zst_file,
+    from_zst_bytes_to_json,
+    from_zst_file_to_json,
     save_zst_file,
     validate_hif_data,
     validate_http_url,
@@ -265,7 +265,7 @@ class HIFLoader:
             )
 
         if url.endswith(".json.zst"):
-            hif_data = read_zst_bytes(response.content)
+            hif_data = from_zst_bytes_to_json(response.content)
             hdata = cls.__process_hif_data(hif_data)
             if save_on_disk:
                 # TODO: Verify this does not save files with double .zst extension
@@ -303,7 +303,7 @@ class HIFLoader:
             raise ValueError(f"File {filepath!r} does not exist.")
 
         if filepath.endswith(".zst"):
-            hif_data = read_zst_file(filepath)
+            hif_data = from_zst_file_to_json(filepath)
         elif filepath.endswith(".json"):
             hif_data = read_json_file(filepath)
         else:
@@ -324,14 +324,14 @@ class HIFLoader:
         zst_filename = os.path.join(current_dir, "datasets", f"{dataset_name}.json.zst")
 
         if os.path.exists(zst_filename):
-            hif_data = read_zst_file(zst_filename)
+            hif_data = from_zst_file_to_json(zst_filename)
             return cls.__process_hif_data(hif_data, dataset_name)
 
         github_url = f"https://raw.githubusercontent.com/hypernetwork-research-group/datasets/{GITHUB_COMMIT_SHA}/{dataset_name}.json.zst"
         response = requests.get(github_url, timeout=20)
         if response.status_code == 200:
             dataset_bytes = response.content
-            hif_data = read_zst_bytes(dataset_bytes)
+            hif_data = from_zst_bytes_to_json(dataset_bytes)
             hdata = cls.__process_hif_data(hif_data, dataset_name)
             if save_on_disk:
                 save_zst_file(zst_filename=zst_filename, content=dataset_bytes)
@@ -363,7 +363,7 @@ class HIFLoader:
                 f"GitHub error: {response.status_code} | Hugging Face error: {e!s}."
             ) from e
 
-        hif_data = read_zst_file(downloaded_path)
+        hif_data = from_zst_file_to_json(downloaded_path)
         hdata = cls.__process_hif_data(hif_data, dataset_name)
         if save_on_disk:
             try:

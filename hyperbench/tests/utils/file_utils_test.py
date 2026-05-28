@@ -1,111 +1,167 @@
-import os
-import pytest
-from hyperbench.utils import (
-    compress_to_zst,
-    decompress_zst,
-    write_to_disk,
-    named_temporary_file,
-)
+import json
 from unittest.mock import patch
 
+import pytest
+import zstandard as zstd
 
-def test_write_to_disk_writes_file_default_output_dir(tmp_path):
-    dataset_name = "test_dataset"
-    content = b"test content"
-
-    # Force write_to_disk default branch to resolve under tmp_path.
-    fake_module_file = tmp_path / "hyperbench" / "utils" / "file_utils.py"
-
-    with patch(
-        "hyperbench.utils.file_utils.os.path.abspath",
-        return_value=str(fake_module_file),
-    ):
-        write_to_disk(dataset_name, content)
-
-    expected_path = tmp_path / "hyperbench" / "data" / "datasets" / f"{dataset_name}.json.zst"
-    assert expected_path.is_file()
-    assert expected_path.read_bytes() == content
+from hyperbench.utils import (
+    compress_json_bytes_as_zst,
+    read_json_bytes,
+    read_json_file,
+    from_zst_bytes_to_json,
+    from_zst_file_to_json,
+    save_zst_file,
+    write_dataset_to_disk_as_zst,
+)
 
 
-def test_write_to_disk_writes_file_optional_output_dir(tmp_path):
-    dataset_name = "test_dataset"
-    content = b"test content"
-    output_dir = tmp_path
+@pytest.mark.parametrize(
+    "input_bytes",
+    [
+        b'{"nodes": [1, 2], "ok": true}',
+        b'{"name": "hyperbench", "count": 1}',
+        b"{}",
+        b'{"nodes": [1, 2], "ok": true, "hyperedges": []}',
+    ],
+)
+def test_compress_json_bytes_as_zst_round_trip(input_bytes):
+    content = input_bytes
+    compressed = compress_json_bytes_as_zst(content)
 
-    write_to_disk(dataset_name, content, output_dir)
-
-    expected_path = tmp_path / f"{dataset_name}.json.zst"
-    assert expected_path.is_file()
-
-    with open(expected_path, "rb") as f:
-        file_content = f.read()
-        assert file_content == content
-
-
-def test_create_named_temporary_file(tmp_path):
-    content = b"temporary file content"
-    temp_file_path = named_temporary_file(content, suffix=".txt")
-
-    assert os.path.isfile(temp_file_path)
-
-    with open(temp_file_path, "rb") as f:
-        file_content = f.read()
-        assert file_content == content
-        assert temp_file_path.endswith(".txt")
+    assert zstd.ZstdDecompressor().decompress(compressed) == content
 
 
-def test_decompress_zst_raises_value_error_when_input_missing(tmp_path):
-    with (
-        patch("builtins.open", side_effect=OSError("missing file")),
-        patch("hyperbench.utils.file_utils.pretty_print_disk_space_stats") as mock_stats,
-    ):
-        mock_stats.return_value = None
-
-        with pytest.raises(ValueError, match=r"Failed to decompress \.zst file"):
-            decompress_zst(f"{tmp_path}/missing.json.zst")
-
-
-def test_compress_to_zst_raises_value_error_when_input_missing(tmp_path):
-    with (
-        patch("builtins.open", side_effect=OSError("missing file")),
-        patch("hyperbench.utils.file_utils.pretty_print_disk_space_stats") as mock_stats,
-    ):
-        mock_stats.return_value = None
-
-        with pytest.raises(ValueError, match=r"Failed to compress JSON file"):
-            compress_to_zst(f"{tmp_path}/missing.json")
-
-
-def test_write_to_disk_raises_value_error_when_output_path_cannot_be_determined():
-    with (
-        patch("hyperbench.utils.file_utils.os.path.abspath", side_effect=OSError("boom")),
-        patch("hyperbench.utils.file_utils.pretty_print_disk_space_stats") as mock_stats,
-    ):
-        mock_stats.return_value = None
-
-        with pytest.raises(ValueError, match=r"Failed to determine output path for dataset"):
-            write_to_disk("test_dataset", b"content")
-
-
-def test_write_to_disk_raises_value_error_when_write_fails(tmp_path):
-    with (
-        patch("builtins.open", side_effect=OSError("cannot write")),
-        patch("hyperbench.utils.file_utils.pretty_print_disk_space_stats") as mock_stats,
-    ):
-        mock_stats.return_value = None
-
-        with pytest.raises(ValueError, match=r"Failed to write file"):
-            write_to_disk("test_dataset", b"content", str(tmp_path))
-
-
-def test_named_temporary_file_raises_value_error_when_creation_fails():
+def test_compress_json_bytes_as_zst_raises_on_compression_error():
     with (
         patch(
-            "hyperbench.utils.file_utils.tempfile.NamedTemporaryFile", side_effect=OSError("boom")
+            "hyperbench.utils.file_utils.zstd.ZstdCompressor.compress",
+            side_effect=RuntimeError("boom"),
         ),
-        patch("hyperbench.utils.file_utils.pretty_print_disk_space_stats") as mock_stats,
+        pytest.raises(ValueError, match=r"Failed to compress JSON content: boom\."),
     ):
-        mock_stats.return_value = None
+        compress_json_bytes_as_zst(b"{}")
 
-        with pytest.raises(ValueError, match=r"Failed to create temporary file"):
-            named_temporary_file(b"content")
+
+@pytest.mark.parametrize(
+    "input_bytes, expected",
+    [
+        (b'{"nodes": [1, 2], "ok": true}', {"nodes": [1, 2], "ok": True}),
+        (b'{"name": "hyperbench", "count": 1}', {"name": "hyperbench", "count": 1}),
+        (b"{}", {}),
+        (
+            b'{"nodes": [1, 2], "ok": true, "hyperedges": []}',
+            {"nodes": [1, 2], "ok": True, "hyperedges": []},
+        ),
+    ],
+)
+def test_read_json_bytes_returns_parsed_data(input_bytes, expected):
+    result = read_json_bytes(input_bytes)
+
+    assert result == expected
+
+
+def test_read_json_bytes_raises_on_invalid_json():
+    with pytest.raises(ValueError, match="Failed to read JSON content:"):
+        read_json_bytes(b"{not valid json")
+
+
+def test_read_json_file_returns_parsed_data(tmp_path):
+    json_path = tmp_path / "sample.json"
+    json_path.write_text('{"name": "hyperbench"}', encoding="utf-8")
+
+    result = read_json_file(str(json_path))
+
+    assert result == {"name": "hyperbench"}
+
+
+def test_read_json_file_raises_on_missing_file():
+    with pytest.raises(ValueError, match=r"Failed to read JSON file '.*missing\.json'"):
+        read_json_file("/tmp/missing.json")
+
+
+def test_from_zst_bytes_to_json_returns_parsed_data():
+    payload = {"name": "hyperbench", "items": [1, 2]}
+    compressed = compress_json_bytes_as_zst(json.dumps(payload).encode("utf-8"))
+
+    result = from_zst_bytes_to_json(compressed)
+
+    assert result == payload
+
+
+def test_from_zst_bytes_to_json_raises_on_invalid_compressed_content():
+    with pytest.raises(ValueError, match="Failed to read compressed JSON byte data:"):
+        from_zst_bytes_to_json(b"not-a-zst-stream")
+
+
+def test_from_zst_file_to_json_returns_parsed_data(tmp_path):
+    payload = {"name": "hyperbench"}
+    zst_path = tmp_path / "sample.json.zst"
+    zst_path.write_bytes(compress_json_bytes_as_zst(json.dumps(payload).encode("utf-8")))
+
+    result = from_zst_file_to_json(str(zst_path))
+
+    assert result == payload
+
+
+def test_from_zst_file_to_json_raises_on_invalid_compressed_file(tmp_path):
+    zst_path = tmp_path / "bad.json.zst"
+    zst_path.write_bytes(b"not-zst")
+
+    with pytest.raises(ValueError, match=r"Failed to read compressed JSON file '.*bad\.json\.zst'"):
+        from_zst_file_to_json(str(zst_path))
+
+
+def test_save_zst_file_writes_bytes(tmp_path):
+    zst_path = tmp_path / "nested" / "sample.json.zst"
+
+    save_zst_file(str(zst_path), b"content")
+
+    assert zst_path.read_bytes() == b"content"
+
+
+def test_save_zst_file_raises_on_write_failure(tmp_path):
+    zst_path = tmp_path / "sample.json.zst"
+
+    with (
+        patch("builtins.open", side_effect=OSError("disk full")),
+        pytest.raises(ValueError, match=r"Failed to save downloaded '.*sample\.json\.zst'"),
+    ):
+        save_zst_file(str(zst_path), b"content")
+
+
+def test_write_dataset_to_disk_as_zst_writes_to_explicit_output_dir(tmp_path):
+    output_dir = tmp_path / "datasets"
+
+    write_dataset_to_disk_as_zst("algebra", b"content", output_dir=str(output_dir))
+
+    assert (output_dir / "algebra.json.zst").read_bytes() == b"content"
+
+
+def test_write_dataset_to_disk_as_zst_uses_default_output_dir(tmp_path):
+    with patch(
+        "hyperbench.utils.file_utils.__file__",
+        str(tmp_path / "pkg" / "file_utils.py"),
+    ):
+        write_dataset_to_disk_as_zst("algebra", b"content")
+
+    assert (tmp_path / "data" / "datasets" / "algebra.json.zst").read_bytes() == b"content"
+
+
+def test_write_dataset_to_disk_as_zst_raises_when_path_cannot_be_determined():
+    with (
+        patch("hyperbench.utils.file_utils.os.path.abspath", side_effect=OSError("boom")),
+        pytest.raises(ValueError, match="Failed to determine output path for dataset"),
+    ):
+        write_dataset_to_disk_as_zst("algebra", b"content")
+
+
+def test_write_dataset_to_disk_as_zst_raises_on_write_failure(tmp_path):
+    output_dir = tmp_path / "datasets"
+
+    with (
+        patch("builtins.open", side_effect=OSError("disk full")),
+        pytest.raises(
+            ValueError, match=r"Failed to write file '.*algebra\.json\.zst' to disk '.*datasets'"
+        ),
+    ):
+        write_dataset_to_disk_as_zst("algebra", b"content", output_dir=str(output_dir))

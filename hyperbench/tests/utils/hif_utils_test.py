@@ -1,13 +1,9 @@
 import requests
-import json
-import os
 import pytest
 
 from unittest.mock import patch, mock_open, MagicMock
 from hyperbench.utils import (
     validate_hif_json,
-    compress_to_zst,
-    decompress_zst,
     get_hf_datasets_shas,
     get_hf_dataset_sha,
     get_gh_datasets_shas,
@@ -84,41 +80,41 @@ def test_validate_hif_json_with_url_request_exception_fallback():
         mock_path.open.assert_called_once_with("r", encoding="utf-8")
 
 
-def test_compress_to_zst_returns_non_empty_bytes(tmp_path):
-    json_path = tmp_path / "sample.json"
-    json_path.write_text('{"nodes": [], "edges": [], "incidences": []}')
+# def test_compress_to_zst_returns_non_empty_bytes(tmp_path):
+#     json_path = tmp_path / "sample.json"
+#     json_path.write_text('{"nodes": [], "edges": [], "incidences": []}')
 
-    compressed_content = compress_to_zst(str(json_path))
+#     compressed_content = compress_to_zst(str(json_path))
 
-    assert isinstance(compressed_content, bytes)
-    assert len(compressed_content) > 0
+#     assert isinstance(compressed_content, bytes)
+#     assert len(compressed_content) > 0
 
 
-def test_decompress_returns_correct_json(tmp_path):
-    expected_data = {
-        "network-type": "undirected",
-        "nodes": [{"node": "0", "attrs": {"weight": 1.0}}],
-        "edges": [{"edge": "0", "attrs": {}}],
-        "incidences": [{"node": "0", "edge": "0"}],
-    }
+# def test_decompress_returns_correct_json(tmp_path):
+#     expected_data = {
+#         "network-type": "undirected",
+#         "nodes": [{"node": "0", "attrs": {"weight": 1.0}}],
+#         "edges": [{"edge": "0", "attrs": {}}],
+#         "incidences": [{"node": "0", "edge": "0"}],
+#     }
 
-    json_path = tmp_path / "sample.json"
-    with open(json_path, "w") as f:
-        json.dump(expected_data, f)
+#     json_path = tmp_path / "sample.json"
+#     with open(json_path, "w") as f:
+#         json.dump(expected_data, f)
 
-    compressed_content = compress_to_zst(str(json_path))
-    zst_path = tmp_path / "sample.json.zst"
-    zst_path.write_bytes(compressed_content)
+#     compressed_content = compress_to_zst(str(json_path))
+#     zst_path = tmp_path / "sample.json.zst"
+#     zst_path.write_bytes(compressed_content)
 
-    decompressed_path = decompress_zst(str(zst_path))
+#     decompressed_path = decompress_zst(str(zst_path))
 
-    assert decompressed_path.endswith(".json")
-    assert os.path.exists(decompressed_path)
+#     assert decompressed_path.endswith(".json")
+#     assert os.path.exists(decompressed_path)
 
-    with open(decompressed_path) as f:
-        decompressed_data = json.load(f)
+#     with open(decompressed_path) as f:
+#         decompressed_data = json.load(f)
 
-    assert decompressed_data == expected_data
+#     assert decompressed_data == expected_data
 
 
 def test_get_datasets_shas_returns_shas_and_none_on_failure():
