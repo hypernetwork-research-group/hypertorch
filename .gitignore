@@ -129,6 +129,3 @@ plans/
 # Logs
 hyperbench_logs/
 lightning_logs/
-
-# HF local cache
-.hf_cache/

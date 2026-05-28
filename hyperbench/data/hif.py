@@ -19,6 +19,7 @@ from hyperbench.utils import (
     validate_http_url,
     write_dataset_to_disk_as_zst,
     write_zst_file_to_disk,
+    get_cache_dir,
 )
 
 GITHUB_COMMIT_SHA = "3879b2ce84750e54f984ca06ce3246dff22c71c7"
@@ -325,7 +326,8 @@ class HIFLoader:
     ) -> HData:
         current_dir = os.path.dirname(os.path.abspath(__file__))
         zst_filename = os.path.join(current_dir, "datasets", f"{dataset_name}.json.zst")
-
+        repo_root = get_cache_dir()
+        hf_cache_dir = os.path.join(repo_root, "hf_cache")
         if os.path.exists(zst_filename):
             hif_data = from_zst_file_to_json(zst_filename)
             return cls.__process_hif_data(hif_data, dataset_name)
@@ -359,7 +361,7 @@ class HIFLoader:
                 filename=f"{dataset_name}.json.zst",
                 repo_type="dataset",
                 revision=hf_sha,
-                cache_dir=".hf_cache",  # TODO abs path
+                cache_dir=hf_cache_dir,
             )
         except Exception as e:
             raise ValueError(
@@ -378,10 +380,10 @@ class HIFLoader:
                     f"Failed to save downloaded dataset {dataset_name!r} to disk at {zst_filename!r}: {e!s}."
                 ) from e
 
-        if os.path.isdir(".hf_cache"):
+        if os.path.isdir(hf_cache_dir):
             try:
                 path_prefix = f"datasets--HypernetworkRG--{dataset_name}"
-                shutil.rmtree(os.path.join(".hf_cache", path_prefix))
+                shutil.rmtree(os.path.join(hf_cache_dir, path_prefix))
             except Exception as e:
                 warnings.warn(
                     f"Failed to clean up Hugging Face Hub cache after downloading dataset {dataset_name!r}: {e!s}.",

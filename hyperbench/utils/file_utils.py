@@ -3,6 +3,7 @@ import os
 import json
 import zstandard as zstd
 
+from pathlib import Path
 from typing import Any
 
 
@@ -95,3 +96,41 @@ def __read_zst_stream(input_zst_file: Any) -> dict[str, Any]:
             return json.load(text_reader)
         except Exception as e:
             raise ValueError(f"Failed to read JSON data for {input_zst_file.name!r}: {e!s}.") from e
+
+
+MARKERS = ("pyproject.toml", "setup.py", "setup.cfg", "requirements.txt", ".git")
+
+
+def find_project_root() -> Path:
+
+    current = Path.cwd().resolve()
+
+    if current.is_file():
+        current = current.parent
+
+    for directory in (current, *current.parents):
+        if any((directory / marker).exists() for marker in MARKERS):
+            return directory
+
+    return current
+
+
+def get_cache_dir(
+    create: bool = True,
+    env_var: str = "HYPERBENCH_CACHE_DIR",
+) -> Path:
+    override = os.getenv(env_var)
+
+    if override:
+        cache_dir = Path(override).expanduser()
+        if not cache_dir.is_absolute():
+            cache_dir = Path.cwd() / cache_dir
+    else:
+        cache_dir = find_project_root() / ".hyperbench_cache"
+
+    cache_dir = cache_dir.resolve()
+
+    if create:
+        cache_dir.mkdir(parents=True, exist_ok=True)
+
+    return cache_dir

@@ -9,6 +9,12 @@ from hyperbench.data import HIFLoader, HIFProcessor
 from hyperbench.types import HData, HIFHypergraph
 
 
+@pytest.fixture(autouse=True)
+def mock_cache_root(tmp_path):
+    with patch("hyperbench.data.hif.get_cache_dir", return_value=str(tmp_path)):
+        yield
+
+
 @pytest.fixture
 def mock_sample_hypergraph() -> HIFHypergraph:
     return HIFHypergraph(
@@ -643,7 +649,7 @@ def test_load_by_name_uses_hf_revision_when_github_download_fails(tmp_path, mock
         filename="algebra.json.zst",
         repo_type="dataset",
         revision=hf_sha,
-        cache_dir=".hf_cache",
+        cache_dir=str(tmp_path / "hf_cache"),
     )
     assert result.num_nodes == 2
     assert result.num_hyperedges == 1
@@ -678,7 +684,7 @@ def test_load_by_name_skips_cache_cleanup_when_hf_cache_dir_is_missing(tmp_path,
         filename="algebra.json.zst",
         repo_type="dataset",
         revision=hf_sha,
-        cache_dir=".hf_cache",
+        cache_dir=str(tmp_path / "hf_cache"),
     )
     mock_rmtree.assert_not_called()
     assert result.num_nodes == 2
@@ -754,7 +760,7 @@ def test_load_by_name_raises_warn_when_fail_to_cleanup_hf_cache(tmp_path, mock_h
         patch(
             "hyperbench.data.hif.shutil.rmtree",
             side_effect=FileNotFoundError(
-                "[Errno 2] No such file or directory: '.hf_cache/datasets--HypernetworkRG--algebra'"
+                f"[Errno 2] No such file or directory: '{tmp_path / 'hf_cache' / 'datasets--HypernetworkRG--algebra'}'"
             ),
         ),
         pytest.warns(UserWarning, match="Failed to clean up Hugging Face Hub cache"),
@@ -798,7 +804,7 @@ def test_load_by_name_raises_when_downloaded_hf_file_cannot_be_read(tmp_path):
         filename="algebra.json.zst",
         repo_type="dataset",
         revision=hf_sha,
-        cache_dir=".hf_cache",
+        cache_dir=str(tmp_path / "hf_cache"),
     )
 
 
@@ -878,7 +884,7 @@ def test_extract_hif_raises_when_json_file_cannot_be_read(tmp_path):
         HIFLoader.load_from_path(str(json_path))
 
 
-def test_hifloader_download_failure_when_hf_fallback_fails():
+def test_hifloader_download_failure_when_hf_fallback_fails(tmp_path):
     hf_sha = "2bb641461e00c103fb5ef4fe6a30aad42500fc21"
     response = requests.Response()
     response.status_code = 404
@@ -907,5 +913,5 @@ def test_hifloader_download_failure_when_hf_fallback_fails():
         filename="algebra.json.zst",
         repo_type="dataset",
         revision=hf_sha,
-        cache_dir=".hf_cache",
+        cache_dir=str(tmp_path / "hf_cache"),
     )

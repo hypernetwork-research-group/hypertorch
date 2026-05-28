@@ -48,6 +48,8 @@ from .file_utils import (
     from_zst_file_to_json,
     write_zst_file_to_disk,
     write_dataset_to_disk_as_zst,
+    get_cache_dir,
+    find_project_root,
 )
 
 __all__ = [
@@ -64,10 +66,12 @@ __all__ = [
     "empty_edgeattr",
     "empty_hyperedgeindex",
     "empty_nodefeatures",
+    "find_project_root",
     "from_bytes_to_json",
     "from_file_to_json",
     "from_zst_bytes_to_json",
     "from_zst_file_to_json",
+    "get_cache_dir",
     "get_gh_dataset_sha",
     "get_gh_datasets_shas",
     "get_hf_dataset_sha",
