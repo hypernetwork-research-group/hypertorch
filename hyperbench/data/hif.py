@@ -1,6 +1,6 @@
 import os
-import requests
 import shutil
+import requests
 import torch
 import warnings
 
@@ -15,10 +15,10 @@ from hyperbench.utils import (
     read_json_file,
     from_zst_bytes_to_json,
     from_zst_file_to_json,
-    save_zst_file,
     validate_hif_data,
     validate_http_url,
     write_dataset_to_disk_as_zst,
+    save_zst_file,
 )
 
 GITHUB_COMMIT_SHA = "3879b2ce84750e54f984ca06ce3246dff22c71c7"
@@ -264,12 +264,17 @@ class HIFLoader:
                 f"Unsupported file format for URL {url!r}. Expected .json or .json.zst"
             )
 
+        if os.path.basename(url).count(".") > 2:
+            raise ValueError(
+                f"URL {url!r} has an unexpected filename format. Expected at most one dot in the base filename before the extension (e.g., dataset.json or dataset.json.zst)."
+            )
+
         if url.endswith(".json.zst"):
             hif_data = from_zst_bytes_to_json(response.content)
             hdata = cls.__process_hif_data(hif_data)
+            print(f"Successfully loaded dataset from {url!r} as .json.zst")
+            print(f"os.path.basename(url) = {os.path.basename(url)!r}")
             if save_on_disk:
-                # TODO: Verify this does not save files with double .zst extension
-                # (e.g., dataset.json.zst.zst) due to original filename already having .zst
                 write_dataset_to_disk_as_zst(
                     dataset_name=os.path.basename(url), content=response.content
                 )
@@ -279,8 +284,6 @@ class HIFLoader:
             if save_on_disk:
                 compressed_hif_data = compress_json_bytes_as_zst(response.content)
 
-                # TODO: Verify this does not save files with double .zst extension
-                # (e.g., dataset.json.zst.zst) due to original filename already having .zst
                 write_dataset_to_disk_as_zst(
                     dataset_name=os.path.basename(url), content=compressed_hif_data
                 )
@@ -356,6 +359,7 @@ class HIFLoader:
                 filename=f"{dataset_name}.json.zst",
                 repo_type="dataset",
                 revision=hf_sha,
+                cache_dir=".hf_cache",
             )
         except Exception as e:
             raise ValueError(
@@ -374,6 +378,16 @@ class HIFLoader:
                     f"Failed to save downloaded dataset {dataset_name!r} to disk at {zst_filename!r}: {e!s}."
                 ) from e
 
+        if os.path.isdir(".hf_cache"):
+            try:
+                path_prefix = f"datasets--HypernetworkRG--{dataset_name}"
+                shutil.rmtree(os.path.join(".hf_cache", path_prefix))
+            except Exception as e:
+                warnings.warn(
+                    f"Failed to clean up Hugging Face Hub cache after downloading dataset {dataset_name!r}: {e!s}.",
+                    category=UserWarning,
+                    stacklevel=2,
+                )
         return hdata
 
     @classmethod
@@ -383,3 +397,9 @@ class HIFLoader:
 
         hypergraph = HIFHypergraph.from_hif(hif_data)
         return HIFProcessor.process_hypergraph(hypergraph)
+
+
+if __name__ == "__main__":
+    dataset = HIFLoader.load_from_url(
+        url="https://raw.githubusercontent.com/hypernetwork-research-group/datasets/main/algebra.json.json.zst",
+    )

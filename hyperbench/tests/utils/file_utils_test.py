@@ -74,9 +74,9 @@ def test_read_json_file_returns_parsed_data(tmp_path):
     assert result == {"name": "hyperbench"}
 
 
-def test_read_json_file_raises_on_missing_file():
+def test_read_json_file_raises_on_missing_file(tmp_path):
     with pytest.raises(ValueError, match=r"Failed to read JSON file '.*missing\.json'"):
-        read_json_file("/tmp/missing.json")
+        read_json_file(str(tmp_path / "missing.json"))
 
 
 def test_from_zst_bytes_to_json_returns_parsed_data():

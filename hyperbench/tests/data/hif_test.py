@@ -10,7 +10,7 @@ from hyperbench.types import HData, HIFHypergraph
 
 
 @pytest.fixture
-def mock_sample_hypergraph():
+def mock_sample_hypergraph() -> HIFHypergraph:
     return HIFHypergraph(
         network_type="undirected",
         nodes=[{"node": "0"}, {"node": "1"}],
@@ -20,7 +20,7 @@ def mock_sample_hypergraph():
 
 
 @pytest.fixture
-def mock_simple_hypergraph():
+def mock_simple_hypergraph() -> HIFHypergraph:
     return HIFHypergraph(
         network_type="undirected",
         nodes=[{"node": "0", "attrs": {}}, {"node": "1", "attrs": {}}],
@@ -30,7 +30,7 @@ def mock_simple_hypergraph():
 
 
 @pytest.fixture
-def mock_three_node_weighted_hypergraph():
+def mock_three_node_weighted_hypergraph() -> HIFHypergraph:
     return HIFHypergraph(
         network_type="undirected",
         nodes=[
@@ -51,7 +51,7 @@ def mock_three_node_weighted_hypergraph():
 
 
 @pytest.fixture
-def mock_four_node_hypergraph():
+def mock_four_node_hypergraph() -> HIFHypergraph:
     return HIFHypergraph(
         network_type="undirected",
         nodes=[
@@ -71,7 +71,7 @@ def mock_four_node_hypergraph():
 
 
 @pytest.fixture
-def mock_five_node_hypergraph():
+def mock_five_node_hypergraph() -> HIFHypergraph:
     return HIFHypergraph(
         network_type="undirected",
         nodes=[
@@ -87,7 +87,7 @@ def mock_five_node_hypergraph():
 
 
 @pytest.fixture
-def mock_no_edge_attr_hypergraph():
+def mock_no_edge_attr_hypergraph() -> HIFHypergraph:
     return HIFHypergraph(
         network_type="undirected",
         nodes=[
@@ -103,7 +103,7 @@ def mock_no_edge_attr_hypergraph():
 
 
 @pytest.fixture
-def mock_multiple_edges_attr_hypergraph():
+def mock_multiple_edges_attr_hypergraph() -> HIFHypergraph:
     return HIFHypergraph(
         network_type="undirected",
         nodes=[
