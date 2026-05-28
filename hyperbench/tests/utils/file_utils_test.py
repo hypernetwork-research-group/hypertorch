@@ -13,6 +13,7 @@ from hyperbench.utils import (
     write_zst_file_to_disk,
     write_dataset_to_disk_as_zst,
 )
+from hyperbench.utils.file_utils import find_project_root, get_cache_dir
 
 
 @pytest.mark.parametrize(
@@ -165,3 +166,95 @@ def test_write_dataset_to_disk_as_zst_raises_on_write_failure(tmp_path):
         ),
     ):
         write_dataset_to_disk_as_zst("algebra", b"content", output_dir=str(output_dir))
+
+
+def test_find_project_root_returns_directory_with_project_marker(tmp_path, monkeypatch):
+    project_root = tmp_path / "project"
+    nested_dir = project_root / "src" / "package"
+    nested_dir.mkdir(parents=True)
+    (project_root / "pyproject.toml").write_text("", encoding="utf-8")
+
+    monkeypatch.chdir(nested_dir)
+
+    result = find_project_root()
+
+    assert result == project_root
+
+
+def test_find_project_root_handles_current_working_file(tmp_path, monkeypatch):
+    project_root = tmp_path / "project"
+    project_root.mkdir()
+    source_file = project_root / "script.py"
+    source_file.write_text("print('ok')", encoding="utf-8")
+
+    monkeypatch.setattr("hyperbench.utils.file_utils.Path.cwd", lambda: source_file)
+
+    result = find_project_root()
+
+    assert result == project_root
+
+
+def test_find_project_root_returns_current_directory_when_no_marker_exists(tmp_path, monkeypatch):
+    current_dir = tmp_path / "workspace"
+    current_dir.mkdir()
+
+    monkeypatch.setattr("hyperbench.utils.file_utils.Path.cwd", lambda: current_dir)
+
+    result = find_project_root()
+
+    assert result == current_dir
+
+
+def test_get_cache_dir_uses_project_root_and_creates_cache_directory(tmp_path, monkeypatch):
+    project_root = tmp_path / "project"
+    nested_dir = project_root / "src" / "package"
+    nested_dir.mkdir(parents=True)
+    (project_root / "pyproject.toml").write_text("", encoding="utf-8")
+
+    monkeypatch.chdir(nested_dir)
+
+    result = get_cache_dir()
+
+    assert result == project_root / ".hyperbench_cache"
+    assert result.is_dir()
+
+
+def test_get_cache_dir_uses_relative_override_from_cwd(tmp_path, monkeypatch):
+    current_dir = tmp_path / "workspace"
+    current_dir.mkdir()
+
+    monkeypatch.chdir(current_dir)
+    monkeypatch.setenv("HYPERBENCH_CACHE_DIR", "cache/subdir")
+
+    result = get_cache_dir()
+
+    assert result == current_dir / "cache" / "subdir"
+    assert result.is_dir()
+
+
+def test_get_cache_dir_uses_absolute_override(tmp_path, monkeypatch):
+    current_dir = tmp_path / "workspace"
+    current_dir.mkdir()
+    absolute_cache_dir = tmp_path / "external" / "cache"
+
+    monkeypatch.chdir(current_dir)
+    monkeypatch.setenv("HYPERBENCH_CACHE_DIR", str(absolute_cache_dir))
+
+    result = get_cache_dir()
+
+    assert result == absolute_cache_dir
+    assert result.is_dir()
+
+
+def test_get_cache_dir_can_skip_creation(tmp_path, monkeypatch):
+    current_dir = tmp_path / "workspace"
+    current_dir.mkdir()
+
+    monkeypatch.chdir(current_dir)
+    monkeypatch.setenv("HYPERBENCH_CACHE_DIR", "cache/subdir")
+
+    with patch("hyperbench.utils.file_utils.Path.mkdir") as mock_mkdir:
+        result = get_cache_dir(create=False)
+
+    assert result == current_dir / "cache" / "subdir"
+    mock_mkdir.assert_not_called()
