@@ -226,5 +226,8 @@ class Node2VecGCNHlpModule(HlpModule):
         graph_reduction_strategy = self.gcn_hlp_config.get(
             "graph_reduction_strategy", "clique_expansion"
         )
-        reduced_gcn_edge_index = HyperedgeIndex(hyperedge_index).reduce(graph_reduction_strategy)
+        reduced_gcn_edge_index = HyperedgeIndex(hyperedge_index).reduce(
+            strategy=graph_reduction_strategy,
+            num_nodes=self.gcn_hlp_config.get("num_nodes"),
+        )
         return EdgeIndex(reduced_gcn_edge_index).remove_selfloops().item

@@ -144,7 +144,7 @@ class _VilLainTrainer:
         model.train()
         for epoch in range(self.num_epochs):
             if self.verbose:
-                print(f"Epoch {epoch + 1}/{self.num_epochs}")
+                print(f"Epoch {epoch + 1}/{self.num_epochs}\r", end="")
 
             optimizer.zero_grad()
             loss, _ = model.loss(
@@ -525,7 +525,7 @@ class Node2VecEnricher(NodeEnricher):
         model.train()
         for epoch in range(self.num_epochs):
             if self.verbose:
-                print(f"Epoch {epoch + 1}/{self.num_epochs}")
+                print(f"Epoch {epoch + 1}/{self.num_epochs}\r", end="")
 
             # Iterate over batches of positive and negative random walks
             for positive_random_walk, negative_random_walk in data_loader:

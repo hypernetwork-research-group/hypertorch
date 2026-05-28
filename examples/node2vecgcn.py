@@ -22,7 +22,6 @@ if __name__ == "__main__":
     verbose = False
     num_workers = 8
     num_features = 32
-    sampling_strategy = SamplingStrategy.HYPEREDGE
     metrics = MetricCollection(
         {
             "auc": BinaryAUROC(),
@@ -35,14 +34,18 @@ if __name__ == "__main__":
 
     print("Loading and preparing dataset...")
 
-    dataset = AlgebraDataset(sampling_strategy=sampling_strategy)
+    dataset = AlgebraDataset(sampling_strategy=SamplingStrategy.HYPEREDGE)
     dataset.remove_hyperedges_with_fewer_than_k_nodes(k=2)
     if verbose:
         print(f"Dataset:\n {dataset.hdata}\n")
 
     # Split dataset into train, val and test (70/10/20)
     train_dataset, val_dataset, test_dataset = dataset.split(
-        ratios=[0.7, 0.1, 0.2], shuffle=True, seed=42, node_space_setting="transductive"
+        ratios=[0.7, 0.1, 0.2],
+        node_space_setting="transductive",
+        cover_all_nodes_in_train_split=True,
+        shuffle=True,
+        seed=42,
     )
     if verbose:
         print(f"Train dataset:\n {train_dataset.hdata}\n")
@@ -130,6 +133,7 @@ if __name__ == "__main__":
         "normalize": True,
         "cached": False,
         "graph_reduction_strategy": "clique_expansion",
+        "num_nodes": dataset.hdata.num_nodes,
     }
 
     precomputed_node2vecgcn_module = Node2VecGCNHlpModule(

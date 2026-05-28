@@ -14,7 +14,6 @@ from hyperbench.utils import (
     empty_nodefeatures,
     is_inductive_setting,
     is_transductive_setting,
-    to_0based_ids,
     validate_is_non_empty,
     validate_is_non_negative,
     validate_is_positive,
@@ -24,7 +23,13 @@ from hyperbench.utils import (
 from hyperbench.types.hypergraph import HyperedgeIndex
 
 if TYPE_CHECKING:
-    from hyperbench.data import EnrichmentMode, HyperedgeEnricher, NegativeSampler, NodeEnricher
+    from hyperbench.data import (
+        EnrichmentMode,
+        HDataSplitter,
+        HyperedgeEnricher,
+        NegativeSampler,
+        NodeEnricher,
+    )
 
 
 class HData:
@@ -279,8 +284,9 @@ class HData:
     def split(
         cls,
         hdata: HData,
-        split_hyperedge_ids: Tensor,
+        split_hyperedge_ids: Tensor | None = None,
         node_space_setting: NodeSpaceSetting = "transductive",
+        splitter: HDataSplitter | None = None,
     ) -> HData:
         """
         Build an `HData` for a single split from the given hyperedge IDs.
@@ -300,9 +306,13 @@ class HData:
         Args:
             hdata: The original `HData` containing the full hypergraph.
             split_hyperedge_ids: Tensor of hyperedge IDs to include in this split.
+                It is assumed that the provided hyperedge IDs are valid and exist in ``hdata.hyperedge_index[1]``.
+                It is mandatory to provide this argument unless a custom ``splitter`` is provided that owns split materialization.
             node_space_setting: Whether to preserve the full node space in the splits.
                 ``transductive`` (default) ensures all node features are present in the split,
                 while ``inductive`` allows splits to have disjoint node spaces.
+            splitter: Optional HData splitter. When provided, it owns split
+                materialization.
 
         Returns:
             hdata: The splitted instance with remapped node and hyperedge IDs.
@@ -310,80 +320,24 @@ class HData:
         Raises:
             ValueError: If ``node_space_setting`` is not ``"transductive"`` or ``"inductive"``.
         """
-        cls.__validate_node_space_setting_value(node_space_setting)
+        if splitter is not None:
+            if split_hyperedge_ids is not None:
+                raise ValueError(
+                    "'split_hyperedge_ids' cannot be provided when 'splitter' is provided."
+                )
+            return splitter.split(to_split=hdata)
 
-        # Mask to keep only incidences belonging to selected hyperedges
-        # Example: hyperedge_index = [[0, 0, 1, 2, 3, 4],
-        #                             [0, 0, 0, 1, 2, 2]]
-        #          split_hyperedge_ids = [0, 2]
-        #          -> mask = [True, True, True, False, True, True]
-        keep_mask = torch.isin(hdata.hyperedge_index[1], split_hyperedge_ids)
-
-        # Example: hyperedge_index = [[0, 0, 1, 3, 4],
-        #                             [0, 0, 0, 2, 2]]
-        #          incidence [2, 1] is missing as 1 is not in split_hyperedge_ids = [0, 2]
-        split_hyperedge_index = hdata.hyperedge_index[:, keep_mask]
-
-        # Example: split_hyperedge_index = [[2, 3, 4],
-        #                                   [2, 2, 5]]
-        #          -> split_unique_hyperedge_ids = [2, 5]
-        split_unique_hyperedge_ids = split_hyperedge_index[1].unique()
-
-        split_y = hdata.y[split_unique_hyperedge_ids]
-
-        split_hyperedge_attr = None
-        if hdata.hyperedge_attr is not None:
-            split_hyperedge_attr = hdata.hyperedge_attr[split_unique_hyperedge_ids]
-
-        split_hyperedge_weights = None
-        if hdata.hyperedge_weights is not None:
-            split_hyperedge_weights = hdata.hyperedge_weights[split_unique_hyperedge_ids]
-
-        # We don't rebase nodes as they are all present in a transductive setting
-        if is_transductive_setting(node_space_setting):
-            # Example: split_unique_hyperedge_ids = [2, 5]
-            #          -> hyperedge 2 -> 0, hyperedge 5 -> 1
-            split_hyperedge_index[1] = to_0based_ids(
-                original_ids=split_hyperedge_index[1],
-                ids_to_rebase=split_unique_hyperedge_ids,
-            )
-            return cls(
-                x=hdata.x.clone(),
-                hyperedge_index=split_hyperedge_index,
-                hyperedge_weights=split_hyperedge_weights,
-                hyperedge_attr=split_hyperedge_attr,
-                num_nodes=hdata.num_nodes,
-                num_hyperedges=len(split_unique_hyperedge_ids),
-                global_node_ids=clone_optional_tensor(hdata.global_node_ids),
-                y=split_y,
+        if split_hyperedge_ids is None:
+            raise ValueError(
+                "'split_hyperedge_ids' must be provided when 'splitter' is not provided."
             )
 
-        # Example: split_hyperedge_index = [[0, 0, 1, 3, 4],
-        #                                   [0, 0, 0, 2, 2]]
-        #          -> split_unique_node_ids = [0, 1, 3, 4]
-        split_unique_node_ids = split_hyperedge_index[0].unique()
+        from hyperbench.data.splitter import DefaultHDataSplitter
 
-        split_hyperedge_index = (
-            HyperedgeIndex(split_hyperedge_index)
-            .to_0based(
-                node_ids_to_rebase=split_unique_node_ids,
-                hyperedge_ids_to_rebase=split_unique_hyperedge_ids,
-            )
-            .item
-        )
-
-        split_x = hdata.x[split_unique_node_ids]
-        split_global_node_ids = hdata.global_node_ids[split_unique_node_ids]
-        return cls(
-            x=split_x,
-            hyperedge_index=split_hyperedge_index.clone(),
-            hyperedge_weights=split_hyperedge_weights,
-            hyperedge_attr=split_hyperedge_attr,
-            num_nodes=len(split_unique_node_ids),
-            num_hyperedges=len(split_unique_hyperedge_ids),
-            global_node_ids=split_global_node_ids,
-            y=split_y,
-        )
+        return DefaultHDataSplitter(
+            split_hyperedge_ids=split_hyperedge_ids,
+            node_space_setting=node_space_setting,
+        ).split(hdata)
 
     def enrich_node_features(
         self,
@@ -640,7 +594,21 @@ class HData:
 
         return devices.pop() if len(devices) == 1 else torch.device("cpu")
 
-    def remove_hyperedges_with_fewer_than_k_nodes(self, k: int) -> HData:
+    def remove_hyperedges_with_fewer_than_k_nodes(
+        self,
+        k: int,
+        preserve_global_node_ids: bool = False,
+    ) -> HData:
+        """
+        Remove hyperedges that have fewer than k incident nodes.
+
+        Args:
+            k: The minimum number of nodes a hyperedge must have to be retained.
+            preserve_global_node_ids: Whether to preserve the global node IDs after removing hyperedges. Defaults to ``False``.
+                If ``False``, the global node IDs will be reindexed to be contiguous after removing hyperedges.
+                If ``True``, the global node IDs will be preserved, which may cause some models to raise
+                as they may expect contiguous global node IDs.
+        """
         validate_is_positive("k", k)
 
         hyperedge_index_wrapper = HyperedgeIndex(
@@ -648,8 +616,11 @@ class HData:
         ).remove_hyperedges_with_fewer_than_k_nodes(k)
 
         x = self.x[hyperedge_index_wrapper.node_ids]
-        global_node_ids = self.global_node_ids[hyperedge_index_wrapper.node_ids]
         y = self.y[hyperedge_index_wrapper.hyperedge_ids]
+
+        global_node_ids = None
+        if preserve_global_node_ids:
+            global_node_ids = self.global_node_ids[hyperedge_index_wrapper.node_ids]
 
         hyperedge_attr = None
         if self.hyperedge_attr is not None:

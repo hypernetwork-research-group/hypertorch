@@ -63,7 +63,14 @@ from .sampler import (
     create_sampler_from_strategy,
 )
 
-from .splitter import HyperedgeIDSplitter, Splitter
+from .splitter import (
+    DatasetSplitter,
+    DefaultDatasetSplitter,
+    DefaultHDataSplitter,
+    HDataSplitter,
+    HyperedgeIDSplitter,
+    TensorSplitter,
+)
 
 __all__ = [
     "ABHyperedgeWeightsEnricher",
@@ -78,6 +85,9 @@ __all__ = [
     "DBLPDataset",
     "DataLoader",
     "Dataset",
+    "DatasetSplitter",
+    "DefaultDatasetSplitter",
+    "DefaultHDataSplitter",
     "EmailEnronDataset",
     "EmailW3CDataset",
     "EnrichmentMode",
@@ -85,6 +95,7 @@ __all__ = [
     "GOTDataset",
     "GeneratedNodesNegativeSampler",
     "GeometryDataset",
+    "HDataSplitter",
     "HIFLoader",
     "HIFProcessor",
     "HyperedgeAttrsEnricher",
@@ -110,7 +121,7 @@ __all__ = [
     "RestaurantReviewsDataset",
     "SameNodeSpaceNegativeSampler",
     "SamplingStrategy",
-    "Splitter",
+    "TensorSplitter",
     "ThreadsAskUbuntuDataset",
     "ThreadsMathsxDataset",
     "TwitterDataset",

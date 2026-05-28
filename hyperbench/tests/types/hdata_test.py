@@ -5,7 +5,14 @@ import re
 from unittest.mock import MagicMock
 from typing import Any, cast
 from hyperbench import utils
-from hyperbench.data import HyperedgeEnricher, NegativeSampler, NodeEnricher, RandomNegativeSampler
+from hyperbench.data import (
+    DefaultHDataSplitter,
+    HDataSplitter,
+    HyperedgeEnricher,
+    NegativeSampler,
+    NodeEnricher,
+    RandomNegativeSampler,
+)
 from hyperbench.types import HData
 from hyperbench.utils import assign_hyperedge_label_to_nodes
 
@@ -940,7 +947,86 @@ def test_split_transductive_counts(
     assert torch.equal(result.hyperedge_index, expected_hyperedge_index)
 
 
+def test_default_hdata_splitter_materializes_explicit_hyperedge_ids():
+    x = torch.randn(4, 2)
+    hyperedge_index = torch.tensor([[0, 1, 2, 2, 3], [0, 0, 0, 1, 1]])
+    hdata = HData(x=x, hyperedge_index=hyperedge_index)
+
+    result = DefaultHDataSplitter(
+        split_hyperedge_ids=torch.tensor([1]),
+        node_space_setting="inductive",
+    ).split(to_split=hdata)
+
+    assert result.num_nodes == 2
+    assert result.num_hyperedges == 1
+    assert torch.equal(result.hyperedge_index, torch.tensor([[0, 1], [0, 0]]))
+    assert torch.equal(result.x, x[torch.tensor([2, 3])])
+
+
+def test_split_delegates_to_custom_hdata_splitter():
+    class CustomHDataSplitter(HDataSplitter):
+        def __init__(self, expected_hdata: HData) -> None:
+            self.expected_hdata = expected_hdata
+            self.called = False
+
+        def split(self, to_split: HData) -> HData:
+            self.called = True
+            assert to_split is self.expected_hdata
+            return self.expected_hdata
+
+    hdata = HData(
+        x=torch.randn(2, 1),
+        hyperedge_index=torch.tensor([[0, 1], [0, 0]]),
+    )
+
+    splitter = CustomHDataSplitter(hdata)
+
+    result = HData.split(hdata, splitter=splitter)
+
+    assert result is hdata
+    assert splitter.called is True
+
+
 def test_split_raises_on_invalid_node_space_setting():
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "node_space_setting must be one of 'transductive' or 'inductive', got 'semi'."
+        ),
+    ):
+        hdata = HData(
+            x=torch.randn(2, 1),
+            hyperedge_index=torch.tensor([[0, 1], [0, 0]]),
+        )
+        HData.split(
+            hdata,
+            split_hyperedge_ids=torch.tensor([0]),
+            node_space_setting=cast(Any, "semi"),
+        )
+
+
+def test_split_raises_when_split_hyperedge_ids_and_splitter_are_provided():
+    hdata = HData(
+        x=torch.randn(2, 1),
+        hyperedge_index=torch.tensor([[0, 1], [0, 0]]),
+    )
+
+    class CustomHDataSplitter(HDataSplitter):
+        def split(self, to_split: HData) -> HData:
+            return to_split
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape("'split_hyperedge_ids' cannot be provided when 'splitter' is provided."),
+    ):
+        HData.split(
+            hdata,
+            split_hyperedge_ids=torch.tensor([0]),
+            splitter=CustomHDataSplitter(),
+        )
+
+
+def test_split_raises_when_split_hyperedge_ids_and_splitter_are_missing():
     hdata = HData(
         x=torch.randn(2, 1),
         hyperedge_index=torch.tensor([[0, 1], [0, 0]]),
@@ -948,15 +1034,9 @@ def test_split_raises_on_invalid_node_space_setting():
 
     with pytest.raises(
         ValueError,
-        match=re.escape(
-            "node_space_setting must be one of 'transductive' or 'inductive', got 'semi'."
-        ),
+        match=re.escape("'split_hyperedge_ids' must be provided when 'splitter' is not provided."),
     ):
-        HData.split(
-            hdata,
-            split_hyperedge_ids=torch.tensor([0]),
-            node_space_setting=cast(Any, "semi"),
-        )
+        HData.split(hdata)
 
 
 def test_split_inductive_subsets_node_features():
@@ -1972,6 +2052,30 @@ def test_remove_hyperedges_with_fewer_than_k_nodes_rejects_invalid_k():
 
     with pytest.raises(ValueError, match="'k' must be positive"):
         hdata.remove_hyperedges_with_fewer_than_k_nodes(k=0)
+
+
+def test_remove_hyperedges_with_fewer_than_k_nodes_subsets_global_node_ids_when_preserve_true():
+    x = torch.randn(5, 2)
+    hyperedge_index = torch.tensor([[0, 1, 2, 3, 4], [0, 0, 1, 1, 1]])
+    hdata = HData(x=x, hyperedge_index=hyperedge_index)
+    hdata.global_node_ids = torch.tensor([10, 20, 30, 40, 50])
+
+    result = hdata.remove_hyperedges_with_fewer_than_k_nodes(k=3, preserve_global_node_ids=True)
+
+    assert result.global_node_ids is not None
+    assert torch.equal(result.global_node_ids, torch.tensor([30, 40, 50]))
+
+
+def test_remove_hyperedges_with_fewer_than_k_nodes_does_not_subset_global_node_ids_when_preserve_false():
+    x = torch.randn(5, 2)
+    hyperedge_index = torch.tensor([[0, 1, 2, 3, 4], [0, 0, 1, 1, 1]])
+    hdata = HData(x=x, hyperedge_index=hyperedge_index)
+    hdata.global_node_ids = torch.tensor([10, 20, 30, 40, 50])
+
+    result = hdata.remove_hyperedges_with_fewer_than_k_nodes(k=3, preserve_global_node_ids=False)
+
+    assert result.global_node_ids is not None
+    assert torch.equal(result.global_node_ids, torch.arange(result.num_nodes))
 
 
 def test_remove_hyperedges_with_fewer_than_k_nodes_handles_none_global_node_ids():

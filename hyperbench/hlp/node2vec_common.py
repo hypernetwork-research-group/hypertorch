@@ -30,6 +30,8 @@ class Node2VecGCNHlpConfig(TypedDict):
         cached: Whether to cache the normalized adjacency matrix in GCNConv.
             Only applicable if the graph structure does not change between epochs. Defaults to ``False``.
         graph_reduction_strategy: Strategy for reducing the hyperedge graph. Defaults to ``clique_expansion``.
+        num_nodes: Total number of nodes in the hypergraph. This is useful when setting is transductive
+            but train dataset may not contain all hyperedges where some nodes appear, to ensure consistent encoding across splits.
         activation_fn: Activation function to use after each hidden layer. Defaults to ``nn.ReLU``.
         activation_fn_kwargs: Keyword arguments for the activation function. Defaults to empty dict.
     """
@@ -44,6 +46,7 @@ class Node2VecGCNHlpConfig(TypedDict):
     normalize: NotRequired[bool]
     cached: NotRequired[bool]
     graph_reduction_strategy: NotRequired[Literal["clique_expansion"]]
+    num_nodes: NotRequired[int]
     activation_fn: NotRequired[ActivationFn]
     activation_fn_kwargs: NotRequired[dict]
 
@@ -160,7 +163,8 @@ def _to_node2vec_edge_index(
         raise ValueError(f"Node2Vec in mode {mode} requires train_hyperedge_index.")
 
     reduced_edge_index = HyperedgeIndex(node2vec_config["train_hyperedge_index"]).reduce(
-        strategy=node2vec_config.get("graph_reduction_strategy", "clique_expansion")
+        strategy=node2vec_config.get("graph_reduction_strategy", "clique_expansion"),
+        num_nodes=node2vec_config.get("num_nodes"),
     )
     edge_index_wrapper = EdgeIndex(reduced_edge_index).remove_selfloops()
     num_nodes = node2vec_config.get("num_nodes", edge_index_wrapper.num_nodes)
