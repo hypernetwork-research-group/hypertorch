@@ -1,10 +1,8 @@
+import pytest
+import torch
 import re
 
 from collections.abc import Callable
-
-import pytest
-import torch
-
 from hyperbench.types import EdgeIndex, Graph
 
 
@@ -606,13 +604,6 @@ def test_add_selfloops_adds_unit_edge_weights():
         (2, 2): 1.0,
     }
     assert weighted_edges == expected_weighted_edges
-
-
-def test_add_selfloops_raises_on_empty_edge_index():
-    edge_index = EdgeIndex(torch.tensor([[], []], dtype=torch.long))
-
-    with pytest.raises(ValueError, match="Edge index must have at least one edge"):
-        edge_index.add_selfloops()
 
 
 def test_add_selfloops_does_not_duplicate_selfloops():

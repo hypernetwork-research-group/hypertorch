@@ -1,10 +1,10 @@
-from typing import Literal
-from collections.abc import Sequence
 import lightning as L
 import torch
 
+from collections.abc import Sequence
 from functools import cache
 from pathlib import Path
+from typing import Literal
 from torchmetrics import MetricCollection
 from torchmetrics.classification import (
     BinaryAUROC,
@@ -13,7 +13,6 @@ from torchmetrics.classification import (
     BinaryPrecision,
     BinaryRecall,
 )
-
 from hyperbench.data import (
     Dataset,
     DataLoader,
@@ -24,25 +23,10 @@ from hyperbench.data import (
 )
 from hyperbench.train import MultiModelTrainer
 from hyperbench.types import ModelConfig, HData
-from torch import Generator
+from hyperbench.utils import create_seeded_torch_generator
 
 
 SEED = 42
-
-
-def __create_seeded_torch_generator(
-    device: torch.device,
-    seed: int | None,
-) -> Generator | None:
-
-    if seed is None:
-        return None
-    generator = Generator(device=device)
-    generator.manual_seed(seed)
-    return generator
-
-
-generator = __create_seeded_torch_generator(device=torch.device("cpu"), seed=SEED)
 
 
 @cache
@@ -52,6 +36,7 @@ def _cached_split_dataset(
     node_space_setting: Literal["transductive", "inductive"] = "transductive",
 ) -> tuple[Dataset, Dataset, Dataset]:
     if dataset is None:
+        generator = create_seeded_torch_generator(device=torch.device("cpu"), seed=SEED)
         x = torch.randn((100, 4), generator=generator)  # 100 nodes with 4 features each
         hyperedge_index = torch.cat(  # 200 hyperedges, each connecting 5 nodes
             [
@@ -166,27 +151,26 @@ def loaders(
     batch_size: int = 1,
     sample_full_hypergraph: bool = False,
 ) -> tuple[DataLoader, DataLoader, DataLoader]:
-
     train_loader = DataLoader(
         train_dataset,
         batch_size=batch_size,
         sample_full_hypergraph=sample_full_hypergraph,
         shuffle=False,
-        generator=generator,
+        generator=create_seeded_torch_generator(device=torch.device("cpu"), seed=SEED),
     )
     val_loader = DataLoader(
         val_dataset,
         batch_size=batch_size,
         sample_full_hypergraph=sample_full_hypergraph,
         shuffle=False,
-        generator=generator,
+        generator=create_seeded_torch_generator(device=torch.device("cpu"), seed=SEED),
     )
     tests_loader = DataLoader(
         test_dataset,
         batch_size=batch_size,
         sample_full_hypergraph=sample_full_hypergraph,
         shuffle=False,
-        generator=generator,
+        generator=create_seeded_torch_generator(device=torch.device("cpu"), seed=SEED),
     )
     return train_loader, val_loader, tests_loader
 

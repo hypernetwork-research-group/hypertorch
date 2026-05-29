@@ -4,7 +4,7 @@ import torch
 
 from torch import Tensor
 from typing import cast
-from hyperbench.utils import validate_is_non_negative, sparse_dropout
+from hyperbench.utils import sparse_dropout, validate_is_non_negative
 
 
 class Graph:
@@ -227,9 +227,8 @@ class EdgeIndex:
         Raises:
             ValueError: If the input edge index has no edges (i.e., ``shape (2, 0)``).
         """
-        if self.__edge_index.size(1) < 1:
-            raise ValueError("Edge index must have at least one edge to add self-loops.")
-        self.__validate_num_nodes(num_nodes)
+        num_selfloop_nodes = self.num_nodes if num_nodes is None else num_nodes
+        self.__validate_num_nodes(num_selfloop_nodes)
 
         device = self.__edge_index.device
         src, dest = self.__edge_index[0], self.__edge_index[1]
@@ -251,7 +250,6 @@ class EdgeIndex:
         #          -> dest = [1, 0, 3, 0, 1, 2, 3, 4, 5]
         #          -> edge_index_with_selfloops = [[0, 1, 2, 0, 1, 2, 3, 4, 5],
         #                                          [1, 0, 3, 0, 1, 2, 3, 4, 5]]
-        num_selfloop_nodes = self.num_nodes if num_nodes is None else num_nodes
         selfloop_indices = torch.arange(num_selfloop_nodes, device=device)
         src = torch.cat([src, selfloop_indices])
         dest = torch.cat([dest, selfloop_indices])
@@ -451,7 +449,7 @@ class EdgeIndex:
         num_nodes = self.num_nodes if num_nodes is None else num_nodes
         self.__validate_num_nodes(num_nodes)
 
-        self.to_undirected(with_selfloops=False)
+        self.to_undirected(with_selfloops=False, num_nodes=num_nodes)
 
         degree_matrix = self.get_sparse_normalized_degree_matrix(num_nodes)
         adj_matrix = self.get_sparse_adjacency_matrix(num_nodes)
@@ -677,10 +675,7 @@ class EdgeIndex:
                 f"Got {edge_weights.size(0)} edge weights but {self.__edge_index.size(1)} edge columns."
             )
 
-    def __validate_num_nodes(self, num_nodes: int | None) -> None:
-        if num_nodes is None:
-            return
-
+    def __validate_num_nodes(self, num_nodes: int) -> None:
         validate_is_non_negative("num_nodes", num_nodes)
 
         if self.num_edges < 1:
