@@ -3,6 +3,7 @@ import re
 import pytest
 import requests
 import torch
+import os
 
 from unittest.mock import patch
 from hyperbench.data import HIFLoader, HIFProcessor
@@ -654,6 +655,7 @@ def test_load_by_name_uses_hf_revision_when_github_download_fails(tmp_path, mock
     assert result.num_nodes == 2
     assert result.num_hyperedges == 1
     assert not (tmp_path / "hf_cache" / "datasets--HypernetworkRG--algebra").exists()
+    assert not (tmp_path / "hf_cache" / ".locks" / "datasets--HypernetworkRG--algebra").exists()
 
 
 def test_load_by_name_skips_cache_cleanup_when_hf_cache_dir_is_missing(tmp_path, mock_hypergraph):
@@ -688,6 +690,36 @@ def test_load_by_name_skips_cache_cleanup_when_hf_cache_dir_is_missing(tmp_path,
         cache_dir=str(tmp_path / "hf_cache"),
     )
     mock_rmtree.assert_not_called()
+    assert result.num_nodes == 2
+    assert result.num_hyperedges == 1
+
+
+def test_load_by_name_cleans_hf_cache_and_locks(tmp_path, mock_hypergraph):
+    hf_sha = "2bb641461e00c103fb5ef4fe6a30aad42500fc21"
+    fallback_file = tmp_path / "algebra.json.zst"
+    fallback_file.write_bytes(b"mock_zst_content")
+    payload = __hif_payload(mock_hypergraph)
+
+    response = requests.Response()
+    response.status_code = 404
+    response._content = b""
+
+    with (
+        patch("hyperbench.data.hif.os.path.exists", return_value=False),
+        patch("hyperbench.data.hif.os.path.isdir", return_value=True),
+        patch("hyperbench.data.hif.requests.get", return_value=response),
+        patch("hyperbench.data.hif.hf_hub_download", return_value=str(fallback_file)),
+        patch("hyperbench.data.hif.from_zst_file_to_json", return_value=payload),
+        patch("hyperbench.data.hif.validate_hif_data", return_value=True),
+        patch("hyperbench.data.hif.shutil.rmtree") as mock_rmtree,
+        pytest.warns(UserWarning, match="GitHub raw download failed"),
+    ):
+        result = HIFLoader.load_by_name("algebra", hf_sha=hf_sha, save_on_disk=False)
+
+    cache_root = tmp_path / "hf_cache"
+    path_prefix = "datasets--HypernetworkRG--algebra"
+    mock_rmtree.assert_any_call(os.path.join(cache_root, path_prefix))
+    mock_rmtree.assert_any_call(os.path.join(cache_root, ".locks", path_prefix))
     assert result.num_nodes == 2
     assert result.num_hyperedges == 1
 
