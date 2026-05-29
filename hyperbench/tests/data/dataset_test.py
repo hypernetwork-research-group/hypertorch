@@ -1328,6 +1328,60 @@ def test_split_with_ratios_transductive_keeps_ratios_when_train_covers_all_nodes
     )
 
 
+def test_split_with_ratios_uses_train_split_idx():
+    hdata = HData(
+        x=torch.arange(4, dtype=torch.float).unsqueeze(1),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3, 0], [0, 1, 2, 3, 4]]),
+    )
+    dataset = Dataset.from_hdata(hdata)
+
+    splits, final_ratios = dataset.split_with_ratios(
+        ratios=[0.25, 0.75],
+        node_space_setting="transductive",
+        train_split_idx=1,
+    )
+
+    assert [split.hdata.num_hyperedges for split in splits] == [1, 4]
+    assert final_ratios == pytest.approx([0.2, 0.8])
+
+
+def test_split_with_ratios_raises_when_train_split_idx_is_out_of_bounds():
+    hdata = HData(
+        x=torch.arange(4, dtype=torch.float).unsqueeze(1),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3, 0], [0, 1, 2, 3, 4]]),
+    )
+    dataset = Dataset.from_hdata(hdata)
+
+    with pytest.raises(
+        ValueError, match=re.escape("'train_split_idx' must be between 0 and 1, got 2.")
+    ):
+        dataset.split_with_ratios(
+            ratios=[0.25, 0.75],
+            node_space_setting="transductive",
+            train_split_idx=2,
+        )
+
+
+def test_split_with_ratios_raises_when_train_split_idx_provided_but_not_transductive():
+    hdata = HData(
+        x=torch.arange(4, dtype=torch.float).unsqueeze(1),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3, 0], [0, 1, 2, 3, 4]]),
+    )
+    dataset = Dataset.from_hdata(hdata)
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "'train_split_idx' is only relevant when 'node_space_setting' is 'transductive'"
+        ),
+    ):
+        dataset.split_with_ratios(
+            ratios=[0.25, 0.75],
+            node_space_setting="inductive",
+            train_split_idx=2,
+        )
+
+
 def test_split_transductive_raises_when_rebalancing_empties_split():
     hdata = HData(
         x=torch.arange(4, dtype=torch.float).unsqueeze(1),
@@ -1377,6 +1431,59 @@ def test_split_transductive_allows_missing_nodes_without_train_coverage_rebalanc
         torch.tensor([0, 1]),
     )
     assert test_dataset.hdata.num_nodes == 1
+
+
+def test_split_uses_train_split_idx():
+    hdata = HData(
+        x=torch.arange(4, dtype=torch.float).unsqueeze(1),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3, 0], [0, 1, 2, 3, 4]]),
+    )
+    dataset = Dataset.from_hdata(hdata)
+
+    splits = dataset.split(
+        ratios=[0.25, 0.75],
+        node_space_setting="transductive",
+        train_split_idx=1,
+    )
+
+    assert [split.hdata.num_hyperedges for split in splits] == [1, 4]
+
+
+def test_split_raises_when_train_split_idx_is_out_of_bounds():
+    hdata = HData(
+        x=torch.arange(4, dtype=torch.float).unsqueeze(1),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3, 0], [0, 1, 2, 3, 4]]),
+    )
+    dataset = Dataset.from_hdata(hdata)
+
+    with pytest.raises(
+        ValueError, match=re.escape("'train_split_idx' must be between 0 and 1, got 2.")
+    ):
+        dataset.split(
+            ratios=[0.25, 0.75],
+            node_space_setting="transductive",
+            train_split_idx=2,
+        )
+
+
+def test_split_raises_when_train_split_idx_provided_but_not_transductive():
+    hdata = HData(
+        x=torch.arange(4, dtype=torch.float).unsqueeze(1),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3, 0], [0, 1, 2, 3, 4]]),
+    )
+    dataset = Dataset.from_hdata(hdata)
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "'train_split_idx' is only relevant when 'node_space_setting' is 'transductive'"
+        ),
+    ):
+        dataset.split(
+            ratios=[0.25, 0.75],
+            node_space_setting="inductive",
+            train_split_idx=2,
+        )
 
 
 @pytest.mark.parametrize(

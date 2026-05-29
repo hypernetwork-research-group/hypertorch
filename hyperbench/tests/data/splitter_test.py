@@ -124,6 +124,43 @@ def test_default_dataset_splitter_uses_train_split_idx_for_transductive_split():
     assert split_datasets[1].hdata.num_nodes == hdata.num_nodes
 
 
+def test_default_dataset_splitter_split_raises_when_train_split_idx_is_out_of_bounds():
+    hdata = HData(
+        x=torch.arange(4, dtype=torch.float).unsqueeze(1),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3, 0], [0, 1, 2, 3, 4]]),
+    )
+    dataset = Dataset.from_hdata(hdata)
+
+    with pytest.raises(
+        ValueError, match=re.escape("'train_split_idx' must be between 0 and 1, got 2.")
+    ):
+        DefaultDatasetSplitter(
+            ratios=[0.5, 0.5],
+            node_space_setting="transductive",
+            train_split_idx=2,
+        ).split(to_split=dataset)
+
+
+def test_default_dataset_splitter_split_raises_when_train_split_idx_provided_but_not_transductive():
+    hdata = HData(
+        x=torch.arange(4, dtype=torch.float).unsqueeze(1),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3, 0], [0, 1, 2, 3, 4]]),
+    )
+    dataset = Dataset.from_hdata(hdata)
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "'train_split_idx' is only relevant when 'node_space_setting' is 'transductive'"
+        ),
+    ):
+        DefaultDatasetSplitter(
+            ratios=[0.5, 0.5],
+            node_space_setting="inductive",
+            train_split_idx=1,
+        ).split(to_split=dataset)
+
+
 def test_default_dataset_splitter_raises_when_ratios_do_not_sum_to_one(mock_hdata_five_hyperedges):
     dataset = Dataset.from_hdata(mock_hdata_five_hyperedges)
 

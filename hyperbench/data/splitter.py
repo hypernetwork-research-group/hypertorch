@@ -88,9 +88,12 @@ class DefaultDatasetSplitter(DatasetSplitter):
         cover_all_nodes_in_train_split: Whether transductive splits should move
             hyperedges into the first split until all nodes are incident to at
             least one selected training hyperedge.
-        train_split_idx: The index of the split to treat as the "train" split. Defaults to ``0``,
-            so the first split is the train split that gets the full node space in the
-            transductive setting and is optionally rebalanced to cover all nodes.
+            train_split_idx: The index of the split to treat as the train split. Defaults to ``0``,
+                so the first split is the train split that gets the full node space in the
+                transductive setting and is optionally rebalanced to cover all nodes.
+                This is used only when ``node_space_setting=="transductive"`` and ``cover_all_nodes_in_train_split==True``,
+                to determine which split should be rebalanced to cover all nodes.
+                For the 'inductive' setting, splits are always returned based on the provided ratios.
         shuffle: Whether to shuffle hyperedges before splitting.
         seed: Optional random seed for reproducibility.
     """
@@ -110,6 +113,8 @@ class DefaultDatasetSplitter(DatasetSplitter):
         self.train_split_idx = train_split_idx
         self.shuffle = shuffle
         self.seed = seed
+
+        self.__validate()
 
     def split(self, to_split: Dataset) -> tuple[list[Dataset], list[float]]:
         """
@@ -173,6 +178,19 @@ class DefaultDatasetSplitter(DatasetSplitter):
             split_datasets.append(split_dataset)
 
         return split_datasets, final_ratios
+
+    def __validate(self) -> None:
+        if self.node_space_setting != "transductive" and self.train_split_idx != 0:
+            raise ValueError(
+                f"'train_split_idx' is only relevant when 'node_space_setting' is 'transductive', "
+                f"got 'node_space_setting={self.node_space_setting}' and 'train_split_idx={self.train_split_idx}'."
+                "For the 'inductive' setting, splits are returned based on the provided ratios."
+            )
+
+        if self.train_split_idx < 0 or self.train_split_idx >= len(self.ratios):
+            raise ValueError(
+                f"'train_split_idx' must be between 0 and {len(self.ratios) - 1}, got {self.train_split_idx}."
+            )
 
 
 class DefaultHDataSplitter(HDataSplitter):

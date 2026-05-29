@@ -321,9 +321,12 @@ class Dataset(TorchDataset):
                 should move hyperedges from later splits until every node is
                 incident to one of its selected hyperedges. Ratios are approximate
                 when this coverage requires moving hyperedges into the first split.
-            train_split_idx: The index of the split to treat as the "train" split. Defaults to ``0``,
+            train_split_idx: The index of the split to treat as the train split. Defaults to ``0``,
                 so the first split is the train split that gets the full node space in the
                 transductive setting and is optionally rebalanced to cover all nodes.
+                This is used only when ``node_space_setting=="transductive"`` and ``cover_all_nodes_in_train_split==True``,
+                to determine which split should be rebalanced to cover all nodes.
+                For the 'inductive' setting, splits are always returned based on the provided ratios.
             seed: Optional random seed for reproducibility. Ignored if shuffle is set to ``False``.
             splitter: Optional dataset splitter. When provided, it owns split
                 construction and final-ratio reporting.
@@ -381,9 +384,12 @@ class Dataset(TorchDataset):
             cover_all_nodes_in_train_split: Whether a transductive first split
                 should move hyperedges from later splits until every node is
                 incident to one of its selected hyperedges.
-            train_split_idx: The index of the split to treat as the "train" split. Defaults to ``0``,
+            train_split_idx: The index of the split to treat as the train split. Defaults to ``0``,
                 so the first split is the train split that gets the full node space in the
                 transductive setting and is optionally rebalanced to cover all nodes.
+                This is used only when ``node_space_setting=="transductive"`` and ``cover_all_nodes_in_train_split==True``,
+                to determine which split should be rebalanced to cover all nodes.
+                For the 'inductive' setting, splits are always returned based on the provided ratios.
             seed: Optional random seed for reproducibility. Ignored if ``shuffle`` is set to ``False``.
             splitter: Optional dataset splitter. When provided, it owns split
                 construction and final-ratio reporting.
