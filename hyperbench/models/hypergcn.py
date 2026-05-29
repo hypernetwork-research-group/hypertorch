@@ -49,6 +49,7 @@ class HyperGCN(nn.Module):
                     use_batch_normalization=use_batch_normalization,
                     drop_rate=drop_rate,
                     use_mediator=use_mediator,
+                    seed=self.seed,
                 ),
                 HyperGCNConv(
                     in_channels=hidden_channels,
@@ -57,6 +58,7 @@ class HyperGCN(nn.Module):
                     use_batch_normalization=use_batch_normalization,
                     use_mediator=use_mediator,
                     is_last=True,
+                    seed=self.seed,
                 ),
             ]
         )

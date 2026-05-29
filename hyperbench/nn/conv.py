@@ -17,6 +17,7 @@ class HyperGCNConv(nn.Module):
         drop_rate: If set to a positive number, the layer will use dropout. Defaults to ``0.5``.
         use_mediator: Whether to use mediator to transform the hyperedges to edges in the graph. Defaults to ``False``.
         is_last: If set to ``True``, the layer will not apply the final activation and dropout functions. Defaults to ``False``.
+        seed: Optional random seed for the random reduction of hyperedges to edges. Defaults to ``None``.
     """
 
     def __init__(
@@ -28,6 +29,7 @@ class HyperGCNConv(nn.Module):
         drop_rate: float = 0.5,
         use_mediator: bool = False,
         is_last: bool = False,
+        seed: int | None = None,
     ):
         super().__init__()
         self.is_last = is_last
@@ -39,6 +41,8 @@ class HyperGCNConv(nn.Module):
         # θ is the learnable weight matrix (as in the HyperGCN paper),
         # it projects node features from in_channels to out_channels and learns how to mix feature channels
         self.theta = nn.Linear(in_channels, out_channels, bias=bias)
+
+        self.seed = seed
 
     def forward(
         self,
@@ -69,6 +73,7 @@ class HyperGCNConv(nn.Module):
                 x=x,
                 with_mediators=self.use_mediator,
                 return_weights=True,
+                seed=self.seed,
             )
 
             normalized_gcn_laplacian_matrix = EdgeIndex(
