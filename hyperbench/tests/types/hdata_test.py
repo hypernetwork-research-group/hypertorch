@@ -964,27 +964,25 @@ def test_default_hdata_splitter_materializes_explicit_hyperedge_ids():
 
 
 def test_split_delegates_to_custom_hdata_splitter():
-    class CustomHDataSplitter(HDataSplitter):
-        def __init__(self, expected_hdata: HData) -> None:
-            self.expected_hdata = expected_hdata
-            self.called = False
-
-        def split(self, to_split: HData) -> HData:
-            self.called = True
-            assert to_split is self.expected_hdata
-            return self.expected_hdata
-
     hdata = HData(
         x=torch.randn(2, 1),
         hyperedge_index=torch.tensor([[0, 1], [0, 0]]),
     )
 
-    splitter = CustomHDataSplitter(hdata)
+    expected_splitted_hdata = HData(
+        x=torch.randn(2, 1),
+        hyperedge_index=torch.tensor([[0, 1], [0, 0]]),
+    )
 
+    class CustomHDataSplitter(HDataSplitter):
+        def split(self, to_split: HData) -> HData:
+            assert to_split is hdata
+            return expected_splitted_hdata
+
+    splitter = CustomHDataSplitter()
     result = HData.split(hdata, splitter=splitter)
 
-    assert result is hdata
-    assert splitter.called is True
+    assert result is expected_splitted_hdata
 
 
 def test_split_raises_on_invalid_node_space_setting():
