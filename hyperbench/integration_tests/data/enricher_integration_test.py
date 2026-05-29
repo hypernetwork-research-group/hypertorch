@@ -3,15 +3,15 @@ import pytest
 from hyperbench.data import (
     list_datasets,
     get_dataset_by_name,
-    Node2VecEnricher,
     FillValueHyperedgeAttrsEnricher,
+    LaplacianPositionalEncodingEnricher,
+    Node2VecEnricher,
     VilLainHyperedgeAttrsEnricher,
     VilLainEnricher,
 )
 from hyperbench.integration_tests.common import (
     split_dataset,
 )
-from hyperbench.data import LaplacianPositionalEncodingEnricher
 
 
 excluded_dataset = [
@@ -80,7 +80,7 @@ def test_n2v_node_enricher(dataset_name):
             walk_length=5,
             num_walks_per_node=2,
             num_negative_samples=1,
-            num_nodes=dataset.hdata.num_nodes,
+            num_nodes=to_enrich_dataset.hdata.num_nodes,
             num_epochs=3,
             learning_rate=0.01,
             batch_size=128,
@@ -107,8 +107,8 @@ def test_villain_node_enricher(dataset_name):
     to_enrich_dataset.enrich_node_features(
         enricher=VilLainEnricher(
             num_features=NUM_FEATURES,
-            num_nodes=dataset.hdata.num_nodes,
-            num_hyperedges=dataset.hdata.num_hyperedges,
+            num_nodes=to_enrich_dataset.hdata.num_nodes,
+            num_hyperedges=to_enrich_dataset.hdata.num_hyperedges,
             labels_per_subspace=2,
             training_steps=2,
             generation_steps=4,
@@ -155,8 +155,8 @@ def test_villain_hyperedge_attrs_enricher(dataset_name):
     to_enrich_dataset.enrich_hyperedge_attr(
         enricher=VilLainHyperedgeAttrsEnricher(
             num_features=NUM_FEATURES,
-            num_nodes=dataset.hdata.num_nodes,
-            num_hyperedges=dataset.hdata.num_hyperedges,
+            num_nodes=to_enrich_dataset.hdata.num_nodes,
+            num_hyperedges=to_enrich_dataset.hdata.num_hyperedges,
             labels_per_subspace=2,
             training_steps=2,
             generation_steps=4,
