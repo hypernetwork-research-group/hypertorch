@@ -84,6 +84,7 @@ if __name__ == "__main__":
         walk_length=20,
         num_walks_per_node=10,
         num_negative_samples=1,
+        # We are using transductive with all nodes coverage in the train split
         num_nodes=dataset.hdata.num_nodes,
         num_epochs=10,
         learning_rate=0.01,
@@ -147,6 +148,7 @@ if __name__ == "__main__":
                 "q": 1.0,
                 "num_negative_samples": 1,
                 "train_hyperedge_index": train_hyperedge_index,
+                # We are using transductive with all nodes coverage in the train split
                 "num_nodes": dataset.hdata.num_nodes,
                 "graph_reduction_strategy": "clique_expansion",
                 "random_walk_batch_size": 128,

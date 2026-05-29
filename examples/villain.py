@@ -88,7 +88,6 @@ if __name__ == "__main__":
 
     node_villain_module = VilLainHlpModule(
         encoder_config={
-            "num_nodes": dataset.hdata.num_nodes,
             "embedding_dim": 128,
             "labels_per_subspace": 8,
             "training_steps": 4,
@@ -96,6 +95,8 @@ if __name__ == "__main__":
             "tau": 1.0,
             "eps": 1e-10,
             "villain_loss_weight": 1.0,
+            # We are using transductive with all nodes coverage in the train split
+            "num_nodes": dataset.hdata.num_nodes,
         },
         embedding_mode="node",
         aggregation="maxmin",
@@ -106,7 +107,6 @@ if __name__ == "__main__":
 
     hyperedge_villain_module = VilLainHlpModule(
         encoder_config={
-            "num_nodes": dataset.hdata.num_nodes,
             "embedding_dim": 128,
             "labels_per_subspace": 8,
             "training_steps": 4,
@@ -114,6 +114,8 @@ if __name__ == "__main__":
             "tau": 1.0,
             "eps": 1e-10,
             "villain_loss_weight": 1.0,
+            # We are using transductive with all nodes coverage in the train split
+            "num_nodes": dataset.hdata.num_nodes,
         },
         embedding_mode="hyperedge",
         lr=0.01,
