@@ -68,13 +68,34 @@ def test_model_villain_node(tmp_path, sampling_strategy, full, batch_size, reque
         model=node_villain_module,
     )
 
-    train_test_loop(configs, path=tmp_path, experiment_name=f"villain_integration_test_{test_id}")
+    train_test_loop(
+        configs, path=tmp_path, experiment_name=f"villain_node_integration_test_{test_id}"
+    )
 
     assert (
-        tmp_path / f"villain_integration_test_{test_id}" / "comparison" / "overall.tex"
+        tmp_path / f"villain_node_integration_test_{test_id}" / "comparison" / "overall.tex"
     ).exists()
-    assert (tmp_path / f"villain_integration_test_{test_id}" / "comparison" / "test.tex").exists()
-    assert (tmp_path / f"villain_integration_test_{test_id}" / "comparison" / "results.md").exists()
+    assert (
+        tmp_path / f"villain_node_integration_test_{test_id}" / "comparison" / "overall.md"
+    ).exists()
+    assert (
+        tmp_path / f"villain_node_integration_test_{test_id}" / "comparison" / "test.tex"
+    ).exists()
+    assert (
+        tmp_path / f"villain_node_integration_test_{test_id}" / "comparison" / "test.md"
+    ).exists()
+    assert (
+        tmp_path / f"villain_node_integration_test_{test_id}" / "comparison" / "train.md"
+    ).exists()
+    assert (
+        tmp_path / f"villain_node_integration_test_{test_id}" / "comparison" / "train.tex"
+    ).exists()
+    assert (
+        tmp_path / f"villain_node_integration_test_{test_id}" / "comparison" / "val.md"
+    ).exists()
+    assert (
+        tmp_path / f"villain_node_integration_test_{test_id}" / "comparison" / "val.tex"
+    ).exists()
 
 
 @pytest.mark.integration
@@ -129,10 +150,31 @@ def test_model_villain_hyperedge(tmp_path, sampling_strategy, full, batch_size, 
         model=hyperedge_villain_module,
     )
 
-    train_test_loop(configs, path=tmp_path, experiment_name=f"villain_integration_test_{test_id}")
+    train_test_loop(
+        configs, path=tmp_path, experiment_name=f"villain_hyperedge_integration_test_{test_id}"
+    )
 
     assert (
-        tmp_path / f"villain_integration_test_{test_id}" / "comparison" / "overall.tex"
+        tmp_path / f"villain_hyperedge_integration_test_{test_id}" / "comparison" / "overall.tex"
     ).exists()
-    assert (tmp_path / f"villain_integration_test_{test_id}" / "comparison" / "test.tex").exists()
-    assert (tmp_path / f"villain_integration_test_{test_id}" / "comparison" / "results.md").exists()
+    assert (
+        tmp_path / f"villain_hyperedge_integration_test_{test_id}" / "comparison" / "overall.md"
+    ).exists()
+    assert (
+        tmp_path / f"villain_hyperedge_integration_test_{test_id}" / "comparison" / "test.tex"
+    ).exists()
+    assert (
+        tmp_path / f"villain_hyperedge_integration_test_{test_id}" / "comparison" / "test.md"
+    ).exists()
+    assert (
+        tmp_path / f"villain_hyperedge_integration_test_{test_id}" / "comparison" / "train.md"
+    ).exists()
+    assert (
+        tmp_path / f"villain_hyperedge_integration_test_{test_id}" / "comparison" / "train.tex"
+    ).exists()
+    assert (
+        tmp_path / f"villain_hyperedge_integration_test_{test_id}" / "comparison" / "val.md"
+    ).exists()
+    assert (
+        tmp_path / f"villain_hyperedge_integration_test_{test_id}" / "comparison" / "val.tex"
+    ).exists()

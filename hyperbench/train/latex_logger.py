@@ -190,6 +190,7 @@ class LaTexTableLogger(Logger):
             sort_by=sort_by,
             border=border,
         )
+        # test
         self.__save_comparison_tables(
             test_results=test_results,
             save_dir=comparison_dir,
@@ -197,6 +198,30 @@ class LaTexTableLogger(Logger):
             val_results=None,
             precision=self.__precision,
             filename="test.tex",
+            table_caption=table_caption,
+            sort_by=sort_by,
+            border=border,
+        )
+        # train
+        self.__save_comparison_tables(
+            test_results={},
+            save_dir=comparison_dir,
+            train_results=train_results or None,
+            val_results=None,
+            precision=self.__precision,
+            filename="train.tex",
+            table_caption=table_caption,
+            sort_by=sort_by,
+            border=border,
+        )
+        # val
+        self.__save_comparison_tables(
+            test_results={},
+            save_dir=comparison_dir,
+            train_results=None,
+            val_results=val_results or None,
+            precision=self.__precision,
+            filename="val.tex",
             table_caption=table_caption,
             sort_by=sort_by,
             border=border,

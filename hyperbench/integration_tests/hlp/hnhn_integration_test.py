@@ -70,5 +70,10 @@ def test_model_hnhn_batch(tmp_path, sampling_strategy, full, batch_size, request
     train_test_loop(configs, path=tmp_path, experiment_name=f"hnhn_integration_test_{test_id}")
 
     assert (tmp_path / f"hnhn_integration_test_{test_id}" / "comparison" / "overall.tex").exists()
+    assert (tmp_path / f"hnhn_integration_test_{test_id}" / "comparison" / "overall.md").exists()
     assert (tmp_path / f"hnhn_integration_test_{test_id}" / "comparison" / "test.tex").exists()
-    assert (tmp_path / f"hnhn_integration_test_{test_id}" / "comparison" / "results.md").exists()
+    assert (tmp_path / f"hnhn_integration_test_{test_id}" / "comparison" / "test.md").exists()
+    assert (tmp_path / f"hnhn_integration_test_{test_id}" / "comparison" / "train.md").exists()
+    assert (tmp_path / f"hnhn_integration_test_{test_id}" / "comparison" / "train.tex").exists()
+    assert (tmp_path / f"hnhn_integration_test_{test_id}" / "comparison" / "val.md").exists()
+    assert (tmp_path / f"hnhn_integration_test_{test_id}" / "comparison" / "val.tex").exists()

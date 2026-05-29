@@ -80,5 +80,10 @@ def test_model_cn(tmp_path, sampling_strategy, full, batch_size, request):
     )
 
     assert (tmp_path / f"cn_integration_test_{test_id}" / "comparison" / "overall.tex").exists()
+    assert (tmp_path / f"cn_integration_test_{test_id}" / "comparison" / "overall.md").exists()
     assert (tmp_path / f"cn_integration_test_{test_id}" / "comparison" / "test.tex").exists()
-    assert (tmp_path / f"cn_integration_test_{test_id}" / "comparison" / "results.md").exists()
+    assert (tmp_path / f"cn_integration_test_{test_id}" / "comparison" / "test.md").exists()
+    assert (tmp_path / f"cn_integration_test_{test_id}" / "comparison" / "train.md").exists()
+    assert (tmp_path / f"cn_integration_test_{test_id}" / "comparison" / "train.tex").exists()
+    assert (tmp_path / f"cn_integration_test_{test_id}" / "comparison" / "val.md").exists()
+    assert (tmp_path / f"cn_integration_test_{test_id}" / "comparison" / "val.tex").exists()
