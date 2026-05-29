@@ -1293,19 +1293,6 @@ def test_split_with_ratios_returns_final_transductive_ratios_when_train_coverage
     assert final_ratios == pytest.approx([0.8, 0.2])
 
 
-def test_split_with_ratios_returns_raw_transductive_ratios_without_train_coverage():
-    hdata = HData(
-        x=torch.arange(4, dtype=torch.float).unsqueeze(1),
-        hyperedge_index=torch.tensor([[0, 1, 2, 3, 0], [0, 1, 2, 3, 4]]),
-    )
-    dataset = Dataset.from_hdata(hdata)
-
-    splits, final_ratios = dataset.split_with_ratios([0.75, 0.25])
-
-    assert [split.hdata.num_hyperedges for split in splits] == [3, 2]
-    assert final_ratios == pytest.approx([0.6, 0.4])
-
-
 def test_split_with_ratios_transductive_keeps_ratios_when_train_covers_all_nodes():
     hdata = HData(
         x=torch.arange(4, dtype=torch.float).unsqueeze(1),
@@ -1382,6 +1369,51 @@ def test_split_with_ratios_raises_when_train_split_idx_provided_but_not_transduc
         )
 
 
+@pytest.mark.parametrize(
+    ("hyperedge_index", "expected_split_sizes", "expected_final_ratios"),
+    [
+        pytest.param(
+            torch.tensor([[0, 1, 2, 3, 0], [0, 1, 2, 3, 4]]),
+            [3, 2],
+            # 3/5 and 2/5 as we ensure splits don't get more then requested,
+            # in this way, all later splits get at least what they requested,
+            # except the last one that might get slightly more due to rounding.
+            # This effect is mitigated the more hyperedges we have, as the ratios get closer to the requested ones.
+            [0.6, 0.4],
+            id="five_hyperedges_rounds_train_up",
+        ),
+        pytest.param(
+            torch.stack(
+                [
+                    torch.arange(500) % 4,  # 4 nodes
+                    torch.arange(
+                        500
+                    ),  # 500 hyperedges, 125 per node, so we can split exactly according to the ratios
+                ]
+            ),
+            [375, 125],
+            [0.75, 0.25],
+            id="many_hyperedges_matches_requested_ratios",
+        ),
+    ],
+)
+def test_split_with_ratios_returns_returns_expected_cumulative_ratios(
+    hyperedge_index,
+    expected_split_sizes,
+    expected_final_ratios,
+):
+    hdata = HData(
+        x=torch.arange(4, dtype=torch.float).unsqueeze(1),
+        hyperedge_index=hyperedge_index,
+    )
+    dataset = Dataset.from_hdata(hdata)
+
+    splits, final_ratios = dataset.split_with_ratios([0.75, 0.25])
+
+    assert [split.hdata.num_hyperedges for split in splits] == expected_split_sizes
+    assert final_ratios == pytest.approx(expected_final_ratios)
+
+
 def test_split_transductive_raises_when_rebalancing_empties_split():
     hdata = HData(
         x=torch.arange(4, dtype=torch.float).unsqueeze(1),
@@ -1396,7 +1428,7 @@ def test_split_transductive_raises_when_rebalancing_empties_split():
         dataset.split([0.75, 0.25], cover_all_nodes_in_train_split=True)
 
 
-def test_split_transductive_raises_when_a_node_is_missing_from_all_hyperedges():
+def test_split_transductive_raises_when_node_is_missing_from_all_hyperedges():
     hdata = HData(
         x=torch.arange(4, dtype=torch.float).unsqueeze(1),
         hyperedge_index=torch.tensor([[0, 1, 2], [0, 0, 1]]),

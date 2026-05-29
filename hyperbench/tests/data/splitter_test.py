@@ -244,6 +244,56 @@ def test_split_validates_ratio_values(
         splitter.split(hyperedge_ids, cast(Any, ratios))
 
 
+@pytest.mark.parametrize(
+    ("hyperedge_index", "expected_split_sizes", "expected_final_ratios"),
+    [
+        pytest.param(
+            torch.tensor([[0, 1, 2, 3, 0], [0, 1, 2, 3, 4]]),
+            [3, 2],
+            # 3/5 and 2/5 as we ensure splits don't get more then requested,
+            # in this way, all later splits get at least what they requested,
+            # except the last one that might get slightly more due to rounding.
+            # This effect is mitigated the more hyperedges we have, as the ratios get closer to the requested ones.
+            [0.6, 0.4],
+            id="five_hyperedges_rounds_train_up",
+        ),
+        pytest.param(
+            torch.stack(
+                [
+                    torch.arange(500) % 4,  # 4 nodes
+                    torch.arange(
+                        500
+                    ),  # 500 hyperedges, 125 per node, so we can split exactly according to the ratios
+                ]
+            ),
+            [375, 125],
+            [0.75, 0.25],
+            id="many_hyperedges_matches_requested_ratios",
+        ),
+    ],
+)
+def test_hyperedge_id_splitter_split_returns_expected_cumulative_ratios(
+    hyperedge_index,
+    expected_split_sizes,
+    expected_final_ratios,
+):
+    hdata = HData(
+        x=torch.arange(4, dtype=torch.float).unsqueeze(1),
+        hyperedge_index=hyperedge_index,
+    )
+
+    splitter = HyperedgeIDSplitter(
+        hyperedge_index=hdata.hyperedge_index,
+        num_nodes=hdata.num_nodes,
+        num_hyperedges=hdata.num_hyperedges,
+        ratios=[0.75, 0.25],
+    )
+    split_hyperedge_ids, final_ratios = splitter.split(hyperedge_index[1])
+
+    assert [len(split) for split in split_hyperedge_ids] == expected_split_sizes
+    assert final_ratios == pytest.approx(expected_final_ratios)
+
+
 def test_hyperedge_id_splitter_ensure_split_covers_all_nodes_moves_best_covering_hyperedge_into_first_split():
     x = torch.ones((4, 1), dtype=torch.float32)
     hyperedge_index = torch.tensor(
@@ -296,7 +346,7 @@ def test_hyperedge_id_splitter_ensure_split_covers_all_nodes_rejects_invalid_spl
         )
 
 
-def test_hyperedge_id_splitter_ensure_split_covers_all_nodes_raises_when_a_node_is_missing_from_hypergraph():
+def test_hyperedge_id_splitter_ensure_split_covers_all_nodes_raises_when_node_is_missing_from_hypergraph():
     x = torch.ones((4, 1), dtype=torch.float32)
     hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 1]], dtype=torch.long)
     hdata = HData(x=x, hyperedge_index=hyperedge_index)
