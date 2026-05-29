@@ -19,7 +19,9 @@ class HyperGCN(nn.Module):
         use_batch_normalization: If set to ``True``, layers will use batch normalization. Defaults to ``False``.
         drop_rate: Dropout ratio. Defaults to ``0.5``.
         use_mediator: Whether to use mediator to transform the hyperedges to edges in the graph. Defaults to ``False``.
-        fast: If set to ``True``, the transformed graph structure will be computed once from the input hypergraph and vertex features, and cached for future use. Defaults to ``True``.
+        fast: If set to ``True``, the transformed graph structure will be computed once from the input hypergraph
+            and vertex features, and cached for future use. Defaults to ``True``.
+        seed: Optional random seed for the random reduction of hyperedges to edges. Defaults to ``None``.
     """
 
     def __init__(

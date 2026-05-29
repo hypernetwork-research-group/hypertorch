@@ -3,6 +3,7 @@ import pytest
 from hyperbench.hlp import HyperGCNHlpModule
 from hyperbench.data import SamplingStrategy
 from hyperbench.integration_tests.common import (
+    SEED,
     common_metrics,
     loaders,
     model_configs_with_single_model,
@@ -51,6 +52,7 @@ def test_model_hypergcn_with_mediator(tmp_path, sampling_strategy, full, batch_s
             "drop_rate": 0.5,
             "use_mediator": True,
             "fast": False,
+            "seed": SEED,
         },
         aggregation="mean",
         lr=0.01,
@@ -114,6 +116,7 @@ def test_model_hypergcn_no_mediator(tmp_path, sampling_strategy, full, batch_siz
             "drop_rate": 0.5,
             "use_mediator": False,
             "fast": False,
+            "seed": SEED,
         },
         aggregation="mean",
         lr=0.01,
