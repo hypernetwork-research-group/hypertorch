@@ -19,7 +19,9 @@ class HyperGCN(nn.Module):
         use_batch_normalization: If set to ``True``, layers will use batch normalization. Defaults to ``False``.
         drop_rate: Dropout ratio. Defaults to ``0.5``.
         use_mediator: Whether to use mediator to transform the hyperedges to edges in the graph. Defaults to ``False``.
-        fast: If set to ``True``, the transformed graph structure will be computed once from the input hypergraph and vertex features, and cached for future use. Defaults to ``True``.
+        fast: If set to ``True``, the transformed graph structure will be computed once from the input hypergraph
+            and vertex features, and cached for future use. Defaults to ``True``.
+        seed: Optional random seed for the random reduction of hyperedges to edges. Defaults to ``None``.
     """
 
     def __init__(
@@ -32,11 +34,13 @@ class HyperGCN(nn.Module):
         drop_rate: float = 0.5,
         use_mediator: bool = False,
         fast: bool = True,
+        seed: int | None = None,
     ):
         super().__init__()
         self.fast = fast
         self.use_mediator = use_mediator
         self.cached_gcn_laplacian_matrix: Tensor | None = None
+        self.seed = seed
 
         self.layers = nn.ModuleList(
             [
@@ -47,6 +51,7 @@ class HyperGCN(nn.Module):
                     use_batch_normalization=use_batch_normalization,
                     drop_rate=drop_rate,
                     use_mediator=use_mediator,
+                    seed=self.seed,
                 ),
                 HyperGCNConv(
                     in_channels=hidden_channels,
@@ -55,6 +60,7 @@ class HyperGCN(nn.Module):
                     use_batch_normalization=use_batch_normalization,
                     use_mediator=use_mediator,
                     is_last=True,
+                    seed=self.seed,
                 ),
             ]
         )
@@ -91,6 +97,7 @@ class HyperGCN(nn.Module):
                 x=x,
                 with_mediators=self.use_mediator,
                 return_weights=True,
+                seed=self.seed,
             )
 
             self.cached_gcn_laplacian_matrix = EdgeIndex(

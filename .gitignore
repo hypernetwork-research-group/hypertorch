@@ -129,3 +129,6 @@ plans/
 # Logs
 hyperbench_logs/
 lightning_logs/
+
+# hyperbench cache
+.hyperbench_cache/

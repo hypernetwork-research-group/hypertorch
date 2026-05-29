@@ -8,11 +8,12 @@ from .data_utils import (
 )
 
 from .hif_utils import (
-    validate_hif_json,
     get_hf_datasets_shas,
     get_hf_dataset_sha,
     get_gh_datasets_shas,
     get_gh_dataset_sha,
+    validate_hif_data,
+    validate_hif_json,
 )
 
 from .nn_utils import (
@@ -39,7 +40,17 @@ from .sparse_utils import sparse_dropout
 
 from .url_utils import validate_http_url
 
-from .file_utils import decompress_zst, compress_to_zst, write_to_disk, named_temporary_file
+from .file_utils import (
+    compress_json_bytes_as_zst,
+    from_file_to_json,
+    from_bytes_to_json,
+    from_zst_bytes_to_json,
+    from_zst_file_to_json,
+    write_zst_file_to_disk,
+    write_dataset_to_disk_as_zst,
+    get_cache_dir,
+    find_project_root,
+)
 
 __all__ = [
     "INPUT_LAYER",
@@ -50,12 +61,17 @@ __all__ = [
     "Stage",
     "assign_hyperedge_label_to_nodes",
     "clone_optional_tensor",
-    "compress_to_zst",
+    "compress_json_bytes_as_zst",
     "create_seeded_torch_generator",
-    "decompress_zst",
     "empty_edgeattr",
     "empty_hyperedgeindex",
     "empty_nodefeatures",
+    "find_project_root",
+    "from_bytes_to_json",
+    "from_file_to_json",
+    "from_zst_bytes_to_json",
+    "from_zst_file_to_json",
+    "get_cache_dir",
     "get_gh_dataset_sha",
     "get_gh_datasets_shas",
     "get_hf_dataset_sha",
@@ -65,11 +81,12 @@ __all__ = [
     "is_layer",
     "is_transductive_setting",
     "maxmin_scatter",
-    "named_temporary_file",
     "sparse_dropout",
     "to_0based_ids",
     "to_non_empty_edgeattr",
+    "validate_hif_data",
     "validate_hif_json",
     "validate_http_url",
-    "write_to_disk",
+    "write_dataset_to_disk_as_zst",
+    "write_zst_file_to_disk",
 ]

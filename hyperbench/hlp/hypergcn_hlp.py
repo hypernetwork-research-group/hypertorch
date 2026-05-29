@@ -23,6 +23,7 @@ class HyperGCNEncoderConfig(TypedDict):
         drop_rate: Dropout rate. Defaults to ``0.5``.
         use_mediator: Whether to use mediator nodes for hyperedge-to-edge conversion. Defaults to ``False``.
         fast: Whether to cache the graph structure after first computation. Defaults to ``True``.
+        seed: Optional random seed for the random reduction of hyperedges to edges. Defaults to ``None``.
     """
 
     in_channels: int
@@ -33,6 +34,7 @@ class HyperGCNEncoderConfig(TypedDict):
     drop_rate: NotRequired[float]
     use_mediator: NotRequired[bool]
     fast: NotRequired[bool]
+    seed: NotRequired[int]
 
 
 class HyperGCNHlpModule(HlpModule):
@@ -70,6 +72,7 @@ class HyperGCNHlpModule(HlpModule):
             drop_rate=encoder_config.get("drop_rate", 0.5),
             use_mediator=encoder_config.get("use_mediator", False),
             fast=encoder_config.get("fast", True),
+            seed=encoder_config.get("seed"),
         )
         decoder = SLP(in_channels=encoder_config["out_channels"], out_channels=1)
 

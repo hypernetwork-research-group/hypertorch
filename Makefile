@@ -1,5 +1,5 @@
-.PHONY: all build setup setup-tensorboard clean destroy \
-		test stest run \
+.PHONY: all release build setup setup-tensorboard clean destroy \
+		test stest i-test si-test run \
 		check format typecheck lint lint-fix lint-rule lint-rule-fix \
 		docs docs-build docs-serve \
 		loc help
@@ -13,6 +13,8 @@ ZENSICAL_CONFIG=zensical.toml
 DOCS_ADDR=127.0.0.1:8000
 
 all: clean setup check test
+
+release: clean setup check test i-test
 
 build: clean setup
 
@@ -56,12 +58,22 @@ lint-rule-fix:
 	$(UV) run $(LINTER) check --select $(R) --fix
 
 test:
-	@echo '=== Tests ==='
-	$(UV) run $(PYTEST) --cov=$(PROJECT_NAME) --cov-report=term-missing
+	@echo '=== Running unit tests in parallel ==='
+	$(UV) run $(PYTEST) -n auto --cov=$(PROJECT_NAME) --cov-report=term-missing -m "not integration"
 
 stest:
-	@echo '=== Test for $(T) ==='
-	$(UV) run $(PYTEST) -s $(PROJECT_NAME)/tests/$(T)
+	@echo '=== Running single unit test for $(T) ==='
+	$(UV) run $(PYTEST) -n auto -s $(PROJECT_NAME)/tests/$(T)
+
+i-test:
+	@echo '=== Running integration tests in parallel ==='
+	$(UV) run $(PYTEST) -n auto -m "integration"
+
+si-test:
+	@echo '=== Running single integration test for $(T) ==='
+	$(UV) run $(PYTEST) -n auto -s $(PROJECT_NAME)/integration_tests/$(T) -m "integration"
+
+
 
 # If the first argument is run...
 ifeq ($(firstword $(MAKECMDGOALS)),run)
@@ -104,6 +116,7 @@ help:
 	@echo "Usage: make [target]"
 	@echo "Targets:"
 	@echo "  all                     - Clean, setup, lint, typecheck, test"
+	@echo "  release                 - Clean, setup, lint, typecheck, test, i-test"
 	@echo "  build                   - Clean and setup"
 	@echo "  setup                   - Install dependencies"
 	@echo "  setup-tensorboard       - Install optional TensorBoard dependency"
@@ -115,8 +128,10 @@ help:
 	@echo "  lint-fix                - Run linting and fix issues"
 	@echo "  lint-rule R=<rule>      - Run linting for a specific rule (e.g., R=E501)"
 	@echo "  lint-rule-fix R=<rule>  - Run linting for a specific rule and fix issues"
-	@echo "  test                    - Run all tests"
-	@echo "  stest T=<test_name>     - Run a single test"
+	@echo "  test                    - Run all unit tests in parallel"
+	@echo "  stest T=<test_name>     - Run a single unit test"
+	@echo "  i-test                  - Run integration tests in parallel"
+	@echo "  si-test T=<test_name>   - Run a single integration test"
 	@echo "  run <file.py>           - Run a single file"
 	@echo "  docs                    - Build and serve documentation"
 	@echo "  docs-build              - Build documentation without serving"

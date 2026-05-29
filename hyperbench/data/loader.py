@@ -1,5 +1,6 @@
 import torch
 
+from torch import Generator
 from torch.utils.data import DataLoader as TorchDataLoader
 from hyperbench.data import Dataset
 from hyperbench.types import HData, HyperedgeIndex
@@ -12,6 +13,7 @@ class DataLoader(TorchDataLoader):
         batch_size: int = 1,
         shuffle: bool | None = False,
         sample_full_hypergraph: bool = False,
+        generator: Generator | None = None,
         **kwargs,
     ) -> None:
         self.__sample_full_hypergraph = sample_full_hypergraph
@@ -21,6 +23,7 @@ class DataLoader(TorchDataLoader):
             batch_size=len(dataset) if sample_full_hypergraph else batch_size,
             shuffle=shuffle,
             collate_fn=self.collate,
+            generator=generator,
             **kwargs,
         )
 

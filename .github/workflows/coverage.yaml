@@ -27,18 +27,18 @@ jobs:
         run: |
           make build
 
-      - name: Run tests with coverage
+      - name: Run unit tests with coverage
         run: |
-          uv run pytest --cov --cov-branch --cov-report=xml
+          uv run pytest -n auto --cov --cov-branch --cov-report=xml -m "not integration"
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
-      - name: Test with pytest
+      - name: Run unit tests for Codecov
         run: |
-          uv run pytest --cov --junitxml=junit.xml
+          uv run pytest -n auto --cov --junitxml=junit.xml -m "not integration"
 
       - name: Upload test results to Codecov
         uses: codecov/codecov-action@v5

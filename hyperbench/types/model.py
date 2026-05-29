@@ -1,8 +1,12 @@
+from __future__ import annotations
+
 import lightning as L
 
-from typing import Literal, TypeAlias
+from typing import TYPE_CHECKING, Literal, TypeAlias
 from collections.abc import Mapping
-from torch.utils.data import DataLoader
+
+if TYPE_CHECKING:
+    from hyperbench.data import DataLoader
 
 
 CkptStrategy: TypeAlias = Literal["best", "last"]

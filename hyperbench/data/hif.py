@@ -1,23 +1,26 @@
-import json
 import os
+import shutil
 import requests
-import tempfile
 import torch
 import warnings
+
 
 from huggingface_hub import hf_hub_download
 from typing import Any
 from torch import Tensor
 from hyperbench.types import HData, HIFHypergraph
 from hyperbench.utils import (
-    validate_hif_json,
-    decompress_zst,
-    compress_to_zst,
+    compress_json_bytes_as_zst,
+    from_bytes_to_json,
+    from_file_to_json,
+    from_zst_bytes_to_json,
+    from_zst_file_to_json,
+    validate_hif_data,
     validate_http_url,
-    write_to_disk,
-    named_temporary_file,
+    write_dataset_to_disk_as_zst,
+    write_zst_file_to_disk,
+    get_cache_dir,
 )
-
 
 GITHUB_COMMIT_SHA = "3879b2ce84750e54f984ca06ce3246dff22c71c7"
 
@@ -243,7 +246,7 @@ class HIFLoader:
         Load a hypergraph from a given URL pointing to a .json or .json.zst file in HIF format.
 
         Args:
-            url (str): The URL to the .json or .json.zst file containing the HIF hypergraph data.
+            url: The URL to the .json or .json.zst file containing the HIF hypergraph data.
             save_on_disk (bool): Whether to save the downloaded file on disk.
 
         Returns:
@@ -254,30 +257,36 @@ class HIFLoader:
         response = requests.get(url, timeout=20)
         if response.status_code != 200:
             raise ValueError(
-                f"Failed to download dataset from URL '{url}' with status code {response.status_code}"
+                f"Failed to download dataset from URL {url!r} with status code {response.status_code}"
+            )
+
+        if not url.endswith((".json.zst", ".json")):
+            raise ValueError(
+                f"Unsupported file format for URL {url!r}. Expected .json or .json.zst"
+            )
+
+        if os.path.basename(url).count(".") > 2:
+            raise ValueError(
+                f"URL {url!r} has an unexpected filename format. Expected at most one dot in the base filename before the extension (e.g., dataset.json or dataset.json.zst)."
             )
 
         if url.endswith(".json.zst"):
-            zst_filename = named_temporary_file(content=response.content, suffix=".json.zst")
-        elif url.endswith(".json"):
-            zst_filename = named_temporary_file(content=response.content, suffix=".json")
-        else:
-            raise ValueError(
-                f"Unsupported file format for URL '{url}'. Expected .json or .json.zst"
-            )
-
-        if zst_filename.endswith(".zst"):
+            hif_data = from_zst_bytes_to_json(response.content)
+            hdata = cls.__process_hif_data(hif_data)
             if save_on_disk:
-                write_to_disk(os.path.basename(url), response.content)
-            output = decompress_zst(zst_filename)
+                write_dataset_to_disk_as_zst(
+                    dataset_name=os.path.basename(url), content=response.content
+                )
         else:  # json
+            hif_data = from_bytes_to_json(response.content)
+            hdata = cls.__process_hif_data(hif_data)
             if save_on_disk:
-                compressed = compress_to_zst(zst_filename)
-                write_to_disk(os.path.basename(url), compressed)
-            output = zst_filename
+                compressed_hif_data = compress_json_bytes_as_zst(response.content)
 
-        hypergraph = cls.__extract_hif(output)
-        hdata = HIFProcessor.process_hypergraph(hypergraph)
+                write_dataset_to_disk_as_zst(
+                    dataset_name=os.path.basename(url), content=compressed_hif_data
+                )
+
         return hdata
 
     @classmethod
@@ -286,27 +295,25 @@ class HIFLoader:
         Load a hypergraph from a local file path pointing to a .json or .json.zst file in HIF format.
 
         Args:
-            filepath (str): The local file path to the .json or .json.zst file
+            filepath: The local file path to the .json or .json.zst file
                 containing the HIF hypergraph data.
 
         Returns:
             hdata: The loaded hypergraph object.
         """
         if not os.path.exists(filepath):
-            raise ValueError(f"File '{filepath}' does not exist.")
+            raise ValueError(f"File {filepath!r} does not exist.")
 
         if filepath.endswith(".zst"):
-            output = decompress_zst(filepath)
+            hif_data = from_zst_file_to_json(filepath)
         elif filepath.endswith(".json"):
-            output = filepath
+            hif_data = from_file_to_json(filepath)
         else:
             raise ValueError(
-                f"Unsupported file format for filepath '{filepath}'. Expected .json or .json.zst"
+                f"Unsupported format for file {filepath!r}. Expected .json or .json.zst"
             )
 
-        hypergraph = cls.__extract_hif(output)
-        hdata = HIFProcessor.process_hypergraph(hypergraph)
-        return hdata
+        return cls.__process_hif_data(hif_data)
 
     @classmethod
     def load_by_name(
@@ -317,65 +324,76 @@ class HIFLoader:
     ) -> HData:
         current_dir = os.path.dirname(os.path.abspath(__file__))
         zst_filename = os.path.join(current_dir, "datasets", f"{dataset_name}.json.zst")
+        repo_root = get_cache_dir()
+        hf_cache_dir = os.path.join(repo_root, "hf_cache")
+        if os.path.exists(zst_filename):
+            hif_data = from_zst_file_to_json(zst_filename)
+            return cls.__process_hif_data(hif_data, dataset_name)
 
-        if not os.path.exists(zst_filename):
-            hf_content_bytes = None
-            github_url = f"https://raw.githubusercontent.com/hypernetwork-research-group/datasets/{GITHUB_COMMIT_SHA}/{dataset_name}.json.zst"
-            response = requests.get(github_url, timeout=20)
-            if response.status_code != 200:
+        github_url = f"https://raw.githubusercontent.com/hypernetwork-research-group/datasets/{GITHUB_COMMIT_SHA}/{dataset_name}.json.zst"
+        response = requests.get(github_url, timeout=20)
+        if response.status_code == 200:
+            dataset_bytes = response.content
+            hif_data = from_zst_bytes_to_json(dataset_bytes)
+            hdata = cls.__process_hif_data(hif_data, dataset_name)
+            if save_on_disk:
+                write_zst_file_to_disk(zst_filename=zst_filename, content=dataset_bytes)
+            return hdata
+
+        warnings.warn(
+            f"GitHub raw download failed for dataset {dataset_name!r} with status code {response.status_code}\n"
+            "Falling back to Hugging Face Hub download for dataset",
+            category=UserWarning,
+            stacklevel=2,
+        )
+
+        if hf_sha is None:
+            raise ValueError(
+                f"Failed to download dataset {dataset_name!r} from GitHub with status code {response.status_code} "
+                f"and no SHA provided for Hugging Face Hub fallback."
+            )
+
+        try:
+            downloaded_path = hf_hub_download(
+                repo_id=f"HypernetworkRG/{dataset_name}",
+                filename=f"{dataset_name}.json.zst",
+                repo_type="dataset",
+                revision=hf_sha,
+                cache_dir=hf_cache_dir,
+            )
+        except Exception as e:
+            raise ValueError(
+                f"Failed to download dataset {dataset_name!r} from GitHub and Hugging Face Hub. "
+                f"GitHub error: {response.status_code} | Hugging Face error: {e!s}."
+            ) from e
+
+        hif_data = from_zst_file_to_json(downloaded_path)
+        hdata = cls.__process_hif_data(hif_data, dataset_name)
+        if save_on_disk:
+            try:
+                os.makedirs(os.path.dirname(zst_filename), exist_ok=True)
+                shutil.copyfile(downloaded_path, zst_filename)
+            except Exception as e:
+                raise ValueError(
+                    f"Failed to save downloaded dataset {dataset_name!r} to disk at {zst_filename!r}: {e!s}."
+                ) from e
+
+        if os.path.isdir(hf_cache_dir):
+            try:
+                path_prefix = f"datasets--HypernetworkRG--{dataset_name}"
+                shutil.rmtree(os.path.join(hf_cache_dir, path_prefix))
+            except Exception as e:
                 warnings.warn(
-                    f"GitHub raw download failed for dataset '{dataset_name}' with status code {response.status_code}\n"
-                    "Falling back to Hugging Face Hub download for dataset",
+                    f"Failed to clean up Hugging Face Hub cache after downloading dataset {dataset_name!r}: {e!s}.",
                     category=UserWarning,
                     stacklevel=2,
                 )
-
-                with tempfile.NamedTemporaryFile(
-                    mode="wb", suffix=".json.zst", delete=False
-                ) as tmp_hf_file:
-                    if hf_sha is not None:
-                        try:
-                            downloaded_path = hf_hub_download(
-                                repo_id=f"HypernetworkRG/{dataset_name}",
-                                filename=f"{dataset_name}.json.zst",
-                                repo_type="dataset",
-                                revision=hf_sha,
-                            )
-                        except Exception as e:
-                            raise ValueError(
-                                f"Failed to download dataset '{dataset_name}' from GitHub and Hugging Face Hub. GitHub error: {response.status_code} | Hugging Face error: {e!s}"
-                            ) from e
-                    else:
-                        raise ValueError(
-                            f"Failed to download dataset '{dataset_name}' from GitHub with status code {response.status_code} and no SHA provided for Hugging Face Hub fallback."
-                        )
-
-                    with open(downloaded_path, "rb") as hf_file:
-                        hf_content = hf_file.read()
-                    tmp_hf_file.write(hf_content)
-
-                hf_content_bytes = hf_content
-            else:
-                hf_content_bytes = response.content
-
-            if save_on_disk:
-                os.makedirs(os.path.join(current_dir, "datasets"), exist_ok=True)
-                with open(zst_filename, "wb") as f:
-                    f.write(hf_content_bytes)
-            else:
-                # Create temporary file for downloaded zst content
-                zst_filename = named_temporary_file(content=hf_content_bytes, suffix=".json.zst")
-
-        output = decompress_zst(zst_filename)
-        hypergraph = cls.__extract_hif(output)
-        hdata = HIFProcessor.process_hypergraph(hypergraph)
         return hdata
 
     @classmethod
-    def __extract_hif(cls, json_file: str) -> HIFHypergraph:
-        with open(json_file) as f:
-            hiftext = json.load(f)
-        if not validate_hif_json(json_file):
-            raise ValueError(f"Dataset from file '{json_file}' is not HIF-compliant.")
-        hypergraph = HIFHypergraph.from_hif(hiftext)
-        return hypergraph
+    def __process_hif_data(cls, hif_data: dict[str, Any], dataset_name: str | None = None) -> HData:
+        if not validate_hif_data(hif_data):
+            raise ValueError(f"Dataset {dataset_name or ''} is not HIF-compliant.")
+
+        hypergraph = HIFHypergraph.from_hif(hif_data)
+        return HIFProcessor.process_hypergraph(hypergraph)

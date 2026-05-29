@@ -32,18 +32,27 @@ repos:
 
   - repo: local
     hooks:
-      - id: uvx-ruff-format
-        name: uvx ruff format
-        entry: bash -c 'uvx ruff format'
+      - id: uv-run-typecheker
+        name: uv run ty check
         language: system
+        entry: bash -c 'uv run ty check'
         types_or: [python, pyi]
         require_serial: true
 
   - repo: local
     hooks:
-      - id: uvx-ty-check
-        name: uvx ty check
-        entry: bash -c 'uvx ty check'
+      - id: uv-ruff-linter
+        name: uv run ruff check
         language: system
+        entry: bash -c 'uv run ruff check'
+        types_or: [python, pyi]
+        require_serial: true
+
+  - repo: local
+    hooks:
+      - id: uv-ruff-formatter
+        name: uv run ruff format
+        language: system
+        entry: bash -c 'uv run ruff format'
         types_or: [python, pyi]
         require_serial: true

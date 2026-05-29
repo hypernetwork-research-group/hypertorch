@@ -5,7 +5,7 @@ import torch
 from itertools import combinations
 from torch import Tensor
 from typing import Any, Literal, TypeAlias
-from hyperbench.utils import sparse_dropout, to_0based_ids
+from hyperbench.utils import sparse_dropout, to_0based_ids, create_seeded_torch_generator
 
 from hyperbench.types.graph import EdgeIndex, Graph
 
@@ -845,6 +845,7 @@ class HyperedgeIndex:
         with_mediators: bool = False,
         remove_selfloops: bool = True,
         return_weights: bool = False,
+        seed: int | None = None,
     ) -> tuple[Tensor, Tensor | None]:
         """
         Construct a graph from a hypergraph with methods proposed in `HyperGCN: A New Method of Training Graph Convolutional Networks on Hypergraphs <https://arxiv.org/pdf/1809.02589.pdf>`_ paper.
@@ -865,6 +866,7 @@ class HyperedgeIndex:
             ValueError: If any hyperedge contains fewer than 2 nodes.
         """
         device = x.device
+        generator = create_seeded_torch_generator(device, seed)
 
         hypergraph = Hypergraph.from_hyperedge_index(self.__hyperedge_index)
         hypergraph_edges: list[list[int]] = hypergraph.hyperedges
@@ -873,7 +875,7 @@ class HyperedgeIndex:
 
         # Random direction (feature_dim, 1) for projecting nodes in each hyperedge
         # Geometrically, we are choosing a random line through the origin in ℝᵈ, where ᵈ = feature_dim
-        random_direction = torch.rand((x.shape[1], 1), device=device)
+        random_direction = torch.rand((x.shape[1], 1), device=device, generator=generator)
 
         for edge in hypergraph_edges:
             num_nodes_in_edge = len(edge)
@@ -996,11 +998,3 @@ class HyperedgeIndex:
         self.__hyperedge_index[1] = to_0based_ids(self.all_hyperedge_ids, hyperedge_ids_to_rebase)
 
         return self
-
-
-if __name__ == "__main__":
-    x = torch.tensor([[1.0, 0.0], [0.0, 1.0], [1.0, 1.0], [0.0, 0.0], [0.5, 0.5]])
-    hyperedge_index = torch.tensor([[0, 1, 2, 3, 0, 2, 4], [0, 0, 0, 0, 1, 1, 1]])
-    edge_index = HyperedgeIndex(hyperedge_index).reduce_to_edge_index_on_random_direction(
-        x, with_mediators=True, return_weights=False
-    )

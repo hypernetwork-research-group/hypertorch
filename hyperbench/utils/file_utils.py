@@ -1,45 +1,62 @@
+import io
 import os
-import tempfile
+import json
 import zstandard as zstd
 
-
-def decompress_zst(zst_path: str) -> str:
-    """
-    Decompresses a .zst file and returns the path to the decompressed JSON file.
-
-    Args:
-        zst_path: The path to the .zst file to decompress.
-
-    Returns:
-        path: The path to the decompressed JSON file.
-    """
-    dctx = zstd.ZstdDecompressor()
-    with (
-        open(zst_path, "rb") as input_f,
-        tempfile.NamedTemporaryFile(mode="wb", suffix=".json", delete=False) as tmp_file,
-    ):
-        dctx.copy_stream(input_f, tmp_file)
-        output = tmp_file.name
-    return output
+from pathlib import Path
+from typing import Any
 
 
-def compress_to_zst(json_path: str) -> bytes:
-    """
-    Compresses a JSON file to .zst format and returns the compressed bytes.
-
-    Args:
-        json_path: The path to the JSON file to compress.
-
-    Returns:
-        content: The compressed content as bytes.
-    """
-    cctx = zstd.ZstdCompressor()
-    with open(json_path, "rb") as input_f:
-        compressed_content = cctx.compress(input_f.read())
-    return compressed_content
+def compress_json_bytes_as_zst(content: bytes) -> bytes:
+    try:
+        return zstd.ZstdCompressor().compress(content)
+    except Exception as e:
+        raise ValueError(f"Failed to compress JSON content: {e!s}.") from e
 
 
-def write_to_disk(dataset_name: str, content: bytes, output_dir: str | None = None) -> None:
+def from_bytes_to_json(content: bytes) -> dict[str, Any]:
+    try:
+        return json.loads(content.decode("utf-8"))
+    except Exception as e:
+        raise ValueError(f"Failed to read JSON content: {e!s}.") from e
+
+
+def from_file_to_json(json_filename: str) -> dict[str, Any]:
+    try:
+        with open(json_filename, encoding="utf-8") as json_file:
+            return json.load(json_file)
+    except Exception as e:
+        raise ValueError(f"Failed to read JSON file {json_filename!r}: {e!s}.") from e
+
+
+def from_zst_bytes_to_json(content: bytes) -> dict[str, Any]:
+    try:
+        with io.BytesIO(content) as input_zst_file:
+            return __read_zst_stream(input_zst_file)
+    except Exception as e:
+        raise ValueError(f"Failed to read compressed JSON byte data: {e!s}.") from e
+
+
+def from_zst_file_to_json(zst_filename: str) -> dict[str, Any]:
+    try:
+        with open(zst_filename, "rb") as input_zst_file:
+            return __read_zst_stream(input_zst_file)
+    except Exception as e:
+        raise ValueError(f"Failed to read compressed JSON file {zst_filename!r}: {e!s}.") from e
+
+
+def write_zst_file_to_disk(zst_filename: str, content: bytes) -> None:
+    try:
+        os.makedirs(os.path.dirname(zst_filename), exist_ok=True)
+        with open(zst_filename, "wb") as zst_file:
+            zst_file.write(content)
+    except Exception as e:
+        raise ValueError(f"Failed to save downloaded {zst_filename!r}: {e!s}.") from e
+
+
+def write_dataset_to_disk_as_zst(
+    dataset_name: str, content: bytes, output_dir: str | None = None
+) -> None:
     """
     Writes the compressed content to disk in the specified output directory or a default location.
 
@@ -48,21 +65,72 @@ def write_to_disk(dataset_name: str, content: bytes, output_dir: str | None = No
         content: The compressed content as bytes.
         output_dir: The directory to write the file to. If None, a default location is used.
     """
-    if output_dir is not None:
-        zst_filename = os.path.join(output_dir, f"{dataset_name}.json.zst")
+    try:
+        if output_dir is not None:
+            zst_filename = os.path.join(output_dir, f"{dataset_name}.json.zst")
+        else:
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            output_dir = os.path.join(current_dir, "..", "data", "datasets")
+            zst_filename = os.path.join(output_dir, f"{dataset_name}.json.zst")
+    except Exception as e:
+        raise ValueError(
+            f"Failed to determine output path for dataset {dataset_name!r}: {e!s}."
+        ) from e
+
+    try:
+        os.makedirs(output_dir, exist_ok=True)
+        with open(zst_filename, "wb") as f:
+            f.write(content)
+    except Exception as e:
+        raise ValueError(
+            f"Failed to write file {zst_filename!r} to disk {output_dir!r}: {e!s}."
+        ) from e
+
+
+def __read_zst_stream(input_zst_file: Any) -> dict[str, Any]:
+    with (
+        zstd.ZstdDecompressor().stream_reader(input_zst_file) as zst_reader,
+        io.TextIOWrapper(zst_reader, encoding="utf-8") as text_reader,
+    ):
+        try:
+            return json.load(text_reader)
+        except Exception as e:
+            raise ValueError(f"Failed to read JSON data for {input_zst_file.name!r}: {e!s}.") from e
+
+
+MARKERS = ("pyproject.toml", "setup.py", "setup.cfg", "requirements.txt", ".git")
+
+
+def find_project_root() -> Path:
+
+    current = Path.cwd().resolve()
+
+    if current.is_file():
+        current = current.parent
+
+    for directory in (current, *current.parents):
+        if any((directory / marker).exists() for marker in MARKERS):
+            return directory
+
+    return current
+
+
+def get_cache_dir(
+    create: bool = True,
+    env_var: str = "HYPERBENCH_CACHE_DIR",
+) -> Path:
+    override = os.getenv(env_var)
+
+    if override:
+        cache_dir = Path(override).expanduser()
+        if not cache_dir.is_absolute():
+            cache_dir = Path.cwd() / cache_dir
     else:
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        output_dir = os.path.join(current_dir, "..", "data", "datasets")
-        zst_filename = os.path.join(output_dir, f"{dataset_name}.json.zst")
+        cache_dir = find_project_root() / ".hyperbench_cache"
 
-    os.makedirs(output_dir, exist_ok=True)
+    cache_dir = cache_dir.resolve()
 
-    with open(zst_filename, "wb") as f:
-        f.write(content)
+    if create:
+        cache_dir.mkdir(parents=True, exist_ok=True)
 
-
-def named_temporary_file(content: bytes, suffix: str = ".json.zst") -> str:
-    with tempfile.NamedTemporaryFile(mode="wb", suffix=suffix, delete=False) as tmp_zst_file:
-        tmp_zst_file.write(content)
-        zst_filename = tmp_zst_file.name
-    return zst_filename
+    return cache_dir
