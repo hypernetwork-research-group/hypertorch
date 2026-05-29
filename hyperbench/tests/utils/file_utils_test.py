@@ -12,8 +12,9 @@ from hyperbench.utils import (
     from_zst_file_to_json,
     write_zst_file_to_disk,
     write_dataset_to_disk_as_zst,
+    find_project_root,
+    get_cache_dir,
 )
-from hyperbench.utils.file_utils import find_project_root, get_cache_dir
 
 
 @pytest.mark.parametrize(
@@ -112,7 +113,7 @@ def test_from_zst_file_to_json_raises_on_invalid_compressed_file(tmp_path):
         from_zst_file_to_json(str(zst_path))
 
 
-def test_save_zst_file_writes_bytes(tmp_path):
+def test_write_zst_file_to_disk_writes_bytes(tmp_path):
     zst_path = tmp_path / "nested" / "sample.json.zst"
 
     write_zst_file_to_disk(str(zst_path), b"content")
@@ -120,7 +121,7 @@ def test_save_zst_file_writes_bytes(tmp_path):
     assert zst_path.read_bytes() == b"content"
 
 
-def test_save_zst_file_raises_on_write_failure(tmp_path):
+def test_write_zst_file_to_disk_raises_on_write_failure(tmp_path):
     zst_path = tmp_path / "sample.json.zst"
 
     with (

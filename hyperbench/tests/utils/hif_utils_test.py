@@ -1,8 +1,10 @@
 import requests
 import pytest
+import json
 
 from unittest.mock import patch, mock_open, MagicMock
 from hyperbench.utils import (
+    validate_hif_data,
     validate_hif_json,
     get_hf_datasets_shas,
     get_hf_dataset_sha,
@@ -18,6 +20,96 @@ def test_validate_hif_json():
 
     path_valid = f"{MOCK_BASE_PATH}/hif_compliant.json"
     assert validate_hif_json(path_valid)
+
+
+def test_validate_hif_data_returns_true_with_a_valid_schema():
+    schema = {
+        "type": "object",
+        "properties": {"name": {"type": "string"}},
+        "required": ["name"],
+        "additionalProperties": False,
+    }
+
+    with patch("hyperbench.utils.hif_utils.__load_hif_schema", return_value=schema):
+        assert validate_hif_data({"name": "hyperbench"})
+
+
+def test_validate_hif_data_returns_false_with_an_invalid_input():
+    schema = {
+        "type": "object",
+        "properties": {"name": {"type": "string"}},
+        "required": ["name"],
+        "additionalProperties": False,
+    }
+
+    with patch("hyperbench.utils.hif_utils.__load_hif_schema", return_value=schema):
+        assert not validate_hif_data({"name": 123})
+
+
+@pytest.mark.parametrize(
+    "hif_data",
+    [
+        {"incidences": [{"edge": 1, "node": 2}]},
+        {
+            "incidences": [
+                {
+                    "edge": "e1",
+                    "node": "n1",
+                    "weight": 1.5,
+                    "direction": "head",
+                    "attrs": {},
+                }
+            ],
+            "network-type": "undirected",
+            "metadata": {},
+            "nodes": [{"node": 1, "weight": 2.0, "attrs": {}}],
+            "edges": [{"edge": "e1", "weight": 3.0, "attrs": {}}],
+        },
+        {
+            "incidences": [{"edge": 1, "node": 2, "attrs": {}}],
+            "metadata": {"source": "local"},
+            "nodes": [{"node": "n1"}],
+            "edges": [{"edge": "e1"}],
+        },
+    ],
+)
+def test_validate_hif_data_returns_true_with_valid_hif_data(hif_data):
+    with patch("hyperbench.utils.hif_utils.__load_hif_schema") as mock_load_schema:
+        with open(f"{MOCK_BASE_PATH}/hif_schema.json", encoding="utf-8") as f:
+            mock_load_schema.return_value = json.load(f)
+
+        assert validate_hif_data(hif_data)
+
+
+@pytest.mark.parametrize(
+    "hif_data",
+    [
+        {"name": "hyperbench", "extra": "not allowed"},
+        {"name": 123},
+        {},
+    ],
+)
+def test_validate_hif_data_returns_false_with_invalid_hif_data(hif_data):
+    # load local schema to avoid network calls during testing
+    with patch("hyperbench.utils.hif_utils.__load_hif_schema") as mock_load_schema:
+        with open(f"{MOCK_BASE_PATH}/hif_schema.json", encoding="utf-8") as f:
+            mock_load_schema.return_value = json.load(f)
+
+        assert not validate_hif_data(hif_data)
+
+
+def test_validate_hif_json_opens_the_given_path(tmp_path):
+    path_valid = tmp_path / "nested" / "hif.json"
+    path_valid.parent.mkdir()
+    path_valid.write_text("{}", encoding="utf-8")
+
+    with (
+        patch("hyperbench.utils.hif_utils.open", mock_open(read_data="{}")) as mock_file,
+        patch("hyperbench.utils.hif_utils.validate_hif_data", return_value=True),
+    ):
+        assert validate_hif_json(str(path_valid))
+
+    mock_file.assert_called_once_with(str(path_valid), encoding="utf-8")
 
 
 def test_validate_hif_json_with_url_success():
@@ -78,43 +170,6 @@ def test_validate_hif_json_with_url_request_exception_fallback():
         mock_files_call.assert_called_once_with("hyperbench.utils.schema")
         mock_files.joinpath.assert_called_once_with("hif_schema.json")
         mock_path.open.assert_called_once_with("r", encoding="utf-8")
-
-
-# def test_compress_to_zst_returns_non_empty_bytes(tmp_path):
-#     json_path = tmp_path / "sample.json"
-#     json_path.write_text('{"nodes": [], "edges": [], "incidences": []}')
-
-#     compressed_content = compress_to_zst(str(json_path))
-
-#     assert isinstance(compressed_content, bytes)
-#     assert len(compressed_content) > 0
-
-
-# def test_decompress_returns_correct_json(tmp_path):
-#     expected_data = {
-#         "network-type": "undirected",
-#         "nodes": [{"node": "0", "attrs": {"weight": 1.0}}],
-#         "edges": [{"edge": "0", "attrs": {}}],
-#         "incidences": [{"node": "0", "edge": "0"}],
-#     }
-
-#     json_path = tmp_path / "sample.json"
-#     with open(json_path, "w") as f:
-#         json.dump(expected_data, f)
-
-#     compressed_content = compress_to_zst(str(json_path))
-#     zst_path = tmp_path / "sample.json.zst"
-#     zst_path.write_bytes(compressed_content)
-
-#     decompressed_path = decompress_zst(str(zst_path))
-
-#     assert decompressed_path.endswith(".json")
-#     assert os.path.exists(decompressed_path)
-
-#     with open(decompressed_path) as f:
-#         decompressed_data = json.load(f)
-
-#     assert decompressed_data == expected_data
 
 
 def test_get_datasets_shas_returns_shas_and_none_on_failure():

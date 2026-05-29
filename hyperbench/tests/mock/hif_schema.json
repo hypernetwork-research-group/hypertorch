@@ -1,0 +1,112 @@
+{
+  "$id": "https://raw.githubusercontent.com/pszufe/HIF_validators/main/schemas/schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "edges": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "attrs": {
+            "type": "object"
+          },
+          "edge": {
+            "type": [
+              "string",
+              "integer"
+            ]
+          },
+          "weight": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "edge"
+        ],
+        "type": "object",
+        "unevaluatedProperties": false
+      },
+      "type": "array"
+    },
+    "incidences": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "attrs": {
+            "type": "object"
+          },
+          "direction": {
+            "enum": [
+              "head",
+              "tail"
+            ]
+          },
+          "edge": {
+            "type": [
+              "string",
+              "integer"
+            ]
+          },
+          "node": {
+            "type": [
+              "string",
+              "integer"
+            ]
+          },
+          "weight": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "edge",
+          "node"
+        ],
+        "type": "object",
+        "unevaluatedProperties": false
+      },
+      "type": "array"
+    },
+    "metadata": {
+      "type": "object"
+    },
+    "network-type": {
+      "enum": [
+        "undirected",
+        "directed",
+        "asc"
+      ]
+    },
+    "nodes": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "attrs": {
+            "type": "object"
+          },
+          "node": {
+            "type": [
+              "string",
+              "integer"
+            ]
+          },
+          "weight": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "node"
+        ],
+        "type": "object",
+        "unevaluatedProperties": false
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "incidences"
+  ],
+  "title": "Hypergraph Interchange Format",
+  "type": "object",
+  "unevaluatedProperties": false,
+  "version": "latest"
+}

@@ -273,8 +273,6 @@ class HIFLoader:
         if url.endswith(".json.zst"):
             hif_data = from_zst_bytes_to_json(response.content)
             hdata = cls.__process_hif_data(hif_data)
-            print(f"Successfully loaded dataset from {url!r} as .json.zst")
-            print(f"os.path.basename(url) = {os.path.basename(url)!r}")
             if save_on_disk:
                 write_dataset_to_disk_as_zst(
                     dataset_name=os.path.basename(url), content=response.content

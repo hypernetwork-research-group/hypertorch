@@ -149,7 +149,7 @@ def mock_hdata() -> HData:
     return HData(x=x, hyperedge_index=hyperedge_index)
 
 
-def _write_hif_json(tmp_path, hypergraph: HIFHypergraph, filename: str = "sample.json") -> str:
+def __write_hif_json(tmp_path, hypergraph: HIFHypergraph, filename: str = "sample.json") -> str:
     path = tmp_path / filename
     payload = _hif_payload(hypergraph)
     with open(path, "w", encoding="utf-8") as f:
@@ -281,7 +281,7 @@ def test_load_from_path_processes_hypergraph_cases(
     has_hyperedge_weights,
 ):
     hypergraph = request.getfixturevalue(fixture_name)
-    json_path = _write_hif_json(tmp_path, hypergraph, filename=f"{fixture_name}.json")
+    json_path = __write_hif_json(tmp_path, hypergraph, filename=f"{fixture_name}.json")
 
     with patch("hyperbench.data.hif.validate_hif_data", return_value=True):
         hdata = HIFLoader.load_from_path(json_path)
@@ -300,7 +300,7 @@ def test_load_from_path_reads_utf8_json(tmp_path):
         incidences=[{"node": "0", "edge": "0"}],
         metadata={"description": "naïve façade"},
     )
-    json_path = _write_hif_json(tmp_path, hypergraph, filename="utf8.json")
+    json_path = __write_hif_json(tmp_path, hypergraph, filename="utf8.json")
 
     with patch("hyperbench.data.hif.validate_hif_data", return_value=True):
         hdata = HIFLoader.load_from_path(json_path)
@@ -329,7 +329,7 @@ def test_load_from_path_zst_uses_decompress(tmp_path, mock_hypergraph):
 
 
 def test_load_from_path_raises_for_non_hif_compliant_json(tmp_path, mock_hypergraph):
-    json_path = _write_hif_json(tmp_path, mock_hypergraph)
+    json_path = __write_hif_json(tmp_path, mock_hypergraph)
 
     with (
         patch("hyperbench.data.hif.validate_hif_data", return_value=False),
@@ -486,7 +486,7 @@ def test_load_from_path_processes_node_numeric_attrs_into_features(tmp_path):
         hyperedges=[{"edge": "0", "attrs": {}}],
         incidences=[{"node": "0", "edge": "0"}, {"node": "1", "edge": "0"}],
     )
-    json_path = _write_hif_json(tmp_path, hypergraph, filename="nodes_with_attrs.json")
+    json_path = __write_hif_json(tmp_path, hypergraph, filename="nodes_with_attrs.json")
 
     with patch("hyperbench.data.hif.validate_hif_data", return_value=True):
         hdata = HIFLoader.load_from_path(json_path)
@@ -653,6 +653,7 @@ def test_load_by_name_uses_hf_revision_when_github_download_fails(tmp_path, mock
     )
     assert result.num_nodes == 2
     assert result.num_hyperedges == 1
+    assert not (tmp_path / "hf_cache" / "datasets--HypernetworkRG--algebra").exists()
 
 
 def test_load_by_name_skips_cache_cleanup_when_hf_cache_dir_is_missing(tmp_path, mock_hypergraph):
@@ -872,7 +873,7 @@ def test_load_by_name_raises_when_saving_downloaded_dataset_fails(tmp_path):
         HIFLoader.load_by_name("algebra", save_on_disk=True)
 
 
-def test_extract_hif_raises_when_json_file_cannot_be_read(tmp_path):
+def test_load_from_path_raises_error_when_json_file_cannot_be_read(tmp_path):
     json_path = tmp_path / "sample.json"
     json_path.write_text("{}", encoding="utf-8")
 
