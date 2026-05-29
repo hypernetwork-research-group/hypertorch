@@ -8,13 +8,13 @@ from hyperbench.types import HData
 from hyperbench.data import (
     AlgebraDataset,
     Dataset,
-    DatasetSplitter,
     DefaultDatasetSplitter,
     HIFLoader,
     HyperedgeEnricher,
     NegativeSampler,
     NodeEnricher,
     SamplingStrategy,
+    Splitter,
 )
 from hyperbench.tests import new_mock_negative_sampler
 
@@ -1513,67 +1513,21 @@ def test_default_dataset_splitter_returns_dataset_instances_with_sampling_strate
     ]
 
 
-def test_split_with_ratios_delegates_to_custom_dataset_splitter():
-    class CustomDatasetSplitter(DatasetSplitter):
-        def __init__(self) -> None:
-            self.called = False
+def test_split_delegates_to_custom_dataset_splitter(mock_hdata):
+    class CustomDatasetSplitter(Splitter[Dataset, Any]):
+        def split(self, to_split: Dataset) -> list[Dataset]:
+            return [to_split]
 
-        def split(self, to_split: Dataset) -> tuple[list[Dataset], list[float]]:
-            self.called = True
-            return [to_split], [1.0]
-
-    dataset = Dataset.from_hdata(
-        HData(
-            x=torch.arange(2, dtype=torch.float).unsqueeze(1),
-            hyperedge_index=torch.tensor([[0, 1], [0, 0]]),
-        )
-    )
-    splitter = CustomDatasetSplitter()
-
-    splits, final_ratios = dataset.split_with_ratios(splitter=splitter)
-
-    assert splits == [dataset]
-    assert final_ratios == [1.0]
-    assert splitter.called is True
-
-
-def test_split_delegates_to_custom_dataset_splitter_and_discards_ratios():
-    class CustomDatasetSplitter(DatasetSplitter):
-        def split(self, to_split: Dataset) -> tuple[list[Dataset], list[float]]:
-            return [to_split], [1.0]
-
-    dataset = Dataset.from_hdata(
-        HData(
-            x=torch.arange(2, dtype=torch.float).unsqueeze(1),
-            hyperedge_index=torch.tensor([[0, 1], [0, 0]]),
-        )
-    )
+    dataset = Dataset.from_hdata(mock_hdata)
 
     assert dataset.split(splitter=CustomDatasetSplitter()) == [dataset]
 
 
-def test_split_with_ratios_raises_when_ratios_and_splitter_are_provided(mock_hdata):
+def test_split_raises_if_custom_splitter_is_not_provided_and_ratios_are_not_provided(mock_hdata):
     dataset = Dataset.from_hdata(mock_hdata)
 
-    class CustomDatasetSplitter(DatasetSplitter):
-        def split(self, to_split: Dataset) -> tuple[list[Dataset], list[float]]:
-            return [to_split], [1.0]
-
-    with pytest.raises(
-        ValueError,
-        match=re.escape("'ratios' cannot be provided when 'splitter' is provided."),
-    ):
-        dataset.split_with_ratios([1.0], splitter=CustomDatasetSplitter())
-
-
-def test_split_with_ratios_raises_when_ratios_and_splitter_are_missing(mock_hdata):
-    dataset = Dataset.from_hdata(mock_hdata)
-
-    with pytest.raises(
-        ValueError,
-        match=re.escape("'ratios' must be provided when 'splitter' is not provided."),
-    ):
-        dataset.split_with_ratios()
+    with pytest.raises(ValueError):
+        dataset.split()
 
 
 def test_nested_transductive_split_supports_train_feature_reuse():

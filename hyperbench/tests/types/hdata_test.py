@@ -7,11 +7,11 @@ from typing import Any, cast
 from hyperbench import utils
 from hyperbench.data import (
     DefaultHDataSplitter,
-    HDataSplitter,
     HyperedgeEnricher,
     NegativeSampler,
     NodeEnricher,
     RandomNegativeSampler,
+    Splitter,
 )
 from hyperbench.types import HData
 from hyperbench.utils import assign_hyperedge_label_to_nodes
@@ -974,7 +974,7 @@ def test_split_delegates_to_custom_hdata_splitter():
         hyperedge_index=torch.tensor([[0, 1], [0, 0]]),
     )
 
-    class CustomHDataSplitter(HDataSplitter):
+    class CustomHDataSplitter(Splitter[HData, Any]):
         def split(self, to_split: HData) -> HData:
             assert to_split is hdata
             return expected_splitted_hdata
@@ -1009,7 +1009,7 @@ def test_split_raises_when_split_hyperedge_ids_and_splitter_are_provided():
         hyperedge_index=torch.tensor([[0, 1], [0, 0]]),
     )
 
-    class CustomHDataSplitter(HDataSplitter):
+    class CustomHDataSplitter():
         def split(self, to_split: HData) -> HData:
             return to_split
 

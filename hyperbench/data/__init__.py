@@ -64,12 +64,10 @@ from .sampler import (
 )
 
 from .splitter import (
-    DatasetSplitter,
     DefaultDatasetSplitter,
     DefaultHDataSplitter,
-    HDataSplitter,
     HyperedgeIDSplitter,
-    TensorSplitter,
+    Splitter,
 )
 
 __all__ = [
@@ -121,6 +119,7 @@ __all__ = [
     "RestaurantReviewsDataset",
     "SameNodeSpaceNegativeSampler",
     "SamplingStrategy",
+    "Splitter",
     "TensorSplitter",
     "ThreadsAskUbuntuDataset",
     "ThreadsMathsxDataset",

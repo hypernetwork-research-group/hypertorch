@@ -13,7 +13,7 @@ from hyperbench.utils import (
 
 from hyperbench.data.hif import HIFLoader, HIFProcessor
 from hyperbench.data.sampler import SamplingStrategy, create_sampler_from_strategy
-from hyperbench.data.splitter import DatasetSplitter, DefaultDatasetSplitter
+from hyperbench.data.splitter import DefaultDatasetSplitter, Splitter
 
 if TYPE_CHECKING:
     from hyperbench.data import (
@@ -282,7 +282,7 @@ class Dataset(TorchDataset):
         node_space_setting: NodeSpaceSetting = "transductive",
         cover_all_nodes_in_train_split: bool = False,
         train_split_idx: int = 0,
-        splitter: DatasetSplitter | None = None,
+        splitter: Splitter[Dataset, Any] | None = None,
     ) -> list[Dataset]:
         """
         Split the dataset by hyperedges into partitions with contiguous 0-based hyperedge IDs.
@@ -339,26 +339,30 @@ class Dataset(TorchDataset):
                 hyperedges, or a requested transductive train-cover split cannot
                 cover the full node space.
         """
-        split_datasets, _ = self.split_with_ratios(
+        if splitter is not None:
+            return splitter.split(self)
+
+        if ratios is None:
+            raise ValueError("'ratios' must be provided when no custom 'splitter' is provided.")
+
+        splits, _ = DefaultDatasetSplitter(
             ratios=ratios,
-            shuffle=shuffle,
-            seed=seed,
             node_space_setting=node_space_setting,
             cover_all_nodes_in_train_split=cover_all_nodes_in_train_split,
             train_split_idx=train_split_idx,
-            splitter=splitter,
-        )
-        return split_datasets
+            shuffle=shuffle,
+            seed=seed,
+        ).split(self)
+        return splits
 
     def split_with_ratios(
         self,
-        ratios: list[float] | None = None,
+        ratios: list[float],
         shuffle: bool | None = False,
         seed: int | None = None,
         node_space_setting: NodeSpaceSetting = "transductive",
         cover_all_nodes_in_train_split: bool = False,
         train_split_idx: int = 0,
-        splitter: DatasetSplitter | None = None,
     ) -> tuple[list[Dataset], list[float]]:
         """
         Split the dataset and return the final hyperedge ratios.
@@ -373,6 +377,9 @@ class Dataset(TorchDataset):
 
         Final ratios are computed from split hyperedge counts after ratio
         boundaries and any requested transductive rebalancing have been applied.
+
+        To provide a custom splitting implementation, use the ``splitter``
+        argument of the ``split`` method instead.
 
         Args:
             ratios: List of floats summing to ``1.0``, e.g., ``[0.8, 0.1, 0.1]``.
@@ -391,8 +398,6 @@ class Dataset(TorchDataset):
                 to determine which split should be rebalanced to cover all nodes.
                 For the 'inductive' setting, splits are always returned based on the provided ratios.
             seed: Optional random seed for reproducibility. Ignored if ``shuffle`` is set to ``False``.
-            splitter: Optional dataset splitter. When provided, it owns split
-                construction and final-ratio reporting.
 
         Returns:
             datasets_and_ratios: A tuple containing the split datasets and their
@@ -403,14 +408,6 @@ class Dataset(TorchDataset):
                 hyperedges, or a requested transductive train-cover split cannot
                 cover the full node space.
         """
-        if splitter is not None:
-            if ratios is not None:
-                raise ValueError("'ratios' cannot be provided when 'splitter' is provided.")
-            return splitter.split(self)
-
-        if ratios is None:
-            raise ValueError("'ratios' must be provided when 'splitter' is not provided.")
-
         return DefaultDatasetSplitter(
             ratios=ratios,
             node_space_setting=node_space_setting,

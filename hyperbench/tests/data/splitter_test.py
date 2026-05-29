@@ -5,13 +5,11 @@ import re
 from typing import Any, cast
 from hyperbench.data import (
     Dataset,
-    DatasetSplitter,
     DefaultDatasetSplitter,
     DefaultHDataSplitter,
-    HDataSplitter,
     HyperedgeIDSplitter,
     SamplingStrategy,
-    TensorSplitter,
+    Splitter,
 )
 from hyperbench.types import HData
 
@@ -29,19 +27,9 @@ def mock_hdata_five_hyperedges() -> HData:
     return HData(x=x, hyperedge_index=hyperedge_index)
 
 
-def test_hdata_splitter_is_abstract():
+def test_splitter_is_abstract():
     with pytest.raises(TypeError, match="abstract"):
-        HDataSplitter()
-
-
-def test_dataset_splitter_is_abstract():
-    with pytest.raises(TypeError, match="abstract"):
-        DatasetSplitter()
-
-
-def test_tensor_splitter_is_abstract():
-    with pytest.raises(TypeError, match="abstract"):
-        TensorSplitter()
+        Splitter()
 
 
 def test_default_hdata_splitter_materializes_inductive_split():

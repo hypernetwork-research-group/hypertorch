@@ -3,7 +3,7 @@ from __future__ import annotations
 import torch
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Generic, TypeVar, cast
 from torch import Tensor
 from hyperbench.utils import (
     NodeSpaceSetting,
@@ -20,65 +20,26 @@ if TYPE_CHECKING:
     from hyperbench.data.dataset import Dataset
 
 
-class DatasetSplitter(ABC):
-    """
-    Abstract base class for dataset splitters.
-    """
+_ToSplitType = TypeVar("_ToSplitType")
+_SplitResultType = TypeVar("_SplitResultType")
 
+
+class Splitter(ABC, Generic[_ToSplitType, _SplitResultType]):
     @abstractmethod
-    def split(self, to_split: Dataset) -> tuple[list[Dataset], list[float]]:
+    def split(self, to_split: _ToSplitType) -> _SplitResultType:
         """
-        Split a dataset and return materialized datasets plus final ratios.
+        Split the input object and return the split result.
 
         Args:
-            to_split: The `Dataset` to split.
+            to_split: The object to split.
 
         Returns:
-            datasets_and_ratios: Split datasets and final hyperedge-count ratios.
+            The result of splitting the input object.
         """
         pass
 
 
-class HDataSplitter(ABC):
-    """
-    Abstract base class for `HData` split materializers.
-    """
-
-    @abstractmethod
-    def split(self, to_split: HData) -> HData:
-        """
-        Build and return an `HData` split.
-
-        Args:
-            to_split: The original `HData` containing the full hypergraph.
-
-        Returns:
-            hdata: The split `HData`.
-        """
-        pass
-
-
-class TensorSplitter(ABC):
-    """
-    Abstract base class for splitters.
-    """
-
-    @abstractmethod
-    def split(self, to_split: Tensor) -> tuple[list[Tensor], list[float]]:
-        """
-        Split the input tensor into multiple tensors according to the provided ratios.
-        The output tensors are not guaranteed to be non-empty, so downstream validation may be necessary.
-
-        Args:
-            to_split: The tensor to split. For example, a list of hyperedge IDs.
-
-        Returns:
-            (Values per split, ratios after splitting): A tuple of (list of split tensors, list of actual ratios achieved by the splits).
-        """
-        pass
-
-
-class DefaultDatasetSplitter(DatasetSplitter):
+class DefaultDatasetSplitter(Splitter["Dataset", tuple[list["Dataset"], list[float]]]):
     """
     Split a dataset by hyperedges and materialize dataset partitions.
 
@@ -193,7 +154,7 @@ class DefaultDatasetSplitter(DatasetSplitter):
             )
 
 
-class DefaultHDataSplitter(HDataSplitter):
+class DefaultHDataSplitter(Splitter["HData", "HData"]):
     """
     Materialize an `HData` split from explicit hyperedge IDs.
 
@@ -277,7 +238,7 @@ class DefaultHDataSplitter(HDataSplitter):
         )
 
 
-class HyperedgeIDSplitter(TensorSplitter):
+class HyperedgeIDSplitter(Splitter["Tensor", tuple[list["Tensor"], list[float]]]):
     """
     Initialize a splitter for hyperedge-ID based dataset partitioning.
 

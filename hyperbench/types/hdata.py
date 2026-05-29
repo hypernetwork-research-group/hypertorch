@@ -25,10 +25,10 @@ from hyperbench.types.hypergraph import HyperedgeIndex
 if TYPE_CHECKING:
     from hyperbench.data import (
         EnrichmentMode,
-        HDataSplitter,
         HyperedgeEnricher,
         NegativeSampler,
         NodeEnricher,
+        Splitter,
     )
 
 
@@ -286,7 +286,7 @@ class HData:
         hdata: HData,
         split_hyperedge_ids: Tensor | None = None,
         node_space_setting: NodeSpaceSetting = "transductive",
-        splitter: HDataSplitter | None = None,
+        splitter: Splitter[HData, Any] | None = None,
     ) -> HData:
         """
         Build an `HData` for a single split from the given hyperedge IDs.
@@ -321,10 +321,6 @@ class HData:
             ValueError: If ``node_space_setting`` is not ``"transductive"`` or ``"inductive"``.
         """
         if splitter is not None:
-            if split_hyperedge_ids is not None:
-                raise ValueError(
-                    "'split_hyperedge_ids' cannot be provided when 'splitter' is provided."
-                )
             return splitter.split(to_split=hdata)
 
         if split_hyperedge_ids is None:
