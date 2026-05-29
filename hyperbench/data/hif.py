@@ -382,6 +382,7 @@ class HIFLoader:
             try:
                 path_prefix = f"datasets--HypernetworkRG--{dataset_name}"
                 shutil.rmtree(os.path.join(hf_cache_dir, path_prefix))
+                shutil.rmtree(os.path.join(hf_cache_dir, ".locks", path_prefix))
             except Exception as e:
                 warnings.warn(
                     f"Failed to clean up Hugging Face Hub cache after downloading dataset {dataset_name!r}: {e!s}.",

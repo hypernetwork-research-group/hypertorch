@@ -112,10 +112,17 @@ def test_validate_hif_json_opens_the_given_path(tmp_path):
     mock_file.assert_called_once_with(str(path_valid), encoding="utf-8")
 
 
-def test_validate_hif_json_with_url_success():
+def test_validate_hif_json_with_url_success(tmp_path):
     path_valid = f"{MOCK_BASE_PATH}/hif_compliant.json"
+    schema_path = tmp_path / "hif_schema.json"
 
-    with patch("hyperbench.utils.hif_utils.requests.get") as mock_get:
+    mock_files = MagicMock()
+    mock_files.joinpath.return_value = schema_path
+
+    with (
+        patch("hyperbench.utils.hif_utils.requests.get") as mock_get,
+        patch("hyperbench.utils.hif_utils.resources.files", return_value=mock_files),
+    ):
         mock_response = MagicMock()
         mock_response.json.return_value = {"type": "object"}  # Minimal valid schema
         mock_get.return_value = mock_response
@@ -125,6 +132,8 @@ def test_validate_hif_json_with_url_success():
             "https://raw.githubusercontent.com/HIF-org/HIF-standard/b691a3d2ec32100c0229ebe1151e9afad015c356/schemas/hif_schema.json",
             timeout=10,
         )
+
+    assert schema_path.exists()
 
 
 def test_validate_hif_json_with_url_timeout_fallback():
@@ -170,6 +179,24 @@ def test_validate_hif_json_with_url_request_exception_fallback():
         mock_files_call.assert_called_once_with("hyperbench.utils.schema")
         mock_files.joinpath.assert_called_once_with("hif_schema.json")
         mock_path.open.assert_called_once_with("r", encoding="utf-8")
+
+
+def test_validate_hif_data_raises_when_schema_load_fails():
+    with (
+        patch(
+            "hyperbench.utils.hif_utils.resources.files",
+            side_effect=RuntimeError("no local schema"),
+        ),
+        patch(
+            "hyperbench.utils.hif_utils.requests.get",
+            side_effect=requests.RequestException("network down"),
+        ),
+        pytest.raises(
+            RuntimeError,
+            match="Failed to load HIF schema from both local file and remote URL",
+        ),
+    ):
+        validate_hif_data({"incidences": [{"edge": 1, "node": 2}]})
 
 
 def test_get_datasets_shas_returns_shas_and_none_on_failure():

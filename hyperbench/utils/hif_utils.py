@@ -112,12 +112,27 @@ def get_gh_dataset_sha(dataset_name: str, owner: str, repository: str) -> str | 
 
 def __load_hif_schema() -> dict[str, Any]:
     url = f"https://raw.githubusercontent.com/HIF-org/HIF-standard/{HIF_SCHEMA_COMMIT_SHA}/schemas/hif_schema.json"
+
     try:
-        return requests.get(url, timeout=10).json()
-    except (requests.RequestException, requests.Timeout):
         with (
             resources.files("hyperbench.utils.schema")
             .joinpath("hif_schema.json")
             .open("r", encoding="utf-8") as f
         ):
             return json.load(f)
+    except Exception:
+        try:
+            response = requests.get(url, timeout=10)
+            response.raise_for_status()
+            schema = response.json()
+            schema_path = resources.files("hyperbench.utils.schema").joinpath("hif_schema.json")
+            with (
+                resources.as_file(schema_path) as path,
+                path.open("w", encoding="utf-8") as f,
+            ):
+                json.dump(schema, f)
+            return schema
+        except (requests.RequestException, requests.Timeout) as e:
+            raise RuntimeError(
+                "Failed to load HIF schema from both local file and remote URL. "
+            ) from e
