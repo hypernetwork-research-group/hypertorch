@@ -28,7 +28,7 @@ repos:
   rev: v2.16.0
   hooks:
   - id: pretty-format-yaml
-    args: [--autofix, --indent, '2']
+    args: [--autofix, --indent, '2', --preserve-quotes]
 
 - repo: https://github.com/compilerla/conventional-pre-commit
   rev: v3.4.0
