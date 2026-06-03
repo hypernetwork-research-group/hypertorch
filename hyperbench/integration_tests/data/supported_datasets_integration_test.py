@@ -9,7 +9,7 @@ from hyperbench.data import (
 )
 
 
-@pytest.mark.flaky(reruns=1, reruns_delay=10, rerun_show_tracebacks=True)
+@pytest.mark.flaky(reruns=3, reruns_delay=10, rerun_show_tracebacks=True)
 @pytest.mark.parametrize(
     "dataset_name",
     [pytest.param(dataset_name, id=dataset_name) for dataset_name in list_datasets()],
@@ -24,7 +24,7 @@ def test_all_supported_datasets_load(dataset_name):
     assert len(dataset) > 0
 
 
-@pytest.mark.flaky(reruns=1, reruns_delay=5 * 60, rerun_show_tracebacks=True)
+@pytest.mark.flaky(reruns=3, reruns_delay=5 * 60, rerun_show_tracebacks=True)
 @pytest.mark.parametrize(
     "dataset_name",
     [pytest.param(dataset_name, id=dataset_name) for dataset_name in list_datasets()],
@@ -55,7 +55,7 @@ def test_all_supported_datasets_load_from_hf(dataset_name, request):
             "429" in message or "rate limit" in message.lower() or "Too Many Requests" in message
         ):
             pytest.skip(f"Skipping {dataset_name} due to Hugging Face rate limit: {message}")
-        raise
+        raise exc
 
     mock_get.assert_called_once()
     mock_copyfile.assert_called_once()
