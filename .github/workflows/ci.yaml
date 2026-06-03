@@ -66,10 +66,10 @@ jobs:
           make test
 
       - name: Run integration tests with pytest
-        with:
+        env:
           HF_DOWNLOAD_TOKEN: ${{ secrets.HF_DOWNLOAD_TOKEN }}
-          run: |
-            make i-test
+        run: |
+          make i-test
 
   test-arm:
     runs-on: ${{ matrix.os }}
