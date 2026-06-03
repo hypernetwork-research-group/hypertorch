@@ -3,7 +3,6 @@ import shutil
 import requests
 import torch
 import warnings
-from dotenv import load_dotenv
 
 from huggingface_hub import hf_hub_download
 from typing import Any
@@ -22,8 +21,7 @@ from hyperbench.utils import (
     get_cache_dir,
 )
 
-GITHUB_COMMIT_SHA = "3879b2ce84750e54f984ca06ce3246dff22c71c7"
-load_dotenv()
+GITHUB_COMMIT_SHA = "89ba250151bd5b1b65ba14a98dbe3dbdd72f5e25"
 
 
 class HIFProcessor:
