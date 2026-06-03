@@ -1,58 +1,65 @@
 default_install_hook_types:
-  - pre-commit
-  - commit-msg
+- pre-commit
+- commit-msg
 
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v3.2.0
-    hooks:
-      - id: check-added-large-files
-      - id: check-merge-conflict
-      - id: check-yaml
-      - id: end-of-file-fixer
-      - id: mixed-line-ending
-        args:
-          - --fix=lf
-      - id: name-tests-test
-        exclude: "hyperbench/tests/mock/"
-      - id: pretty-format-json
-        args:
-          - --autofix
-          - --indent=2
-      - id: trailing-whitespace
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v3.2.0
+  hooks:
+  - id: check-added-large-files
+  - id: check-merge-conflict
+  - id: check-yaml
+  - id: check-toml
+  - id: end-of-file-fixer
+  - id: mixed-line-ending
+    args:
+    - --fix=lf
+  - id: name-tests-test
+    exclude: hyperbench/tests/mock/
+  - id: pretty-format-json
+    args:
+    - --autofix
+    - --indent=2
+  - id: trailing-whitespace
 
-  - repo: https://github.com/compilerla/conventional-pre-commit
-    rev: v3.4.0
-    hooks:
-      - id: conventional-pre-commit
-        stages: [commit-msg]
-        args: [feat, fix, docs, chore, refactor]
+- repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
+  rev: v2.16.0
+  hooks:
+  - id: pretty-format-yaml
+    args: [--autofix, --indent, '2']
 
-  - repo: local
-    hooks:
-      - id: uv-run-typecheker
-        name: uv run ty check
-        language: system
-        entry: bash -c 'uv run ty check'
-        types_or: [python, pyi]
-        require_serial: true
+- repo: https://github.com/compilerla/conventional-pre-commit
+  rev: v3.4.0
+  hooks:
+  - id: conventional-pre-commit
+    stages: [commit-msg]
+    args: [feat, fix, docs, chore, refactor]
 
-  - repo: local
-    hooks:
-      - id: uv-ruff-linter
-        name: uv run ruff check
-        language: system
-        entry: bash -c 'uv run ruff check'
-        types_or: [python, pyi]
-        require_serial: true
+- repo: local
+  hooks:
+  - id: uv-run-typecheker
+    name: uv run ty check
+    language: system
+    entry: bash -c 'uv run ty check'
+    types_or: [python, pyi]
+    require_serial: true
 
-  - repo: local
-    hooks:
-      - id: uv-ruff-formatter
-        name: uv run ruff format
-        language: system
-        entry: bash -c 'uv run ruff format'
-        types_or: [python, pyi]
-        require_serial: true
+- repo: local
+  hooks:
+  - id: uv-ruff-linter
+    name: uv run ruff check
+    language: system
+    entry: bash -c 'uv run ruff check'
+    types_or: [python, pyi]
+    require_serial: true
+
+- repo: local
+  hooks:
+  - id: uv-ruff-formatter
+    name: uv run ruff format
+    language: system
+    entry: bash -c 'uv run ruff format'
+    types_or: [python, pyi]
+    require_serial: true
