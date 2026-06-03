@@ -3,6 +3,7 @@ import shutil
 import requests
 import torch
 import warnings
+import time
 
 
 from huggingface_hub import hf_hub_download
@@ -352,20 +353,36 @@ class HIFLoader:
                 f"Failed to download dataset {dataset_name!r} from GitHub with status code {response.status_code} "
                 f"and no SHA provided for Hugging Face Hub fallback."
             )
+        max_retries = 5
+        retry_delay = 60
 
-        try:
-            downloaded_path = hf_hub_download(
-                repo_id=f"HypernetworkRG/{dataset_name}",
-                filename=f"{dataset_name}.json.zst",
-                repo_type="dataset",
-                revision=hf_sha,
-                cache_dir=hf_cache_dir,
-            )
-        except Exception as e:
-            raise ValueError(
-                f"Failed to download dataset {dataset_name!r} from GitHub and Hugging Face Hub. "
-                f"GitHub error: {response.status_code} | Hugging Face error: {e!s}."
-            ) from e
+        for attempt in range(max_retries):
+            try:
+                downloaded_path = hf_hub_download(
+                    repo_id=f"HypernetworkRG/{dataset_name}",
+                    filename=f"{dataset_name}.json.zst",
+                    repo_type="dataset",
+                    revision=hf_sha,
+                    cache_dir=hf_cache_dir,
+                )
+                break
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    warnings.warn(
+                        f"HuggingFace download attempt {attempt + 1} failed for "
+                        f"dataset {dataset_name!r}: {e!s}. "
+                        f"Retrying in {retry_delay} seconds...",
+                        category=UserWarning,
+                        stacklevel=2,
+                    )
+                    time.sleep(retry_delay)
+                else:
+                    raise ValueError(
+                        f"Failed to download dataset {dataset_name!r} from GitHub "
+                        f"and Hugging Face Hub. "
+                        f"GitHub error: {response.status_code} | "
+                        f"Hugging Face error: {e!s}."
+                    ) from e
 
         hif_data = from_zst_file_to_json(downloaded_path)
         hdata = cls.__process_hif_data(hif_data, dataset_name)
