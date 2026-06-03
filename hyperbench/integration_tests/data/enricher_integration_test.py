@@ -38,7 +38,7 @@ NUM_FEATURES = 8
 # The datasets.py in the scripts folder contains a function that calculates the node count cutoff to cover 75% of the datasets.
 
 
-@pytest.mark.flaky(reruns=3, reruns_delay=10, rerun_show_tracebacks=True)
+@pytest.mark.flaky(reruns=1, reruns_delay=10, rerun_show_tracebacks=True)
 @pytest.mark.parametrize(
     "dataset_name",
     [
@@ -60,7 +60,7 @@ def test_lpe_node_enricher(dataset_name):
     )
 
 
-@pytest.mark.flaky(reruns=3, reruns_delay=10, rerun_show_tracebacks=True)
+@pytest.mark.flaky(reruns=1, reruns_delay=10, rerun_show_tracebacks=True)
 @pytest.mark.parametrize(
     "dataset_name",
     [
@@ -91,7 +91,7 @@ def test_n2v_node_enricher(dataset_name):
     )
 
 
-@pytest.mark.flaky(reruns=3, reruns_delay=10, rerun_show_tracebacks=True)
+@pytest.mark.flaky(reruns=1, reruns_delay=10, rerun_show_tracebacks=True)
 @pytest.mark.parametrize(
     "dataset_name",
     [
@@ -120,7 +120,7 @@ def test_villain_node_enricher(dataset_name):
     )
 
 
-@pytest.mark.flaky(reruns=3, reruns_delay=10, rerun_show_tracebacks=True)
+@pytest.mark.flaky(reruns=1, reruns_delay=10, rerun_show_tracebacks=True)
 @pytest.mark.parametrize(
     "dataset_name",
     [
@@ -139,7 +139,7 @@ def test_fill_value_hyperedge_attrs_enricher(dataset_name):
     )
 
 
-@pytest.mark.flaky(reruns=3, reruns_delay=10, rerun_show_tracebacks=True)
+@pytest.mark.flaky(reruns=1, reruns_delay=10, rerun_show_tracebacks=True)
 @pytest.mark.parametrize(
     "dataset_name",
     [

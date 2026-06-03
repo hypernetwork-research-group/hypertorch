@@ -9,7 +9,7 @@ from hyperbench.data import (
 )
 
 
-@pytest.mark.flaky(reruns=3, reruns_delay=10, rerun_show_tracebacks=True)
+@pytest.mark.flaky(reruns=1, reruns_delay=10, rerun_show_tracebacks=True)
 @pytest.mark.parametrize(
     "dataset_name",
     [pytest.param(dataset_name, id=dataset_name) for dataset_name in list_datasets()],
@@ -24,25 +24,38 @@ def test_all_supported_datasets_load(dataset_name):
     assert len(dataset) > 0
 
 
-@pytest.mark.flaky(reruns=3, reruns_delay=5 * 60, rerun_show_tracebacks=True)
+@pytest.mark.flaky(reruns=1, reruns_delay=5 * 60, rerun_show_tracebacks=True)
 @pytest.mark.parametrize(
     "dataset_name",
     [pytest.param(dataset_name, id=dataset_name) for dataset_name in list_datasets()],
 )
 @pytest.mark.integration
-def test_all_supported_datasets_load_from_hf(dataset_name):
+def test_all_supported_datasets_load_from_hf(dataset_name, request):
     response = requests.Response()
     response.status_code = 404
     response._content = b""
 
-    with (
-        patch("hyperbench.data.hif.os.path.exists", return_value=False),
-        patch("hyperbench.data.hif.requests.get", return_value=response) as mock_get,
-        patch("hyperbench.data.hif.validate_hif_data", return_value=True),
-        patch("hyperbench.data.hif.shutil.copyfile") as mock_copyfile,
-        pytest.warns(UserWarning, match="GitHub raw download failed"),
-    ):
-        dataset = get_dataset_by_name(dataset_name)
+    try:
+        with (
+            patch("hyperbench.data.hif.os.path.exists", return_value=False),
+            patch("hyperbench.data.hif.requests.get", return_value=response) as mock_get,
+            patch("hyperbench.data.hif.validate_hif_data", return_value=True),
+            patch("hyperbench.data.hif.shutil.copyfile") as mock_copyfile,
+            pytest.warns(UserWarning, match="GitHub raw download failed"),
+        ):
+            dataset = get_dataset_by_name(dataset_name)
+    except Exception as exc:
+        message = str(exc)
+        flaky_marker = request.node.get_closest_marker("flaky")
+        reruns = flaky_marker.kwargs.get("reruns", 0) if flaky_marker is not None else 0
+        execution_count = getattr(request.node, "execution_count", 1)
+        is_last_attempt = execution_count >= reruns + 1
+
+        if is_last_attempt and (
+            "429" in message or "rate limit" in message.lower() or "Too Many Requests" in message
+        ):
+            pytest.skip(f"Skipping {dataset_name} due to Hugging Face rate limit: {message}")
+        raise
 
     mock_get.assert_called_once()
     mock_copyfile.assert_called_once()
