@@ -11,7 +11,7 @@ from .data_utils import (
     validate_is_non_empty,
     validate_is_non_negative,
     validate_is_positive,
-    validate_split_ratios,
+    validate_ratios,
 )
 
 from .hif_utils import (
@@ -102,7 +102,7 @@ __all__ = [
     "validate_is_non_negative",
     "validate_is_positive",
     "validate_node_space_setting",
-    "validate_split_ratios",
+    "validate_ratios",
     "write_dataset_to_disk_as_zst",
     "write_zst_file_to_disk",
 ]

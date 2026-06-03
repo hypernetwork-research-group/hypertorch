@@ -7,7 +7,7 @@ from hyperbench.types import HData
 from hyperbench.utils import (
     create_seeded_torch_generator,
     validate_is_non_empty,
-    validate_split_ratios,
+    validate_ratios,
 )
 
 
@@ -195,7 +195,7 @@ class HyperedgeIDSplitter(Splitter):
             hyperedge_ids_by_split: The updated hyperedge IDs for each split.
             ratios: The final ratios of hyperedges in each split after rebalancing.
         """
-        validate_split_ratios(ratios)
+        validate_ratios(ratios)
 
         # Cumulative floor boundaries keep early splits from over-consuming hyperedges.
         # The last split absorbs any rounding remainder.

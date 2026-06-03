@@ -63,6 +63,10 @@ def validate_is_between(
     min_value: int | float,
     max_value: int | float,
 ) -> None:
+    if min_value > max_value:
+        raise ValueError(
+            f"Invalid bounds for {name!r}: min_value ({min_value}) cannot be greater than max_value ({max_value})."
+        )
     if not math.isfinite(value) or value < min_value or value > max_value:
         raise ValueError(f"{name!r} must be between {min_value} and {max_value}, got {value}.")
 
@@ -92,7 +96,7 @@ def validate_is_non_empty(name: str, value: Sequence) -> None:
         raise ValueError(f"{name!r} cannot be empty.")
 
 
-def validate_split_ratios(ratios: list[int | float]) -> None:
+def validate_ratios(ratios: list[int | float]) -> None:
     validate_is_non_empty("ratios", ratios)
 
     for ratio in ratios:

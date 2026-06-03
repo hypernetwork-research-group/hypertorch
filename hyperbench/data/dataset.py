@@ -11,7 +11,7 @@ from hyperbench.utils import (
     NodeSpaceSetting,
     is_transductive_setting,
     validate_node_space_setting,
-    validate_split_ratios,
+    validate_ratios,
 )
 
 from hyperbench.data.hif import HIFLoader, HIFProcessor
@@ -196,7 +196,7 @@ class Dataset(TorchDataset):
         enrichment_mode: EnrichmentMode | None = None,
     ) -> None:
         """
-        Enrich hyperedge features using the provided hyperedge feature enricher.
+        Enrich hyperedge attributes using the provided hyperedge feature enricher.
 
         Args:
             enricher: An instance of HyperedgeEnricher to generate structural hyperedge attributes from hypergraph topology.
@@ -359,7 +359,7 @@ class Dataset(TorchDataset):
                 node space.
         """
         validate_node_space_setting(node_space_setting)
-        validate_split_ratios(ratios)
+        validate_ratios(ratios)
 
         device = self.hdata.device
 
