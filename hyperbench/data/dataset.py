@@ -346,13 +346,15 @@ class Dataset(TorchDataset):
             raise ValueError("'ratios' must be provided when no custom 'splitter' is provided.")
 
         splits, _ = DefaultDatasetSplitter(
-            ratios=ratios,
             node_space_setting=node_space_setting,
-            cover_all_nodes_in_train_split=cover_all_nodes_in_train_split,
-            train_split_idx=train_split_idx,
             shuffle=shuffle,
             seed=seed,
-        ).split(self)
+        ).split(
+            to_split=self,
+            ratios=ratios,
+            train_split_idx=train_split_idx,
+            cover_all_nodes_in_train_split=cover_all_nodes_in_train_split,
+        )
         return splits
 
     def split_with_ratios(
@@ -409,13 +411,15 @@ class Dataset(TorchDataset):
                 cover the full node space.
         """
         return DefaultDatasetSplitter(
-            ratios=ratios,
             node_space_setting=node_space_setting,
-            cover_all_nodes_in_train_split=cover_all_nodes_in_train_split,
-            train_split_idx=train_split_idx,
             shuffle=shuffle,
             seed=seed,
-        ).split(self)
+        ).split(
+            to_split=self,
+            ratios=ratios,
+            train_split_idx=train_split_idx,
+            cover_all_nodes_in_train_split=cover_all_nodes_in_train_split,
+        )
 
     def to(self, device: torch.device) -> Dataset:
         """

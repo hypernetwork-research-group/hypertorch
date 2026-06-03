@@ -952,10 +952,9 @@ def test_default_hdata_splitter_materializes_explicit_hyperedge_ids():
     hyperedge_index = torch.tensor([[0, 1, 2, 2, 3], [0, 0, 0, 1, 1]])
     hdata = HData(x=x, hyperedge_index=hyperedge_index)
 
-    result = DefaultHDataSplitter(
-        split_hyperedge_ids=torch.tensor([1]),
-        node_space_setting="inductive",
-    ).split(to_split=hdata)
+    result = DefaultHDataSplitter(node_space_setting="inductive").split(
+        to_split=hdata, split_hyperedge_ids=torch.tensor([1])
+    )
 
     assert result.num_nodes == 2
     assert result.num_hyperedges == 1
@@ -975,7 +974,7 @@ def test_split_delegates_to_custom_hdata_splitter():
     )
 
     class CustomHDataSplitter(Splitter[HData, Any]):
-        def split(self, to_split: HData) -> HData:
+        def split(self, to_split: HData, **kwargs) -> HData:
             assert to_split is hdata
             return expected_splitted_hdata
 

@@ -1532,10 +1532,9 @@ def test_default_dataset_splitter_returns_dataset_instances_with_sampling_strate
     )
     dataset = Dataset.from_hdata(hdata, sampling_strategy=strategy)
 
-    splits, final_ratios = DefaultDatasetSplitter(
-        ratios=[0.5, 0.5],
-        node_space_setting="inductive",
-    ).split(to_split=dataset)
+    splits, final_ratios = DefaultDatasetSplitter(node_space_setting="inductive").split(
+        to_split=dataset, ratios=[0.5, 0.5]
+    )
 
     assert final_ratios == pytest.approx([0.5, 0.5])
     assert [type(split) for split in splits] == [Dataset, Dataset]
@@ -1547,7 +1546,7 @@ def test_default_dataset_splitter_returns_dataset_instances_with_sampling_strate
 
 def test_split_delegates_to_custom_dataset_splitter(mock_hdata):
     class CustomDatasetSplitter(Splitter[Dataset, Any]):
-        def split(self, to_split: Dataset) -> list[Dataset]:
+        def split(self, to_split: Dataset, **kwargs) -> list[Dataset]:
             return [to_split]
 
     dataset = Dataset.from_hdata(mock_hdata)

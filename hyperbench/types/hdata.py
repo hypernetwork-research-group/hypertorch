@@ -330,10 +330,10 @@ class HData:
 
         from hyperbench.data.splitter import DefaultHDataSplitter
 
-        return DefaultHDataSplitter(
+        return DefaultHDataSplitter(node_space_setting=node_space_setting).split(
+            to_split=hdata,
             split_hyperedge_ids=split_hyperedge_ids,
-            node_space_setting=node_space_setting,
-        ).split(hdata)
+        )
 
     def enrich_node_features(
         self,

@@ -25,13 +25,18 @@ _SplitResultType = TypeVar("_SplitResultType")
 
 
 class Splitter(ABC, Generic[_ToSplitType, _SplitResultType]):
+    """
+    Abstract base class for splitting objects into parts.
+    """
+
     @abstractmethod
-    def split(self, to_split: _ToSplitType) -> _SplitResultType:
+    def split(self, to_split: _ToSplitType, **kwargs) -> _SplitResultType:
         """
         Split the input object and return the split result.
 
         Args:
             to_split: The object to split.
+            **kwargs: Additional keyword arguments that may be required by specific splitter implementations.
 
         Returns:
             The result of splitting the input object.
@@ -61,28 +66,22 @@ class DefaultDatasetSplitter(Splitter["Dataset", tuple[list["Dataset"], list[flo
 
     def __init__(
         self,
-        ratios: list[float],
         node_space_setting: NodeSpaceSetting = "transductive",
-        cover_all_nodes_in_train_split: bool = False,
-        train_split_idx: int = 0,
         shuffle: bool | None = False,
         seed: int | None = None,
     ) -> None:
-        self.ratios = ratios
         self.node_space_setting = node_space_setting
-        self.cover_all_nodes_in_train_split = cover_all_nodes_in_train_split
-        self.train_split_idx = train_split_idx
         self.shuffle = shuffle
         self.seed = seed
 
-        self.__validate()
-
-    def split(self, to_split: Dataset) -> tuple[list[Dataset], list[float]]:
+    def split(self, to_split: Dataset, **kwargs) -> tuple[list[Dataset], list[float]]:
         """
         Split a dataset and return materialized split datasets plus final ratios.
 
         Args:
             to_split: The `Dataset` to split.
+            ratios: Desired split ratios, used for initial split construction and
+                as a reference during rebalancing. Expected as a keyword argument.
 
         Returns:
             datasets_and_ratios: Split datasets and final hyperedge-count ratios.
@@ -92,8 +91,14 @@ class DefaultDatasetSplitter(Splitter["Dataset", tuple[list["Dataset"], list[flo
                 hyperedges, or a requested transductive train-cover split cannot
                 cover the full node space.
         """
-        if abs(sum(self.ratios) - 1.0) > 1e-6:
-            raise ValueError(f"'ratios' must sum to 1.0, got {sum(self.ratios)}.")
+        ratios: list[float] = kwargs.get("ratios", [])
+        if abs(sum(ratios) - 1.0) > 1e-6:
+            raise ValueError(f"'ratios' must sum to 1.0, got {sum(ratios)}.")
+
+        cover_all_nodes_in_train_split: bool = kwargs.get("cover_all_nodes_in_train_split", False)
+
+        train_split_idx: int = kwargs.get("train_split_idx", 0)
+        self.__validate_train_split_idx(train_split_idx, ratios)
 
         hdata = to_split.hdata
         device = hdata.device
@@ -102,7 +107,6 @@ class DefaultDatasetSplitter(Splitter["Dataset", tuple[list["Dataset"], list[flo
             hyperedge_index=hdata.hyperedge_index,
             num_nodes=hdata.num_nodes,
             num_hyperedges=hdata.num_hyperedges,
-            ratios=self.ratios,
         )
         hyperedge_ids_permutation = hyperedge_splitter.get_hyperedge_ids_permutation(
             shuffle=self.shuffle,
@@ -110,11 +114,12 @@ class DefaultDatasetSplitter(Splitter["Dataset", tuple[list["Dataset"], list[flo
         )
         hyperedge_ids_by_split, final_ratios = hyperedge_splitter.split(
             to_split=hyperedge_ids_permutation,
+            ratios=ratios,
         )
-        if is_transductive_setting(self.node_space_setting) and self.cover_all_nodes_in_train_split:
+        if is_transductive_setting(self.node_space_setting) and cover_all_nodes_in_train_split:
             hyperedge_ids_by_split, final_ratios = hyperedge_splitter.ensure_split_covers_all_nodes(
                 hyperedge_ids_by_split=hyperedge_ids_by_split,
-                split_idx=self.train_split_idx,
+                split_idx=train_split_idx,
             )
         hyperedge_splitter.validate_splits_have_hyperedges(hyperedge_ids_by_split)
 
@@ -122,14 +127,13 @@ class DefaultDatasetSplitter(Splitter["Dataset", tuple[list["Dataset"], list[flo
         for split_num, split_hyperedge_ids in enumerate(hyperedge_ids_by_split):
             split_node_space_setting: NodeSpaceSetting = (
                 "transductive"
-                if is_transductive_setting(self.node_space_setting)
-                and split_num == self.train_split_idx
+                if is_transductive_setting(self.node_space_setting) and split_num == train_split_idx
                 else "inductive"
             )
-            split_hdata = DefaultHDataSplitter(
+            split_hdata = DefaultHDataSplitter(node_space_setting=split_node_space_setting).split(
+                to_split=hdata,
                 split_hyperedge_ids=split_hyperedge_ids,
-                node_space_setting=split_node_space_setting,
-            ).split(to_split=hdata)
+            )
             split_hdata = split_hdata.to(device=device)
 
             split_dataset = to_split.__class__(
@@ -140,17 +144,17 @@ class DefaultDatasetSplitter(Splitter["Dataset", tuple[list["Dataset"], list[flo
 
         return split_datasets, final_ratios
 
-    def __validate(self) -> None:
-        if self.node_space_setting != "transductive" and self.train_split_idx != 0:
+    def __validate_train_split_idx(self, train_split_idx: int, ratios: list[float]) -> None:
+        if self.node_space_setting != "transductive" and train_split_idx != 0:
             raise ValueError(
                 f"'train_split_idx' is only relevant when 'node_space_setting' is 'transductive', "
-                f"got 'node_space_setting={self.node_space_setting}' and 'train_split_idx={self.train_split_idx}'."
+                f"got 'node_space_setting={self.node_space_setting}' and 'train_split_idx={train_split_idx}'."
                 "For the 'inductive' setting, splits are returned based on the provided ratios."
             )
 
-        if self.train_split_idx < 0 or self.train_split_idx >= len(self.ratios):
+        if train_split_idx < 0 or train_split_idx >= len(ratios):
             raise ValueError(
-                f"'train_split_idx' must be between 0 and {len(self.ratios) - 1}, got {self.train_split_idx}."
+                f"'train_split_idx' must be between 0 and {len(ratios) - 1}, got {train_split_idx}."
             )
 
 
@@ -164,23 +168,24 @@ class DefaultHDataSplitter(Splitter["HData", "HData"]):
 
     def __init__(
         self,
-        split_hyperedge_ids: Tensor,
         node_space_setting: NodeSpaceSetting = "transductive",
     ) -> None:
-        self.split_hyperedge_ids = split_hyperedge_ids
         self.node_space_setting = node_space_setting
 
-    def split(self, to_split: HData) -> HData:
+    def split(self, to_split: HData, **kwargs) -> HData:
         """
         Build an `HData` for a single split from the given hyperedge IDs.
 
         Args:
             to_split: The original `HData` containing the full hypergraph.
+            split_hyperedge_ids: The hyperedge IDs that should be included in the split, expected as a keyword argument.
 
         Returns:
             hdata: The splitted instance with remapped node and hyperedge IDs.
         """
-        keep_mask = torch.isin(to_split.hyperedge_index[1], self.split_hyperedge_ids)
+        split_hyperedge_ids = kwargs.get("split_hyperedge_ids", [])
+
+        keep_mask = torch.isin(to_split.hyperedge_index[1], split_hyperedge_ids)
         split_hyperedge_index = to_split.hyperedge_index[:, keep_mask]
         split_unique_hyperedge_ids = split_hyperedge_index[1].unique()
 
@@ -246,7 +251,6 @@ class HyperedgeIDSplitter(Splitter["Tensor", tuple[list["Tensor"], list[float]]]
         hyperedge_index: Hypergraph incidence index whose node coverage drives the split logic.
         num_nodes: Number of nodes in the source hypergraph.
         num_hyperedges: Number of hyperedges in the source hypergraph.
-        ratios: Desired split ratios, used for initial split construction and as a reference during rebalancing.
     """
 
     def __init__(
@@ -254,13 +258,11 @@ class HyperedgeIDSplitter(Splitter["Tensor", tuple[list["Tensor"], list[float]]]
         hyperedge_index: Tensor,
         num_nodes: int,
         num_hyperedges: int,
-        ratios: list[float],
     ) -> None:
         self.hyperedge_index = hyperedge_index
         self.num_nodes = num_nodes
         self.num_hyperedges = num_hyperedges
         self.device = hyperedge_index.device
-        self.ratios = ratios
 
     def ensure_split_covers_all_nodes(
         self,
@@ -360,20 +362,18 @@ class HyperedgeIDSplitter(Splitter["Tensor", tuple[list["Tensor"], list[float]]]
         Returns:
             hyperedge_ids_permutation: Ordered or shuffled hyperedge IDs on the HData device.
         """
-        device = self.device
-
         # Shuffle hyperedge IDs if shuffle is requested, otherwise keep original order for deterministic splits
         if shuffle:
-            generator = create_seeded_torch_generator(device=device, seed=seed)
+            generator = create_seeded_torch_generator(device=self.device, seed=seed)
 
             random_hyperedge_ids_permutation = torch.randperm(
                 n=self.num_hyperedges,
                 generator=generator,
-                device=device,
+                device=self.device,
             )
             return random_hyperedge_ids_permutation
 
-        ranged_hyperedge_ids_permutation = torch.arange(self.num_hyperedges, device=device)
+        ranged_hyperedge_ids_permutation = torch.arange(self.num_hyperedges, device=self.device)
         return ranged_hyperedge_ids_permutation
 
     def get_split_ratios(self, hyperedge_ids_by_split: list[Tensor]) -> list[float]:
@@ -398,7 +398,7 @@ class HyperedgeIDSplitter(Splitter["Tensor", tuple[list["Tensor"], list[float]]]
             for split_num_hyperedges in num_hyperedges_by_split
         ]
 
-    def split(self, to_split: Tensor) -> tuple[list[Tensor], list[float]]:
+    def split(self, to_split: Tensor, **kwargs) -> tuple[list[Tensor], list[float]]:
         """
         Split hyperedge IDs by cumulative ratio boundaries.
 
@@ -407,12 +407,15 @@ class HyperedgeIDSplitter(Splitter["Tensor", tuple[list["Tensor"], list[float]]]
 
         Args:
             to_split: Hyperedge IDs to partition.
+            ratios: Desired split ratios, used for initial split construction and
+                as a reference during rebalancing. Expected as a keyword argument.
 
         Returns:
             hyperedge_ids_by_split: The updated hyperedge IDs for each split.
             ratios: The final ratios of hyperedges in each split after rebalancing.
         """
-        validate_ratios(self.ratios)
+        ratios: list[float] = kwargs.get("ratios", [])
+        validate_ratios(ratios)
 
         # Cumulative floor boundaries keep early splits from over-consuming hyperedges.
         # The last split absorbs any rounding remainder.
@@ -421,11 +424,11 @@ class HyperedgeIDSplitter(Splitter["Tensor", tuple[list["Tensor"], list[float]]]
         start = 0
         cumulative_ratio = 0.0
         hyperedge_ids_by_split = []
-        for split_idx, ratio in enumerate(self.ratios):
+        for split_idx, ratio in enumerate(ratios):
             cumulative_ratio += ratio
             end = (
                 num_hyperedges
-                if split_idx == len(self.ratios) - 1
+                if split_idx == len(ratios) - 1
                 else int(cumulative_ratio * num_hyperedges)
             )
             hyperedge_ids_by_split.append(to_split[start:end])

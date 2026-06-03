@@ -39,10 +39,9 @@ def test_default_hdata_splitter_materializes_inductive_split():
         y=torch.tensor([1.0, 0.0]),
     )
 
-    split_hdata = DefaultHDataSplitter(
-        split_hyperedge_ids=torch.tensor([1], dtype=torch.long),
-        node_space_setting="inductive",
-    ).split(to_split=hdata)
+    split_hdata = DefaultHDataSplitter(node_space_setting="inductive").split(
+        to_split=hdata, split_hyperedge_ids=torch.tensor([1], dtype=torch.long)
+    )
 
     assert split_hdata.num_nodes == 2
     assert split_hdata.num_hyperedges == 1
@@ -59,10 +58,9 @@ def test_default_hdata_splitter_materializes_transductive_split():
         y=torch.tensor([1.0, 0.0]),
     )
 
-    split_hdata = DefaultHDataSplitter(
-        split_hyperedge_ids=torch.tensor([1], dtype=torch.long),
-        node_space_setting="transductive",
-    ).split(to_split=hdata)
+    split_hdata = DefaultHDataSplitter(node_space_setting="transductive").split(
+        to_split=hdata, split_hyperedge_ids=torch.tensor([1], dtype=torch.long)
+    )
 
     assert split_hdata.num_nodes == hdata.num_nodes
     assert split_hdata.num_hyperedges == 1
@@ -81,10 +79,9 @@ def test_default_dataset_splitter_materializes_datasets_and_final_ratios():
     )
     dataset = Dataset.from_hdata(hdata, sampling_strategy=SamplingStrategy.NODE)
 
-    split_datasets, final_ratios = DefaultDatasetSplitter(
-        ratios=[0.5, 0.5],
-        node_space_setting="inductive",
-    ).split(to_split=dataset)
+    split_datasets, final_ratios = DefaultDatasetSplitter(node_space_setting="inductive").split(
+        to_split=dataset, ratios=[0.5, 0.5]
+    )
 
     assert final_ratios == [0.5, 0.5]
     assert [split.hdata.num_hyperedges for split in split_datasets] == [1, 1]
@@ -101,11 +98,9 @@ def test_default_dataset_splitter_uses_train_split_idx_for_transductive_split():
     )
     dataset = Dataset.from_hdata(hdata)
 
-    split_datasets, final_ratios = DefaultDatasetSplitter(
-        ratios=[0.5, 0.5],
-        node_space_setting="transductive",
-        train_split_idx=1,
-    ).split(to_split=dataset)
+    split_datasets, final_ratios = DefaultDatasetSplitter(node_space_setting="transductive").split(
+        to_split=dataset, ratios=[0.5, 0.5], train_split_idx=1
+    )
 
     assert final_ratios == [0.5, 0.5]
     assert split_datasets[0].hdata.num_nodes == 2
@@ -122,11 +117,9 @@ def test_default_dataset_splitter_split_raises_when_train_split_idx_is_out_of_bo
     with pytest.raises(
         ValueError, match=re.escape("'train_split_idx' must be between 0 and 1, got 2.")
     ):
-        DefaultDatasetSplitter(
-            ratios=[0.5, 0.5],
-            node_space_setting="transductive",
-            train_split_idx=2,
-        ).split(to_split=dataset)
+        DefaultDatasetSplitter(node_space_setting="transductive").split(
+            to_split=dataset, ratios=[0.5, 0.5], train_split_idx=2
+        )
 
 
 def test_default_dataset_splitter_split_raises_when_train_split_idx_provided_but_not_transductive():
@@ -142,11 +135,9 @@ def test_default_dataset_splitter_split_raises_when_train_split_idx_provided_but
             "'train_split_idx' is only relevant when 'node_space_setting' is 'transductive'"
         ),
     ):
-        DefaultDatasetSplitter(
-            ratios=[0.5, 0.5],
-            node_space_setting="inductive",
-            train_split_idx=1,
-        ).split(to_split=dataset)
+        DefaultDatasetSplitter(node_space_setting="inductive").split(
+            to_split=dataset, ratios=[0.5, 0.5], train_split_idx=1
+        )
 
 
 def test_default_dataset_splitter_raises_when_ratios_do_not_sum_to_one(mock_hdata_five_hyperedges):
@@ -156,7 +147,113 @@ def test_default_dataset_splitter_raises_when_ratios_do_not_sum_to_one(mock_hdat
         ValueError,
         match=re.escape("'ratios' must sum to 1.0"),
     ):
-        DefaultDatasetSplitter(ratios=[0.5, 0.25]).split(to_split=dataset)
+        DefaultDatasetSplitter().split(to_split=dataset, ratios=[0.5, 0.25])
+
+
+def test_default_dataset_splitter_rebalances_first_split_to_cover_all_nodes():
+    hdata = HData(
+        x=torch.arange(4, dtype=torch.float).unsqueeze(1),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3, 0], [0, 1, 2, 3, 4]]),
+        global_node_ids=torch.tensor([100, 200, 300, 400]),
+        y=torch.arange(5, dtype=torch.float),
+    )
+    dataset = Dataset.from_hdata(hdata)
+
+    split_datasets, _ = DefaultDatasetSplitter().split(
+        to_split=dataset, ratios=[0.75, 0.25], cover_all_nodes_in_train_split=True
+    )
+
+    train_dataset = split_datasets[0]
+    test_dataset = split_datasets[1]
+
+    assert train_dataset.hdata.num_nodes == dataset.hdata.num_nodes
+    assert torch.equal(train_dataset.hdata.x, dataset.hdata.x)
+    assert torch.equal(
+        train_dataset.hdata.hyperedge_index[0].unique(sorted=True),
+        torch.arange(hdata.num_nodes),
+    )
+    # The only way to cover all 4 nodes with 75% of the hyperedges is to:
+    # - Put 3 hyperedges in the train split.
+    # - Put 1 hyperedge in the test split.
+    assert train_dataset.hdata.num_hyperedges == dataset.hdata.num_hyperedges - 1
+    assert test_dataset.hdata.num_hyperedges == 1
+
+    split_labels = torch.cat([train_dataset.hdata.y, test_dataset.hdata.y])
+    assert split_labels.unique().numel() == dataset.hdata.num_hyperedges
+    assert torch.equal(split_labels.sort().values, hdata.y)
+
+
+def test_default_dataset_splitter_returns_final_transductive_ratios_when_train_coverage_is_enabled():
+    hdata = HData(
+        x=torch.arange(4, dtype=torch.float).unsqueeze(1),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3, 0], [0, 1, 2, 3, 4]]),
+    )
+    dataset = Dataset.from_hdata(hdata)
+
+    split_datasets, final_ratios = DefaultDatasetSplitter().split(
+        to_split=dataset, ratios=[0.75, 0.25], cover_all_nodes_in_train_split=True
+    )
+
+    assert [split_dataset.hdata.num_hyperedges for split_dataset in split_datasets] == [4, 1]
+    assert final_ratios == pytest.approx([0.8, 0.2])
+
+
+def test_default_dataset_splitter_keeps_ratios_when_train_covers_all_nodes():
+    hdata = HData(
+        x=torch.arange(4, dtype=torch.float).unsqueeze(1),
+        hyperedge_index=torch.tensor(
+            [
+                [0, 1, 2, 3, 0, 2, 1, 3],
+                [0, 0, 1, 1, 2, 2, 3, 3],
+            ]
+        ),
+    )
+    dataset = Dataset.from_hdata(hdata)
+
+    split_datasets, final_ratios = DefaultDatasetSplitter().split(
+        to_split=dataset, ratios=[0.5, 0.5], cover_all_nodes_in_train_split=True
+    )
+
+    assert [split_dataset.hdata.num_hyperedges for split_dataset in split_datasets] == [2, 2]
+    assert final_ratios == pytest.approx([0.5, 0.5])
+    assert torch.equal(
+        split_datasets[0].hdata.hyperedge_index[0].unique(sorted=True),
+        torch.arange(hdata.num_nodes),
+    )
+
+
+def test_default_dataset_splitter_raises_when_rebalancing_empties_split():
+    hdata = HData(
+        x=torch.arange(4, dtype=torch.float).unsqueeze(1),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3], [0, 1, 2, 3]]),
+    )
+    dataset = Dataset.from_hdata(hdata)
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape("Splitting produced splits"),
+    ):
+        DefaultDatasetSplitter().split(
+            to_split=dataset, ratios=[0.75, 0.25], cover_all_nodes_in_train_split=True
+        )
+
+
+def test_default_dataset_splitter_raises_when_node_is_missing_from_all_hyperedges():
+    hdata = HData(
+        x=torch.arange(4, dtype=torch.float).unsqueeze(1),
+        hyperedge_index=torch.tensor([[0, 1, 2], [0, 0, 1]]),
+    )
+    dataset = Dataset.from_hdata(hdata)
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Cannot create a transductive first split covering all nodes because these node ids do not appear in any hyperedge: [3]."
+        ),
+    ):
+        DefaultDatasetSplitter().split(
+            to_split=dataset, ratios=[0.5, 0.5], cover_all_nodes_in_train_split=True
+        )
 
 
 def test_hyperedge_id_splitter_get_split_ratios_returns_zero_ratios_when_all_splits_are_empty():
@@ -165,7 +262,6 @@ def test_hyperedge_id_splitter_get_split_ratios_returns_zero_ratios_when_all_spl
         hyperedge_index=hdata.hyperedge_index,
         num_nodes=hdata.num_nodes,
         num_hyperedges=hdata.num_hyperedges,
-        ratios=[0.5, 0.5],
     )
     empty_split = torch.empty(0, dtype=torch.long)
 
@@ -181,7 +277,6 @@ def test_hyperedge_id_splitter_get_hyperedge_ids_permutation_returns_original_or
         hyperedge_index=mock_hdata_five_hyperedges.hyperedge_index,
         num_nodes=mock_hdata_five_hyperedges.num_nodes,
         num_hyperedges=mock_hdata_five_hyperedges.num_hyperedges,
-        ratios=[0.5, 0.5],
     )
     permutation = splitter.get_hyperedge_ids_permutation(shuffle=False, seed=123)
 
@@ -198,7 +293,6 @@ def test_hyperedge_id_splitter_get_hyperedge_ids_permutation_is_deterministic_wi
         hyperedge_index=mock_hdata_five_hyperedges.hyperedge_index,
         num_nodes=mock_hdata_five_hyperedges.num_nodes,
         num_hyperedges=mock_hdata_five_hyperedges.num_hyperedges,
-        ratios=[0.5, 0.5],
     )
     permutation_a = splitter.get_hyperedge_ids_permutation(shuffle, seed)
     permutation_b = splitter.get_hyperedge_ids_permutation(shuffle, seed)
@@ -216,9 +310,10 @@ def test_hyperedge_id_splitter_split_uses_cumulative_floor_boundaries_and_last_s
         hyperedge_index=mock_hdata_five_hyperedges.hyperedge_index,
         num_nodes=mock_hdata_five_hyperedges.num_nodes,
         num_hyperedges=mock_hdata_five_hyperedges.num_hyperedges,
-        ratios=[0.5, 0.25, 0.25],
     )
-    split_hyperedge_ids, final_ratios = splitter.split(hyperedge_ids)
+    split_hyperedge_ids, final_ratios = splitter.split(
+        to_split=hyperedge_ids, ratios=[0.5, 0.25, 0.25]
+    )
 
     assert [split.tolist() for split in split_hyperedge_ids] == [[0, 1], [2], [3, 4]]
     assert final_ratios == [0.4, 0.2, 0.4]
@@ -286,9 +381,8 @@ def test_hyperedge_id_splitter_split_returns_expected_cumulative_ratios(
         hyperedge_index=hdata.hyperedge_index,
         num_nodes=hdata.num_nodes,
         num_hyperedges=hdata.num_hyperedges,
-        ratios=[0.75, 0.25],
     )
-    split_hyperedge_ids, final_ratios = splitter.split(hyperedge_index[1])
+    split_hyperedge_ids, final_ratios = splitter.split(hyperedge_index[1], ratios=[0.75, 0.25])
 
     assert [len(split) for split in split_hyperedge_ids] == expected_split_sizes
     assert final_ratios == pytest.approx(expected_final_ratios)
@@ -308,7 +402,6 @@ def test_hyperedge_id_splitter_ensure_split_covers_all_nodes_moves_best_covering
         hyperedge_index=hdata.hyperedge_index,
         num_nodes=hdata.num_nodes,
         num_hyperedges=hdata.num_hyperedges,
-        ratios=[0.5, 0.5],
     )
 
     hyperedge_ids_by_split = [
@@ -354,7 +447,6 @@ def test_hyperedge_id_splitter_ensure_split_covers_all_nodes_raises_when_node_is
         hyperedge_index=hdata.hyperedge_index,
         num_nodes=hdata.num_nodes,
         num_hyperedges=hdata.num_hyperedges,
-        ratios=[0.5, 0.5],
     )
 
     with pytest.raises(
@@ -382,7 +474,6 @@ def test_hyperedge_id_splitter_validate_splits_have_hyperedges_raises_when_a_spl
             hyperedge_index=mock_hdata_five_hyperedges.hyperedge_index,
             num_nodes=mock_hdata_five_hyperedges.num_nodes,
             num_hyperedges=mock_hdata_five_hyperedges.num_hyperedges,
-            ratios=[0.5, 0.5],
         )
         splitter.validate_splits_have_hyperedges(
             [
@@ -391,3 +482,15 @@ def test_hyperedge_id_splitter_validate_splits_have_hyperedges_raises_when_a_spl
                 torch.tensor([3, 4], dtype=torch.long),
             ]
         )
+
+
+def test_hyperedge_id_splitter_raises_when_ratios_do_not_sum_to_one(mock_hdata_five_hyperedges):
+    with pytest.raises(
+        ValueError,
+        match=re.escape("'ratios' must sum to 1.0"),
+    ):
+        HyperedgeIDSplitter(
+            hyperedge_index=mock_hdata_five_hyperedges.hyperedge_index,
+            num_nodes=mock_hdata_five_hyperedges.num_nodes,
+            num_hyperedges=mock_hdata_five_hyperedges.num_hyperedges,
+        ).split(to_split=mock_hdata_five_hyperedges.hyperedge_index[1], ratios=[0.5, 0.25])
