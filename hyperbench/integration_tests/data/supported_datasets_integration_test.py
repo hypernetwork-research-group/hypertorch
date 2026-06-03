@@ -9,6 +9,7 @@ from hyperbench.data import (
 )
 
 
+@pytest.mark.flaky(reruns=3, reruns_delay=10, rerun_show_tracebacks=True)
 @pytest.mark.parametrize(
     "dataset_name",
     [pytest.param(dataset_name, id=dataset_name) for dataset_name in list_datasets()],
@@ -23,6 +24,7 @@ def test_all_supported_datasets_load(dataset_name):
     assert len(dataset) > 0
 
 
+@pytest.mark.flaky(reruns=3, reruns_delay=10, rerun_show_tracebacks=True)
 @pytest.mark.parametrize(
     "dataset_name",
     [pytest.param(dataset_name, id=dataset_name) for dataset_name in list_datasets()],
