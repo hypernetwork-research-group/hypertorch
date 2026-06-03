@@ -78,7 +78,7 @@ make setup
 
 uv run pre-commit install --config .github/hooks/.pre-commit-config.yaml \
     --hook-type pre-commit \
-    --install-hooks --overwrite \
+    --install-hooks --overwrite
 ```
 
 ### Tests

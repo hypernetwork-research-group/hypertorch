@@ -641,6 +641,7 @@ def test_load_by_name_uses_hf_revision_when_github_download_fails(tmp_path, mock
         ) as mock_hf_hub_download,
         patch("hyperbench.data.hif.from_zst_file_to_json", return_value=payload),
         patch("hyperbench.data.hif.validate_hif_data", return_value=True),
+        patch("hyperbench.data.hif.os.getenv", return_value=None),
         pytest.warns(UserWarning, match="GitHub raw download failed"),
     ):
         result = HIFLoader.load_by_name("algebra", hf_sha=hf_sha, save_on_disk=False)
@@ -651,6 +652,7 @@ def test_load_by_name_uses_hf_revision_when_github_download_fails(tmp_path, mock
         repo_type="dataset",
         revision=hf_sha,
         cache_dir=str(tmp_path / "hf_cache"),
+        token=None,
     )
     assert result.num_nodes == 2
     assert result.num_hyperedges == 1
@@ -678,6 +680,7 @@ def test_load_by_name_skips_cache_cleanup_when_hf_cache_dir_is_missing(tmp_path,
         patch("hyperbench.data.hif.from_zst_file_to_json", return_value=payload),
         patch("hyperbench.data.hif.validate_hif_data", return_value=True),
         patch("hyperbench.data.hif.shutil.rmtree") as mock_rmtree,
+        patch("hyperbench.data.hif.os.getenv", return_value=None),
         pytest.warns(UserWarning, match="GitHub raw download failed"),
     ):
         result = HIFLoader.load_by_name("algebra", hf_sha=hf_sha, save_on_disk=False)
@@ -688,6 +691,7 @@ def test_load_by_name_skips_cache_cleanup_when_hf_cache_dir_is_missing(tmp_path,
         repo_type="dataset",
         revision=hf_sha,
         cache_dir=str(tmp_path / "hf_cache"),
+        token=None,
     )
     mock_rmtree.assert_not_called()
     assert result.num_nodes == 2
@@ -829,6 +833,7 @@ def test_load_by_name_raises_when_downloaded_hf_file_cannot_be_read(tmp_path):
             ValueError,
             match=r"Failed to read compressed JSON file 'downloaded\.json\.zst': missing file\.",
         ),
+        patch("hyperbench.data.hif.os.getenv", return_value=None),
     ):
         HIFLoader.load_by_name("algebra", hf_sha=hf_sha)
 
@@ -838,6 +843,7 @@ def test_load_by_name_raises_when_downloaded_hf_file_cannot_be_read(tmp_path):
         repo_type="dataset",
         revision=hf_sha,
         cache_dir=str(tmp_path / "hf_cache"),
+        token=None,
     )
 
 
@@ -938,6 +944,7 @@ def test_hifloader_download_failure_when_hf_fallback_fails(tmp_path):
                 r"GitHub error: 404 \| Hugging Face error: HFHub failed"
             ),
         ),
+        patch("hyperbench.data.hif.os.getenv", return_value=None),
     ):
         HIFLoader.load_by_name("algebra", hf_sha=hf_sha)
 
@@ -947,4 +954,40 @@ def test_hifloader_download_failure_when_hf_fallback_fails(tmp_path):
         repo_type="dataset",
         revision=hf_sha,
         cache_dir=str(tmp_path / "hf_cache"),
+        token=None,
+    )
+
+
+def test_hifloader_download_failure_when_hf_token_is_invalid(tmp_path):
+    hf_sha = "2bb641461e00c103fb5ef4fe6a30aad42500fc21"
+    response = requests.Response()
+    response.status_code = 404
+    response._content = b""
+
+    with (
+        patch("hyperbench.data.hif.os.path.exists", return_value=False),
+        patch("hyperbench.data.hif.requests.get", return_value=response),
+        patch(
+            "hyperbench.data.hif.hf_hub_download",
+            side_effect=Exception("HFHub failed"),
+        ) as mock_hf_hub_download,
+        pytest.warns(UserWarning, match="GitHub raw download failed"),
+        pytest.raises(
+            ValueError,
+            match=(
+                r"Failed to download dataset 'algebra' from GitHub and Hugging Face Hub\. "
+                r"GitHub error: 404 \| Hugging Face error: HFHub failed"
+            ),
+        ),
+        patch("hyperbench.data.hif.os.getenv", return_value="invalid_token"),
+    ):
+        HIFLoader.load_by_name("algebra", hf_sha=hf_sha)
+
+    mock_hf_hub_download.assert_called_once_with(
+        repo_id="HypernetworkRG/algebra",
+        filename="algebra.json.zst",
+        repo_type="dataset",
+        revision=hf_sha,
+        cache_dir=str(tmp_path / "hf_cache"),
+        token="invalid_token",
     )

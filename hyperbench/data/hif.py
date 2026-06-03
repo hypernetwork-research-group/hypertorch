@@ -4,7 +4,6 @@ import requests
 import torch
 import warnings
 
-
 from huggingface_hub import hf_hub_download
 from typing import Any
 from torch import Tensor
@@ -22,7 +21,7 @@ from hyperbench.utils import (
     get_cache_dir,
 )
 
-GITHUB_COMMIT_SHA = "3879b2ce84750e54f984ca06ce3246dff22c71c7"
+GITHUB_COMMIT_SHA = "89ba250151bd5b1b65ba14a98dbe3dbdd72f5e25"
 
 
 class HIFProcessor:
@@ -354,12 +353,14 @@ class HIFLoader:
             )
 
         try:
+            token = os.getenv("HF_DOWNLOAD_TOKEN")
             downloaded_path = hf_hub_download(
                 repo_id=f"HypernetworkRG/{dataset_name}",
                 filename=f"{dataset_name}.json.zst",
                 repo_type="dataset",
                 revision=hf_sha,
                 cache_dir=hf_cache_dir,
+                token=token,
             )
         except Exception as e:
             raise ValueError(

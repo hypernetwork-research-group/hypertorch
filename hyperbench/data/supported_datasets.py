@@ -106,7 +106,7 @@ class ContactPrimarySchoolDataset(_PreloadedDataset):
 
 class CoraDataset(_PreloadedDataset):
     DATASET_NAME: ClassVar[str] = "cora"
-    HF_SHA: ClassVar[str | None] = "91fda9ed324e2cce2430638747e9b032bd9c22ad"
+    HF_SHA: ClassVar[str | None] = "dc0f94770bd4f4f7174fa8d02318435330812b42"
 
 
 class CourseraDataset(_PreloadedDataset):
