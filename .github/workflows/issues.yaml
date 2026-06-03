@@ -14,10 +14,10 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const requiredType = ["chore", "docs","feature", "bug", "refactoring"];
+            const requiredLabels = ["chore", "docs", "tests", "feature", "bug", "refactoring"];
 
             const labels = (context.payload.issue.labels || []).map((l) => l.name);
-            const hasType = labels.some((name) => requiredType.includes(name));
+            const hasType = labels.some((name) => requiredLabels.includes(name));
 
             if (!hasType) {
               await github.rest.issues.createComment({
@@ -28,7 +28,7 @@ jobs:
                   "This issue is missing a required label.",
                   "",
                   "Please add at least one of:",
-                  `- ${requiredType.join("\n- ")}`,
+                  `- ${requiredLabels.join("\n- ")}`,
                   "",
                   `Current labels: ${labels.length ? labels.join(", ") : "(none)"}`,
                 ].join("\n"),
