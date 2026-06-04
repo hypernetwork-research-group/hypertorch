@@ -2,6 +2,8 @@ import pytest
 import re
 
 from unittest.mock import MagicMock, patch
+from lightning.pytorch.callbacks import Callback
+from lightning.pytorch.callbacks import ModelCheckpoint
 from hyperbench.train import MultiModelTrainer
 from hyperbench.types import ModelConfig
 from hyperbench.tests import new_mock_trainer
@@ -87,6 +89,30 @@ def test_trainer_initialization_with_no_models(
 ):
     with pytest.raises(ValueError, match=re.escape("'model_configs' cannot be empty.")):
         MultiModelTrainer(model_configs=[])
+
+
+@patch("hyperbench.train.trainer.L.Trainer")
+@patch("hyperbench.train.trainer.CSVLogger")
+@patch("hyperbench.train.trainer.MarkdownTableLogger")
+@patch("hyperbench.train.trainer.LaTexTableLogger")
+def test_trainer_initialization_skips_configs_with_initialized_trainers(
+    mock_latex_logger_cls,
+    mock_md_logger_cls,
+    mock_csv_logger_cls,
+    mock_trainer_cls,
+    mock_model_configs,
+):
+    initialized_trainers = [new_mock_trainer() for _ in mock_model_configs]
+    for model_config, trainer in zip(mock_model_configs, initialized_trainers, strict=True):
+        model_config.trainer = trainer
+
+    MultiModelTrainer(mock_model_configs)
+
+    mock_trainer_cls.assert_not_called()
+    mock_csv_logger_cls.assert_not_called()
+    mock_md_logger_cls.assert_not_called()
+    mock_latex_logger_cls.assert_not_called()
+    assert [config.trainer for config in mock_model_configs] == initialized_trainers
 
 
 @patch("hyperbench.train.trainer.L.Trainer")
@@ -601,6 +627,209 @@ def test_init_passes_custom_logger_to_all_models(mock_trainer_cls, mock_model_co
 
     for call_args in mock_trainer_cls.call_args_list:
         assert call_args.kwargs["logger"] is custom_logger
+
+
+@patch("hyperbench.train.trainer.L.Trainer")
+@patch("hyperbench.train.trainer.CSVLogger")
+@patch("hyperbench.train.trainer.MarkdownTableLogger")
+@patch("hyperbench.train.trainer.LaTexTableLogger")
+def test_init_adds_per_model_checkpoint_callbacks(
+    mock_latex_logger_cls,
+    mock_md_logger_cls,
+    mock_csv_logger_cls,
+    mock_trainer_cls,
+    mock_model_configs,
+    tmp_path,
+):
+    MultiModelTrainer(
+        mock_model_configs,
+        default_root_dir=tmp_path,
+        experiment_name="checkpoint_test",
+        enable_checkpointing=True,
+    )
+
+    for config, call_args in zip(mock_model_configs, mock_trainer_cls.call_args_list, strict=True):
+        callbacks = call_args.kwargs["callbacks"]
+        checkpoint_callbacks = [
+            callback for callback in callbacks if isinstance(callback, ModelCheckpoint)
+        ]
+
+        assert len(checkpoint_callbacks) == 1
+        assert checkpoint_callbacks[0].dirpath == str(
+            tmp_path / "checkpoint_test" / config.name / f"version_{config.version}" / "checkpoints"
+        )
+
+
+@patch("hyperbench.train.trainer.L.Trainer")
+@patch("hyperbench.train.trainer.CSVLogger")
+@patch("hyperbench.train.trainer.MarkdownTableLogger")
+@patch("hyperbench.train.trainer.LaTexTableLogger")
+def test_init_sets_missing_checkpoint_callback_dirpath_per_model(
+    mock_latex_logger_cls,
+    mock_md_logger_cls,
+    mock_csv_logger_cls,
+    mock_trainer_cls,
+    mock_model_configs,
+    tmp_path,
+):
+    MultiModelTrainer(
+        mock_model_configs,
+        default_root_dir=tmp_path,
+        experiment_name="checkpoint_test",
+        enable_checkpointing=True,
+        callbacks=[ModelCheckpoint()],
+    )
+
+    checkpoint_dirs = []
+    for call_args in mock_trainer_cls.call_args_list:
+        callbacks = call_args.kwargs["callbacks"]
+        checkpoint_callbacks = [
+            callback for callback in callbacks if isinstance(callback, ModelCheckpoint)
+        ]
+        checkpoint_dirs.append(checkpoint_callbacks[0].dirpath)
+
+    assert checkpoint_dirs == [
+        str(
+            tmp_path / "checkpoint_test" / config.name / f"version_{config.version}" / "checkpoints"
+        )
+        for config in mock_model_configs
+    ]
+    assert len(set(checkpoint_dirs)) == len(mock_model_configs)
+
+
+@patch("hyperbench.train.trainer.L.Trainer")
+@patch("hyperbench.train.trainer.CSVLogger")
+@patch("hyperbench.train.trainer.MarkdownTableLogger")
+@patch("hyperbench.train.trainer.LaTexTableLogger")
+def test_init_adds_model_index_to_duplicate_checkpoint_dirs(
+    mock_latex_logger_cls,
+    mock_md_logger_cls,
+    mock_csv_logger_cls,
+    mock_trainer_cls,
+    mock_model_configs,
+    tmp_path,
+):
+    for config in mock_model_configs:
+        config.name = "duplicate"
+        config.version = "0"
+        config.full_model_name = lambda: "duplicate:0"
+
+    MultiModelTrainer(
+        mock_model_configs,
+        default_root_dir=tmp_path,
+        experiment_name="checkpoint_test",
+        enable_checkpointing=True,
+    )
+
+    checkpoint_dirs = []
+    for call_args in mock_trainer_cls.call_args_list:
+        checkpoint_callbacks = [
+            callback
+            for callback in call_args.kwargs["callbacks"]
+            if isinstance(callback, ModelCheckpoint)
+        ]
+        checkpoint_dirs.append(checkpoint_callbacks[0].dirpath)
+
+    assert checkpoint_dirs == [
+        str(
+            tmp_path
+            / "checkpoint_test"
+            / "duplicate"
+            / "version_0"
+            / f"model_{model_index}"
+            / "checkpoints"
+        )
+        for model_index in range(len(mock_model_configs))
+    ]
+
+
+@patch("hyperbench.train.trainer.L.Trainer")
+@patch("hyperbench.train.trainer.CSVLogger")
+@patch("hyperbench.train.trainer.MarkdownTableLogger")
+@patch("hyperbench.train.trainer.LaTexTableLogger")
+def test_init_does_not_add_checkpoint_callback_when_checkpointing_disabled(
+    mock_latex_logger_cls,
+    mock_md_logger_cls,
+    mock_csv_logger_cls,
+    mock_trainer_cls,
+    mock_model_configs,
+):
+    callback = Callback()
+
+    MultiModelTrainer(
+        mock_model_configs,
+        enable_checkpointing=False,
+        callbacks=[callback],
+    )
+
+    for call_args in mock_trainer_cls.call_args_list:
+        callbacks = call_args.kwargs["callbacks"]
+        assert len(callbacks) == 1
+        assert isinstance(callbacks[0], Callback)
+        assert not isinstance(callbacks[0], ModelCheckpoint)
+
+
+@patch("hyperbench.train.trainer.L.Trainer")
+@patch("hyperbench.train.trainer.CSVLogger")
+@patch("hyperbench.train.trainer.MarkdownTableLogger")
+@patch("hyperbench.train.trainer.LaTexTableLogger")
+def test_init_keeps_existing_checkpoint_callback_dirpath(
+    mock_latex_logger_cls,
+    mock_md_logger_cls,
+    mock_csv_logger_cls,
+    mock_trainer_cls,
+    mock_model_configs,
+    tmp_path,
+):
+    checkpoint_dir = tmp_path / "custom_checkpoints"
+
+    MultiModelTrainer(
+        mock_model_configs,
+        enable_checkpointing=True,
+        callbacks=[ModelCheckpoint(dirpath=checkpoint_dir)],
+    )
+
+    for call_args in mock_trainer_cls.call_args_list:
+        checkpoint_callbacks = [
+            callback
+            for callback in call_args.kwargs["callbacks"]
+            if isinstance(callback, ModelCheckpoint)
+        ]
+        assert len(checkpoint_callbacks) == 1
+        assert checkpoint_callbacks[0].dirpath == str(checkpoint_dir)
+
+
+@pytest.mark.parametrize(
+    "callbacks",
+    [
+        pytest.param([Callback()], id="list_of_callbacks"),
+        pytest.param(Callback(), id="single_callback"),
+    ],
+)
+@patch("hyperbench.train.trainer.L.Trainer")
+@patch("hyperbench.train.trainer.CSVLogger")
+@patch("hyperbench.train.trainer.MarkdownTableLogger")
+@patch("hyperbench.train.trainer.LaTexTableLogger")
+def test_init_accepts_different_callback_types_with_checkpointing_enabled(
+    mock_latex_logger_cls,
+    mock_md_logger_cls,
+    mock_csv_logger_cls,
+    mock_trainer_cls,
+    mock_model_configs,
+    callbacks,
+):
+    MultiModelTrainer(
+        mock_model_configs,
+        enable_checkpointing=True,
+        callbacks=callbacks,
+    )
+
+    for call_args in mock_trainer_cls.call_args_list:
+        callbacks = call_args.kwargs["callbacks"]
+        assert len(callbacks) == 2
+        assert isinstance(callbacks[0], Callback)
+        assert not isinstance(callbacks[0], ModelCheckpoint)
+        assert isinstance(callbacks[1], ModelCheckpoint)
 
 
 @patch("hyperbench.train.trainer.L.Trainer")

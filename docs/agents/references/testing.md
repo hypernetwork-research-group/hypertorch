@@ -2,17 +2,17 @@
 
 ## HyperBench specifics
 
-- Tests live under `hyperbench/tests/`.
-- Integration tests live under `hyperbench/integration_tests/` and are marked with `pytest.mark.integration`.
-- Mirror package structure when adding tests. Examples:
-  - `hyperbench/data/...` -> `hyperbench/tests/data/...`
-  - `hyperbench/train/...` -> `hyperbench/tests/train/...`
-  - `hyperbench/utils/...` -> `hyperbench/tests/utils/...`
+- Unit tests aree under `hyperbench/tests/`.
+- Integration tests are under `hyperbench/integration_tests/`.
+- Mirror package structure when adding tests. For example:
+  - `hyperbench/data/...` -> `hyperbench/tests/data/...`.
+  - `hyperbench/train/...` -> `hyperbench/tests/train/...`.
+  - `hyperbench/utils/...` -> `hyperbench/tests/utils/...`.
 - Prefer Makefile targets:
-  - `make test`
-  - `make stest T=<path-within-hyperbench/tests>`
-  - `make i-test`
-  - `make si-test T=<path-within-hyperbench/integration_tests>`
+  - `make test` for all unit tests.
+  - `make stest T=<path-within-hyperbench/tests>` for a subset of unit tests.
+  - `make i-test` for all integration tests.
+  - `make si-test T=<path-within-hyperbench/integration_tests>` for a subset of integration tests.
 - Use `uv run pytest` only for targeted one-off runs.
 - Run `make test` to see coverage reports and identify untested lines.
 - Run `make i-test` or `make si-test T=<path-within-hyperbench/integration_tests>` when a change affects live workflows.

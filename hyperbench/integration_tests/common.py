@@ -30,7 +30,7 @@ SEED = 42
 
 
 @cache
-def _cached_split_dataset(
+def __cached_split_dataset(
     sampling_strategy: SamplingStrategy,
     dataset: Dataset | None = None,
     node_space_setting: Literal["transductive", "inductive"] = "transductive",
@@ -83,7 +83,7 @@ def split_dataset(
     dataset: Dataset | None = None,
     node_space_setting: Literal["transductive", "inductive"] = "transductive",
 ) -> tuple[Dataset, Dataset, Dataset]:
-    train_dataset, val_dataset, test_dataset = _cached_split_dataset(
+    train_dataset, val_dataset, test_dataset = __cached_split_dataset(
         sampling_strategy, dataset, node_space_setting
     )
 
@@ -142,6 +142,13 @@ def enrich_datasets(
         )
     val_dataset.enrich_node_features_from(train_dataset)
     test_dataset.enrich_node_features_from(train_dataset)
+
+
+def extract_state_dict(model: L.LightningModule) -> dict[str, torch.Tensor]:
+    return {
+        parameter_name: parameter.detach().clone()
+        for parameter_name, parameter in model.state_dict().items()
+    }
 
 
 def loaders(
@@ -252,3 +259,28 @@ def train_test_loop(
             verbose=True,
         )
         trainer.test_all(dataloader=test_loader or configs[0].test_dataloader, verbose=True)
+
+
+def zero_model_parameters(model: L.LightningModule) -> None:
+    """
+    Zero the in-memory model parameters before loading from disk,
+    otherwise tests could pass even if the checkpoint were never restored.
+
+    Args:
+        model: The LightningModule whose parameters should be zeroed.
+    """
+    with torch.no_grad():
+        for parameter in model.parameters():
+            parameter.zero_()
+
+
+def zero_models_parameters(model_configs: Sequence[ModelConfig]) -> None:
+    """
+    Zero the in-memory model parameters before loading from disk,
+    otherwise tests could pass even if the checkpoint were never restored.
+
+    Args:
+        model_configs: A sequence of ModelConfig instances whose parameters should be zeroed.
+    """
+    for config in model_configs:
+        zero_model_parameters(config.model)
