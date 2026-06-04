@@ -549,7 +549,6 @@ class MultiModelTrainer:
             model_index=model_index,
             has_duplicate_full_model_name=has_duplicate_full_model_name,
         )
-
         callback_list = self.__to_callback_list(model_callbacks)
         checkpoint_callbacks = [
             callback for callback in callback_list if isinstance(callback, ModelCheckpoint)
