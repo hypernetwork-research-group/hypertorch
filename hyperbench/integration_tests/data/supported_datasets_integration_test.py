@@ -44,18 +44,19 @@ def test_all_supported_datasets_load_from_hf(dataset_name, request):
             pytest.warns(UserWarning, match="GitHub raw download failed"),
         ):
             dataset = get_dataset_by_name(dataset_name)
-    except Exception as exc:
-        message = str(exc)
+    except Exception as e:
+        message = str(e)
 
         execution_count = getattr(request.node, "execution_count", 1)
         max_attempts = request.node.get_closest_marker("flaky").kwargs.get("reruns", 0) + 1
 
         if execution_count == max_attempts and any(
-            s in message.lower() for s in ["404", "429", "not found", "failed to retrieve sha"]
+            term in message.lower() for term in ["429", "too many requests"]
         ):
             pytest.skip(f"Skipping {dataset_name} due to Hugging Face rate limit: {message}")
 
         raise
+
     mock_get.assert_called_once()
     mock_copyfile.assert_called_once()
     assert dataset.hdata is not None
