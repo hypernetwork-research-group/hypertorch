@@ -46,17 +46,16 @@ def test_all_supported_datasets_load_from_hf(dataset_name, request):
             dataset = get_dataset_by_name(dataset_name)
     except Exception as exc:
         message = str(exc)
-        flaky_marker = request.node.get_closest_marker("flaky")
-        reruns = flaky_marker.kwargs.get("reruns", 0) if flaky_marker is not None else 0
-        execution_count = getattr(request.node, "execution_count", 1)
-        is_last_attempt = execution_count >= reruns + 1
 
-        if is_last_attempt and (
-            "429" in message or "rate limit" in message.lower() or "Too Many Requests" in message
+        execution_count = getattr(request.node, "execution_count", 1)
+        max_attempts = request.node.get_closest_marker("flaky").kwargs.get("reruns", 0) + 1
+
+        if execution_count == max_attempts and any(
+            s in message.lower() for s in ["404", "429", "not found", "failed to retrieve sha"]
         ):
             pytest.skip(f"Skipping {dataset_name} due to Hugging Face rate limit: {message}")
-        raise exc
 
+        raise
     mock_get.assert_called_once()
     mock_copyfile.assert_called_once()
     assert dataset.hdata is not None

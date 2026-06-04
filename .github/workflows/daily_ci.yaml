@@ -2,7 +2,8 @@ name: Daily CI
 
 on:
   schedule:
-  - cron: "0 0 * * *"   # every day at midnight
+  - cron: "0 18 * * *"    # every day at 00:00 CET (6:00 PM EST)
+  workflow_dispatch:
 
 permissions:
   contents: read
