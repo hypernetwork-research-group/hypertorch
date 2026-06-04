@@ -59,6 +59,7 @@ Write `HyperBench` when referring to the project, repository, organization, or p
     - `make check`
 - **Typing:** Add and preserve type annotations. Run `make typecheck` for changes that touch typed code.
 - **Imports:** Keep imports at module top level unless a delayed import is necessary. Use `TYPE_CHECKING` guards for type-only or heavyweight imports.
+- **Validation:** Use explicit validation functions for argument checks. Avoid `assert` and do not validate types at runtime.
 - **Runtime checks:** Do not use `assert` for library-facing validation. Raise explicit exceptions instead.
 - **Public APIs:** Avoid changing public signatures without a clear reason and matching docs/tests updates.
 - **Scope:** Keep changes narrow. Do not mix behavioral edits with unrelated refactors.

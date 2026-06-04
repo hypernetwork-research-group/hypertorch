@@ -1,15 +1,13 @@
-from enum import Enum
-from typing import Any
+from typing import Any, Literal, TypeAlias
 from hyperbench.types import HData
 from hyperbench.data import NegativeSampler
 
 
-class NegativeSamplingSchedule(Enum):
-    """When to run negative sampling during training."""
-
-    FIRST_EPOCH = "first_epoch"  # Only at epoch 0, cached for all subsequent epochs
-    EVERY_N_EPOCHS = "every_n_epochs"  # Every N epochs (N provided separately)
-    EVERY_EPOCH = "every_epoch"  # Negatives generated every epoch
+NegativeSamplingSchedule: TypeAlias = Literal[
+    "first_epoch",  # Only at epoch 0, cached for all subsequent epochs
+    "every_n_epochs",  # Every N epochs (N provided separately)
+    "every_epoch",  # Negatives generated every epoch
+]
 
 
 class NegativeSamplingScheduler:
@@ -21,14 +19,15 @@ class NegativeSamplingScheduler:
 
     Args:
         negative_sampler: An instance of a ``NegativeSampler`` that defines how to sample negatives.
-        negative_sampling_schedule: An instance of ``NegativeSamplingSchedule`` that specifies the schedule for sampling negatives.
-        negative_sampling_every_n: An integer specifying the interval for sampling negatives when the schedule is set to ``EVERY_N_EPOCHS``. This parameter is ignored for other schedules.
+        negative_sampling_schedule: Literal string specifying the schedule for sampling negatives.
+        negative_sampling_every_n: An integer specifying the interval for sampling negatives
+            when the schedule is set to ``"every_n_epochs"``. This parameter is ignored for other schedules.
     """
 
     def __init__(
         self,
         negative_sampler: NegativeSampler,
-        negative_sampling_schedule: NegativeSamplingSchedule = NegativeSamplingSchedule.EVERY_EPOCH,
+        negative_sampling_schedule: NegativeSamplingSchedule = "every_epoch",
         negative_sampling_every_n: int = 1,
     ) -> None:
         self.negative_sampler = negative_sampler
@@ -56,13 +55,24 @@ class NegativeSamplingScheduler:
         Returns:
             should_sample: True if negatives should be resampled for the current epoch, False otherwise.
         """
+        if epoch < 0:
+            raise ValueError(f"Epoch must be non-negative, got {epoch}.")
+
         match self.negative_sampling_schedule:
-            case NegativeSamplingSchedule.EVERY_N_EPOCHS:
+            case "every_n_epochs":
+                if self.negative_sampling_every_n <= 0:
+                    raise ValueError(
+                        f"negative_sampling_every_n must be positive, got {self.negative_sampling_every_n}."
+                    )
                 return epoch % self.negative_sampling_every_n == 0
-            case NegativeSamplingSchedule.FIRST_EPOCH:
+            case "first_epoch":
                 return epoch == 0
-            case _:  # Defaults to NegativeSamplingSchedule.EVERY_EPOCH
+            case "every_epoch":
                 return True
+            case _:
+                raise ValueError(
+                    f"Unsupported negative sampling schedule: {self.negative_sampling_schedule!r}."
+                )
 
     def sample(self, batch: HData, epoch: int) -> HData:
         """

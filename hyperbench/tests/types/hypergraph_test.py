@@ -1,9 +1,9 @@
+import pytest
+import torch
 import json
 import re
 
-import pytest
-import torch
-
+from typing import Any, cast
 from unittest.mock import patch
 from hyperbench.types import HIFHypergraph, Hypergraph, HyperedgeIndex
 from hyperbench.tests import MOCK_BASE_PATH
@@ -503,6 +503,12 @@ def test_hifhypergraph_stats_returns_correct_statistics():
             [2, 3],
             id="second_of_two_hyperedges",
         ),
+        pytest.param(
+            torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]]),
+            10,
+            [],
+            id="non_existent_hyperedge_id",
+        ),
     ],
 )
 def test_hyperedge_index_nodes_in(hyperedge_index_tensor, hyperedge_id, expected_nodes):
@@ -510,8 +516,10 @@ def test_hyperedge_index_nodes_in(hyperedge_index_tensor, hyperedge_id, expected
     assert hyperedge_index.nodes_in(hyperedge_id) == expected_nodes
 
 
-def _edge_index_to_edge_set(edge_index: torch.Tensor) -> set[tuple[int, int]]:
-    return set(zip(edge_index[0].tolist(), edge_index[1].tolist(), strict=True))
+def test_hyperedge_index_nodes_in_raises_when_hyperedge_id_is_negative():
+    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1, 2], [0, 0, 0]], dtype=torch.long))
+    with pytest.raises(ValueError, match=re.escape("'hyperedge_id' must be non-negative, got -1")):
+        hyperedge_index.nodes_in(-1)
 
 
 @pytest.mark.parametrize(
@@ -559,7 +567,9 @@ def test_reduce_with_clique_expansion_returns_expected_edges(
 
     assert result.dtype == torch.long
     assert result.shape[0] == 2
-    assert _edge_index_to_edge_set(result) == expected_edges
+
+    edges = set(zip(result[0].tolist(), result[1].tolist(), strict=True))
+    assert edges == expected_edges
 
 
 def test_reduce_with_clique_expansion_matches_specialized_reducer():
@@ -570,6 +580,16 @@ def test_reduce_with_clique_expansion_matches_specialized_reducer():
     expected = hyperedge_index_wrapper.reduce_to_edge_index_on_clique_expansion()
 
     assert torch.equal(result, expected)
+
+
+def test_reduce_rejects_unsupported_strategy():
+    hyperedge_index = torch.tensor([[0, 1], [0, 0]], dtype=torch.long)
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape("Unsupported reduction strategy: fancy_expansion. "),
+    ):
+        HyperedgeIndex(hyperedge_index).reduce(cast(Any, "fancy_expansion"))
 
 
 @pytest.mark.parametrize(
@@ -656,6 +676,13 @@ def test_get_clique_expansion_adjacency(hyperedge_index_tensor, num_nodes, expec
     )
 
     assert result == expected_adjacency
+
+
+def test_get_clique_expansion_adjacency_rejects_num_nodes_too_small():
+    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 2], [0, 0]], dtype=torch.long))
+
+    with pytest.raises(ValueError, match="'num_nodes' is too small for the hyperedge index"):
+        hyperedge_index.get_clique_expansion_adjacency_list(num_nodes=2)
 
 
 @pytest.mark.parametrize(
@@ -1026,6 +1053,13 @@ def test_remove_hyperedges_with_fewer_than_k_nodes_returns_self():
     assert result is hyperedge_index
 
 
+def test_remove_hyperedges_with_fewer_than_k_nodes_rejects_invalid_k():
+    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1], [0, 0]], dtype=torch.long))
+
+    with pytest.raises(ValueError, match="'k' must be positive"):
+        hyperedge_index.remove_hyperedges_with_fewer_than_k_nodes(0)
+
+
 @pytest.mark.parametrize(
     "dropout",
     [
@@ -1283,18 +1317,42 @@ def test_get_sparse_incidence_matrix_sums_duplicate_incidences_when_coalesced():
     assert torch.allclose(incidence_matrix.to_dense(), expected_incidence_matrix, atol=1e-6)
 
 
-def test_get_sparse_incidence_matrix_rejects_explicit_num_nodes_too_small():
-    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1, 2], [0, 0, 0]], dtype=torch.long))
-
-    with pytest.raises(ValueError, match="num_nodes is too small"):
-        hyperedge_index.get_sparse_incidence_matrix(num_nodes=2)
-
-
-def test_get_sparse_incidence_matrix_rejects_explicit_num_hyperedges_too_small():
+@pytest.mark.parametrize(
+    ("kwargs", "expected_message"),
+    [
+        pytest.param({"num_nodes": 3}, "'num_nodes' is too small", id="nodes"),
+        pytest.param(
+            {"num_hyperedges": 1},
+            "'num_hyperedges' is too small",
+            id="hyperedges",
+        ),
+    ],
+)
+def test_get_sparse_incidence_matrix_rejects_explicit_dimensions_too_small(
+    kwargs, expected_message
+):
     hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long))
 
-    with pytest.raises(ValueError, match="num_hyperedges is too small"):
-        hyperedge_index.get_sparse_incidence_matrix(num_hyperedges=1)
+    with pytest.raises(ValueError, match=expected_message):
+        hyperedge_index.get_sparse_incidence_matrix(**kwargs)
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "expected_message"),
+    [
+        pytest.param({"num_nodes": -1}, "'num_nodes' must be non-negative", id="nodes"),
+        pytest.param(
+            {"num_hyperedges": -1},
+            "'num_hyperedges' must be non-negative",
+            id="hyperedges",
+        ),
+    ],
+)
+def test_get_sparse_incidence_matrix_rejects_negative_dimensions(kwargs, expected_message):
+    hyperedge_index = HyperedgeIndex(torch.zeros((2, 0), dtype=torch.long))
+
+    with pytest.raises(ValueError, match=expected_message):
+        hyperedge_index.get_sparse_incidence_matrix(**kwargs)
 
 
 def test_get_sparse_symnormalized_node_degree_matrix_is_expected_diagonal():
@@ -1373,6 +1431,30 @@ def test_get_sparse_normalized_node_degree_matrix_zeroes_isolated_nodes_for_nega
     assert torch.allclose(node_degree_matrix.to_dense(), torch.diag(expected_diagonal), atol=1e-6)
 
 
+def test_get_sparse_normalized_node_degree_matrix_rejects_mismatched_num_nodes():
+    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1], [0, 0]], dtype=torch.long))
+    incidence_matrix = hyperedge_index.get_sparse_incidence_matrix(num_nodes=3)
+
+    with pytest.raises(ValueError, match="'num_nodes' must match the incidence matrix dimension"):
+        hyperedge_index.get_sparse_normalized_node_degree_matrix(
+            incidence_matrix,
+            power=-1,
+            num_nodes=2,
+        )
+
+
+def test_get_sparse_normalized_node_degree_matrix_rejects_negative_num_nodes():
+    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1], [0, 0]], dtype=torch.long))
+    incidence_matrix = hyperedge_index.get_sparse_incidence_matrix()
+
+    with pytest.raises(ValueError, match="'num_nodes' must be non-negative"):
+        hyperedge_index.get_sparse_normalized_node_degree_matrix(
+            incidence_matrix,
+            power=-1,
+            num_nodes=-1,
+        )
+
+
 def test_get_sparse_rownormalized_node_degree_matrix_is_expected_diagonal():
     hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1, 0, 2], [0, 0, 1, 1]]))
     incidence_matrix = hyperedge_index.get_sparse_incidence_matrix()  # shape (3,2)
@@ -1427,3 +1509,28 @@ def test_get_sparse_normalized_hyperedge_degree_matrix_infers_num_hyperedges():
     )
 
     assert hyperedge_degree_matrix.shape == (2, 2)
+
+
+def test_get_sparse_normalized_hyperedge_degree_matrix_rejects_mismatched_num_hyperedges():
+    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1], [0, 0]], dtype=torch.long))
+    incidence_matrix = hyperedge_index.get_sparse_incidence_matrix(num_hyperedges=2)
+
+    with pytest.raises(
+        ValueError,
+        match="'num_hyperedges' must match the incidence matrix dimension",
+    ):
+        hyperedge_index.get_sparse_normalized_hyperedge_degree_matrix(
+            incidence_matrix,
+            num_hyperedges=1,
+        )
+
+
+def test_get_sparse_normalized_hyperedge_degree_matrix_rejects_negative_num_hyperedges():
+    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1], [0, 0]], dtype=torch.long))
+    incidence_matrix = hyperedge_index.get_sparse_incidence_matrix()
+
+    with pytest.raises(ValueError, match="'num_hyperedges' must be non-negative"):
+        hyperedge_index.get_sparse_normalized_hyperedge_degree_matrix(
+            incidence_matrix,
+            num_hyperedges=-1,
+        )

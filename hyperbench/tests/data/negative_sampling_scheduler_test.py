@@ -1,6 +1,8 @@
 import pytest
 import torch
+import re
 
+from typing import Any, cast
 from unittest.mock import MagicMock
 from hyperbench.data import NegativeSampler, NegativeSamplingSchedule, NegativeSamplingScheduler
 from hyperbench.types import HData
@@ -34,7 +36,7 @@ def mock_sampler(mock_negative_hdata):
 
 
 def test_config_returns_scheduler_parameters(mock_sampler):
-    schedule = NegativeSamplingSchedule.EVERY_N_EPOCHS
+    schedule: NegativeSamplingSchedule = "every_n_epochs"
     scheduler = NegativeSamplingScheduler(
         negative_sampler=mock_sampler,
         negative_sampling_schedule=schedule,
@@ -50,7 +52,7 @@ def test_config_returns_scheduler_parameters(mock_sampler):
 def test_sample_caches_result_across_non_sampling_epochs(mock_sampler, mock_batch):
     scheduler = NegativeSamplingScheduler(
         negative_sampler=mock_sampler,
-        negative_sampling_schedule=NegativeSamplingSchedule.FIRST_EPOCH,
+        negative_sampling_schedule="first_epoch",
     )
 
     # Epoch 0: should sample
@@ -65,7 +67,7 @@ def test_sample_caches_result_across_non_sampling_epochs(mock_sampler, mock_batc
 def test_sample_delegates_to_negative_sampler(mock_sampler, mock_batch, mock_negative_hdata):
     scheduler = NegativeSamplingScheduler(
         negative_sampler=mock_sampler,
-        negative_sampling_schedule=NegativeSamplingSchedule.EVERY_EPOCH,
+        negative_sampling_schedule="every_epoch",
     )
 
     result = scheduler.sample(mock_batch, epoch=0)
@@ -77,7 +79,7 @@ def test_sample_delegates_to_negative_sampler(mock_sampler, mock_batch, mock_neg
 def test_sample_raises_when_cache_is_empty(mock_sampler, mock_batch):
     scheduler = NegativeSamplingScheduler(
         negative_sampler=mock_sampler,
-        negative_sampling_schedule=NegativeSamplingSchedule.EVERY_N_EPOCHS,
+        negative_sampling_schedule="every_n_epochs",
         negative_sampling_every_n=5,
     )
 
@@ -86,20 +88,43 @@ def test_sample_raises_when_cache_is_empty(mock_sampler, mock_batch):
         scheduler.sample(mock_batch, epoch=1)
 
 
-def test_sample_resamples_on_every_n_epoch(mock_sampler, mock_batch):
+@pytest.mark.parametrize(
+    "num_epoch, expected_call_count",
+    [
+        pytest.param(0, 1, id="num_epoch_0_multiple_of_n=3"),
+        pytest.param(1, 1, id="num_epoch_1_not_multiple_of_n=3"),
+        pytest.param(2, 1, id="num_epoch_2_not_multiple_of_n=3"),
+        pytest.param(3, 2, id="num_epoch_3_multiple_of_n=3"),
+        pytest.param(120, 41, id="num_epoch_120_multiple_of_n=3"),
+        pytest.param(121, 41, id="num_epoch_121_not_multiple_of_n=3"),
+        pytest.param(122, 41, id="num_epoch_122_not_multiple_of_n=3"),
+        pytest.param(123, 42, id="num_epoch_123_multiple_of_n=3"),
+        pytest.param(1000, 334, id="num_epoch_1000_multiple_of_n=3"),
+        pytest.param(1001, 334, id="num_epoch_1001_not_multiple_of_n=3"),
+        pytest.param(1002, 335, id="num_epoch_1002_multiple_of_n=3"),
+        pytest.param(1003, 335, id="num_epoch_1003_not_multiple_of_n=3"),
+    ],
+)
+def test_sample_resamples_on_every_n_epoch(
+    num_epoch,
+    expected_call_count,
+    mock_sampler,
+    mock_batch,
+):
     scheduler = NegativeSamplingScheduler(
         negative_sampler=mock_sampler,
-        negative_sampling_schedule=NegativeSamplingSchedule.EVERY_N_EPOCHS,
+        negative_sampling_schedule="every_n_epochs",
         negative_sampling_every_n=3,
     )
 
-    scheduler.sample(mock_batch, epoch=0)
-    scheduler.sample(mock_batch, epoch=1)
-    scheduler.sample(mock_batch, epoch=2)
-    scheduler.sample(mock_batch, epoch=3)
+    for epoch in range(num_epoch + 1):
+        scheduler.sample(mock_batch, epoch)
 
-    # Should have sampled at epoch 0 and epoch 3 (multiples of 3)
-    assert mock_sampler.sample.call_count == 2
+    # Example: epoch=0, should sample once
+    #          epoch=3, should sample twice (at epochs 0 and 3)
+    #          epoch=4, should sample twice (at epochs 0 and 3)
+    #          epoch=6, should sample three times (at epochs 0, 3, and 6) and so on
+    assert mock_sampler.sample.call_count == expected_call_count
 
 
 @pytest.mark.parametrize(
@@ -114,31 +139,7 @@ def test_sample_resamples_on_every_n_epoch(mock_sampler, mock_batch):
 def test_should_sample_every_epoch(mock_sampler, epoch, expected_should_sample):
     scheduler = NegativeSamplingScheduler(
         negative_sampler=mock_sampler,
-        negative_sampling_schedule=NegativeSamplingSchedule.EVERY_EPOCH,
-    )
-
-    assert scheduler.should_sample(epoch) == expected_should_sample
-
-
-@pytest.mark.parametrize(
-    "epoch, every_n, expected_should_sample",
-    [
-        pytest.param(0, 3, True, id="epoch_0_every_3"),
-        pytest.param(1, 3, False, id="epoch_1_every_3"),
-        pytest.param(2, 3, False, id="epoch_2_every_3"),
-        pytest.param(3, 3, True, id="epoch_3_every_3"),
-        pytest.param(6, 3, True, id="epoch_6_every_3"),
-        pytest.param(0, 1, True, id="epoch_0_every_1"),
-        pytest.param(5, 1, True, id="epoch_5_every_1"),
-        pytest.param(4, 5, False, id="epoch_4_every_5"),
-        pytest.param(5, 5, True, id="epoch_5_every_5"),
-    ],
-)
-def test_should_sample_every_n_epochs(mock_sampler, epoch, every_n, expected_should_sample):
-    scheduler = NegativeSamplingScheduler(
-        negative_sampler=mock_sampler,
-        negative_sampling_schedule=NegativeSamplingSchedule.EVERY_N_EPOCHS,
-        negative_sampling_every_n=every_n,
+        negative_sampling_schedule="every_epoch",
     )
 
     assert scheduler.should_sample(epoch) == expected_should_sample
@@ -156,7 +157,51 @@ def test_should_sample_every_n_epochs(mock_sampler, epoch, every_n, expected_sho
 def test_should_sample_first_epoch(mock_sampler, epoch, expected_should_sample):
     scheduler = NegativeSamplingScheduler(
         negative_sampler=mock_sampler,
-        negative_sampling_schedule=NegativeSamplingSchedule.FIRST_EPOCH,
+        negative_sampling_schedule="first_epoch",
     )
 
     assert scheduler.should_sample(epoch) == expected_should_sample
+
+
+def test_should_sample_rejects_invalid_epoch(mock_sampler):
+    scheduler = NegativeSamplingScheduler(negative_sampler=mock_sampler)
+
+    with pytest.raises(ValueError, match=re.escape("Epoch must be non-negative, got -1.")):
+        scheduler.should_sample(epoch=-1)
+
+
+def test_should_sample_rejects_unsupported_schedule(mock_sampler):
+    scheduler = NegativeSamplingScheduler(
+        negative_sampler=mock_sampler,
+        negative_sampling_schedule=cast(Any, "sometimes"),
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape("Unsupported negative sampling schedule: 'sometimes'."),
+    ):
+        scheduler.should_sample(epoch=0)
+
+
+@pytest.mark.parametrize(
+    "every_n, expected_exception, expected_message",
+    [
+        pytest.param(
+            0, ValueError, "negative_sampling_every_n must be positive, got 0.", id="zero"
+        ),
+        pytest.param(
+            -1, ValueError, "negative_sampling_every_n must be positive, got -1.", id="negative"
+        ),
+    ],
+)
+def test_should_sample_rejects_invalid_every_n(
+    mock_sampler, every_n, expected_exception, expected_message
+):
+    scheduler = NegativeSamplingScheduler(
+        negative_sampler=mock_sampler,
+        negative_sampling_schedule="every_n_epochs",
+        negative_sampling_every_n=cast(Any, every_n),
+    )
+
+    with pytest.raises(expected_exception, match=re.escape(expected_message)):
+        scheduler.should_sample(epoch=0)

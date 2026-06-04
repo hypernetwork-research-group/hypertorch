@@ -13,7 +13,7 @@ def mock_dataset_single_sample():
     x = torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
     hyperedge_index = torch.tensor([[0, 1, 1, 2], [0, 0, 1, 1]])
     hyperedge_attr = torch.tensor([[0.5], [0.7]])
-    hyperedge_weights = torch.tensor([[0.8], [0.9]])
+    hyperedge_weights = torch.tensor([0.8, 0.9])
     hdata = HData(
         x=x,
         hyperedge_index=hyperedge_index,
@@ -36,7 +36,7 @@ def mock_dataset_single_sample_with_weights():
     x = torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
     hyperedge_index = torch.tensor([[0, 1, 1, 2], [0, 0, 1, 1]])
     hyperedge_attr = torch.tensor([[0.5], [0.7]])
-    hyperedge_weights = torch.tensor([[0.8], [0.9]])
+    hyperedge_weights = torch.tensor([0.8, 0.9])
     hdata = HData(
         x=x,
         hyperedge_index=hyperedge_index,
@@ -122,7 +122,7 @@ def test_collate_single_sample_with_weights(mock_dataset_single_sample_with_weig
     expected_x = torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
     expected_hyperedge_attr = torch.tensor([[0.5], [0.7]])
     expected_hyeredge_index = torch.tensor([[0, 1, 1, 2], [0, 0, 1, 1]])
-    expected_hyperedge_weights = torch.tensor([[0.8], [0.9]])
+    expected_hyperedge_weights = torch.tensor([0.8, 0.9])
 
     assert torch.equal(batched.x, expected_x)
     assert batched.hyperedge_index.shape == (2, 4)
@@ -308,8 +308,7 @@ def test_collate_when_dataset_no_hyperedge_attr_presence():
 def test_collate_when_dataset_has_no_global_node_ids():
     x = torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
     hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 1]])
-    hdata = HData(x=x, hyperedge_index=hyperedge_index)
-    hdata.global_node_ids = None
+    hdata = HData(x=x, hyperedge_index=hyperedge_index, global_node_ids=None)
 
     sample0 = HData.from_hyperedge_index(torch.tensor([[0, 1], [0, 0]]))
     sample1 = HData.from_hyperedge_index(torch.tensor([[2], [1]]))

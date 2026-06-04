@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any, ClassVar
 from lightning.pytorch.loggers import Logger
 from collections.abc import Mapping
+from hyperbench.utils import validate_is_non_negative
 
 
 class MarkdownTableLogger(Logger):
@@ -35,6 +36,8 @@ class MarkdownTableLogger(Logger):
         precision: int = 4,
     ) -> None:
         super().__init__()
+        validate_is_non_negative("precision", precision)
+
         self.__save_dir = save_dir
         self.__model_name = model_name
         self.__experiment_name = experiment_name
@@ -161,7 +164,8 @@ class MarkdownTableLogger(Logger):
         results: Mapping[str, Mapping[str, float]],
         precision: int = 4,
     ) -> str:
-        """Build a markdown comparison table from model results.
+        """
+        Build a markdown comparison table from model results.
 
         Examples:
             Input:

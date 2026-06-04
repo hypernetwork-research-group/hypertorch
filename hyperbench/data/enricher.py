@@ -1,6 +1,6 @@
-import warnings
 import random
 import torch
+import warnings
 
 from abc import ABC, abstractmethod
 from torch import Tensor, optim
@@ -8,6 +8,13 @@ from typing import Literal, TypeAlias
 from torch_geometric.nn import Node2Vec as PyGNode2Vec
 from hyperbench.types import EdgeIndex, HyperedgeIndex
 from hyperbench.models import VilLain
+from hyperbench.utils import (
+    validate_is_between,
+    validate_is_finite,
+    validate_is_finite_when_provided,
+    validate_is_non_negative,
+    validate_is_positive,
+)
 
 
 EnrichmentMode: TypeAlias = Literal["concatenate", "replace"]
@@ -62,6 +69,8 @@ class _VilLainTrainer:
         self.learning_rate = learning_rate
         self.weight_decay = weight_decay
         self.verbose = verbose
+
+        self.__validate()
 
     def _empty_features(self, hyperedge_index: Tensor) -> Tensor:
         """
@@ -146,6 +155,28 @@ class _VilLainTrainer:
             optimizer.step()
 
         return model
+
+    def __validate(self) -> None:
+        validate_is_positive("num_features", self.embedding_dim)
+        validate_is_non_negative("num_nodes", self.num_nodes)
+        validate_is_non_negative("num_hyperedges", self.num_hyperedges)
+
+        if self.labels_per_subspace < 2:
+            raise ValueError(
+                f"'labels_per_subspace' must be at least 2, got {self.labels_per_subspace}."
+            )
+
+        validate_is_positive("training_steps", self.training_steps)
+        validate_is_positive("generation_steps", self.generation_steps)
+        validate_is_finite("tau", self.tau)
+        validate_is_positive("tau", self.tau)
+        validate_is_finite("eps", self.eps)
+        validate_is_positive("eps", self.eps)
+        validate_is_positive("num_epochs", self.num_epochs)
+        validate_is_positive("learning_rate", self.learning_rate)
+        validate_is_non_negative("weight_decay", self.weight_decay)
+        validate_is_finite("learning_rate", self.learning_rate)
+        validate_is_finite("weight_decay", self.weight_decay)
 
 
 class Enricher(ABC):
@@ -322,8 +353,9 @@ class ABHyperedgeWeightsEnricher(HyperedgeWeightsEnricher):
         beta: float | None = None,
     ):
         super().__init__(cache_dir=cache_dir)
-        if alpha < 0.0 or alpha > 1.0:
-            raise ValueError("Alpha must be between 0.0 and 1.0.")
+
+        validate_is_between("alpha", alpha, 0.0, 1.0)
+        validate_is_finite_when_provided("beta", beta)
 
         self.alpha = alpha
         self.beta = beta
@@ -407,12 +439,6 @@ class Node2VecEnricher(NodeEnricher):
         verbose: bool = False,
     ):
         super().__init__(cache_dir=cache_dir)
-        if walk_length < context_size:
-            raise ValueError(
-                f"Expected walk_length >= context_size, got "
-                f"walk_length={walk_length}, context_size={context_size}."
-            )
-
         self.embedding_dim = num_features
         self.walk_length = walk_length
         self.context_size = context_size
@@ -427,6 +453,8 @@ class Node2VecEnricher(NodeEnricher):
         self.batch_size = batch_size
         self.sparse = sparse
         self.verbose = verbose
+
+        self.__validate()
 
     def enrich(self, hyperedge_index: Tensor) -> Tensor:
         """
@@ -519,6 +547,28 @@ class Node2VecEnricher(NodeEnricher):
         # Detach node embeddings from computation graph and return them
         return x.detach().to(device)
 
+    def __validate(self) -> None:
+        validate_is_positive("num_features", self.embedding_dim)
+        validate_is_positive("walk_length", self.walk_length)
+        validate_is_positive("context_size", self.context_size)
+        if self.walk_length < self.context_size:
+            raise ValueError(
+                "Expected walk_length >= context_size, got "
+                f"walk_length={self.walk_length}, context_size={self.context_size}."
+            )
+
+        validate_is_positive("num_walks_per_node", self.num_walks_per_node)
+        validate_is_finite("p", self.p)
+        validate_is_positive("p", self.p)
+        validate_is_finite("q", self.q)
+        validate_is_positive("q", self.q)
+        validate_is_positive("num_negative_samples", self.num_negative_samples)
+        validate_is_non_negative("num_nodes", self.num_nodes)
+        validate_is_positive("num_epochs", self.num_epochs)
+        validate_is_finite("learning_rate", self.learning_rate)
+        validate_is_positive("learning_rate", self.learning_rate)
+        validate_is_positive("batch_size", self.batch_size)
+
 
 class LaplacianPositionalEncodingEnricher(NodeEnricher):
     """
@@ -540,6 +590,10 @@ class LaplacianPositionalEncodingEnricher(NodeEnricher):
         cache_dir: str | None = None,
     ):
         super().__init__(cache_dir=cache_dir)
+
+        validate_is_positive("num_features", num_features)
+        validate_is_non_negative("num_nodes", num_nodes)
+
         self.num_features = num_features
         self.num_nodes = num_nodes
 

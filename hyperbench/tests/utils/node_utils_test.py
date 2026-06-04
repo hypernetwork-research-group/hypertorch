@@ -1,10 +1,13 @@
 import pytest
 import torch
+import re
 
+from typing import Any, cast
 from hyperbench.utils import (
     assign_hyperedge_label_to_nodes,
     is_inductive_setting,
     is_transductive_setting,
+    validate_node_space_setting,
 )
 
 
@@ -89,3 +92,32 @@ def test_is_inductive_setting(node_space_setting, expected):
 )
 def test_is_transductive_setting(node_space_setting, expected):
     assert is_transductive_setting(node_space_setting) == expected
+
+
+@pytest.mark.parametrize(
+    "node_space_setting",
+    [
+        pytest.param("inductive", id="inductive"),
+        pytest.param("transductive", id="transductive"),
+    ],
+)
+def test_validate_node_space_setting_accepts_supported_values(node_space_setting):
+    validate_node_space_setting(node_space_setting)
+
+
+@pytest.mark.parametrize(
+    "node_space_setting",
+    [
+        pytest.param("semi", id="unsupported_string"),
+        pytest.param(None, id="none"),
+    ],
+)
+def test_validate_node_space_setting_rejects_unsupported_values(node_space_setting):
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "node_space_setting must be one of 'transductive' or 'inductive', "
+            f"got {node_space_setting!r}."
+        ),
+    ):
+        validate_node_space_setting(cast(Any, node_space_setting))

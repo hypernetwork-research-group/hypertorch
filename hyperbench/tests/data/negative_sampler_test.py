@@ -33,7 +33,29 @@ def mock_hdata_no_attr() -> HData:
         hyperedge_index=torch.tensor([[0, 1, 2], [0, 0, 1]]),
         hyperedge_attr=None,
         num_nodes=3,
+        num_hyperedges=2,
+    )
+
+
+@pytest.fixture
+def mock_hdata_with_weights() -> HData:
+    return HData(
+        x=torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]]),
+        hyperedge_index=torch.tensor([[0, 1, 2], [0, 1, 2]]),
+        hyperedge_weights=torch.tensor([0.5, 0.7, 0.9]),
+        num_nodes=3,
         num_hyperedges=3,
+    )
+
+
+@pytest.fixture
+def mock_hdata_no_weights() -> HData:
+    return HData(
+        x=torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]]),
+        hyperedge_index=torch.tensor([[0, 1, 2], [0, 0, 1]]),
+        hyperedge_weights=None,
+        num_nodes=3,
+        num_hyperedges=2,
     )
 
 
@@ -101,7 +123,7 @@ def test_random_negative_sampler_sample_too_many_nodes(mock_hdata_with_attr):
         sampler.sample(mock_hdata_with_attr)
 
 
-def test_random_negative_sampler_with_edge_attr(mock_hdata_with_attr):
+def test_random_negative_sampler_with_hyperedge_attr(mock_hdata_with_attr):
     sampler = RandomNegativeSampler(num_negative_samples=2, num_nodes_per_sample=2)
     result = sampler.sample(mock_hdata_with_attr)
 
@@ -118,7 +140,7 @@ def test_random_negative_sampler_with_edge_attr(mock_hdata_with_attr):
     assert result.hyperedge_attr.shape[0] == 2
 
 
-def test_random_negative_sampler_sample_no_edge_attr(mock_hdata_no_attr):
+def test_random_negative_sampler_sample_no_hyperedge_attr(mock_hdata_no_attr):
     sampler = RandomNegativeSampler(num_negative_samples=1, num_nodes_per_sample=2)
     result = sampler.sample(mock_hdata_no_attr)
 
@@ -128,8 +150,41 @@ def test_random_negative_sampler_sample_no_edge_attr(mock_hdata_no_attr):
     assert (
         result.hyperedge_index.shape[1] == 2
     )  # 1 negative hyperedge * 2 nodes per negative hyperedge
-    assert 3 in result.hyperedge_index[1]  # New hyperedge ID (3) should be present
+    assert 2 in result.hyperedge_index[1]  # New hyperedge ID (2) should be present
     assert result.hyperedge_attr is None
+
+
+def test_random_negative_sampler_with_hyperedge_weights(mock_hdata_with_weights):
+    sampler = RandomNegativeSampler(num_negative_samples=2, num_nodes_per_sample=2)
+    result = sampler.sample(mock_hdata_with_weights)
+
+    assert result.num_hyperedges == 2
+    assert result.x.shape[0] <= mock_hdata_with_weights.x.shape[0]
+    assert result.hyperedge_index.shape[0] == 2
+    assert (
+        result.hyperedge_index.shape[1] == 4
+    )  # 2 negative hyperedges * 2 nodes per negative hyperedge
+    assert (
+        3 in result.hyperedge_index[1] and 4 in result.hyperedge_index[1]
+    )  # New hyperedge IDs (3, 4) should be present
+
+    # Weights for new hyperedges are added only if the sampler is configured
+    # with a hyperedge_weights_enricher, otherwise they default to None
+    assert result.hyperedge_weights is None
+
+
+def test_random_negative_sampler_sample_no_hyperedge_weights(mock_hdata_no_weights):
+    sampler = RandomNegativeSampler(num_negative_samples=1, num_nodes_per_sample=2)
+    result = sampler.sample(mock_hdata_no_weights)
+
+    assert result.num_hyperedges == 1
+    assert result.x.shape[0] <= mock_hdata_no_weights.x.shape[0]
+    assert result.hyperedge_index.shape[0] == 2
+    assert (
+        result.hyperedge_index.shape[1] == 2
+    )  # 1 negative hyperedge * 2 nodes per negative hyperedge
+    assert 2 in result.hyperedge_index[1]  # New hyperedge ID (2) should be present
+    assert result.hyperedge_weights is None
 
 
 def test_random_negative_sampler_sample_with_seed_is_reproducible(mock_hdata_with_attr):

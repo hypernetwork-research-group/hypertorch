@@ -3,7 +3,8 @@ from __future__ import annotations
 import torch
 
 from torch import Tensor
-from hyperbench import utils
+from typing import cast
+from hyperbench.utils import sparse_dropout, validate_is_non_negative
 
 
 class Graph:
@@ -69,7 +70,8 @@ class Graph:
         #          -> edges without self-loops = [[0, 1],
         #                                         [2, 3]]
         no_selfloop_mask = edges_tensor[:, 0] != edges_tensor[:, 1]
-        self.edges = edges_tensor[no_selfloop_mask].tolist()
+        edges_without_selfloops: list[list[int]] = edges_tensor[no_selfloop_mask].tolist()
+        self.edges = edges_without_selfloops
 
         # Example: edge_weights = [0.5, 1.0, 0.8], no_selfloop_mask = [True, False, True]
         #         -> edge_weights without self-loops = [0.5, 0.8]
@@ -124,7 +126,7 @@ class Graph:
             x: The smoothed feature matrix. Size ``(num_nodes, C)``.
         """
         if drop_rate > 0.0:
-            laplacian_matrix = utils.sparse_dropout(laplacian_matrix, drop_rate)
+            laplacian_matrix = sparse_dropout(laplacian_matrix, drop_rate)
         return laplacian_matrix.matmul(x)
 
 
@@ -225,8 +227,8 @@ class EdgeIndex:
         Raises:
             ValueError: If the input edge index has no edges (i.e., ``shape (2, 0)``).
         """
-        if self.__edge_index.size(1) < 1:
-            raise ValueError("Edge index must have at least one edge to add self-loops.")
+        num_selfloop_nodes = self.num_nodes if num_nodes is None else num_nodes
+        self.__validate_num_nodes(num_selfloop_nodes)
 
         device = self.__edge_index.device
         src, dest = self.__edge_index[0], self.__edge_index[1]
@@ -248,7 +250,6 @@ class EdgeIndex:
         #          -> dest = [1, 0, 3, 0, 1, 2, 3, 4, 5]
         #          -> edge_index_with_selfloops = [[0, 1, 2, 0, 1, 2, 3, 4, 5],
         #                                          [1, 0, 3, 0, 1, 2, 3, 4, 5]]
-        num_selfloop_nodes = self.num_nodes if num_nodes is None else num_nodes
         selfloop_indices = torch.arange(num_selfloop_nodes, device=device)
         src = torch.cat([src, selfloop_indices])
         dest = torch.cat([dest, selfloop_indices])
@@ -302,9 +303,11 @@ class EdgeIndex:
         Returns:
             adjacency: The sparse adjacency matrix of shape ``(num_nodes, num_nodes)``.
         """
+        num_nodes = self.num_nodes if num_nodes is None else num_nodes
+        self.__validate_num_nodes(num_nodes)
+
         device = self.__edge_index.device
         src, dest = self.__edge_index
-        num_nodes = self.num_nodes if num_nodes is None else num_nodes
 
         # Example: edge_index = [[0, 1, 2, 3],
         #                       [1, 0, 3, 2]]
@@ -350,8 +353,10 @@ class EdgeIndex:
         Returns:
             identity: The sparse identity matrix I of shape ``(num_nodes, num_nodes)``.
         """
-        device = self.__edge_index.device
         num_nodes = self.num_nodes if num_nodes is None else num_nodes
+        self.__validate_num_nodes(num_nodes)
+
+        device = self.__edge_index.device
 
         # Example: num_nodes = 3
         #          -> identity_indices = [[0, 1, 2],
@@ -387,9 +392,10 @@ class EdgeIndex:
         Returns:
             degree_matrix: The sparse normalized degree matrix D^-1/2 of shape ``(num_nodes, num_nodes)``.
         """
-        device = self.__edge_index.device
-
         num_nodes = self.num_nodes if num_nodes is None else num_nodes
+        self.__validate_num_nodes(num_nodes)
+
+        device = self.__edge_index.device
 
         adj_matrix = self.get_sparse_adjacency_matrix(
             num_nodes=num_nodes, use_edge_weights=use_edge_weights
@@ -440,9 +446,10 @@ class EdgeIndex:
         Returns:
             laplacian: The sparse symmetric normalized Laplacian matrix of shape ``(num_nodes, num_nodes)``.
         """
-        self.to_undirected(with_selfloops=False)
-
         num_nodes = self.num_nodes if num_nodes is None else num_nodes
+        self.__validate_num_nodes(num_nodes)
+
+        self.to_undirected(with_selfloops=False, num_nodes=num_nodes)
 
         degree_matrix = self.get_sparse_normalized_degree_matrix(num_nodes)
         adj_matrix = self.get_sparse_adjacency_matrix(num_nodes)
@@ -479,9 +486,10 @@ class EdgeIndex:
         Returns:
             laplacian: The sparse symmetrically normalized Laplacian matrix of shape ``(num_nodes, num_nodes)``.
         """
-        self.to_undirected(with_selfloops=True, num_nodes=num_nodes)
-
         num_nodes = self.num_nodes if num_nodes is None else num_nodes
+        self.__validate_num_nodes(num_nodes)
+
+        self.to_undirected(with_selfloops=True, num_nodes=num_nodes)
 
         degree_matrix = self.get_sparse_normalized_degree_matrix(
             num_nodes=num_nodes, use_edge_weights=use_edge_weights
@@ -505,7 +513,8 @@ class EdgeIndex:
         #          -> edge_index = [[0, 2, 3],
         #                           [1, 3, 2]], shape (2, |E'| = 3)
         keep_mask = self.__edge_index[0] != self.__edge_index[1]
-        self.__edge_index = self.__edge_index[:, keep_mask]
+        edge_index_without_selfloops: Tensor = self.__edge_index[:, keep_mask]
+        self.__edge_index = edge_index_without_selfloops
         if self.__edge_weights is not None:
             self.__edge_weights = self.__edge_weights[keep_mask]
         return self
@@ -522,6 +531,9 @@ class EdgeIndex:
         Returns:
             edge_index: This `EdgeIndex` instance with duplicate edges removed.
         """
+        num_nodes = self.num_nodes if num_nodes is None else num_nodes
+        self.__validate_num_nodes(num_nodes)
+
         # Example: edge_index = [[0, 1, 2, 2, 0, 3, 2],
         #                        [1, 0, 3, 2, 1, 2, 2]], shape (2, |E| = 7)
         #          -> after torch.unique(..., dim=1):
@@ -530,7 +542,10 @@ class EdgeIndex:
         # Note: we call contiguous() to ensure that the resulting tensor is contiguous in memory,
         # which can improve performance for subsequent operations that require contiguous tensors.
         if self.__edge_weights is None:
-            self.__edge_index = torch.unique(self.__edge_index, dim=1).contiguous()
+            edge_index_without_duplicate_edges = cast(
+                Tensor, torch.unique(self.__edge_index, dim=1)
+            )
+            self.__edge_index = edge_index_without_duplicate_edges.contiguous()
             return self
 
         # No edges to process, just ensure tensors are contiguous
@@ -549,7 +564,6 @@ class EdgeIndex:
         #          -> edge_index = [[0, 1],
         #                           [1, 2]]
         #          -> edge_weights = [3.0, 3.0] (weights of duplicate edges are summed)
-        num_nodes = self.num_nodes if num_nodes is None else num_nodes
         coalesced = torch.sparse_coo_tensor(
             self.__edge_index,
             self.__edge_weights,
@@ -576,9 +590,10 @@ class EdgeIndex:
         Returns:
             edge_index: This `EdgeIndex` instance converted to undirected.
         """
-        device = self.__edge_index.device
         num_nodes = self.num_nodes if num_nodes is None else num_nodes
+        self.__validate_num_nodes(num_nodes)
 
+        device = self.__edge_index.device
         orig_src, orig_dest = self.__edge_index[0], self.__edge_index[1]
 
         # Encode each directed edge (u, v) as a unique scalar key u * num_nodes + v.
@@ -641,7 +656,7 @@ class EdgeIndex:
             # In this way, we don't do the duplicate edge removal twice, which would be redundant and inefficient
             self.add_selfloops(num_nodes=num_nodes, with_duplicate_removal=False)
 
-        self.remove_duplicate_edges()
+        self.remove_duplicate_edges(num_nodes=num_nodes)
 
         return self
 
@@ -658,4 +673,16 @@ class EdgeIndex:
             raise ValueError(
                 "edge_weights must have the same number of entries as edge_index columns. "
                 f"Got {edge_weights.size(0)} edge weights but {self.__edge_index.size(1)} edge columns."
+            )
+
+    def __validate_num_nodes(self, num_nodes: int) -> None:
+        validate_is_non_negative("num_nodes", num_nodes)
+
+        if self.num_edges < 1:
+            return
+
+        if self.max_node_id >= num_nodes:
+            raise ValueError(
+                "'num_nodes' is too small for the edge index. "
+                f"Got num_nodes={num_nodes}, but max node id is {self.max_node_id}."
             )

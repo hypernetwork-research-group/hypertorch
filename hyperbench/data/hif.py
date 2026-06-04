@@ -73,6 +73,9 @@ class HIFProcessor:
 
         # Remap node IDs to 0-based contiguous IDs (using indices) matching the x tensor order
         node_id_to_idx = {node.get("node"): idx for idx, node in enumerate(hypergraph.nodes)}
+        if len(node_id_to_idx) != num_nodes:
+            raise ValueError("HIF node IDs must be unique.")
+
         # Initialize edge_set only with edges that have incidences, so that
         # we avoid inflating edge count due to isolated nodes/missing incidences
         hyperedge_id_to_idx: dict[Any, int] = {}
@@ -83,6 +86,11 @@ class HIFProcessor:
         for incidence in hypergraph.incidences:
             node_id = incidence.get("node", 0)
             hyperedge_id = incidence.get("edge", 0)
+            if node_id not in node_id_to_idx:
+                raise ValueError(
+                    f"Incidence references unknown node id {node_id!r}; "
+                    "all incidence nodes must be declared in the HIF nodes list."
+                )
 
             if hyperedge_id not in hyperedge_id_to_idx:
                 # Hyperedges start from 0 and are assigned IDs in the order they are first encountered in incidences
@@ -151,8 +159,7 @@ class HIFProcessor:
         hyperedge_id_to_idx: dict[Any, int],
         num_hyperedges: int,
     ) -> Tensor | None:
-        # hyperedge-attr: shape [num_hyperedges, num_hyperedge_attributes]
-        hyperedge_attr = None
+        hyperedge_attr = None  # shape [num_hyperedges, num_hyperedge_attributes]
         has_hyperedges = hypergraph.hyperedges is not None and len(hypergraph.hyperedges) > 0
         has_any_hyperedge_attrs = has_hyperedges and any(
             "attrs" in edge for edge in hypergraph.hyperedges
@@ -233,7 +240,7 @@ class HIFProcessor:
             edge_attrs = hyperedge_id_to_attrs.get(edge_id, {})
             weights.append(float(edge_attrs.get("weight", 1.0)))
 
-        return torch.tensor(weights, dtype=torch.float)
+        return torch.tensor(weights, dtype=torch.float)  # shape [num_hyperedges,]
 
 
 class HIFLoader:

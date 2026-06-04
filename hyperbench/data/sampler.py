@@ -49,6 +49,7 @@ class BaseSampler(ABC):
 
         Raises:
             ValueError: If the provided index is invalid (e.g., empty list or list length exceeds number of sampleable items).
+            TypeError: If the index is not an integer or a list of integers.
         """
         if isinstance(index, list):
             if len(index) < 1:
@@ -57,7 +58,15 @@ class BaseSampler(ABC):
                 raise ValueError(
                     f"Index list length ({len(index)}) cannot exceed the number of sampleable items ({size})."
                 )
+            for id in index:
+                if not isinstance(id, int) or isinstance(id, bool):
+                    raise TypeError("Index list must contain only integers.")
+
             return list(set(index))
+
+        if not isinstance(index, int) or isinstance(index, bool):
+            raise TypeError("Index must be an integer or a list of integers.")
+
         return [index]
 
     def _sample_hyperedge_index(
@@ -244,10 +253,15 @@ def create_sampler_from_strategy(strategy: SamplingStrategy) -> BaseSampler:
         strategy: An instance of SamplingStrategy enum indicating which sampling strategy to use.
 
     Returns:
-        sampler: An instance of a subclass of BaseSampler corresponding to the specified strategy. If strategy is not recognized, defaults to ``HyperedgeSampler``.
+        sampler: An instance of a subclass of BaseSampler corresponding to the specified strategy.
+
+    Raises:
+        ValueError: If ``strategy`` is not a supported `SamplingStrategy`.
     """
     match strategy:
         case SamplingStrategy.NODE:
             return NodeSampler()
-        case _:
+        case SamplingStrategy.HYPEREDGE:
             return HyperedgeSampler()
+        case _:
+            raise ValueError(f"Unsupported sampling strategy: {strategy!r}.")

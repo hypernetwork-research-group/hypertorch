@@ -1,5 +1,5 @@
-import re
 import pytest
+import re
 
 from unittest.mock import MagicMock, patch
 from hyperbench.train import MultiModelTrainer
@@ -50,6 +50,11 @@ def test_trainer_initialization(
         assert config.trainer is not None
 
 
+def test_trainer_initialization_rejects_invalid_tensorboard_port(mock_model_configs):
+    with pytest.raises(ValueError, match="'tensorboard_port' must be non-negative"):
+        MultiModelTrainer(mock_model_configs, tensorboard_port=-1)
+
+
 @patch("hyperbench.train.trainer.L.Trainer")
 @patch("hyperbench.train.trainer.CSVLogger")
 @patch("hyperbench.train.trainer.MarkdownTableLogger")
@@ -68,6 +73,20 @@ def test_trainer_initialization_with_initialized_trainer(
     assert len(multi_model_trainer.model_configs) == len(mock_model_configs)
     for config in multi_model_trainer.model_configs:
         assert config.trainer is not None
+
+
+@patch("hyperbench.train.trainer.L.Trainer")
+@patch("hyperbench.train.trainer.CSVLogger")
+@patch("hyperbench.train.trainer.MarkdownTableLogger")
+@patch("hyperbench.train.trainer.LaTexTableLogger")
+def test_trainer_initialization_with_no_models(
+    mock_latex_logger_cls,
+    mock_md_logger_cls,
+    mock_csv_logger_cls,
+    mock_trainer_cls,
+):
+    with pytest.raises(ValueError, match=re.escape("'model_configs' cannot be empty.")):
+        MultiModelTrainer(model_configs=[])
 
 
 @patch("hyperbench.train.trainer.L.Trainer")
@@ -150,14 +169,6 @@ def test_models_property_returns_models(
     models = multi_model_trainer.models
 
     assert len(models) == len(mock_model_configs)
-
-
-@patch("hyperbench.train.trainer.L.Trainer")
-def test_models_property_returns_empty_when_no_models(mock_trainer_cls):
-    multi_model_trainer = MultiModelTrainer([])
-    models = multi_model_trainer.models
-
-    assert len(models) == 0
 
 
 @patch("hyperbench.train.trainer.L.Trainer")
@@ -271,22 +282,6 @@ def test_fit_all_calls_fit(
     multi_model_trainer.fit_all(verbose=False)
     for config in mock_model_configs:
         config.trainer.fit.assert_called_once()
-
-
-@patch("hyperbench.train.trainer.L.Trainer")
-@patch("hyperbench.train.trainer.CSVLogger")
-@patch("hyperbench.train.trainer.MarkdownTableLogger")
-@patch("hyperbench.train.trainer.LaTexTableLogger")
-def test_fit_all_with_no_models(
-    mock_latex_logger_cls,
-    mock_md_logger_cls,
-    mock_csv_logger_cls,
-    mock_trainer_cls,
-):
-    multi_model_trainer = MultiModelTrainer([])
-
-    with pytest.raises(ValueError, match=re.escape("No models to fit.")):
-        multi_model_trainer.fit_all(verbose=False)
 
 
 @patch("hyperbench.train.trainer.L.Trainer", return_value=None)
@@ -422,22 +417,6 @@ def test_test_all_calls_test_and_returns_results(
 
     for config in mock_model_configs:
         config.trainer.test.assert_called_once()
-
-
-@patch("hyperbench.train.trainer.L.Trainer")
-@patch("hyperbench.train.trainer.CSVLogger")
-@patch("hyperbench.train.trainer.MarkdownTableLogger")
-@patch("hyperbench.train.trainer.LaTexTableLogger")
-def test_test_all_with_no_models(
-    mock_latex_logger_cls,
-    mock_md_logger_cls,
-    mock_csv_logger_cls,
-    mock_trainer_cls,
-):
-    multi_model_trainer = MultiModelTrainer([])
-
-    with pytest.raises(ValueError, match=re.escape("No models to test.")):
-        multi_model_trainer.test_all(verbose=False)
 
 
 @patch("hyperbench.train.trainer.L.Trainer", return_value=None)

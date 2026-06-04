@@ -203,6 +203,30 @@ def test_transform_node_attrs_adds_padding_zero_when_attr_keys_padding():
     assert torch.allclose(result, torch.tensor([0.0, 2.5]))
 
 
+def test_process_hypergraph_rejects_duplicate_node_ids():
+    hypergraph = HIFHypergraph(
+        network_type="undirected",
+        nodes=[{"node": "0"}, {"node": "0"}],
+        hyperedges=[{"edge": "0"}],
+        incidences=[{"node": "0", "edge": "0"}],
+    )
+
+    with pytest.raises(ValueError, match="HIF node IDs must be unique"):
+        HIFProcessor.process_hypergraph(hypergraph)
+
+
+def test_process_hypergraph_rejects_incidences_with_unknown_node_ids():
+    hypergraph = HIFHypergraph(
+        network_type="undirected",
+        nodes=[{"node": "0"}],
+        hyperedges=[{"edge": "0"}],
+        incidences=[{"node": "missing", "edge": "0"}],
+    )
+
+    with pytest.raises(ValueError, match="Incidence references unknown node id"):
+        HIFProcessor.process_hypergraph(hypergraph)
+
+
 def test_load_from_url_rejects_invalid_url():
     with pytest.raises(ValueError, match="Invalid URL"):
         HIFLoader.load_from_url("not-a-url")

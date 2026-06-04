@@ -2,6 +2,7 @@ import re
 import pytest
 import torch
 
+from typing import Any, cast
 from hyperbench.data import (
     BaseSampler,
     HyperedgeSampler,
@@ -46,6 +47,14 @@ def test_create_sampler_from_strategy_hyperedge():
 def test_create_sampler_from_strategy_node():
     sampler = create_sampler_from_strategy(SamplingStrategy.NODE)
     assert isinstance(sampler, NodeSampler)
+
+
+def test_create_sampler_from_strategy_rejects_unsupported_strategy():
+    with pytest.raises(
+        ValueError,
+        match=re.escape("Unsupported sampling strategy: 'edge'."),
+    ):
+        create_sampler_from_strategy(cast(Any, "edge"))
 
 
 def test_hyperedge_sampling_single_index(mock_four_node_two_hyperedge_hdata):
@@ -121,6 +130,42 @@ def test_node_sampling_len(mock_four_node_two_hyperedge_hdata):
 def test_sample_empty_index_raises(mock_four_node_two_hyperedge_hdata, sampler):
     with pytest.raises(ValueError, match=re.escape("Index list cannot be empty.")):
         sampler.sample([], mock_four_node_two_hyperedge_hdata)
+
+
+@pytest.mark.parametrize(
+    "index",
+    [
+        pytest.param("0", id="string_index"),
+        pytest.param(True, id="bool_index"),
+    ],
+)
+def test_sample_rejects_non_integer_index(mock_four_node_two_hyperedge_hdata, index):
+    sampler = HyperedgeSampler()
+
+    with pytest.raises(
+        TypeError,
+        match=re.escape("Index must be an integer or a list of integers."),
+    ):
+        sampler.sample(cast(Any, index), mock_four_node_two_hyperedge_hdata)
+
+
+@pytest.mark.parametrize(
+    "index",
+    [
+        pytest.param([0, "1"], id="list_with_string"),
+        pytest.param([0, False], id="list_with_bool"),
+    ],
+)
+def test_sample_rejects_index_list_with_non_integer_items(
+    mock_four_node_two_hyperedge_hdata, index
+):
+    sampler = HyperedgeSampler()
+
+    with pytest.raises(
+        TypeError,
+        match=re.escape("Index list must contain only integers."),
+    ):
+        sampler.sample(cast(Any, index), mock_four_node_two_hyperedge_hdata)
 
 
 @pytest.mark.parametrize(

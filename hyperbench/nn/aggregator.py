@@ -1,7 +1,6 @@
 from torch import Tensor
 from typing import Literal
 from torch_geometric.utils import scatter
-
 from hyperbench.types import HyperedgeIndex
 from hyperbench.utils import maxmin_scatter
 

@@ -10,6 +10,8 @@ from hyperbench.utils import (
     NodeSpaceFiller,
     NodeSpaceSetting,
     is_transductive_setting,
+    validate_node_space_setting,
+    validate_ratios,
 )
 
 from hyperbench.data.hif import HIFLoader, HIFProcessor
@@ -146,8 +148,9 @@ class Dataset(TorchDataset):
         Args:
             enricher: An instance of NodeEnricher to generate structural node features from hypergraph topology.
             enrichment_mode: How to combine generated features with existing ``hdata.x``.
-                ``concatenate`` appends new features as additional columns.
+                ``concatenate`` appends new features to the existing ones as additional columns.
                 ``replace`` substitutes ``hdata.x`` entirely.
+                Defaults to ``replace`` if not provided.
         """
         self.hdata = self.hdata.enrich_node_features(enricher, enrichment_mode)
 
@@ -192,13 +195,15 @@ class Dataset(TorchDataset):
         enricher: HyperedgeEnricher,
         enrichment_mode: EnrichmentMode | None = None,
     ) -> None:
-        """Enrich hyperedge features using the provided hyperedge feature enricher.
+        """
+        Enrich hyperedge attributes using the provided hyperedge feature enricher.
 
         Args:
-            enricher: An instance of HyperedgeEnricher to generate structural hyperedge features from hypergraph topology.
-            enrichment_mode: How to combine generated features with existing ``hdata.hyperedge_attr``.
-                ``concatenate`` appends new features as additional columns.
+            enricher: An instance of HyperedgeEnricher to generate structural hyperedge attributes from hypergraph topology.
+            enrichment_mode: How to combine generated attributes with existing ``hdata.hyperedge_attr``.
+                ``concatenate`` appends new attributes to the existing ones as additional columns.
                 ``replace`` substitutes ``hdata.hyperedge_attr`` entirely.
+                Defaults to ``replace`` if not provided.
         """
         self.hdata = self.hdata.enrich_hyperedge_attr(enricher, enrichment_mode)
 
@@ -207,13 +212,15 @@ class Dataset(TorchDataset):
         enricher: HyperedgeEnricher,
         enrichment_mode: EnrichmentMode | None = None,
     ) -> None:
-        """Enrich hyperedge weights using the provided hyperedge weight enricher.
+        """
+        Enrich hyperedge weights using the provided hyperedge weight enricher.
 
         Args:
-            enricher: An instance of HyperedgeEnricher to generate structural hyperedge features from hypergraph topology.
-            enrichment_mode: How to combine generated features with existing ``hdata.hyperedge_weights``.
-                ``concatenate`` appends new features as additional columns.
+            enricher: An instance of HyperedgeEnricher to generate structural hyperedge weights from hypergraph topology.
+            enrichment_mode: How to combine generated weights with existing ``hdata.hyperedge_weights``.
+                ``concatenate`` appends new weights to the existing ones as additional columns.
                 ``replace`` substitutes ``hdata.hyperedge_weights`` entirely.
+                Defaults to ``replace`` if not provided.
         """
         self.hdata = self.hdata.enrich_hyperedge_weights(enricher, enrichment_mode)
 
@@ -325,7 +332,8 @@ class Dataset(TorchDataset):
         seed: int | None = None,
         node_space_setting: NodeSpaceSetting = "transductive",
     ) -> tuple[list[Dataset], list[float]]:
-        """Split the dataset and return the final hyperedge ratios.
+        """
+        Split the dataset and return the final hyperedge ratios.
 
         Final ratios are computed from split hyperedge counts after ratio
         boundaries and any transductive rebalancing have been applied.
@@ -350,12 +358,9 @@ class Dataset(TorchDataset):
                 hyperedges, or a transductive first split cannot cover the full
                 node space.
         """
-        # Allow small imprecision in sum of ratios, but raise error if it's significant
-        # Example: ratios = [0.8, 0.1, 0.1] -> sum = 1.0 (valid)
-        #          ratios = [0.8, 0.1, 0.05] -> sum = 0.95 (invalid, raises ValueError)
-        #          ratios = [0.8, 0.1, 0.1, 0.0000001] -> sum = 1.0000001 (valid, allows small imprecision)
-        if abs(sum(ratios) - 1.0) > 1e-6:
-            raise ValueError(f"Split ratios must sum to 1.0, got {sum(ratios)}.")
+        validate_node_space_setting(node_space_setting)
+        validate_ratios(ratios)
+
         device = self.hdata.device
 
         hyperedge_splitter = HyperedgeIDSplitter(self.hdata)

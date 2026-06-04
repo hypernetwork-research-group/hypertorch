@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Any, ClassVar, TypedDict
 from collections.abc import Mapping
 from typing_extensions import NotRequired
+from hyperbench.utils import validate_is_non_negative
 from lightning.pytorch.loggers import Logger
 
 
@@ -35,6 +36,10 @@ def colorize_metric_value(
     if bounds is None:
         return text
 
+    normalized_sort_order = sort_order.lower()
+    if normalized_sort_order not in ("asc", "des"):
+        raise ValueError(f"'sort_order' must be 'asc' or 'des', got {sort_order!r}.")
+
     min_metric_value, max_metric_value = bounds
     if max_metric_value == min_metric_value:
         quality = 1.0
@@ -44,7 +49,7 @@ def colorize_metric_value(
         )  # 0..1, low->high
         quality = (
             (1.0 - normalized_metric_value)
-            if sort_order.lower() == "asc"
+            if normalized_sort_order == "asc"
             else normalized_metric_value
         )
 
@@ -107,6 +112,8 @@ class LaTexTableLogger(Logger):
         options: LaTexTableConfig | None = None,
     ) -> None:
         super().__init__()
+        validate_is_non_negative("precision", precision)
+
         self.__save_dir = save_dir
         self.__model_name = model_name
         self.__experiment_name = experiment_name
