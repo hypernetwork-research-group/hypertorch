@@ -68,7 +68,7 @@ def mock_hdata_transductive_split() -> HData:
 
 
 @pytest.fixture
-def mock_hdata_multiple_hyperedge_attrs() -> HData:
+def mock_hdata_multiple_hyperedge_attrs_and_weights() -> HData:
     x = torch.ones((4, 1), dtype=torch.float)
     hyperedge_index = torch.tensor([[0, 1, 2, 3], [0, 0, 1, 2]], dtype=torch.long)
     hyperedge_weights = torch.tensor([1.0, 2.0, 3.0], dtype=torch.float)
@@ -82,7 +82,7 @@ def mock_hdata_multiple_hyperedge_attrs() -> HData:
 
 
 @pytest.fixture
-def mock_hdata_transductive_multiple_hyperedges_attrs() -> HData:
+def mock_hdata_transductive_multiple_hyperedges_attrs_and_weights() -> HData:
     x = torch.ones((4, 1), dtype=torch.float)
     hyperedge_index = torch.tensor(
         [
@@ -343,8 +343,12 @@ def test_getitem_without_hyperedge_attr(mock_hdata, strategy):
         pytest.param(SamplingStrategy.HYPEREDGE, [0, 1], id="hyperedge_strategy"),
     ],
 )
-def test_getitem_with_multiple_hyperedge_attr(mock_hdata_multiple_hyperedge_attrs, strategy, index):
-    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_multiple_hyperedge_attrs):
+def test_getitem_with_multiple_hyperedge_attr(
+    mock_hdata_multiple_hyperedge_attrs_and_weights, strategy, index
+):
+    with patch.object(
+        HIFLoader, "load_by_name", return_value=mock_hdata_multiple_hyperedge_attrs_and_weights
+    ):
         dataset = AlgebraDataset(sampling_strategy=strategy)
 
     data = dataset[index]
@@ -633,8 +637,10 @@ def test_split_transductive_with_equal_ratios(mock_hdata_transductive_split):
         assert split.hdata.num_hyperedges > 0
 
 
-def test_split_three_way(mock_hdata_multiple_hyperedge_attrs):
-    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_multiple_hyperedge_attrs):
+def test_split_three_way(mock_hdata_multiple_hyperedge_attrs_and_weights):
+    with patch.object(
+        HIFLoader, "load_by_name", return_value=mock_hdata_multiple_hyperedge_attrs_and_weights
+    ):
         dataset = AlgebraDataset()
 
     splits = dataset.split([0.5, 0.25, 0.25], node_space_setting="inductive")
@@ -650,12 +656,12 @@ def test_split_three_way(mock_hdata_multiple_hyperedge_attrs):
 
 
 def test_split_transductive_three_way(
-    mock_hdata_transductive_multiple_hyperedges_attrs,
+    mock_hdata_transductive_multiple_hyperedges_attrs_and_weights,
 ):
     with patch.object(
         HIFLoader,
         "load_by_name",
-        return_value=mock_hdata_transductive_multiple_hyperedges_attrs,
+        return_value=mock_hdata_transductive_multiple_hyperedges_attrs_and_weights,
     ):
         dataset = AlgebraDataset()
 
@@ -672,9 +678,11 @@ def test_split_transductive_three_way(
 
 
 def test_split_with_ratios_returns_final_inductive_ratios(
-    mock_hdata_multiple_hyperedge_attrs,
+    mock_hdata_multiple_hyperedge_attrs_and_weights,
 ):
-    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_multiple_hyperedge_attrs):
+    with patch.object(
+        HIFLoader, "load_by_name", return_value=mock_hdata_multiple_hyperedge_attrs_and_weights
+    ):
         dataset = AlgebraDataset()
 
     splits, final_ratios = dataset.split_with_ratios(
@@ -831,8 +839,10 @@ def test_split_transductive_with_shuffle_when_no_seed_provided(
         assert split.hdata.num_hyperedges > 0
 
 
-def test_split_preserves_hyperedge_attr(mock_hdata_multiple_hyperedge_attrs):
-    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_multiple_hyperedge_attrs):
+def test_split_preserves_hyperedge_attr(mock_hdata_multiple_hyperedge_attrs_and_weights):
+    with patch.object(
+        HIFLoader, "load_by_name", return_value=mock_hdata_multiple_hyperedge_attrs_and_weights
+    ):
         dataset = AlgebraDataset()
 
     splits = dataset.split([0.5, 0.5], node_space_setting="inductive")
@@ -843,12 +853,12 @@ def test_split_preserves_hyperedge_attr(mock_hdata_multiple_hyperedge_attrs):
 
 
 def test_split_transductive_preserves_hyperedge_attr(
-    mock_hdata_transductive_multiple_hyperedges_attrs,
+    mock_hdata_transductive_multiple_hyperedges_attrs_and_weights,
 ):
     with patch.object(
         HIFLoader,
         "load_by_name",
-        return_value=mock_hdata_transductive_multiple_hyperedges_attrs,
+        return_value=mock_hdata_transductive_multiple_hyperedges_attrs_and_weights,
     ):
         dataset = AlgebraDataset()
 
@@ -883,8 +893,10 @@ def test_split_transductive_without_hyperedge_attr(mock_hdata_transductive_split
         assert split.hdata.hyperedge_attr is None
 
 
-def test_split_preserves_hyperedge_weights(mock_hdata_multiple_hyperedge_attrs):
-    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_multiple_hyperedge_attrs):
+def test_split_preserves_hyperedge_weights(mock_hdata_multiple_hyperedge_attrs_and_weights):
+    with patch.object(
+        HIFLoader, "load_by_name", return_value=mock_hdata_multiple_hyperedge_attrs_and_weights
+    ):
         dataset = AlgebraDataset()
 
     splits = dataset.split([0.5, 0.5], node_space_setting="inductive")
@@ -895,12 +907,12 @@ def test_split_preserves_hyperedge_weights(mock_hdata_multiple_hyperedge_attrs):
 
 
 def test_split_transductive_preserves_hyperedge_weights(
-    mock_hdata_transductive_multiple_hyperedges_attrs,
+    mock_hdata_transductive_multiple_hyperedges_attrs_and_weights,
 ):
     with patch.object(
         HIFLoader,
         "load_by_name",
-        return_value=mock_hdata_transductive_multiple_hyperedges_attrs,
+        return_value=mock_hdata_transductive_multiple_hyperedges_attrs_and_weights,
     ):
         dataset = AlgebraDataset()
 
