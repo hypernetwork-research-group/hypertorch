@@ -14,7 +14,7 @@ class MlpEncoderConfig(TypedDict):
     """
     Configuration for the MLP encoder in MLPHlpModule.
 
-    Args:
+    Attributes:
         in_channels: Number of input features per node.
         out_channels: Number of output features (embedding size) per node.
         num_layers: Number of layers in the MLP encoder.

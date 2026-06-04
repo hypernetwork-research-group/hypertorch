@@ -263,7 +263,7 @@ class VilLainLossParts(TypedDict):
     """
     Named VilLain self-supervised loss parts returned by ``VilLain.loss``.
 
-    Args:
+    Attributes:
         local_loss: Sum of node and hyperedge local entropy losses over all training propagation steps.
         global_loss: Sum of balance and distinctiveness losses over all training propagation steps.
     """

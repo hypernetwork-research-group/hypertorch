@@ -91,7 +91,7 @@ class Node2VecConfig(TypedDict):
     """
     Configuration for the Node2Vec model.
 
-    Args:
+    Attributes:
         edge_index: Edge index representing the graph structure. Size ``(2, num_edges)``.
         embedding_dim: Dimension of the node embeddings to learn.
         walk_length: Length of each random walk.
