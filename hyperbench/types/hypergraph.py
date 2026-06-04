@@ -803,7 +803,7 @@ class HyperedgeIndex:
         )
         return smoothing_matrix.coalesce()
 
-    def reduce(self, strategy: Literal["clique_expansion"], **kwargs) -> Tensor:
+    def reduce(self, strategy: Literal["clique_expansion"], **kwargs: Any) -> Tensor:
         """
         Reduce the hypergraph to a graph represented by edge index using the specified strategy.
 

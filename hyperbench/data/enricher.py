@@ -112,7 +112,7 @@ class _VilLainTrainer:
         """
         return HyperedgeIndex(hyperedge_index).num_nodes_if_isolated_exist(self.num_nodes)
 
-    def _train(self, hyperedge_index: Tensor):
+    def _train(self, hyperedge_index: Tensor) -> VilLain:
         """
         Train a VilLain model on the provided hypergraph topology.
 

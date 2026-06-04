@@ -69,7 +69,7 @@ class LaTexTableConfig(TypedDict):
     """
     Configuration for the LaTex table logger.
 
-    Args:
+    Attributes:
         table_caption: Caption for the LaTex table.
         sort_by: Per-column sorting criteria ("asc" or "des").
         border: Whether to include borders in the LaTex table.

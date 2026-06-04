@@ -1,7 +1,12 @@
+from __future__ import annotations
 import torch
 
+from typing import TYPE_CHECKING
 from torch import Tensor, optim
 from hyperbench.types.hypergraph import HyperedgeIndex
+
+if TYPE_CHECKING:
+    from hyperbench.models.villain import VilLain
 
 
 class _VilLainTrainer:
@@ -94,7 +99,7 @@ class _VilLainTrainer:
         """
         return HyperedgeIndex(hyperedge_index).num_nodes_if_isolated_exist(self.num_nodes)
 
-    def _train(self, hyperedge_index: Tensor):
+    def _train(self, hyperedge_index: Tensor) -> VilLain:
         """
         Train a VilLain model on the provided hypergraph topology.
 

@@ -14,7 +14,7 @@ class HyperGCNEncoderConfig(TypedDict):
     """
     Configuration for the HyperGCN encoder in HyperGCNHlpModule.
 
-    Args:
+    Attributes:
         in_channels: Number of input features per node.
         hidden_channels: Number of hidden units in the intermediate HyperGCN layer.
         out_channels: Number of output features (embedding size) per node.

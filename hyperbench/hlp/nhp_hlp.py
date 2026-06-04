@@ -14,7 +14,7 @@ class NHPEncoderConfig(TypedDict):
     """
     Configuration for the NHP encoder/scorer to be used for hyperedge link prediction.
 
-    Args:
+    Attributes:
         in_channels: Number of input features per node.
         hidden_channels: Number of hidden channels for incidence embeddings. Defaults to ``512``.
         aggregation: Hyperedge scoring aggregation. ``"maxmin"`` uses the paper's

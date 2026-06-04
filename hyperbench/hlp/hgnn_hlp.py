@@ -14,7 +14,7 @@ class HGNNEncoderConfig(TypedDict):
     """
     Configuration for the HGNN encoder in HGNNHlpModule.
 
-    Args:
+    Attributes:
         in_channels: Number of input features per node.
         hidden_channels: Number of hidden units in the intermediate HGNN layer.
         out_channels: Number of output features (embedding size) per node.

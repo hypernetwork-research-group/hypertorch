@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
 
 permissions:
@@ -13,125 +13,124 @@ jobs:
   code_quality:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+    - uses: actions/checkout@v6
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v7
-        with:
-          python-version: "3.14"
+    - name: Install uv
+      uses: astral-sh/setup-uv@v7
+      with:
+        python-version: "3.14"
 
-      - name: Install dependencies
-        run: |
-          make build
+    - name: Install dependencies
+      run: |
+        make build
 
-      - name: Check docstrings
-        continue-on-error: true # TODO: remove when all docstring issues are fixed
-        run: |
-          make docstring-check
+    - name: Check docstrings
+      run: |
+        make docstring-check
 
-      - name: Type check
-        run: |
-          make typecheck
+    - name: Type check
+      run: |
+        make typecheck
 
-      - name: Lint code with ruff
-        run: |
-          make lint
+    - name: Lint code with ruff
+      run: |
+        make lint
 
-      - name: Format code with ruff
-        run: |
-          make format
+    - name: Format code with ruff
+      run: |
+        make format
 
 
   test:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-latest, macos-latest, windows-latest]
-        python-version: [ "3.10", "3.11", "3.12", "3.13", "3.14" ]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
 
     steps:
-      - uses: actions/checkout@v6
+    - uses: actions/checkout@v6
 
-      - name: Install uv with Python ${{ matrix.python-version }}
-        uses: astral-sh/setup-uv@v7
-        with:
-            python-version: ${{ matrix.python-version }}
+    - name: Install uv with Python ${{ matrix.python-version }}
+      uses: astral-sh/setup-uv@v7
+      with:
+        python-version: ${{ matrix.python-version }}
 
-      - name: Install dependencies
-        run: |
-          make build
+    - name: Install dependencies
+      run: |
+        make build
 
-      - name: Run tests with pytest
-        run: |
-          make test
+    - name: Run tests with pytest
+      run: |
+        make test
 
   test-arm:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-24.04-arm, macos-26]
-        python-version: [ "3.10", "3.11", "3.12", "3.13", "3.14" ]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
 
     steps:
-      - uses: actions/checkout@v6
+    - uses: actions/checkout@v6
 
-      - name: Install uv with Python ${{ matrix.python-version }}
-        uses: astral-sh/setup-uv@v7
-        with:
-            python-version: ${{ matrix.python-version }}
+    - name: Install uv with Python ${{ matrix.python-version }}
+      uses: astral-sh/setup-uv@v7
+      with:
+        python-version: ${{ matrix.python-version }}
 
-      - name: Install dependencies
-        run: |
-          make build
+    - name: Install dependencies
+      run: |
+        make build
 
-      - name: Run tests with pytest
-        run: |
-          make test
+    - name: Run tests with pytest
+      run: |
+        make test
 
   test-x86:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-24.04, windows-2025]
-        python-version: [ "3.10", "3.11", "3.12", "3.13", "3.14" ]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
 
     steps:
-      - uses: actions/checkout@v6
+    - uses: actions/checkout@v6
 
-      - name: Install uv with Python ${{ matrix.python-version }}
-        uses: astral-sh/setup-uv@v7
-        with:
-            python-version: ${{ matrix.python-version }}
+    - name: Install uv with Python ${{ matrix.python-version }}
+      uses: astral-sh/setup-uv@v7
+      with:
+        python-version: ${{ matrix.python-version }}
 
-      - name: Install dependencies
-        run: |
-          make build
+    - name: Install dependencies
+      run: |
+        make build
 
-      - name: Run tests with pytest
-        run: |
-          make test
+    - name: Run tests with pytest
+      run: |
+        make test
 
   integration-test:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-latest]
-        python-version: [ "3.10", "3.14"]
+        os: [ubuntu-latest]
+        python-version: ["3.10", "3.14"]
 
     steps:
-      - uses: actions/checkout@v6
+    - uses: actions/checkout@v6
 
-      - name: Install uv with Python ${{ matrix.python-version }}
-        uses: astral-sh/setup-uv@v7
-        with:
-            python-version: ${{ matrix.python-version }}
+    - name: Install uv with Python ${{ matrix.python-version }}
+      uses: astral-sh/setup-uv@v7
+      with:
+        python-version: ${{ matrix.python-version }}
 
-      - name: Install dependencies
-        run: |
-          make build
+    - name: Install dependencies
+      run: |
+        make build
 
-      - name: Run integration tests with pytest
-        env:
-          HF_DOWNLOAD_TOKEN: ${{ secrets.HF_DOWNLOAD_TOKEN }}
-        run: |
-          make i-test
+    - name: Run integration tests with pytest
+      env:
+        HF_DOWNLOAD_TOKEN: ${{ secrets.HF_DOWNLOAD_TOKEN }}
+      run: |
+        make i-test

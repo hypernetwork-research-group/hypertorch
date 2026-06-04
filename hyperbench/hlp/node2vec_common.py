@@ -18,7 +18,7 @@ class Node2VecGCNHlpConfig(TypedDict):
     """
     Configuration for the GCN model.
 
-    Args:
+    Attributes:
         out_channels: Dimension of the output node embeddings from the GCN layers.
         hidden_channels: Dimension of the hidden node embeddings in the GCN layers.
         num_layers: Number of GCN layers. Must be at least 1. Defaults to ``2``.
@@ -52,7 +52,7 @@ class Node2VecHlpConfig(TypedDict):
     """
     Configuration for the Node2Vec encoder.
 
-    Args:
+    Attributes:
         context_size: Skip-gram context size for Node2Vec.
             For example, if ``context_size=2`` and ``walk_length=5``, then for a random walk ``[v0, v1, v2, v3, v4]``,
             the context for ``v2`` would be ``[v0, v1, v3, v4]`` as we take neighbors within distance 2 in the walk.
@@ -102,7 +102,7 @@ class Node2VecWalkLoaderState:
     """
     State object to hold the walk loader and its iterator for joint Node2Vec training.
 
-    Args:
+    Attributes:
         walk_loader: The DataLoader that provides batches of random walks from the Node2Vec encoder during joint training.
             Initialized lazily when first needed.
         cached_walk_loader_iterator: An iterator over the walk_loader, cached to allow

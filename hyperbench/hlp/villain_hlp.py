@@ -14,7 +14,7 @@ class VilLainEncoderConfig(TypedDict):
     """
     Configuration for ``VilLainHlpModule``.
 
-    Args:
+    Attributes:
         num_nodes: Total number of trainable nodes.
         embedding_dim: Returned node and hyperedge embedding dimension. Defaults to ``128``.
         labels_per_subspace: Number of virtual labels per subspace. Defaults to ``2``.
