@@ -73,6 +73,7 @@ ipython_config.py
 
 # UV; it is commonly ignored for libraries
 uv.lock
+.uv-cache
 
 # Ruff
 .ruff_cache/

@@ -115,10 +115,10 @@ def get_gh_dataset_sha(dataset_name: str, owner: str, repository: str) -> str | 
 
 def __load_hif_schema() -> dict[str, Any]:
     cache_dir = get_cache_dir()
-    cache_hif_schema = Path(cache_dir) / "hif_schema.json"
+    cached_hif_schema = Path(cache_dir) / "hif_schema.json"
     try:
-        if cache_hif_schema.exists():
-            with cache_hif_schema.open("r", encoding="utf-8") as f:
+        if cached_hif_schema.exists():
+            with cached_hif_schema.open("r", encoding="utf-8") as f:
                 return json.load(f)
 
         with (
@@ -134,7 +134,7 @@ def __load_hif_schema() -> dict[str, Any]:
             response = requests.get(url, timeout=10)
             response.raise_for_status()
             schema = response.json()
-            with cache_hif_schema.open("w", encoding="utf-8") as f:
+            with cached_hif_schema.open("w", encoding="utf-8") as f:
                 json.dump(schema, f)
             return schema
         except (requests.RequestException, requests.Timeout) as e:

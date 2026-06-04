@@ -114,10 +114,10 @@ def test_validate_hif_json_opens_the_given_path(tmp_path):
 
 def test_validate_hif_json_with_url_success(tmp_path):
     path_valid = f"{MOCK_BASE_PATH}/hif_compliant.json"
-    cache_hif_schema = tmp_path / "hif_schema.json"
+    cached_hif_schema = tmp_path / "hif_schema.json"
 
     mock_files = MagicMock()
-    mock_files.joinpath.return_value = cache_hif_schema
+    mock_files.joinpath.return_value = cached_hif_schema
 
     with (
         patch("hyperbench.utils.hif_utils.get_cache_dir", return_value=str(tmp_path)),
@@ -134,7 +134,7 @@ def test_validate_hif_json_with_url_success(tmp_path):
             timeout=10,
         )
 
-    assert cache_hif_schema.exists()
+    assert cached_hif_schema.exists()
 
 
 def test_validate_hif_json_with_url_timeout_fallback():
@@ -201,8 +201,8 @@ def test_validate_hif_data_raises_when_schema_load_fails():
 
 
 def test_load_hif_schema_loads_from_cache(tmp_path):
-    cache_hif_schema = tmp_path / "hif_schema.json"
-    cache_hif_schema.write_text('{"type": "object"}', encoding="utf-8")
+    cached_hif_schema = tmp_path / "hif_schema.json"
+    cached_hif_schema.write_text('{"type": "object"}', encoding="utf-8")
     hif_json_path = f"{MOCK_BASE_PATH}/hif_compliant.json"
 
     with patch("hyperbench.utils.hif_utils.get_cache_dir", return_value=str(tmp_path)):
