@@ -3,7 +3,7 @@ from __future__ import annotations
 import torch
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Generic, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Generic, TypeVar, cast
 from torch import Tensor
 from hyperbench.utils import (
     NodeSpaceSetting,
@@ -32,7 +32,7 @@ class Splitter(ABC, Generic[_ToSplitType, _SplitResultType]):
     """
 
     @abstractmethod
-    def split(self, to_split: _ToSplitType, **kwargs) -> _SplitResultType:
+    def split(self, to_split: _ToSplitType, **kwargs: Any) -> _SplitResultType:
         """
         Split the input object and return the split result.
 
@@ -78,7 +78,7 @@ class DefaultDatasetSplitter(Splitter["Dataset", tuple[list["Dataset"], list[flo
 
         validate_node_space_setting(self.node_space_setting)
 
-    def split(self, to_split: Dataset, **kwargs) -> tuple[list[Dataset], list[float]]:
+    def split(self, to_split: Dataset, **kwargs: Any) -> tuple[list[Dataset], list[float]]:
         """
         Split a dataset and return materialized split datasets plus final ratios.
 
@@ -170,7 +170,7 @@ class DefaultHDataSplitter(Splitter["HData", "HData"]):
         self.node_space_setting = node_space_setting
         validate_node_space_setting(self.node_space_setting)
 
-    def split(self, to_split: HData, **kwargs) -> HData:
+    def split(self, to_split: HData, **kwargs: Any) -> HData:
         """
         Build an `HData` for a single split from the given hyperedge IDs.
 
@@ -391,7 +391,7 @@ class HyperedgeIDSplitter(Splitter["Tensor", tuple[list["Tensor"], list[float]]]
             for split_num_hyperedges in num_hyperedges_by_split
         ]
 
-    def split(self, to_split: Tensor, **kwargs) -> tuple[list[Tensor], list[float]]:
+    def split(self, to_split: Tensor, **kwargs: Any) -> tuple[list[Tensor], list[float]]:
         """
         Split hyperedge IDs by cumulative ratio boundaries.
 
