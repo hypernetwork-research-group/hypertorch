@@ -116,8 +116,8 @@ def test_init_raises_when_num_nodes_is_too_small_for_hyperedge_index():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "num_nodes is too small for hyperedge_index. "
-            "Got num_nodes=2, but hyperedge_index contains 3 unique node IDs."
+            "'num_nodes' is too small for 'hyperedge_index'. "
+            "Got num_nodes=2, but 'hyperedge_index' contains 3 unique node IDs."
         ),
     ):
         HData(x=x, hyperedge_index=hyperedge_index, num_nodes=2)
@@ -159,8 +159,8 @@ def test_init_raises_when_num_hyperedges_is_too_small_for_hyperedge_index():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "num_hyperedges is too small for hyperedge_index. "
-            "Got num_hyperedges=2, but hyperedge_index contains 3 unique hyperedge IDs."
+            "'num_hyperedges' is too small for 'hyperedge_index'. "
+            "Got num_hyperedges=2, but 'hyperedge_index' contains 3 unique hyperedge IDs."
         ),
     ):
         HData(x=x, hyperedge_index=torch.tensor([[0, 1, 0], [0, 1, 2]]), num_hyperedges=2)
@@ -206,17 +206,17 @@ def test_init_hyperedge_attr_defaults_to_none():
     [
         pytest.param(
             {"x": torch.randn(3), "hyperedge_index": torch.tensor([[0, 1], [0, 0]])},
-            "x must be a 2D tensor, got shape (3,).",
+            "'x' must be a 2D tensor, got shape (3,).",
             id="x_not_2d",
         ),
         pytest.param(
             {"x": torch.randn(3, 2), "hyperedge_index": torch.tensor([0, 1])},
-            "hyperedge_index must have shape (2, num_incidences), got (2,).",
+            "'hyperedge_index' must have shape (2, num_incidences), got (2,).",
             id="hyperedge_index_not_2d",
         ),
         pytest.param(
             {"x": torch.randn(3, 2), "hyperedge_index": torch.tensor([[0, 1, 2]])},
-            "hyperedge_index must have shape (2, num_incidences), got (1, 3).",
+            "'hyperedge_index' must have shape (2, num_incidences), got (1, 3).",
             id="hyperedge_index_wrong_rows",
         ),
         pytest.param(
@@ -224,12 +224,12 @@ def test_init_hyperedge_attr_defaults_to_none():
                 "x": torch.randn(3, 2),
                 "hyperedge_index": torch.tensor([[0.0, 1.0], [0.0, 0.0]]),
             },
-            "hyperedge_index must have dtype torch.long, got torch.float32.",
+            "'hyperedge_index' must have dtype torch.long, got torch.float32.",
             id="hyperedge_index_not_long",
         ),
         pytest.param(
             {"x": torch.randn(3, 2), "hyperedge_index": torch.tensor([[-1, 1], [0, 0]])},
-            "hyperedge_index cannot contain negative node or hyperedge IDs.",
+            "'hyperedge_index' cannot contain negative node or hyperedge IDs.",
             id="hyperedge_index_negative_id",
         ),
         pytest.param(
@@ -238,7 +238,7 @@ def test_init_hyperedge_attr_defaults_to_none():
                 "hyperedge_index": torch.tensor([[0, 1, 2], [0, 0, 0]]),
             },
             (
-                "x must have one feature row per node, or be 'torch.empty((0, 0))' if there are no "
+                "'x' must have one feature row per node, or be 'torch.empty((0, 0))' if there are no "
                 "nodes. Got x.shape=(2, 2) but num_nodes=3."
             ),
             id="x_rows_do_not_match_num_nodes",
@@ -249,7 +249,7 @@ def test_init_hyperedge_attr_defaults_to_none():
                 "hyperedge_index": torch.tensor([[0, 1, 2], [0, 0, 0]]),
                 "global_node_ids": torch.tensor([[0, 1, 2]]),
             },
-            "global_node_ids must be a 1D tensor, got shape (1, 3).",
+            "'global_node_ids' must be a 1D tensor, got shape (1, 3).",
             id="global_node_ids_not_1d",
         ),
         pytest.param(
@@ -258,7 +258,7 @@ def test_init_hyperedge_attr_defaults_to_none():
                 "hyperedge_index": torch.tensor([[0, 1, 2], [0, 0, 0]]),
                 "global_node_ids": torch.tensor([0.0, 1.0, 2.0]),
             },
-            "global_node_ids must have dtype torch.long, got torch.float32.",
+            "'global_node_ids' must have dtype torch.long, got torch.float32.",
             id="global_node_ids_not_long",
         ),
         pytest.param(
@@ -267,7 +267,7 @@ def test_init_hyperedge_attr_defaults_to_none():
                 "hyperedge_index": torch.tensor([[0, 1, 2], [0, 0, 0]]),
                 "global_node_ids": torch.tensor([0, 1]),
             },
-            "global_node_ids must have one entry per node. Got size=2 but num_nodes=3.",
+            "'global_node_ids' must have one entry per node. Got size=2 but num_nodes=3.",
             id="global_node_ids_wrong_length",
         ),
         pytest.param(
@@ -276,7 +276,7 @@ def test_init_hyperedge_attr_defaults_to_none():
                 "hyperedge_index": torch.tensor([[0, 1, 2], [0, 0, 1]]),
                 "y": torch.tensor([[1.0, 0.0]]),
             },
-            "y must be a 1D tensor, got shape (1, 2).",
+            "'y' must be a 1D tensor, got shape (1, 2).",
             id="y_not_1d",
         ),
         pytest.param(
@@ -285,7 +285,7 @@ def test_init_hyperedge_attr_defaults_to_none():
                 "hyperedge_index": torch.tensor([[0, 1, 2], [0, 0, 1]]),
                 "y": torch.tensor([1.0]),
             },
-            "y must have one entry per hyperedge. Got 1 entries but num_hyperedges=2.",
+            "'y' must have one entry per hyperedge. Got 1 entries but num_hyperedges=2.",
             id="y_wrong_length",
         ),
         pytest.param(
@@ -294,7 +294,7 @@ def test_init_hyperedge_attr_defaults_to_none():
                 "hyperedge_index": torch.tensor([[0, 1, 2], [0, 0, 1]]),
                 "hyperedge_weights": torch.tensor([[0.25, 0.75]]),
             },
-            "hyperedge_weights must be a 1D tensor, got shape (1, 2).",
+            "'hyperedge_weights' must be a 1D tensor, got shape (1, 2).",
             id="hyperedge_weights_not_1d",
         ),
         pytest.param(
@@ -304,7 +304,7 @@ def test_init_hyperedge_attr_defaults_to_none():
                 "hyperedge_weights": torch.tensor([0.25]),
             },
             (
-                "hyperedge_weights must have one entry per hyperedge. "
+                "'hyperedge_weights' must have one entry per hyperedge. "
                 "Got size=1 but num_hyperedges=2."
             ),
             id="hyperedge_weights_wrong_length",
@@ -315,7 +315,7 @@ def test_init_hyperedge_attr_defaults_to_none():
                 "hyperedge_index": torch.tensor([[0, 1, 2], [0, 0, 1]]),
                 "hyperedge_attr": torch.tensor([1.0, 2.0]),
             },
-            "hyperedge_attr must be a 2D tensor, got shape (2,).",
+            "'hyperedge_attr' must be a 2D tensor, got shape (2,).",
             id="hyperedge_attr_not_2d",
         ),
         pytest.param(
@@ -324,7 +324,7 @@ def test_init_hyperedge_attr_defaults_to_none():
                 "hyperedge_index": torch.tensor([[0, 1, 2], [0, 0, 1]]),
                 "hyperedge_attr": torch.randn(1, 4),
             },
-            "hyperedge_attr must have one row per hyperedge. Got size=1 but num_hyperedges=2.",
+            "'hyperedge_attr' must have one row per hyperedge. Got size=1 but num_hyperedges=2.",
             id="hyperedge_attr_wrong_rows",
         ),
     ],
@@ -461,16 +461,6 @@ def test_hdata_to_cpu_handles_none_hyperedge_attr(mock_hdata):
     assert mock_hdata.x.device.type == "cpu"
     assert mock_hdata.hyperedge_index.device.type == "cpu"
     assert mock_hdata.hyperedge_attr is None
-
-
-def test_hdata_to_cpu_handles_none_global_node_ids(mock_hdata):
-    mock_hdata.global_node_ids = None
-    returned = mock_hdata.to("cpu")
-
-    assert returned is mock_hdata
-    assert mock_hdata.x.device.type == "cpu"
-    assert mock_hdata.hyperedge_index.device.type == "cpu"
-    assert mock_hdata.global_node_ids is None
 
 
 def test_hdata_to_cpu_moves_hyperedge_weights():
@@ -684,7 +674,7 @@ def test_cat_same_node_space_raises_when_only_x_is_provided():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "If x is provided, global_node_ids must also be provided to ensure consistency."
+            "If 'x' is provided, 'global_node_ids' must also be provided to ensure consistency."
         ),
     ):
         HData.cat_same_node_space([hdata1, hdata2], x=torch.randn(4, 4))
@@ -698,7 +688,7 @@ def test_cat_same_node_space_raises_when_only_global_node_ids_are_provided():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "If global_node_ids is provided, x must also be provided to ensure consistency."
+            "If 'global_node_ids' is provided, 'x' must also be provided to ensure consistency."
         ),
     ):
         HData.cat_same_node_space([hdata1, hdata2], global_node_ids=torch.arange(4))
@@ -712,7 +702,7 @@ def test_cat_same_node_space_validates_global_node_ids_alignment():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "global_node_ids must have one entry per node. Got size=3 but num_nodes=4."
+            "'global_node_ids' must have one entry per node. Got size=3 but num_nodes=4."
         ),
     ):
         HData.cat_same_node_space(
@@ -988,7 +978,7 @@ def test_split_raises_on_invalid_node_space_setting():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "node_space_setting must be one of 'transductive' or 'inductive', got 'semi'."
+            "'node_space_setting' must be one of 'transductive' or 'inductive', got 'semi'."
         ),
     ):
         hdata = HData(
@@ -999,27 +989,6 @@ def test_split_raises_on_invalid_node_space_setting():
             hdata,
             split_hyperedge_ids=torch.tensor([0]),
             node_space_setting=cast(Any, "semi"),
-        )
-
-
-def test_split_raises_when_split_hyperedge_ids_and_splitter_are_provided():
-    hdata = HData(
-        x=torch.randn(2, 1),
-        hyperedge_index=torch.tensor([[0, 1], [0, 0]]),
-    )
-
-    class CustomHDataSplitter():
-        def split(self, to_split: HData) -> HData:
-            return to_split
-
-    with pytest.raises(
-        ValueError,
-        match=re.escape("'split_hyperedge_ids' cannot be provided when 'splitter' is provided."),
-    ):
-        HData.split(
-            hdata,
-            split_hyperedge_ids=torch.tensor([0]),
-            splitter=CustomHDataSplitter(),
         )
 
 
@@ -1283,7 +1252,7 @@ def test_enrich_rejects_invalid_enrichment_mode(mock_hdata, enrich_method):
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "enrichment_mode must be one of 'replace', 'concatenate', or None, got 'append'."
+            "'enrichment_mode' must be one of 'replace', 'concatenate', or None, got 'append'."
         ),
     ):
         getattr(mock_hdata, enrich_method)(enricher, enrichment_mode=cast(Any, "append"))
@@ -1351,7 +1320,7 @@ def test_enrich_node_features_from_raises_when_source_rows_do_not_match_global_n
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "Expected hdata_with_features.x rows to align with hdata_with_features.global_node_ids."
+            "Expected 'hdata_with_features.x' rows to align with hdata_with_features.global_node_ids."
         ),
     ):
         target_hdata.enrich_node_features_from(source_hdata)
@@ -1437,7 +1406,7 @@ def test_enrich_node_features_from_inductive_raises_without_fill_value():
 
     with pytest.raises(
         ValueError,
-        match=re.escape("fill_value must be provided when node_space_setting='inductive'."),
+        match=re.escape("'fill_value' must be provided when node_space_setting='inductive'."),
     ):
         target_hdata.enrich_node_features_from(
             source_hdata,
@@ -1459,7 +1428,7 @@ def test_enrich_node_features_from_transductive_raises_when_fill_value_provided(
 
     with pytest.raises(
         ValueError,
-        match=re.escape("fill_value cannot be provided when node_space_setting='transductive'."),
+        match=re.escape("'fill_value' cannot be provided when node_space_setting='transductive'."),
     ):
         target_hdata.enrich_node_features_from(
             source_hdata,
@@ -1482,7 +1451,7 @@ def test_enrich_node_features_from_non_transductive_raises_on_fill_value_shape_m
 
     with pytest.raises(
         ValueError,
-        match=r"Expected fill_value to define exactly 2 features, got shape \(3,\)\.",
+        match=re.escape("Expected 'fill_value' to define exactly 2 features, got shape (3,)."),
     ):
         target_hdata.enrich_node_features_from(
             source_hdata,
@@ -1540,7 +1509,7 @@ def test_enrich_node_features_from_raises_on_invalid_node_space_setting():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "node_space_setting must be one of 'transductive' or 'inductive', got 'semi'."
+            "'node_space_setting' must be one of 'transductive' or 'inductive', got 'semi'."
         ),
     ):
         target_hdata.enrich_node_features_from(
@@ -2082,8 +2051,9 @@ def test_remove_hyperedges_with_fewer_than_k_nodes_handles_none_global_node_ids(
 
     result = hdata.remove_hyperedges_with_fewer_than_k_nodes(k=3)
 
+    assert torch.equal(result.hyperedge_index[0], torch.tensor([0, 1, 2]))
     assert result.global_node_ids is not None
-    assert torch.equal(result.global_node_ids, torch.tensor([2, 3, 4]))
+    assert torch.equal(result.global_node_ids, torch.tensor([0, 1, 2]))
 
 
 def test_remove_hyperedges_with_fewer_than_k_nodes_subsets_hyperedge_weights():

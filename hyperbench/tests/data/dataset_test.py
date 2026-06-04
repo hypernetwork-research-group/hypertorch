@@ -731,7 +731,7 @@ def test_split_raises_on_invalid_node_space_setting(mock_hdata_four_nodes):
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "node_space_setting must be one of 'transductive' or 'inductive', got 'semi'."
+            "'node_space_setting' must be one of 'transductive' or 'inductive', got 'semi'."
         ),
     ):
         dataset.split([0.5, 0.5], node_space_setting=cast(Any, "semi"))
@@ -1340,7 +1340,7 @@ def test_split_with_ratios_raises_when_train_split_idx_is_out_of_bounds():
     dataset = Dataset.from_hdata(hdata)
 
     with pytest.raises(
-        ValueError, match=re.escape("'train_split_idx' must be between 0 and 1, got 2.")
+        ValueError, match=re.escape("'train_split_idx' must be between 0 and 1 inclusive, got 2.")
     ):
         dataset.split_with_ratios(
             ratios=[0.25, 0.75],
@@ -1489,7 +1489,7 @@ def test_split_raises_when_train_split_idx_is_out_of_bounds():
     dataset = Dataset.from_hdata(hdata)
 
     with pytest.raises(
-        ValueError, match=re.escape("'train_split_idx' must be between 0 and 1, got 2.")
+        ValueError, match=re.escape("'train_split_idx' must be between 0 and 1 inclusive, got 2.")
     ):
         dataset.split(
             ratios=[0.25, 0.75],

@@ -158,12 +158,18 @@ def test_validate_is_between_accepts_values_within_inclusive_bounds(value, min_v
 @pytest.mark.parametrize(
     "value, min_value, max_value, match",
     [
-        pytest.param(-0.1, 0, 1, "'value' must be between 0 and 1, got -0.1.", id="below_min"),
-        pytest.param(1.1, 0, 1, "'value' must be between 0 and 1, got 1.1.", id="above_max"),
         pytest.param(
-            float("inf"), 0, 1, "'value' must be between 0 and 1, got inf.", id="infinite"
+            -0.1, 0, 1, "'value' must be between 0 and 1 inclusive, got -0.1.", id="below_min"
         ),
-        pytest.param(float("nan"), 0, 1, "'value' must be between 0 and 1, got nan.", id="nan"),
+        pytest.param(
+            1.1, 0, 1, "'value' must be between 0 and 1 inclusive, got 1.1.", id="above_max"
+        ),
+        pytest.param(
+            float("inf"), 0, 1, "'value' must be between 0 and 1 inclusive, got inf.", id="infinite"
+        ),
+        pytest.param(
+            float("nan"), 0, 1, "'value' must be between 0 and 1 inclusive, got nan.", id="nan"
+        ),
     ],
 )
 def test_validate_is_between_rejects_values_outside_bounds_or_non_finite(
@@ -176,7 +182,7 @@ def test_validate_is_between_rejects_values_outside_bounds_or_non_finite(
 def test_validate_is_between_rejects_invalid_bounds():
     with pytest.raises(
         ValueError,
-        match="min_value \\(2\\) cannot be greater than max_value \\(1\\)",
+        match=re.escape("'min_value' (2) cannot be greater than 'max_value' (1)"),
     ):
         validate_is_between("value", 1, 2, 1)
 

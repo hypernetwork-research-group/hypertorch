@@ -42,5 +42,5 @@ def validate_node_space_setting(node_space_setting: NodeSpaceSetting) -> None:
         return
 
     raise ValueError(
-        f"node_space_setting must be one of 'transductive' or 'inductive', got {node_space_setting!r}."
+        f"'node_space_setting' must be one of 'transductive' or 'inductive', got {node_space_setting!r}."
     )

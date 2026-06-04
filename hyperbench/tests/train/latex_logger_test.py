@@ -1,4 +1,5 @@
 import pytest
+import re
 
 from textwrap import dedent
 from hyperbench.train import (
@@ -373,7 +374,7 @@ def test_finalize_raises_on_invalid_sort_order(tmp_path):
 
     logger.log_metrics({"test_auc": 0.90})
 
-    with pytest.raises(ValueError, match=r"Invalid sort_by value"):
+    with pytest.raises(ValueError, match=re.escape("Invalid 'sort_by' value")):
         logger.finalize("success")
 
 

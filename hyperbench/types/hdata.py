@@ -94,7 +94,7 @@ class HData:
         )
         validate_is_non_negative("num_hyperedges", self.num_hyperedges)
 
-        self.global_node_ids = (
+        self.global_node_ids: Tensor = (
             # torch.arange is to handle isolated nodes, as they are already considered
             # when computing self.num_nodes via num_nodes_if_isolated_exist
             global_node_ids if global_node_ids is not None else torch.arange(self.num_nodes)
@@ -116,7 +116,7 @@ class HData:
             f"    num_nodes={self.num_nodes},\n"
             f"    num_hyperedges={self.num_hyperedges},\n"
             f"    x_shape={self.x.shape},\n"
-            f"    global_node_ids_shape={self.global_node_ids.shape if self.global_node_ids is not None else None},\n"
+            f"    global_node_ids_shape={self.global_node_ids.shape},\n"
             f"    hyperedge_index_shape={self.hyperedge_index.shape},\n"
             f"    hyperedge_weights_shape={self.hyperedge_weights.shape if self.hyperedge_weights is not None else None},\n"
             f"    hyperedge_attr_shape={self.hyperedge_attr.shape if self.hyperedge_attr is not None else None},\n"
@@ -366,7 +366,7 @@ class HData:
             hyperedge_attr=clone_optional_tensor(self.hyperedge_attr),
             num_nodes=self.num_nodes,
             num_hyperedges=self.num_hyperedges,
-            global_node_ids=clone_optional_tensor(self.global_node_ids),
+            global_node_ids=self.global_node_ids.clone(),
             y=self.y.clone(),
         )
 
@@ -416,7 +416,7 @@ class HData:
         source_x = hdata_with_features.x
         if source_x.size(0) != source_global_node_ids.size(0):
             raise ValueError(
-                "Expected hdata_with_features.x rows to align with hdata_with_features.global_node_ids."
+                "Expected 'hdata_with_features.x' rows to align with hdata_with_features.global_node_ids."
             )
         self.__validate_node_space_setting(node_space_setting, fill_value)
 
@@ -477,7 +477,7 @@ class HData:
             hyperedge_attr=clone_optional_tensor(self.hyperedge_attr),
             num_nodes=self.num_nodes,
             num_hyperedges=self.num_hyperedges,
-            global_node_ids=clone_optional_tensor(self.global_node_ids),
+            global_node_ids=self.global_node_ids.clone(),
             y=self.y.clone(),
         )
 
@@ -519,7 +519,7 @@ class HData:
             hyperedge_attr=clone_optional_tensor(self.hyperedge_attr),
             num_nodes=self.num_nodes,
             num_hyperedges=self.num_hyperedges,
-            global_node_ids=clone_optional_tensor(self.global_node_ids),
+            global_node_ids=self.global_node_ids.clone(),
             y=self.y.clone(),
         )
 
@@ -558,7 +558,7 @@ class HData:
             hyperedge_attr=hyperedge_attr,
             num_nodes=self.num_nodes,
             num_hyperedges=self.num_hyperedges,
-            global_node_ids=clone_optional_tensor(self.global_node_ids),
+            global_node_ids=self.global_node_ids.clone(),
             y=self.y.clone(),
         )
 
@@ -614,17 +614,21 @@ class HData:
         x = self.x[hyperedge_index_wrapper.node_ids]
         y = self.y[hyperedge_index_wrapper.hyperedge_ids]
 
-        global_node_ids = None
-        if preserve_global_node_ids:
-            global_node_ids = self.global_node_ids[hyperedge_index_wrapper.node_ids]
-
-        hyperedge_attr = None
-        if self.hyperedge_attr is not None:
-            hyperedge_attr = self.hyperedge_attr[hyperedge_index_wrapper.hyperedge_ids]
-
-        hyperedge_weights = None
-        if self.hyperedge_weights is not None:
-            hyperedge_weights = self.hyperedge_weights[hyperedge_index_wrapper.hyperedge_ids]
+        global_node_ids = (
+            self.global_node_ids[hyperedge_index_wrapper.node_ids]
+            if preserve_global_node_ids
+            else None
+        )
+        hyperedge_attr = (
+            self.hyperedge_attr[hyperedge_index_wrapper.hyperedge_ids]
+            if self.hyperedge_attr is not None
+            else None
+        )
+        hyperedge_weights = (
+            self.hyperedge_weights[hyperedge_index_wrapper.hyperedge_ids]
+            if self.hyperedge_weights is not None
+            else None
+        )
 
         return self.__class__(
             x=x,
@@ -721,7 +725,7 @@ class HData:
             hyperedge_attr=clone_optional_tensor(self.hyperedge_attr),
             num_nodes=self.num_nodes,
             num_hyperedges=self.num_hyperedges,
-            global_node_ids=clone_optional_tensor(self.global_node_ids),
+            global_node_ids=self.global_node_ids.clone(),
             y=self.y.clone(),
         )
 
@@ -738,10 +742,8 @@ class HData:
         """
         self.x = self.x.to(device=device, non_blocking=non_blocking)
         self.hyperedge_index = self.hyperedge_index.to(device=device, non_blocking=non_blocking)
+        self.global_node_ids = self.global_node_ids.to(device=device, non_blocking=non_blocking)
         self.y = self.y.to(device=device, non_blocking=non_blocking)
-
-        if self.global_node_ids is not None:
-            self.global_node_ids = self.global_node_ids.to(device=device, non_blocking=non_blocking)
 
         if self.hyperedge_attr is not None:
             self.hyperedge_attr = self.hyperedge_attr.to(device=device, non_blocking=non_blocking)
@@ -772,7 +774,7 @@ class HData:
             hyperedge_attr=clone_optional_tensor(self.hyperedge_attr),
             num_nodes=self.num_nodes,
             num_hyperedges=self.num_hyperedges,
-            global_node_ids=clone_optional_tensor(self.global_node_ids),
+            global_node_ids=self.global_node_ids.clone(),
             y=torch.full((self.num_hyperedges,), value, dtype=torch.float, device=self.device),
         )
 
@@ -906,11 +908,11 @@ class HData:
 
         if x is not None and global_node_ids is None:
             raise ValueError(
-                "If x is provided, global_node_ids must also be provided to ensure consistency."
+                "If 'x' is provided, 'global_node_ids' must also be provided to ensure consistency."
             )
         if x is None and global_node_ids is not None:
             raise ValueError(
-                "If global_node_ids is provided, x must also be provided to ensure consistency."
+                "If 'global_node_ids' is provided, 'x' must also be provided to ensure consistency."
             )
 
         joint_hyperedge_ids = torch.cat([hdata.hyperedge_index[1].unique() for hdata in hdatas])
@@ -947,7 +949,7 @@ class HData:
 
         if fill_features.dim() != 1 or fill_features.numel() != num_features:
             raise ValueError(
-                f"Expected fill_value to define exactly {num_features} features, got shape "
+                f"Expected 'fill_value' to define exactly {num_features} features, got shape "
                 f"{tuple(fill_features.shape)}."
             )
         return fill_features
@@ -960,41 +962,49 @@ class HData:
         self.__validate_global_node_ids()
         self.__validate_labels()
 
+    def __validate_enrichment_mode(self, enrichment_mode: EnrichmentMode | None) -> None:
+        if enrichment_mode is None or enrichment_mode in ("replace", "concatenate"):
+            return
+
+        raise ValueError(
+            f"'enrichment_mode' must be one of 'replace', 'concatenate', or None, got {enrichment_mode!r}."
+        )
+
     def __validate_hyperedge_attr(self) -> None:
         if self.hyperedge_attr is None:
             return
 
         if self.hyperedge_attr.dim() != 2:
             raise ValueError(
-                f"hyperedge_attr must be a 2D tensor, got shape {tuple(self.hyperedge_attr.shape)}."
+                f"'hyperedge_attr' must be a 2D tensor, got shape {tuple(self.hyperedge_attr.shape)}."
             )
         if self.hyperedge_attr.size(0) != self.num_hyperedges:
             raise ValueError(
-                "hyperedge_attr must have one row per hyperedge. "
+                f"'hyperedge_attr' must have one row per hyperedge. "
                 f"Got size={self.hyperedge_attr.size(0)} but num_hyperedges={self.num_hyperedges}."
             )
 
     def __validate_hyperedge_index(self) -> None:
         if self.hyperedge_index.dtype != torch.long:
             raise ValueError(
-                f"hyperedge_index must have dtype torch.long, got {self.hyperedge_index.dtype}."
+                f"'hyperedge_index' must have dtype torch.long, got {self.hyperedge_index.dtype}."
             )
         if self.hyperedge_index.numel() > 0 and bool((self.hyperedge_index < 0).any()):
-            raise ValueError("hyperedge_index cannot contain negative node or hyperedge IDs.")
+            raise ValueError("'hyperedge_index' cannot contain negative node or hyperedge IDs.")
 
         unique_node_count = self.hyperedge_index[0].unique().size(0)
         if unique_node_count > self.num_nodes:
             raise ValueError(
-                "num_nodes is too small for hyperedge_index. "
-                f"Got num_nodes={self.num_nodes}, but hyperedge_index contains "
+                f"'num_nodes' is too small for 'hyperedge_index'. "
+                f"Got num_nodes={self.num_nodes}, but 'hyperedge_index' contains "
                 f"{unique_node_count} unique node IDs."
             )
 
         unique_hyperedge_count = self.hyperedge_index[1].unique().size(0)
         if unique_hyperedge_count > self.num_hyperedges:
             raise ValueError(
-                "num_hyperedges is too small for hyperedge_index. "
-                f"Got num_hyperedges={self.num_hyperedges}, but hyperedge_index contains "
+                f"'num_hyperedges' is too small for 'hyperedge_index'. "
+                f"Got num_hyperedges={self.num_hyperedges}, but 'hyperedge_index' contains "
                 f"{unique_hyperedge_count} unique hyperedge IDs."
             )
 
@@ -1004,43 +1014,43 @@ class HData:
 
         if self.hyperedge_weights.dim() != 1:
             raise ValueError(
-                f"hyperedge_weights must be a 1D tensor, got shape {tuple(self.hyperedge_weights.shape)}."
+                f"'hyperedge_weights' must be a 1D tensor, got shape {tuple(self.hyperedge_weights.shape)}."
             )
         if self.hyperedge_weights.size(0) != self.num_hyperedges:
             raise ValueError(
-                "hyperedge_weights must have one entry per hyperedge. "
+                f"'hyperedge_weights' must have one entry per hyperedge. "
                 f"Got size={self.hyperedge_weights.size(0)} but num_hyperedges={self.num_hyperedges}."
             )
 
     def __validate_global_node_ids(self) -> None:
         if self.global_node_ids.dim() != 1:
             raise ValueError(
-                f"global_node_ids must be a 1D tensor, got shape {tuple(self.global_node_ids.shape)}."
+                f"'global_node_ids' must be a 1D tensor, got shape {tuple(self.global_node_ids.shape)}."
             )
         if self.global_node_ids.size(0) != self.num_nodes:
             raise ValueError(
-                "global_node_ids must have one entry per node. "
+                f"'global_node_ids' must have one entry per node. "
                 f"Got size={self.global_node_ids.size(0)} but num_nodes={self.num_nodes}."
             )
 
         if self.global_node_ids.dtype != torch.long:
             raise ValueError(
-                f"global_node_ids must have dtype torch.long, got {self.global_node_ids.dtype}."
+                f"'global_node_ids' must have dtype torch.long, got {self.global_node_ids.dtype}."
             )
 
     def __validate_labels(self) -> None:
         if self.y.dim() != 1:
-            raise ValueError(f"y must be a 1D tensor, got shape {tuple(self.y.shape)}.")
+            raise ValueError(f"'y' must be a 1D tensor, got shape {tuple(self.y.shape)}.")
         if self.y.size(0) != self.num_hyperedges:
             raise ValueError(
-                "y must have one entry per hyperedge. "
+                f"'y' must have one entry per hyperedge. "
                 f"Got {self.y.size(0)} entries but num_hyperedges={self.num_hyperedges}."
             )
 
     def __validate_x(self) -> None:
         if self.x.size(0) not in (0, self.num_nodes):
             raise ValueError(
-                "x must have one feature row per node, or be 'torch.empty((0, 0))' if there are no nodes. "
+                f"'x' must have one feature row per node, or be 'torch.empty((0, 0))' if there are no nodes. "
                 f"Got x.shape={tuple(self.x.shape)} but num_nodes={self.num_nodes}."
             )
 
@@ -1053,36 +1063,17 @@ class HData:
 
         if is_transductive_setting(node_space_setting) and fill_value is not None:
             raise ValueError(
-                "fill_value cannot be provided when node_space_setting='transductive'."
+                "'fill_value' cannot be provided when node_space_setting='transductive'."
             )
         if is_inductive_setting(node_space_setting) and fill_value is None:
-            raise ValueError("fill_value must be provided when node_space_setting='inductive'.")
-
-    @staticmethod
-    def __validate_enrichment_mode(enrichment_mode: EnrichmentMode | None) -> None:
-        if enrichment_mode is None or enrichment_mode in ("replace", "concatenate"):
-            return
-
-        raise ValueError(
-            f"enrichment_mode must be one of 'replace', 'concatenate', or None, got {enrichment_mode!r}."
-        )
-
-    @staticmethod
-    def __validate_node_space_setting_value(node_space_setting: NodeSpaceSetting) -> None:
-        if is_transductive_setting(node_space_setting) or is_inductive_setting(node_space_setting):
-            return
-
-        raise ValueError(
-            "node_space_setting must be one of 'transductive' or 'inductive', "
-            f"got {node_space_setting!r}."
-        )
+            raise ValueError("'fill_value' must be provided when node_space_setting='inductive'.")
 
     def __validate_x_and_hyperedge_index_type_and_dim(self) -> None:
         if self.x.dim() != 2:
-            raise ValueError(f"x must be a 2D tensor, got shape {tuple(self.x.shape)}.")
+            raise ValueError(f"'x' must be a 2D tensor, got shape {tuple(self.x.shape)}.")
 
         if self.hyperedge_index.dim() != 2 or self.hyperedge_index.size(0) != 2:
             raise ValueError(
-                "hyperedge_index must have shape (2, num_incidences), got "
+                f"'hyperedge_index' must have shape (2, num_incidences), got "
                 f"{tuple(self.hyperedge_index.shape)}."
             )

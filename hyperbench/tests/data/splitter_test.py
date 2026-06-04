@@ -115,7 +115,7 @@ def test_default_dataset_splitter_split_raises_when_train_split_idx_is_out_of_bo
     dataset = Dataset.from_hdata(hdata)
 
     with pytest.raises(
-        ValueError, match=re.escape("'train_split_idx' must be between 0 and 1, got 2.")
+        ValueError, match=re.escape("'train_split_idx' must be between 0 and 1 inclusive, got 2.")
     ):
         DefaultDatasetSplitter(node_space_setting="transductive").split(
             to_split=dataset, ratios=[0.5, 0.5], train_split_idx=2
@@ -333,10 +333,14 @@ def test_split_validates_ratio_values(
     mock_hdata_five_hyperedges, ratios, expected_exception, expected_message
 ):
     hyperedge_ids = torch.arange(5)
-    splitter = HyperedgeIDSplitter(mock_hdata_five_hyperedges)
+    splitter = HyperedgeIDSplitter(
+        hyperedge_index=mock_hdata_five_hyperedges.hyperedge_index,
+        num_nodes=mock_hdata_five_hyperedges.num_nodes,
+        num_hyperedges=mock_hdata_five_hyperedges.num_hyperedges,
+    )
 
     with pytest.raises(expected_exception, match=re.escape(expected_message)):
-        splitter.split(hyperedge_ids, cast(Any, ratios))
+        splitter.split(hyperedge_ids, ratios=cast(Any, ratios))
 
 
 @pytest.mark.parametrize(
@@ -421,20 +425,30 @@ def test_hyperedge_id_splitter_ensure_split_covers_all_nodes_moves_best_covering
 def test_hyperedge_id_splitter_ensure_split_covers_all_nodes_rejects_empty_splits(
     mock_hdata_five_hyperedges,
 ):
-    splitter = HyperedgeIDSplitter(mock_hdata_five_hyperedges)
+    splitter = HyperedgeIDSplitter(
+        hyperedge_index=mock_hdata_five_hyperedges.hyperedge_index,
+        num_nodes=mock_hdata_five_hyperedges.num_nodes,
+        num_hyperedges=mock_hdata_five_hyperedges.num_hyperedges,
+    )
 
     with pytest.raises(ValueError, match="'hyperedge_ids_by_split' cannot be empty"):
-        splitter.ensure_split_covers_all_nodes([])
+        splitter.ensure_split_covers_all_nodes(hyperedge_ids_by_split=[])
 
 
 def test_hyperedge_id_splitter_ensure_split_covers_all_nodes_rejects_invalid_split_idx(
     mock_hdata_five_hyperedges,
 ):
-    splitter = HyperedgeIDSplitter(mock_hdata_five_hyperedges)
+    splitter = HyperedgeIDSplitter(
+        hyperedge_index=mock_hdata_five_hyperedges.hyperedge_index,
+        num_nodes=mock_hdata_five_hyperedges.num_nodes,
+        num_hyperedges=mock_hdata_five_hyperedges.num_hyperedges,
+    )
 
-    with pytest.raises(ValueError, match="split_idx must reference an existing split"):
+    with pytest.raises(
+        ValueError, match=re.escape("'split_idx' must be between 0 and 0 inclusive, got 1.")
+    ):
         splitter.ensure_split_covers_all_nodes(
-            [torch.tensor([0], dtype=torch.long)],
+            hyperedge_ids_by_split=[torch.tensor([0], dtype=torch.long)],
             split_idx=1,
         )
 
@@ -456,7 +470,7 @@ def test_hyperedge_id_splitter_ensure_split_covers_all_nodes_raises_when_node_is
         ),
     ):
         splitter.ensure_split_covers_all_nodes(
-            [
+            hyperedge_ids_by_split=[
                 torch.tensor([0], dtype=torch.long),
                 torch.tensor([1], dtype=torch.long),
             ]
@@ -476,7 +490,7 @@ def test_hyperedge_id_splitter_validate_splits_have_hyperedges_raises_when_a_spl
             num_hyperedges=mock_hdata_five_hyperedges.num_hyperedges,
         )
         splitter.validate_splits_have_hyperedges(
-            [
+            hyperedge_ids_by_split=[
                 torch.tensor([0, 1, 2], dtype=torch.long),
                 torch.empty(0, dtype=torch.long),
                 torch.tensor([3, 4], dtype=torch.long),
@@ -493,4 +507,7 @@ def test_hyperedge_id_splitter_raises_when_ratios_do_not_sum_to_one(mock_hdata_f
             hyperedge_index=mock_hdata_five_hyperedges.hyperedge_index,
             num_nodes=mock_hdata_five_hyperedges.num_nodes,
             num_hyperedges=mock_hdata_five_hyperedges.num_hyperedges,
-        ).split(to_split=mock_hdata_five_hyperedges.hyperedge_index[1], ratios=[0.5, 0.25])
+        ).split(
+            to_split=mock_hdata_five_hyperedges.hyperedge_index[1],
+            ratios=[0.5, 0.25],
+        )

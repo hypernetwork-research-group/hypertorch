@@ -306,7 +306,7 @@ class LaTexTableLogger(Logger):
         for order in sort_orders:
             normalized = order.lower()
             if normalized not in ("asc", "des"):
-                raise ValueError(f"Invalid sort_by value: {order}. Use 'asc' or 'des'.")
+                raise ValueError(f"Invalid 'sort_by' value: {order}. Use 'asc' or 'des'.")
             normalized_orders.append(normalized)
 
         metric_sort: dict[str, str] = {}

@@ -116,7 +116,7 @@ def test_validate_node_space_setting_rejects_unsupported_values(node_space_setti
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "node_space_setting must be one of 'transductive' or 'inductive', "
+            "'node_space_setting' must be one of 'transductive' or 'inductive', "
             f"got {node_space_setting!r}."
         ),
     ):

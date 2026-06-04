@@ -10,7 +10,9 @@ from hyperbench.utils import (
     create_seeded_torch_generator,
     is_transductive_setting,
     to_0based_ids,
+    validate_is_between,
     validate_is_non_empty,
+    validate_node_space_setting,
     validate_ratios,
 )
 from hyperbench.types.hypergraph import HyperedgeIndex
@@ -74,6 +76,8 @@ class DefaultDatasetSplitter(Splitter["Dataset", tuple[list["Dataset"], list[flo
         self.shuffle = shuffle
         self.seed = seed
 
+        validate_node_space_setting(self.node_space_setting)
+
     def split(self, to_split: Dataset, **kwargs) -> tuple[list[Dataset], list[float]]:
         """
         Split a dataset and return materialized split datasets plus final ratios.
@@ -92,8 +96,7 @@ class DefaultDatasetSplitter(Splitter["Dataset", tuple[list["Dataset"], list[flo
                 cover the full node space.
         """
         ratios: list[float] = kwargs.get("ratios", [])
-        if abs(sum(ratios) - 1.0) > 1e-6:
-            raise ValueError(f"'ratios' must sum to 1.0, got {sum(ratios)}.")
+        validate_ratios(ratios)
 
         cover_all_nodes_in_train_split: bool = kwargs.get("cover_all_nodes_in_train_split", False)
 
@@ -101,8 +104,6 @@ class DefaultDatasetSplitter(Splitter["Dataset", tuple[list["Dataset"], list[flo
         self.__validate_train_split_idx(train_split_idx, ratios)
 
         hdata = to_split.hdata
-        device = hdata.device
-
         hyperedge_splitter = HyperedgeIDSplitter(
             hyperedge_index=hdata.hyperedge_index,
             num_nodes=hdata.num_nodes,
@@ -134,7 +135,7 @@ class DefaultDatasetSplitter(Splitter["Dataset", tuple[list["Dataset"], list[flo
                 to_split=hdata,
                 split_hyperedge_ids=split_hyperedge_ids,
             )
-            split_hdata = split_hdata.to(device=device)
+            split_hdata = split_hdata.to(device=hdata.device)
 
             split_dataset = to_split.__class__(
                 hdata=split_hdata,
@@ -151,11 +152,7 @@ class DefaultDatasetSplitter(Splitter["Dataset", tuple[list["Dataset"], list[flo
                 f"got 'node_space_setting={self.node_space_setting}' and 'train_split_idx={train_split_idx}'."
                 "For the 'inductive' setting, splits are returned based on the provided ratios."
             )
-
-        if train_split_idx < 0 or train_split_idx >= len(ratios):
-            raise ValueError(
-                f"'train_split_idx' must be between 0 and {len(ratios) - 1}, got {train_split_idx}."
-            )
+        validate_is_between("train_split_idx", train_split_idx, 0, len(ratios) - 1)
 
 
 class DefaultHDataSplitter(Splitter["HData", "HData"]):
@@ -171,6 +168,7 @@ class DefaultHDataSplitter(Splitter["HData", "HData"]):
         node_space_setting: NodeSpaceSetting = "transductive",
     ) -> None:
         self.node_space_setting = node_space_setting
+        validate_node_space_setting(self.node_space_setting)
 
     def split(self, to_split: HData, **kwargs) -> HData:
         """
@@ -184,6 +182,7 @@ class DefaultHDataSplitter(Splitter["HData", "HData"]):
             hdata: The splitted instance with remapped node and hyperedge IDs.
         """
         split_hyperedge_ids = kwargs.get("split_hyperedge_ids", [])
+        validate_is_non_empty("split_hyperedge_ids", split_hyperedge_ids)
 
         keep_mask = torch.isin(to_split.hyperedge_index[1], split_hyperedge_ids)
         split_hyperedge_index = to_split.hyperedge_index[:, keep_mask]
@@ -191,13 +190,16 @@ class DefaultHDataSplitter(Splitter["HData", "HData"]):
 
         split_y = to_split.y[split_unique_hyperedge_ids]
 
-        split_hyperedge_attr = None
-        if to_split.hyperedge_attr is not None:
-            split_hyperedge_attr = to_split.hyperedge_attr[split_unique_hyperedge_ids]
-
-        split_hyperedge_weights = None
-        if to_split.hyperedge_weights is not None:
-            split_hyperedge_weights = to_split.hyperedge_weights[split_unique_hyperedge_ids]
+        split_hyperedge_attr = (
+            to_split.hyperedge_attr[split_unique_hyperedge_ids]
+            if to_split.hyperedge_attr is not None
+            else None
+        )
+        split_hyperedge_weights = (
+            to_split.hyperedge_weights[split_unique_hyperedge_ids]
+            if to_split.hyperedge_weights is not None
+            else None
+        )
 
         if is_transductive_setting(self.node_space_setting):
             split_hyperedge_index[1] = to_0based_ids(
@@ -227,10 +229,6 @@ class DefaultHDataSplitter(Splitter["HData", "HData"]):
             .item
         )
 
-        split_global_node_ids = None
-        if to_split.global_node_ids is not None:
-            split_global_node_ids = to_split.global_node_ids[split_unique_node_ids]
-
         return to_split.__class__(
             x=to_split.x[split_unique_node_ids],
             hyperedge_index=split_hyperedge_index.clone(),
@@ -238,7 +236,7 @@ class DefaultHDataSplitter(Splitter["HData", "HData"]):
             hyperedge_attr=split_hyperedge_attr,
             num_nodes=len(split_unique_node_ids),
             num_hyperedges=len(split_unique_hyperedge_ids),
-            global_node_ids=split_global_node_ids,
+            global_node_ids=to_split.global_node_ids[split_unique_node_ids],
             y=split_y,
         )
 
@@ -287,11 +285,7 @@ class HyperedgeIDSplitter(Splitter["Tensor", tuple[list["Tensor"], list[float]]]
             ValueError: If one or more nodes do not appear in any hyperedge of the source hypergraph.
         """
         validate_is_non_empty("hyperedge_ids_by_split", hyperedge_ids_by_split)
-        if split_idx < 0 or split_idx >= len(hyperedge_ids_by_split):
-            raise ValueError(
-                f"split_idx must reference an existing split, got {split_idx} "
-                f"for {len(hyperedge_ids_by_split)} splits."
-            )
+        validate_is_between("split_idx", split_idx, 0, len(hyperedge_ids_by_split) - 1)
 
         required_node_ids = torch.arange(self.num_nodes, device=self.device)
         available_node_ids = self.hyperedge_index[0].unique()
@@ -344,7 +338,7 @@ class HyperedgeIDSplitter(Splitter["Tensor", tuple[list["Tensor"], list[float]]]
             for split_idx, split_hyperedge_ids in enumerate(hyperedge_ids_by_split)
             if split_hyperedge_ids.numel() == 0
         ]
-        if empty_split_indices:
+        if len(empty_split_indices) > 0:
             final_ratios = self.get_split_ratios(hyperedge_ids_by_split)
             raise ValueError(
                 f"Splitting produced splits {empty_split_indices} "
@@ -365,7 +359,6 @@ class HyperedgeIDSplitter(Splitter["Tensor", tuple[list["Tensor"], list[float]]]
         # Shuffle hyperedge IDs if shuffle is requested, otherwise keep original order for deterministic splits
         if shuffle:
             generator = create_seeded_torch_generator(device=self.device, seed=seed)
-
             random_hyperedge_ids_permutation = torch.randperm(
                 n=self.num_hyperedges,
                 generator=generator,
