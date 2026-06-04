@@ -328,8 +328,10 @@ class HIFLoader:
         hf_sha: str | None = None,
         save_on_disk: bool = False,
     ) -> HData:
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        zst_filename = os.path.join(current_dir, "datasets", f"{dataset_name}.json.zst")
+        # current_dir = os.path.dirname(os.path.abspath(__file__))
+        cache_dir = get_cache_dir()
+        output_dir = os.path.join(cache_dir, "datasets")
+        zst_filename = os.path.join(output_dir, f"{dataset_name}.json.zst")
         repo_root = get_cache_dir()
         hf_cache_dir = os.path.join(repo_root, "hf_cache")
         if os.path.exists(zst_filename):

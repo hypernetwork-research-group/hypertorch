@@ -134,27 +134,28 @@ def test_write_zst_file_to_disk_raises_on_write_failure(tmp_path):
 def test_write_dataset_to_disk_as_zst_writes_to_explicit_output_dir(tmp_path):
     output_dir = tmp_path / "datasets"
 
-    write_dataset_to_disk_as_zst("algebra", b"content", output_dir=str(output_dir))
+    write_dataset_to_disk_as_zst("algebra_tmp", b"content", output_dir=str(output_dir))
 
-    assert (output_dir / "algebra.json.zst").read_bytes() == b"content"
+    assert (output_dir / "algebra_tmp.json.zst").read_bytes() == b"content"
 
 
 def test_write_dataset_to_disk_as_zst_uses_default_output_dir(tmp_path):
     with patch(
-        "hyperbench.utils.file_utils.__file__",
-        str(tmp_path / "pkg" / "file_utils.py"),
+        "hyperbench.utils.file_utils.get_cache_dir", return_value=tmp_path / ".hyperbench_cache"
     ):
-        write_dataset_to_disk_as_zst("algebra", b"content")
+        write_dataset_to_disk_as_zst("algebra_tmp", b"content")
 
-    assert (tmp_path / "data" / "datasets" / "algebra.json.zst").read_bytes() == b"content"
+    assert (
+        tmp_path / ".hyperbench_cache" / "datasets" / "algebra_tmp.json.zst"
+    ).read_bytes() == b"content"
 
 
 def test_write_dataset_to_disk_as_zst_raises_when_path_cannot_be_determined():
     with (
-        patch("hyperbench.utils.file_utils.os.path.abspath", side_effect=OSError("boom")),
+        patch("hyperbench.utils.file_utils.get_cache_dir", side_effect=OSError("boom")),
         pytest.raises(ValueError, match="Failed to determine output path for dataset"),
     ):
-        write_dataset_to_disk_as_zst("algebra", b"content")
+        write_dataset_to_disk_as_zst("algebra_tmp", b"content")
 
 
 def test_write_dataset_to_disk_as_zst_raises_on_write_failure(tmp_path):
@@ -163,10 +164,11 @@ def test_write_dataset_to_disk_as_zst_raises_on_write_failure(tmp_path):
     with (
         patch("builtins.open", side_effect=OSError("disk full")),
         pytest.raises(
-            ValueError, match=r"Failed to write file '.*algebra\.json\.zst' to disk '.*datasets'"
+            ValueError,
+            match=r"Failed to write file '.*algebra_tmp\.json\.zst' to disk '.*datasets'",
         ),
     ):
-        write_dataset_to_disk_as_zst("algebra", b"content", output_dir=str(output_dir))
+        write_dataset_to_disk_as_zst("algebra_tmp", b"content", output_dir=str(output_dir))
 
 
 def test_find_project_root_returns_directory_with_project_marker(tmp_path, monkeypatch):
