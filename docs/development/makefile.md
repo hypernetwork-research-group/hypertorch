@@ -122,7 +122,7 @@ You can always run `make help` to see the latest list.
 	CLI:
 
 	```bash
-	uv run pytest --cov=hyperbench --cov-report=term-missing
+	uv run pytest -n auto --cov=hyperbench --cov-report=term-missing -m "not integration"
 	```
 
 - `make stest T=<test_name>`: Run a single test file or folder under `hyperbench/tests/`
@@ -131,6 +131,24 @@ You can always run `make help` to see the latest list.
 
 	```bash
 	uv run pytest -s hyperbench/tests/<test_name>
+	```
+
+- `make i-test`: Run all integration tests
+
+	CLI:
+
+	```bash
+	uv run pytest -n auto -m "integration"
+	```
+
+	Integration tests may perform live dataset downloads. The supported-dataset fallback tests use GitHub raw URLs first and Hugging Face Hub as the fallback source; set `HF_DOWNLOAD_TOKEN` when running in environments that need authenticated or higher-quota Hugging Face downloads.
+
+- `make si-test T=<test_name>`: Run a single integration test file or folder under `hyperbench/integration_tests/`
+
+	CLI:
+
+	```bash
+	uv run pytest -n auto -s hyperbench/integration_tests/<test_name> -m "integration"
 	```
 
 ### Run scripts
