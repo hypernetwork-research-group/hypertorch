@@ -1,5 +1,6 @@
 import fastjsonschema
 import json
+from pathlib import Path
 import requests
 import warnings
 
@@ -7,6 +8,8 @@ from huggingface_hub import HfApi
 from importlib import resources
 from typing import Any
 
+from hyperbench.utils.file_utils import get_cache_dir
+from hyperbench.utils.url_utils import validate_http_url
 
 HIF_SCHEMA_COMMIT_SHA = "b691a3d2ec32100c0229ebe1151e9afad015c356"
 
@@ -111,9 +114,13 @@ def get_gh_dataset_sha(dataset_name: str, owner: str, repository: str) -> str | 
 
 
 def __load_hif_schema() -> dict[str, Any]:
-    url = f"https://raw.githubusercontent.com/HIF-org/HIF-standard/{HIF_SCHEMA_COMMIT_SHA}/schemas/hif_schema.json"
-
+    cache_dir = get_cache_dir()
+    cached_hif_schema = Path(cache_dir) / "hif_schema.json"
     try:
+        if cached_hif_schema.exists():
+            with cached_hif_schema.open("r", encoding="utf-8") as f:
+                return json.load(f)
+
         with (
             resources.files("hyperbench.utils.schema")
             .joinpath("hif_schema.json")
@@ -122,14 +129,12 @@ def __load_hif_schema() -> dict[str, Any]:
             return json.load(f)
     except Exception:
         try:
+            url = f"https://raw.githubusercontent.com/HIF-org/HIF-standard/{HIF_SCHEMA_COMMIT_SHA}/schemas/hif_schema.json"
+            validate_http_url(url)
             response = requests.get(url, timeout=10)
             response.raise_for_status()
             schema = response.json()
-            schema_path = resources.files("hyperbench.utils.schema").joinpath("hif_schema.json")
-            with (
-                resources.as_file(schema_path) as path,
-                path.open("w", encoding="utf-8") as f,
-            ):
+            with cached_hif_schema.open("w", encoding="utf-8") as f:
                 json.dump(schema, f)
             return schema
         except (requests.RequestException, requests.Timeout) as e:

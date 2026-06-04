@@ -69,8 +69,8 @@ def write_dataset_to_disk_as_zst(
         if output_dir is not None:
             zst_filename = os.path.join(output_dir, f"{dataset_name}.json.zst")
         else:
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            output_dir = os.path.join(current_dir, "..", "data", "datasets")
+            cache_dir = get_cache_dir()
+            output_dir = os.path.join(cache_dir, "datasets")
             zst_filename = os.path.join(output_dir, f"{dataset_name}.json.zst")
     except Exception as e:
         raise ValueError(
