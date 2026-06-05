@@ -5,8 +5,9 @@ from hyperbench.types import EdgeIndex, HyperedgeIndex
 
 class HyperGCN(nn.Module):
     """
-    HyperGCN approximates each hyperedge of the hypergraph by a set of pairwise edges connecting the vertices of the hyperedge
-    and treats the learning problem as a graph learning problem on the approximation.
+    HyperGCN approximates each hyperedge of the hypergraph by a set of pairwise edges connecting the
+    vertices of the hyperedge and treats the learning problem as a graph learning problem on the
+    approximation.
 
     References:
         - Proposed in [HyperGCN: A New Method of Training Graph Convolutional Networks on Hypergraphs](https://dl.acm.org/doi/10.5555/3454287.3454422) paper (NeurIPS 2019).
@@ -24,6 +25,7 @@ class HyperGCN(nn.Module):
         fast: If set to ``True``, the transformed graph structure will be computed once from the input hypergraph
             and vertex features, and cached for future use. Defaults to ``True``.
         seed: Optional random seed for the random reduction of hyperedges to edges. Defaults to ``None``.
+
     """
 
     def __init__(
@@ -77,6 +79,7 @@ class HyperGCN(nn.Module):
 
         Returns:
             x: The output node feature matrix. Size ``(num_nodes, num_classes)``.
+
         """
         if not self.fast:
             for layer in self.layers:

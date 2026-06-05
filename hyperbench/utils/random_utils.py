@@ -16,6 +16,7 @@ def create_seeded_torch_generator(
 
     Returns:
         generator: A seeded torch.Generator when ``seed`` is provided, otherwise ``None``.
+
     """
     if seed is None:
         return None

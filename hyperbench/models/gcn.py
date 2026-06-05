@@ -23,6 +23,7 @@ class GCNConfig(TypedDict):
         normalize: Whether to symmetrically normalize the adjacency matrix in GCNConv. Defaults to ``True``.
         cached: Whether to cache the normalized adjacency matrix in GCNConv.
             Only applicable if the graph structure does not change between epochs. Defaults to ``False``.
+
     """
 
     in_channels: int
@@ -57,6 +58,7 @@ class GCN(nn.Module):
         add_self_loops: Whether to add self-loops to the input graph.
         normalize: Whether to symmetrically normalize the adjacency matrix in ``GCNConv``.
         cached: Whether to cache the normalized adjacency matrix in ``GCNConv``.
+
     """
 
     def __init__(

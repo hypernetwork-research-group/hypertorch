@@ -14,6 +14,7 @@ class Graph:
     Args:
         edges: A list of edges, where each edge is represented as a list of two integers (source_node, destination_node).
         edge_weights: Optional list of edge weights corresponding to each edge in ``edges``. If provided, must have the same length as ``edges``.
+
     """
 
     def __init__(self, edges: list[list[int]], edge_weights: list[float] | None = None):
@@ -23,19 +24,25 @@ class Graph:
 
     @property
     def edge_weights(self) -> list[float] | None:
-        """Return the edge weights, if present."""
+        """
+        Return the edge weights, if present.
+        """
         return self.__edge_weights
 
     @property
     def edge_weights_tensor(self) -> Tensor:
-        """Return the edge weights as a tensor, if present."""
+        """
+        Return the edge weights as a tensor, if present.
+        """
         if self.__edge_weights is not None:
             return torch.tensor(self.__edge_weights, dtype=torch.float)
         return torch.empty(0, dtype=torch.float)
 
     @property
     def num_nodes(self) -> int:
-        """Return the number of nodes in the graph."""
+        """
+        Return the number of nodes in the graph.
+        """
         nodes = set()
         for edge in self.edges:
             nodes.update(edge)
@@ -43,7 +50,9 @@ class Graph:
 
     @property
     def num_edges(self) -> int:
-        """Return the number of edges in the graph."""
+        """
+        Return the number of edges in the graph.
+        """
         return len(self.edges)
 
     def remove_selfloops(self) -> Graph:
@@ -52,6 +61,7 @@ class Graph:
 
         Returns:
             edges: List of edges without self-loops.
+
         """
         if self.num_edges == 0:
             return self
@@ -86,6 +96,7 @@ class Graph:
 
         Returns:
             edge_index: Tensor of shape (2, |E|) representing edges.
+
         """
         if self.num_edges == 0:
             return torch.empty((2, 0), dtype=torch.long)
@@ -124,6 +135,7 @@ class Graph:
 
         Returns:
             x: The smoothed feature matrix. Size ``(num_nodes, C)``.
+
         """
         if laplacian_matrix.dtype != x.dtype or laplacian_matrix.device != x.device:
             laplacian_matrix = laplacian_matrix.to(dtype=x.dtype, device=x.device)
@@ -161,24 +173,32 @@ class EdgeIndex:
 
     @property
     def item(self) -> Tensor:
-        """Return the edge index tensor."""
+        """
+        Return the edge index tensor.
+        """
         return self.__edge_index
 
     @property
     def edge_weights(self) -> Tensor | None:
-        """Return the edge weight tensor, if present."""
+        """
+        Return the edge weight tensor, if present.
+        """
         return self.__edge_weights
 
     @property
     def max_node_id(self) -> int:
-        """Return the maximum node ID in the edge index."""
+        """
+        Return the maximum node ID in the edge index.
+        """
         if self.__edge_index.size(1) < 1:
             return -1
         return int(self.__edge_index.max())
 
     @property
     def num_edges(self) -> int:
-        """Return the number of edges in the graph."""
+        """
+        Return the number of edges in the graph.
+        """
         if self.__edge_index.size(1) < 1:
             return 0
         # Number of edges is the number of columns in edge_index, which is dim=1,
@@ -187,7 +207,9 @@ class EdgeIndex:
 
     @property
     def num_nodes(self) -> int:
-        """Return the number of nodes in the graph."""
+        """
+        Return the number of nodes in the graph.
+        """
         if self.__edge_index.size(1) < 1:
             return 0
         unique_nodes = torch.unique(self.__edge_index)
@@ -409,6 +431,7 @@ class EdgeIndex:
 
         Returns:
             degree_matrix: The sparse normalized degree matrix D^-1/2 of shape ``(num_nodes, num_nodes)``.
+
         """
         num_nodes = self.num_nodes if num_nodes is None else num_nodes
         self.__validate_num_nodes(num_nodes)
@@ -530,7 +553,9 @@ class EdgeIndex:
         return normalized_laplacian_matrix.coalesce()
 
     def remove_selfloops(self) -> EdgeIndex:
-        """Remove self-loops from the edge index."""
+        """
+        Remove self-loops from the edge index.
+        """
         # Example: edge_index = [[0, 1, 2, 3],
         #                        [1, 1, 3, 2]], shape (2, |E| = 4)
         #          -> keep_mask = [True, False, True, True]
@@ -545,15 +570,17 @@ class EdgeIndex:
 
     def remove_duplicate_edges(self, num_nodes: int | None = None) -> EdgeIndex:
         """
-        Remove duplicate edges from the edge index. Keeps the tensor contiguous in memory.
+        Remove duplicate edges from the edge index.
 
-        Args:
-            num_nodes: The number of nodes in the graph. If ``None``, it will be inferred from ``self.num_nodes``.
-                This parameter is important when ``edge_index`` does not contain all nodes (e.g., some nodes are isolated and have no edges or have been removed),
-                as it ensures that the resulting Laplacian matrix has the correct size and includes all nodes. For instance, for self-loops.
+        Keeps the tensor contiguous in memory.
+                Args:
+                    num_nodes: The number of nodes in the graph. If ``None``, it will be inferred from ``self.num_nodes``.
+                        This parameter is important when ``edge_index`` does not contain all nodes (e.g., some nodes are isolated and have no edges or have been removed),
+                        as it ensures that the resulting Laplacian matrix has the correct size and includes all nodes. For instance, for self-loops.
 
-        Returns:
-            edge_index: This `EdgeIndex` instance with duplicate edges removed.
+                Returns:
+                    edge_index: This `EdgeIndex` instance with duplicate edges removed.
+
         """
         num_nodes = self.num_nodes if num_nodes is None else num_nodes
         self.__validate_num_nodes(num_nodes)
@@ -615,6 +642,7 @@ class EdgeIndex:
 
         Returns:
             edge_index: This `EdgeIndex` instance converted to undirected.
+
         """
         num_nodes = self.num_nodes if num_nodes is None else num_nodes
         self.__validate_num_nodes(num_nodes)

@@ -5,8 +5,8 @@ from hyperbench.nn import HNHNConv
 
 class HNHN(nn.Module):
     """
-    HNHN performs incidence-based hypergraph convolution with explicit hyperedge
-    embeddings between the node -> hyperedge -> node propagation steps.
+    HNHN performs incidence-based hypergraph convolution with explicit hyperedge embeddings between
+    the node -> hyperedge -> node propagation steps.
 
     References:
         - Proposed in [HNHN: Hypergraph Networks with Hyperedge Neurons](https://arxiv.org/abs/2006.12278) paper.
@@ -19,6 +19,7 @@ class HNHN(nn.Module):
         bias: If set to ``False``, the layer will not learn the bias parameter. Defaults to ``True``.
         use_batch_normalization: If set to ``True``, layers will use batch normalization. Defaults to ``False``.
         drop_rate: Dropout ratio. Defaults to ``0.5``.
+
     """
 
     def __init__(
@@ -61,6 +62,7 @@ class HNHN(nn.Module):
 
         Returns:
             x: The output node feature matrix of size ``(num_nodes, num_classes)``.
+
         """
         for layer in self.layers:
             x = layer(x, hyperedge_index)

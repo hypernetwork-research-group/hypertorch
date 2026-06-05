@@ -25,6 +25,7 @@ class MlpEncoderConfig(TypedDict):
         normalization_fn_kwargs: Optional dictionary of keyword arguments to pass to the normalization function constructor.
         bias: Whether to include bias terms in the MLP layers. Defaults to ``True``.
         drop_rate: Dropout rate to apply after each MLP layer (except the last one). Defaults to ``0.0`` (no dropout).
+
     """
 
     in_channels: int
@@ -52,6 +53,7 @@ class MLPHlpModule(HlpModule):
         loss_fn: Loss function. Defaults to ``BCEWithLogitsLoss``.
         lr: Learning rate for the optimizer. Defaults to ``0.001``.
         metrics: Optional dictionary of metric functions.
+
     """
 
     def __init__(

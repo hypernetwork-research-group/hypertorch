@@ -64,6 +64,7 @@ def write_dataset_to_disk_as_zst(
         dataset_name: The name of the dataset.
         content: The compressed content as bytes.
         output_dir: The directory to write the file to. If None, a default location is used.
+
     """
     try:
         if output_dir is not None:

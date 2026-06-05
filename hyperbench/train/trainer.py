@@ -352,7 +352,9 @@ class MultiModelTrainer:
     def wait(self) -> None:
         """
         Wait until the user presses Enter, keeping process alive.
+
         If no process is running, this method does nothing.
+
         """
         # For now, we only use this for waiting on TensorBoard, but this can be extended
         # to support waiting for other processes or conditions as needed

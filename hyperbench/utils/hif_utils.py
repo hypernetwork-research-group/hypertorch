@@ -33,6 +33,7 @@ def validate_hif_json(filename: str) -> bool:
 
     Returns:
         valid: ``True`` if the file is valid HIF, ``False`` otherwise.
+
     """
     try:
         with open(filename, encoding="utf-8") as f:

@@ -20,6 +20,7 @@ class CommonNeighborsHlpModule(HlpModule):
         decoder: An optional decoder module. Defaults to `CommonNeighbors`.
         loss_fn: An optional loss function. Defaults to ``BCEWithLogitsLoss``.
         metrics: An optional dictionary of metric functions.
+
     """
 
     def __init__(
@@ -51,11 +52,14 @@ class CommonNeighborsHlpModule(HlpModule):
 
         Args:
             hyperedge_index: Tensor containing incidence information for the hyperedges to score.
+
         """
         return self.decoder(hyperedge_index, self.node_to_neighbors)
 
     def on_fit_start(self) -> None:
-        """Warn users if they are running unnecessary training epochs."""
+        """
+        Warn users if they are running unnecessary training epochs.
+        """
         if self.trainer.max_epochs is None or self.trainer.max_epochs > 0:
             warnings.warn(
                 f"{self.__class__.__name__} is a non-trainable heuristic model. "
@@ -86,10 +90,12 @@ class CommonNeighborsHlpModule(HlpModule):
 
         Args:
             batch: `HData` object containing the hypergraph.
-            stage: The current stage of evaluation (e.g., ``Stage.TRAIN``, ``Stage.VAL``, ``Stage.TEST``).
+            stage: The current stage of evaluation
+                (e.g., ``Stage.TRAIN``, ``Stage.VAL``, ``Stage.TEST``).
 
         Returns:
             loss: The computed loss.
+
         """
         scores = self.forward(batch.hyperedge_index)
         labels = batch.y

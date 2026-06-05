@@ -24,6 +24,7 @@ class HyperGCNEncoderConfig(TypedDict):
         use_mediator: Whether to use mediator nodes for hyperedge-to-edge conversion. Defaults to ``False``.
         fast: Whether to cache the graph structure after first computation. Defaults to ``True``.
         seed: Optional random seed for the random reduction of hyperedges to edges. Defaults to ``None``.
+
     """
 
     in_channels: int
@@ -52,6 +53,7 @@ class HyperGCNHlpModule(HlpModule):
         lr: Learning rate for the optimizer. Defaults to ``0.01``.
         weight_decay: L2 regularization. Defaults to ``5e-4``.
         metrics: Optional metric collection for evaluation.
+
     """
 
     def __init__(

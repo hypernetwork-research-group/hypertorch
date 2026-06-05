@@ -62,6 +62,7 @@ class HyperGCNConv(nn.Module):
 
         Returns:
             x: The output node feature matrix. Size ``(num_nodes, out_channels)``.
+
         """
         x = self.theta(x)
 
@@ -270,8 +271,8 @@ class HNHNConv(nn.Module):
 
     def forward(self, x: Tensor, hyperedge_index: Tensor) -> Tensor:
         """
-        Apply one HNHN convolution layer using two learned projections around
-        node-to-hyperedge and hyperedge-to-node mean aggregation.
+        Apply one HNHN convolution layer using two learned projections around node-to-hyperedge and
+        hyperedge-to-node mean aggregation.
 
         Args:
             x: Input node feature matrix of size ``(num_nodes, in_channels)``.
@@ -279,6 +280,7 @@ class HNHNConv(nn.Module):
 
         Returns:
             x: The output node feature matrix of size ``(num_nodes, out_channels)``.
+
         """
         x = self.theta_v2e(x)
 

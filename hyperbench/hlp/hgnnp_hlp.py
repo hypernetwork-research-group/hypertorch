@@ -21,6 +21,7 @@ class HGNNPEncoderConfig(TypedDict):
         bias: Whether to include bias terms. Defaults to ``True``.
         use_batch_normalization: Whether to use batch normalization. Defaults to ``False``.
         drop_rate: Dropout rate. Defaults to ``0.5``.
+
     """
 
     in_channels: int
@@ -46,6 +47,7 @@ class HGNNPHlpModule(HlpModule):
         lr: Learning rate for the optimizer. Defaults to ``0.01``.
         weight_decay: L2 regularization. Defaults to ``5e-4``.
         metrics: Optional metric collection for evaluation.
+
     """
 
     def __init__(
@@ -101,6 +103,7 @@ class HGNNPHlpModule(HlpModule):
 
         Returns:
             scores: Logit scores of shape ``(num_hyperedges,)``.
+
         """
         if self.encoder is None:
             raise ValueError("Encoder is not defined for this HLP module.")

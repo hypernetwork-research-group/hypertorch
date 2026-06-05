@@ -22,6 +22,7 @@ class NegativeSampler(ABC):
                 will have 0-based node and hyperedge IDs.
             - If ``False``, the negative samples will retain the original global node
                 and hyperedge IDs from the input data.
+
     """
 
     def __init__(self, return_0based_negatives: bool = False):
@@ -42,6 +43,7 @@ class NegativeSampler(ABC):
 
         Raises:
             NotImplementedError: If the method is not implemented in a subclass.
+
         """
         raise NotImplementedError("Subclasses must implement this method.")
 
@@ -65,6 +67,7 @@ class NegativeSampler(ABC):
                 have 0-based node and hyperedge IDs.
             Otherwise, it will retain the original global node and hyperedge IDs
                 from the input data.
+
         """
         negative_hyperedge_index = torch.cat(sampled_hyperedge_indexes, dim=1)
         if not self.return_0based_negatives:
@@ -92,6 +95,7 @@ class NegativeSampler(ABC):
         Returns:
             global_node_ids: The global node IDs for the negative samples, or ``None`` if
                 the input global node IDs are ``None``.
+
         """
         if global_node_ids is None:
             return None
@@ -111,6 +115,7 @@ class NegativeSampler(ABC):
 
         Returns:
             hyperedge_attr: The concatenated hyperedge attribute tensor for the negative samples.
+
         """
         if hyperedge_attr is None or len(sampled_hyperedge_attrs) < 1:
             return None
@@ -134,6 +139,7 @@ class NegativeSampler(ABC):
         Returns:
             hyperedge_attr: The enriched hyperedge attribute tensor for the negative samples,
                 or ``None`` if the enricher is not provided.
+
         """
         if hyperedge_attr_enricher is None:
             return None
@@ -159,6 +165,7 @@ class NegativeSampler(ABC):
         Returns:
             hyperedge_weights: The enriched hyperedge weight tensor for the negative samples,
                 or ``None`` if the enricher is not provided.
+
         """
         if hyperedge_weights_enricher is None:
             return None
@@ -179,6 +186,7 @@ class NegativeSampler(ABC):
         Returns:
             x_and_num_negative_nodes: The node feature matrix for the negative samples
                 and the number of negative nodes.
+
         """
         return x[negative_node_ids], len(negative_node_ids)
 
@@ -199,6 +207,7 @@ class NegativeSampler(ABC):
 
         Returns:
             hyperedge_ids: A tensor containing consecutive negative hyperedge IDs.
+
         """
         # Example: new_hyperedge_id_offset = 3 (if hdata.num_hyperedges was 3)
         #          num_negative_samples = 2
@@ -221,6 +230,7 @@ class NegativeSampler(ABC):
 
         Returns:
             signatures: A set of sorted node ID tuples, one tuple per hyperedge.
+
         """
         all_hyperedge_ids = hyperedge_index[1]
         unique_hyperedge_ids = all_hyperedge_ids.unique().tolist()
@@ -244,6 +254,7 @@ class NegativeSampler(ABC):
 
         Returns:
             signature: A sorted tuple of Python ``int`` values.
+
         """
         if isinstance(node_ids, Tensor):
             return tuple(sorted(int(node_id) for node_id in node_ids.tolist()))
@@ -264,6 +275,7 @@ class SameNodeSpaceNegativeSampler(NegativeSampler, ABC):
                 0-based node and hyperedge IDs.
             - If ``False``, the negative samples will retain the original global node
                 and hyperedge IDs from the input data.
+
     """
 
     def __init__(
@@ -292,6 +304,7 @@ class GeneratedNodesNegativeSampler(NegativeSampler, ABC):
                 0-based node and hyperedge IDs.
             - If ``False``, the negative samples will retain the original global node and
                 hyperedge IDs from the input data.
+
     """
 
     def __init__(
@@ -511,6 +524,7 @@ class RandomNegativeSampler(SameNodeSpaceNegativeSampler):
         Raises:
             ValueError: If the sampler cannot produce the requested number of unique negative
                 hyperedges within the number of maximum allowed attempts.
+
         """
         device = hdata.device
         generator = create_seeded_torch_generator(device=device, seed=seed)
@@ -614,6 +628,7 @@ class RandomNegativeSampler(SameNodeSpaceNegativeSampler):
         Raises:
             ValueError: If the requested number of negatives exceeds the number of possible
                 unique non-positive hyperedges.
+
         """
         num_possible_hyperedges_by_size = comb(hdata.num_nodes, self.num_nodes_per_sample)
         num_positive_hyperedges = len(positive_hyperedges_signatures)
@@ -657,6 +672,7 @@ class CliqueNegativeSampler(SameNodeSpaceNegativeSampler):
 
     Raises:
         ValueError: If numeric arguments are invalid.
+
     """
 
     def __init__(
@@ -702,6 +718,7 @@ class CliqueNegativeSampler(SameNodeSpaceNegativeSampler):
 
         Raises:
             ValueError: If too few nodes or valid clique negatives are available.
+
         """
         if self.num_nodes_per_sample > hdata.num_nodes:
             raise ValueError(
@@ -820,6 +837,7 @@ class CliqueNegativeSampler(SameNodeSpaceNegativeSampler):
 
         Raises:
             ValueError: If ``max_candidates`` is set and clique enumeration exceeds it.
+
         """
         if len(prefix) == self.num_nodes_per_sample:  # Found a full-size clique candidate
             if self.max_candidates is not None and enumerated_candidates >= self.max_candidates:
@@ -879,6 +897,7 @@ class CliqueNegativeSampler(SameNodeSpaceNegativeSampler):
         Raises:
             ValueError: If fewer valid clique negatives exist than requested, or if
                 ``max_candidates`` is exceeded during enumeration.
+
         """
         valid_clique_candidates: list[tuple[int, ...]] = []
 
@@ -922,6 +941,7 @@ class CliqueNegativeSampler(SameNodeSpaceNegativeSampler):
         Returns:
             samples: A tuple containing sampled hyperedge index tensors, sampled hyperedge
             attribute tensors, sampled node IDs, and the first negative hyperedge ID.
+
         """
         device = hdata.device
         generator = create_seeded_torch_generator(device=device, seed=seed)
