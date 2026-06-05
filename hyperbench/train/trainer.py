@@ -11,8 +11,7 @@ from pathlib import Path
 from typing import Any
 from collections.abc import Iterable, Mapping
 from lightning.pytorch.accelerators import Accelerator
-from lightning.pytorch.callbacks import Callback
-from lightning.pytorch.callbacks import ModelCheckpoint
+from lightning.pytorch.callbacks import Callback, ModelCheckpoint
 from lightning.pytorch.loggers import CSVLogger, Logger
 from lightning.pytorch.profilers import Profiler
 from lightning.pytorch.strategies import Strategy
