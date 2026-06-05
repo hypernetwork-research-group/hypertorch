@@ -90,6 +90,29 @@ def test_initialization_with_custom_params(mock_dataset_single_sample):
     assert loader.num_workers == 0
 
 
+def test_initialization_uses_collate_fn_arg_when_provided(mock_dataset_single_sample):
+    def collate_fn(batch):
+        return batch
+
+    loader = DataLoader(
+        dataset=mock_dataset_single_sample,
+        collate_fn=collate_fn,
+    )
+
+    assert loader.collate_fn == collate_fn
+
+
+def test_initialization_uses_default_collate_fn_when_arg_is_not_provided(
+    mock_dataset_single_sample,
+):
+    loader = DataLoader(
+        dataset=mock_dataset_single_sample,
+        collate_fn=None,
+    )
+
+    assert loader.collate_fn == loader.collate
+
+
 def test_collate_single_sample(mock_dataset_single_sample):
     loader = DataLoader(mock_dataset_single_sample, batch_size=1)
 

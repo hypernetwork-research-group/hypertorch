@@ -45,9 +45,6 @@ with MultiModelTrainer(model_configs=configs, max_epochs=200, accelerator="auto"
     trainer.test_all(dataloader=test_loader)
 ```
 
-For a complete runnable script, see:
-[mlp_common_neighbors.py](https://github.com/hypernetwork-research-group/hyperbench/blob/main/examples/mlp_common_neighbors.py)
-
 ## Where results are saved
 
 By default, runs are saved under `hyperbench_logs/`.

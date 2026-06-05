@@ -1,6 +1,7 @@
 import torch
 
 from torch import Generator
+from collections.abc import Callable
 from torch.utils.data import DataLoader as TorchDataLoader
 from hyperbench.data import Dataset
 from hyperbench.types import HData, HyperedgeIndex
@@ -13,6 +14,7 @@ class DataLoader(TorchDataLoader):
         batch_size: int = 1,
         shuffle: bool | None = False,
         sample_full_hypergraph: bool = False,
+        collate_fn: Callable[[list[HData]], HData] | None = None,
         generator: Generator | None = None,
         **kwargs,
     ) -> None:
@@ -20,9 +22,9 @@ class DataLoader(TorchDataLoader):
 
         super().__init__(
             dataset=dataset,
-            batch_size=len(dataset) if sample_full_hypergraph else batch_size,
+            batch_size=len(dataset) if self.__sample_full_hypergraph else batch_size,
             shuffle=shuffle,
-            collate_fn=self.collate,
+            collate_fn=self.collate if collate_fn is None else collate_fn,
             generator=generator,
             **kwargs,
         )
@@ -31,7 +33,7 @@ class DataLoader(TorchDataLoader):
 
     def collate(self, batch: list[HData]) -> HData:
         """
-        Collates a list of `HData objects into a single batched `HData object.
+        Collates a list of `HData` objects into a single batched `HData` object.
 
         This function combines multiple separate samples into a single batched representation suitable for mini-batch training.
         It handles:
@@ -67,7 +69,7 @@ class DataLoader(TorchDataLoader):
             ...                    [0, 0, 1, 1, 2, 2]]  # Hyperedge IDs: original then offset by 2
 
         Args:
-            batch: List of `HData objects to collate.
+            batch: List of `HData` objects to collate.
 
         Returns:
             hdata: A single `HData` object containing the collated data.
