@@ -12,13 +12,15 @@ class VilLain(nn.Module):
     """
     VilLain learns node-specific virtual-label logits instead of consuming existing node features.
     The model is transductive: rows in ``node_embedding`` correspond to the fixed global node space used during training.
-    - Proposed in `VilLain: Self-Supervised Learning on Homogeneous Hypergraphs without Features via Virtual Label Propagation <https://dl.acm.org/doi/pdf/10.1145/3589334.3645454>`_ paper (WWW 2024).
-    - Reference implementation: `source <https://github.com/geon0325/VilLain/>`_.
+
+    References:
+        - Proposed in [VilLain: Self-Supervised Learning on Homogeneous Hypergraphs without Features via Virtual Label Propagation](https://dl.acm.org/doi/pdf/10.1145/3589334.3645454) paper (WWW 2024).
+        - Reference implementation: [Code](https://github.com/geon0325/VilLain/).
 
     Each forward pass:
-    1. Samples differentiable virtual-label assignments with Gumbel-Softmax.
-    2. Propagates them over the incidence structure.
-    3. Returns averaged propagated node embeddings.
+        1. Samples differentiable virtual-label assignments with Gumbel-Softmax.
+        2. Propagates them over the incidence structure.
+        3. Returns averaged propagated node embeddings.
 
     Args:
         num_nodes: Total number of trainable nodes.

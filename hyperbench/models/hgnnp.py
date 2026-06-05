@@ -6,8 +6,10 @@ class HGNNP(nn.Module):
     """
     HGNN+ performs hypergraph convolution with two-stage mean aggregation using the
     incidence structure directly: nodes -> hyperedges -> nodes.
-    - Proposed in `HGNN+: General Hypergraph Neural Networks <https://ieeexplore.ieee.org/document/9795251>`_ paper (IEEE T-PAMI 2022).
-    - Reference implementation: `source <https://deephypergraph.readthedocs.io/en/latest/_modules/dhg/models/hypergraphs/hgnnp.html#HGNNP>`_.
+
+    References:
+        - Proposed in [HGNN+: General Hypergraph Neural Networks](https://ieeexplore.ieee.org/document/9795251) paper (IEEE T-PAMI 2022).
+        - Reference implementation: [Code](https://deephypergraph.readthedocs.io/en/latest/_modules/dhg/models/hypergraphs/hgnnp.html#HGNNP).
 
     Args:
         in_channels: The number of input channels.

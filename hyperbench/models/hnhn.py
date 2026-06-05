@@ -7,8 +7,10 @@ class HNHN(nn.Module):
     """
     HNHN performs incidence-based hypergraph convolution with explicit hyperedge
     embeddings between the node -> hyperedge -> node propagation steps.
-    - Proposed in `HNHN: Hypergraph Networks with Hyperedge Neurons <https://arxiv.org/abs/2006.12278>`_ paper.
-    - Reference implementation: `source <https://deephypergraph.readthedocs.io/en/latest/_modules/dhg/models/hypergraphs/hnhn.html#HNHN>`_.
+
+    References:
+        - Proposed in [HNHN: Hypergraph Networks with Hyperedge Neurons](https://arxiv.org/abs/2006.12278) paper.
+        - Reference implementation: [Code](https://deephypergraph.readthedocs.io/en/latest/_modules/dhg/models/hypergraphs/hnhn.html#HNHN).
 
     Args:
         in_channels: The number of input channels.

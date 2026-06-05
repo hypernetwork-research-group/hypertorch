@@ -1,6 +1,7 @@
 [project]
 docs_dir = "docs"
 site_dir = "docs/site"
+watch = ["hyperbench"]
 site_name = "©Hyperbench Documentation"
 site_description = "Documentation for Hyperbench"
 site_author = "Hypernetwork Research Group"

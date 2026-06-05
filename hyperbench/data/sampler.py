@@ -123,14 +123,14 @@ class HyperedgeSampler(BaseSampler):
         Sample hyperedges by their IDs and return the sub-hypergraph containing only those hyperedges and their incident nodes.
 
         Examples:
-        >>> hyperedge_index = [[0, 0, 1, 2, 3, 4],
-        ...                    [0, 0, 0, 1, 2, 2]]
-        >>> hdata = HData.from_hyperedge_index(hyperedge_index)
-        >>> strategy = HyperedgeSampler()
-        >>> sampled_hdata = strategy.sample([0, 2], hdata)
-        >>> sampled_hdata.hyperedge_index
-        >>> tensor([[0, 0, 1, 3, 4],
-        ...         [0, 0, 0, 2, 2]])
+            >>> hyperedge_index = [[0, 0, 1, 2, 3, 4],
+            ...                    [0, 0, 0, 1, 2, 2]]
+            >>> hdata = HData.from_hyperedge_index(hyperedge_index)
+            >>> strategy = HyperedgeSampler()
+            >>> sampled_hdata = strategy.sample([0, 2], hdata)
+            >>> sampled_hdata.hyperedge_index
+            >>> tensor([[0, 0, 1, 3, 4],
+            ...         [0, 0, 0, 2, 2]])
 
         Args:
             index: An integer or a list of integers representing hyperedge IDs to sample.
@@ -185,14 +185,14 @@ class NodeSampler(BaseSampler):
         Sample nodes by their IDs and return the sub-hypergraph containing only those nodes and their incident hyperedges.
 
         Examples:
-        >>> hyperedge_index = [[0, 0, 1, 2, 3, 4],
-        ...                    [0, 0, 0, 1, 2, 2]]
-        >>> hdata = HData.from_hyperedge_index(hyperedge_index)
-        >>> strategy = NodeSampler()
-        >>> sampled_hdata = strategy.sample([0, 3], hdata)
-        >>> sampled_hdata.hyperedge_index
-        >>> tensor([[0, 0, 1, 3, 4],
-        ...         [0, 0, 0, 2, 2]])
+            >>> hyperedge_index = [[0, 0, 1, 2, 3, 4],
+            ...                    [0, 0, 0, 1, 2, 2]]
+            >>> hdata = HData.from_hyperedge_index(hyperedge_index)
+            >>> strategy = NodeSampler()
+            >>> sampled_hdata = strategy.sample([0, 3], hdata)
+            >>> sampled_hdata.hyperedge_index
+            >>> tensor([[0, 0, 1, 3, 4],
+            ...         [0, 0, 0, 2, 2]])
 
         Args:
             index: An integer or a list of integers representing node IDs to sample.

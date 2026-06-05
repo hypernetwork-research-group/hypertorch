@@ -41,8 +41,8 @@ class Node2VecSLPHlpModule(HlpModule):
     A LightningModule for Node2Vec-based Hyperedge Link Prediction.
 
     Supports two modes:
-    - ``precomputed``: use node embeddings already stored in ``batch.x``.
-    - ``joint``: train a Node2Vec encoder jointly with the hyperedge decoder.
+        - ``precomputed``: use node embeddings already stored in ``batch.x``.
+        - ``joint``: train a Node2Vec encoder jointly with the hyperedge decoder.
 
     Args:
         encoder_config: Configuration for the Node2Vec encoder.
