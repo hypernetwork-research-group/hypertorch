@@ -38,7 +38,8 @@ class HIFProcessor:
 
         Args:
             attrs: Dictionary of attributes
-            attr_keys: Optional list of attribute keys to encode. If provided, ensures consistent ordering and fill missing with ``0.0``.
+            attr_keys: Optional list of attribute keys to encode. If provided,
+                ensures consistent ordering and fill missing with ``0.0``.
 
         Returns:
             attrs: Tensor of numeric attribute values
@@ -93,7 +94,8 @@ class HIFProcessor:
                 )
 
             if hyperedge_id not in hyperedge_id_to_idx:
-                # Hyperedges start from 0 and are assigned IDs in the order they are first encountered in incidences
+                # Hyperedges start from 0 and are assigned IDs in the order they are
+                # first encountered in incidences
                 hyperedge_id_to_idx[hyperedge_id] = len(hyperedge_id_to_idx)
 
             node_ids.append(node_id_to_idx[node_id])
