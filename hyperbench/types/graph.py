@@ -12,8 +12,10 @@ class Graph:
     A simple graph data structure using edge list representation.
 
     Args:
-        edges: A list of edges, where each edge is represented as a list of two integers (source_node, destination_node).
-        edge_weights: Optional list of edge weights corresponding to each edge in ``edges``. If provided, must have the same length as ``edges``.
+        edges: A list of edges, where each edge is represented as a list of two integers
+            (source_node, destination_node).
+        edge_weights: Optional list of edge weights corresponding to each edge in ``edges``.
+            If provided, must have the same length as ``edges``.
 
     """
 
@@ -131,7 +133,8 @@ class Graph:
         Args:
             x: Node feature matrix. Size ``(num_nodes, C)``.
             laplacian_matrix: The Laplacian matrix. Size ``(num_nodes, num_nodes)``.
-            drop_rate: Randomly dropout the connections in the Laplacian with probability ``drop_rate``. Defaults to ``0.0``.
+            drop_rate: Randomly dropout the connections in the Laplacian with probability
+                ``drop_rate``. Defaults to ``0.0``.
 
         Returns:
             x: The smoothed feature matrix. Size ``(num_nodes, C)``.
@@ -145,7 +148,8 @@ class Graph:
 class EdgeIndex:
     """
     A wrapper for edge index representation of a graph.
-    Edge index is a tensor of shape ``(2, num_edges)`` where the first row contains source node indices
+    Edge index is a tensor of shape ``(2, num_edges)`` where the first row contains source
+        node indices
     and the second row contains destination node indices for each edge.
 
     Examples:
@@ -238,10 +242,14 @@ class EdgeIndex:
             ...                              [1, 0, 3, 0, 1, 2, 3, 4, 5]]
 
         Args:
-            num_nodes: Total number of nodes. When provided, self-loops are added for nodes ``0`` to ``num_nodes - 1``. When ``None``, defaults to ``self.num_nodes``.
-                This parameter is important when ``edge_index`` does not contain all nodes (e.g., some nodes are isolated and have no edges or have been removed),
-                as it ensures that the resulting Laplacian matrix has the correct size and includes all nodes. For instance, for self-loops.
-            with_duplicate_removal: Whether to remove duplicate edges after adding self-loops. Defaults to ``True``.
+            num_nodes: Total number of nodes. When provided, self-loops are added for nodes ``0``
+                to ``num_nodes - 1``. When ``None``, defaults to ``self.num_nodes``.
+                This parameter is important when ``edge_index`` does not contain all nodes
+                (e.g., some nodes are isolated and have no edges or have been removed),
+                as it ensures that the resulting Laplacian matrix has the correct size and includes
+                all nodes. For instance, for self-loops.
+            with_duplicate_removal: Whether to remove duplicate edges after adding self-loops.
+                Defaults to ``True``.
 
         Returns:
             edge_index: This `EdgeIndex` instance with self-loops added.
@@ -318,7 +326,8 @@ class EdgeIndex:
         Args:
             num_nodes: The number of nodes in the graph.
                 If ``None``, it will be inferred from ``self.num_nodes``.
-                Note that the node indices in ``edge_index`` are assumed to be in the range [0, num_nodes-1].
+                Note that the node indices in ``edge_index`` are assumed to be in the
+                range [0, num_nodes-1].
             use_edge_weights: Whether to use edge weights if they are present.
                 If ``False``, all edges will have weight 1. Defaults to ``False``.
 
@@ -383,7 +392,8 @@ class EdgeIndex:
         # Example: num_nodes = 3
         #          -> identity_indices = [[0, 1, 2],
         #                                 [0, 1, 2]]
-        #             we use repeat(2, 1) as I is a matrix NxN, so we need indices for both rows and columns
+        #             we use repeat(2, 1) as I is a matrix NxN, so we need indices
+        #             for both rows and columns
         #          -> values = [1, 1, 1]
         #                   0  1  2
         #          -> I = [[1, 0, 0], 0
@@ -408,11 +418,14 @@ class EdgeIndex:
         Args:
             num_nodes: The number of nodes in the graph.
                 If ``None``, it will be inferred from ``self.num_nodes``.
-                Note that the node indices in ``edge_index`` are assumed to be in the range [0, num_nodes-1].
-            use_edge_weights: If ``True``, use the edge weights from ``self.edge_weights``. If ``False``, all edges use weight 1.
+                Note that the node indices in ``edge_index`` are assumed to be in
+                the range [0, num_nodes-1].
+            use_edge_weights: If ``True``, use the edge weights from ``self.edge_weights``.
+                If ``False``, all edges use weight 1.
 
         Returns:
-            degree_matrix: The sparse normalized degree matrix D^-1/2 of shape ``(num_nodes, num_nodes)``.
+            degree_matrix: The sparse normalized degree matrix D^-1/2 of
+                shape ``(num_nodes, num_nodes)``.
 
         """
         num_nodes = self.num_nodes if num_nodes is None else num_nodes
@@ -467,7 +480,8 @@ class EdgeIndex:
                 it will be inferred from ``self.num_nodes``.
 
         Returns:
-            laplacian: The sparse symmetric normalized Laplacian matrix of shape ``(num_nodes, num_nodes)``.
+            laplacian: The sparse symmetric normalized Laplacian
+                matrix of shape ``(num_nodes, num_nodes)``.
         """
         num_nodes = self.num_nodes if num_nodes is None else num_nodes
         self.__validate_num_nodes(num_nodes)
@@ -501,13 +515,18 @@ class EdgeIndex:
         Args:
             num_nodes: The number of nodes in the graph. If ``None``,
                 it will be inferred from ``self.num_nodes``.
-                Note that the node indices in ``edge_index`` are assumed to be in the range [0, num_nodes-1].
-                This parameter is important when ``edge_index`` does not contain all nodes (e.g., some nodes are isolated and have no edges or have been removed),
-                as it ensures that the resulting Laplacian matrix has the correct size and includes all nodes. For instance, for self-loops.
-            use_edge_weights: If ``True``, use the edge weights from ``self.edge_weights``. If ``False``, all edges use weight 1.
+                Note that the node indices in ``edge_index`` are assumed to be
+                in the range [0, num_nodes-1].
+                This parameter is important when ``edge_index`` does not contain all nodes
+                (e.g., some nodes are isolated and have no edges or have been removed),
+                as it ensures that the resulting Laplacian matrix has the correct size and
+                includes all nodes. For instance, for self-loops.
+            use_edge_weights: If ``True``, use the edge weights from ``self.edge_weights``.
+                If ``False``, all edges use weight 1.
 
         Returns:
-            laplacian: The sparse symmetrically normalized Laplacian matrix of shape ``(num_nodes, num_nodes)``.
+            laplacian: The sparse symmetrically normalized Laplacian matrix of
+                shape ``(num_nodes, num_nodes)``.
         """
         num_nodes = self.num_nodes if num_nodes is None else num_nodes
         self.__validate_num_nodes(num_nodes)
@@ -550,9 +569,12 @@ class EdgeIndex:
 
         Keeps the tensor contiguous in memory.
                 Args:
-                    num_nodes: The number of nodes in the graph. If ``None``, it will be inferred from ``self.num_nodes``.
-                        This parameter is important when ``edge_index`` does not contain all nodes (e.g., some nodes are isolated and have no edges or have been removed),
-                        as it ensures that the resulting Laplacian matrix has the correct size and includes all nodes. For instance, for self-loops.
+                    num_nodes: The number of nodes in the graph. If ``None``, it will be
+                        inferred from ``self.num_nodes``.
+                        This parameter is important when ``edge_index`` does not contain all nodes
+                        (e.g., some nodes are isolated and have no edges or have been removed),
+                        as it ensures that the resulting Laplacian matrix has the correct size
+                        and includes all nodes. For instance, for self-loops.
 
                 Returns:
                     edge_index: This `EdgeIndex` instance with duplicate edges removed.
@@ -610,9 +632,12 @@ class EdgeIndex:
 
         Args:
             with_selfloops: Whether to add self-loops to each node. Defaults to ``False``.
-            num_nodes: Total number of nodes. Propagated to ``add_selfloops`` when ``with_selfloops`` is ``True``.
-                This parameter is useful when ``edge_index`` does not contain all nodes (e.g., some nodes are isolated and have no edges or have been removed),
-                as it ensures that the resulting Laplacian matrix has the correct size and includes all nodes. For instance, for self-loops.
+            num_nodes: Total number of nodes. Propagated to ``add_selfloops`` when
+                ``with_selfloops`` is ``True``.
+                This parameter is useful when ``edge_index`` does not contain all nodes
+                (e.g., some nodes are isolated and have no edges or have been removed),
+                as it ensures that the resulting Laplacian matrix has the correct size and
+                includes all nodes. For instance, for self-loops.
 
         Returns:
             edge_index: This `EdgeIndex` instance converted to undirected.
@@ -638,17 +663,22 @@ class EdgeIndex:
         # Example: encoded_edge_ids          = [1, 4, 11],
         #          reversed_encoded_edge_ids = [4, 1, 14]
         #          -> missing_reverse_mask = [False, False, True]
-        #             because 4 and 1 are in both, it means edges (0,1) and (1,0) are already present,
-        #             but 14 is only in reversed_encoded_edge_ids, which means edge (3,2) is missing
-        #             and this is because the mask points to the missing reversee edges that are missing
+        #             because 4 and 1 are in both, it means edges (0,1) and (1,0)
+        #             are already present,
+        #             but 14 is only in reversed_encoded_edge_ids, which means
+        #             edge (3,2) is missing
+        #             and this is because the mask points to the missing reversee edges
+        #             that are missing
         missing_mask = torch.logical_not(torch.isin(reversed_encoded_edge_ids, encoded_edge_ids))
 
-        # Keep all original sources and append the destination of each edge whose reverse is missing.
+        # Keep all original sources and append the destination of each edge
+        # whose reverse is missing.
         # Example: orig_src = [0, 1, 2], orig_dest[missing_mask] = [3]
         #          -> src = [0, 1, 2, 3]
         src = torch.cat([orig_src, orig_dest[missing_mask]])
 
-        # Keep all original destinations and append the source of each edge whose reverse is missing.
+        # Keep all original destinations and append the source of each edge
+        # whose reverse is missing.
         # Example: orig_dest = [1, 0, 3], orig_src[missing_mask] = [2]
         #          -> dest = [1, 0, 3, 2]
         #          -> final undirected edges: [(0,1), (1,0), (2,3), (3,2)]
@@ -680,8 +710,10 @@ class EdgeIndex:
 
         if with_selfloops:
             # Don't remove duplicate edges when adding self-loops, as we need to remove them
-            # even if with_selfloops is False, to ensure that the edge index is clean and doesn't contain duplicate edges.
-            # In this way, we don't do the duplicate edge removal twice, which would be redundant and inefficient
+            # even if with_selfloops is False, to ensure that the edge index is clean
+            # and doesn't contain duplicate edges.
+            # In this way, we don't do the duplicate edge removal twice, which would be
+            # redundant and inefficient
             self.add_selfloops(num_nodes=num_nodes, with_duplicate_removal=False)
 
         self.remove_duplicate_edges(num_nodes=num_nodes)
@@ -694,13 +726,15 @@ class EdgeIndex:
 
         if edge_weights.dim() != 1:
             raise ValueError(
-                f"edge_weights must be a 1D tensor. Got {edge_weights.dim()}D tensor with shape {edge_weights.shape}."
+                f"edge_weights must be a 1D tensor. Got "
+                f"{edge_weights.dim()}D tensor with shape {edge_weights.shape}."
             )
 
         if edge_weights.size(0) != self.__edge_index.size(1):
             raise ValueError(
                 "edge_weights must have the same number of entries as edge_index columns. "
-                f"Got {edge_weights.size(0)} edge weights but {self.__edge_index.size(1)} edge columns."
+                f"Got {edge_weights.size(0)} edge weights but "
+                f"{self.__edge_index.size(1)} edge columns."
             )
 
     def __validate_num_nodes(self, num_nodes: int) -> None:
