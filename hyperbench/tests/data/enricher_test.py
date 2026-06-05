@@ -230,7 +230,8 @@ def test_node2vec_enricher_returns_zero_features_when_clique_has_no_non_selfloop
 
     with pytest.warns(
         UserWarning,
-        match=r"Clique expansion produced no non-self-loop edges\.\s*Returning zero node features\.",
+        match=r"Clique expansion produced no non-self-loop edges\.\s*Returning zero "
+        r"node features\.",
     ):
         result = enricher.enrich(hyperedge_index)
 

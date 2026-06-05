@@ -472,7 +472,8 @@ def test_hyperedge_id_splitter_ensure_split_covers_all_nodes_raises_when_node_is
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "Cannot create a transductive first split covering all nodes because these node ids do not appear in any hyperedge: [3]."
+            "Cannot create a transductive first split covering all nodes because these "
+            "node ids do not appear in any hyperedge: [3]."
         ),
     ):
         splitter.ensure_split_covers_all_nodes(

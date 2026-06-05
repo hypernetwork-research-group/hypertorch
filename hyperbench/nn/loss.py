@@ -24,7 +24,8 @@ class NHPRankingLoss(nn.Module):
 
         Args:
             logits: Logit scores for each candidate hyperedge, of shape ``(num_hyperedges,)``.
-            labels: Binary labels indicating positive (1) and negative (0) hyperedges, of shape ``(num_hyperedges,)``.
+            labels: Binary labels indicating positive (1) and negative (0) hyperedges, of shape
+                ``(num_hyperedges,)``.
 
         Returns:
             loss: Scalar loss value.
@@ -92,8 +93,10 @@ class VilLainLoss:
         to become confident within each virtual-label subspace.
 
         Args:
-            node_embeddings: Propagated node states of shape ``(num_nodes, num_subspaces * labels_per_subspace)``.
-            hyperedge_embeddings: Propagated hyperedge states with the same channel dimension as ``node_embeddings``.
+            node_embeddings: Propagated node states of shape
+                ``(num_nodes, num_subspaces * labels_per_subspace)``.
+            hyperedge_embeddings: Propagated hyperedge states with the same channel dimension
+                as ``node_embeddings``.
 
         Returns:
             loss: Scalar tensor containing node plus hyperedge entropy losses.
@@ -109,8 +112,10 @@ class VilLainLoss:
         with a distinctiveness term that separates label columns inside each subspace.
 
         Args:
-            node_embeddings: Propagated node states of shape ``(num_nodes, num_subspaces * labels_per_subspace)``.
-            hyperedge_embeddings: Propagated hyperedge states with the same channel dimension as ``node_embeddings``.
+            node_embeddings: Propagated node states of shape
+                ``(num_nodes, num_subspaces * labels_per_subspace)``.
+            hyperedge_embeddings: Propagated hyperedge states with the same channel dimension
+                as ``node_embeddings``.
 
         Returns:
             loss: Scalar tensor containing node plus hyperedge global losses.
@@ -142,7 +147,8 @@ class VilLainLoss:
         Compute mean entropy within each virtual-label subspace.
 
         Args:
-            x: Flattened virtual-label probabilities of shape ``(num_items, num_subspaces * labels_per_subspace)``.
+            x: Flattened virtual-label probabilities of shape
+                ``(num_items, num_subspaces * labels_per_subspace)``.
 
         Returns:
             loss: Scalar entropy loss.
@@ -157,7 +163,8 @@ class VilLainLoss:
         #          virtual-label distribution in subspace 0.
         probs = x.view(-1, self.num_subspaces, self.labels_per_subspace)
 
-        # With this, we induce structurally close nodes (or hyperedges) to be assigned to the same label.
+        # With this, we induce structurally close nodes (or hyperedges)
+        # to be assigned to the same label.
         # Example: probs.shape = (num_nodes, 4, 2)
         #          -> entropy.shape = (num_nodes, 4), one entropy per item and subspace
         entropy = -(probs * torch.log(probs + self.eps)).sum(dim=2, dtype=torch.float)
@@ -167,11 +174,12 @@ class VilLainLoss:
         """
         Compute negative entropy of global virtual-label usage.
 
-        This term is minimized, so the negative sign makes optimization maximize entropy of average label usage
-        and reduces collapse to one virtual label.
+        This term is minimized, so the negative sign makes optimization maximize entropy
+        of average label usage and reduces collapse to one virtual label.
 
         Args:
-            x: Flattened virtual-label probabilities of shape ``(num_items, num_subspaces * labels_per_subspace)``.
+            x: Flattened virtual-label probabilities of shape
+                ``(num_items, num_subspaces * labels_per_subspace)``.
 
         Returns:
             loss: Scalar balance loss.
@@ -190,7 +198,8 @@ class VilLainLoss:
         mean_probs = probs.mean(dim=0, dtype=torch.float)
 
         # Negative entropy to maximize global label diversity and prevents collapse.
-        # Example: mean_probs[0] = [0.50, 0.50] has higher entropy than mean_probs[0] = [0.99, 0.01].
+        # Example: mean_probs[0] = [0.50, 0.50] has higher entropy
+        # than mean_probs[0] = [0.99, 0.01].
         entropy = -(mean_probs * torch.log(mean_probs + self.eps)).sum(dim=1, dtype=torch.float)
         return -entropy.mean(dtype=torch.float)
 
@@ -198,11 +207,14 @@ class VilLainLoss:
         """
         Penalize similar virtual-label columns inside each subspace.
 
-        For every subspace, this compares all label columns across items with cosine similarity and applies a diagonal classification objective.
-        The diagonal target encourages each label column to be most similar to itself and less similar to other labels.
+        For every subspace, this compares all label columns across items with cosine similarity
+        and applies a diagonal classification objective.
+        The diagonal target encourages each label column to be most similar to itself
+        and less similar to other labels.
 
         Args:
-            x: Flattened virtual-label probabilities of shape ``(num_items, num_subspaces * labels_per_subspace)``.
+            x: Flattened virtual-label probabilities of shape
+                ``(num_items, num_subspaces * labels_per_subspace)``.
 
         Returns:
             loss: Scalar distinctiveness loss.
@@ -230,22 +242,33 @@ class VilLainLoss:
         ).repeat_interleave(self.labels_per_subspace)
 
         # Compare every virtual-label column against every other column.
-        # Two different labels in the same subspace should not describe the same pattern of nodes/hyperedges.
+        # Two different labels in the same subspace should not describe
+        # the same pattern of nodes/hyperedges.
         # Example: with num_subspaces=4:
         #          probs[:, :, idx_i] and probs[:, :, idx_j] both have shape (4, 4, 4),
         #          where the last dimension enumerates the four ordered label pairs above
-        #          probs[:, :, idx_i] == [[[p00, p01, p00, p01],   # node/hyperedge 0's label probabilities for the four pairs
-        #                                  [p10, p11, p10, p11],   # node/hyperedge 1's label probabilities for the four pairs
-        #                                  [p20, p21, p20, p21],   # node/hyperedge 2's label probabilities for the four pairs
-        #                                  [p30, p31, p30, p31]],  # node/hyperedge 3's label probabilities for the four pairs
+        #          # node/hyperedge 0's label probabilities for the four pairs
+        #          probs[:, :, idx_i] == [[[p00, p01, p00, p01],
+        #                                   # node/hyperedge 1's label probabilities for the four pairs
+        #                                  [p10, p11, p10, p11],
+        #                                   # node/hyperedge 2's label probabilities for the four pairs
+        #                                  [p20, p21, p20, p21],
+        #                                   # node/hyperedge 3's label probabilities for the four pairs
+        #                                  [p30, p31, p30, p31]],
         #                                 ...]
-        #          probs[:, :, idx_j] == [[[p00, p00, p01, p01],   # node/hyperedge 0's label probabilities for the four pairs
-        #                                  [p10, p10, p11, p11],   # node/hyperedge 1's label probabilities for the four pairs
-        #                                  [p20, p20, p21, p21],   # node/hyperedge 2's label probabilities for the four pairs
-        #                                  [p30, p30, p31, p31]],  # node/hyperedge 3's label probabilities for the four pairs
+        #          # node/hyperedge 0's label probabilities for the four pairs
+        #          probs[:, :, idx_j] == [[[p00, p00, p01, p01],
+        #                                   # node/hyperedge 1's label probabilities for the four pairs
+        #                                  [p10, p10, p11, p11],
+        #                                   # node/hyperedge 2's label probabilities for the four pairs
+        #                                  [p20, p20, p21, p21],
+        #                                   # node/hyperedge 3's label probabilities for the four pairs
+        #                                  [p30, p30, p31, p31]],
         #                                 ...]
-        #          F.cosine_similarity(..., dim=0) compares each pair across the 4 items, producing shape (4, 4)
-        #          view(-1, 2, 2) restores one 2x2 similarity matrix per subspace, so shape becomes (4, 2, 2)
+        #          F.cosine_similarity(..., dim=0) compares each pair across the 4 items,
+        #           producing shape (4, 4)
+        #          view(-1, 2, 2) restores one 2x2 similarity matrix per subspace,
+        #            so shape becomes (4, 2, 2)
         similarity = F.cosine_similarity(
             probs[:, :, idx_i],
             probs[:, :, idx_j],
@@ -253,7 +276,8 @@ class VilLainLoss:
             eps=self.eps,
         ).view(-1, self.labels_per_subspace, self.labels_per_subspace)
 
-        # Turn each similarity row into a classification distribution and keep the diagonal self-match probabilities.
+        # Turn each similarity row into a classification distribution and keep the
+        # diagonal self-match probabilities.
         # Example: similarity[subspace 0].shape = (2, 2)
         #          - row 0 scores how label 0 matches labels [0, 1]
         #          - row 1 scores how label 1 matches labels [0, 1]
@@ -272,8 +296,10 @@ class VilLainLossParts(TypedDict):
     Named VilLain self-supervised loss parts returned by ``VilLain.loss``.
 
     Attributes:
-        local_loss: Sum of node and hyperedge local entropy losses over all training propagation steps.
-        global_loss: Sum of balance and distinctiveness losses over all training propagation steps.
+        local_loss: Sum of node and hyperedge local entropy losses over all training
+            propagation steps.
+        global_loss: Sum of balance and distinctiveness losses over all training
+            propagation steps.
 
     """
 
