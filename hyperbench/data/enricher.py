@@ -31,7 +31,7 @@ class _VilLainTrainer:
         num_features: Dimensionality of the embeddings to generate.
         num_nodes: Total number of nodes, including isolated nodes missing from ``hyperedge_index``.
         num_hyperedges: Total number of hyperedges, including empty hyperedges missing
-        from ``hyperedge_index``.
+            from ``hyperedge_index``.
         labels_per_subspace: Number of virtual labels per VilLain subspace.
         training_steps: Propagation steps used for VilLain self-supervised loss.
         generation_steps: Propagation steps averaged for final embeddings.
@@ -97,7 +97,7 @@ class _VilLainTrainer:
 
         Args:
             hyperedge_index: Hyperedge index tensor used to infer the hyperedge count when
-            no explicit count was provided.
+                no explicit count was provided.
 
         Returns:
             Total number of hyperedges to preserve during VilLain propagation.
@@ -115,7 +115,7 @@ class _VilLainTrainer:
 
         Args:
             hyperedge_index: Hyperedge index tensor used to infer the node count when
-            no explicit count was provided.
+                no explicit count was provided.
 
         Returns:
             Total number of nodes to preserve during VilLain training and embedding generation.
