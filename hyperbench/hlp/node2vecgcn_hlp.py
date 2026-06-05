@@ -29,9 +29,11 @@ class Node2VecGCNEncoderConfig(TypedDict):
     Configuration for the Node2Vec encoder in ``Node2VecGCNHlpModule``.
 
     Attributes:
-        mode: Whether to use precomputed node embeddings from ``x`` or train a Node2Vec encoder jointly inside the module.
+        mode: Whether to use precomputed node embeddings from ``x`` or train a Node2Vec encoder
+        jointly inside the module.
         num_features: Dimension of the node embeddings consumed by the decoder.
-        node2vec_config: Shared Node2Vec configuration used in joint mode, or metadata for validating precomputed embeddings.
+        node2vec_config: Shared Node2Vec configuration used in joint mode, or metadata for
+            validating precomputed embeddings.
         gcn_config: Configuration for the GCN layers.
 
     """
@@ -55,7 +57,8 @@ class Node2VecGCNHlpModule(HlpModule):
         aggregation: Method to aggregate node embeddings per hyperedge.
         loss_fn: Loss function. Defaults to ``BCEWithLogitsLoss``.
         lr: Learning rate for the optimizer. Defaults to ``0.001``.
-        weight_decay: Weight decay (L2 regularization) for the optimizer. Defaults to ``0.0`` (no weight decay).
+        weight_decay: Weight decay (L2 regularization) for the optimizer.
+            Defaults to ``0.0`` (no weight decay).
         metrics: Optional dictionary of metric functions.
 
     """

@@ -9,7 +9,8 @@ from hyperbench.utils import (
 
 class MLP(nn.Module):
     """
-    A simple multi-layer perceptron (MLP) with configurable number of layers, hidden channels, activation functions, normalization, and dropout.
+    A simple multi-layer perceptron (MLP) with configurable number of layers, hidden channels,
+    activation functions, normalization, and dropout.
 
     Examples:
         >>> mlp = MLP(in_channels=16, out_channels=1, hidden_channels=32, num_layers=3)
@@ -39,13 +40,19 @@ class MLP(nn.Module):
         in_channels: Number of input features.
         out_channels: Number of output features.
         hidden_channels: Number of hidden units in each hidden layer. Required if num_layers > 1.
-        num_layers: Total number of layers (including output layer). Must be at least 1. Defaults to 1.
+        num_layers: Total number of layers (including output layer). Must be at least 1.
+            Defaults to 1.
         activation_fn: Activation function to use after each hidden layer. Defaults to ``nn.ReLU``.
-        activation_fn_kwargs: Keyword arguments for the activation function. Defaults to empty dict.
-        normalization_fn: Normalization function to use after each hidden layer (before activation). If ``None``, no normalization is applied. Defaults to ``None``.
-        normalization_fn_kwargs: Keyword arguments for the normalization function. Defaults to empty dict.
+        activation_fn_kwargs: Keyword arguments for the activation function.
+            Defaults to empty dict.
+        normalization_fn: Normalization function to use after each
+            hidden layer (before activation).
+            If ``None``, no normalization is applied. Defaults to ``None``.
+        normalization_fn_kwargs: Keyword arguments for the normalization function.
+            Defaults to empty dict.
         bias: Whether to include bias terms in the linear layers. Defaults to ``True``.
-        drop_rate: Dropout rate to apply after each hidden layer (after activation). If 0.0, no dropout is applied. Defaults to 0.0.
+        drop_rate: Dropout rate to apply after each hidden layer (after activation). If 0.0, no
+            dropout is applied. Defaults to 0.0.
     """
 
     def __init__(
@@ -105,7 +112,8 @@ class MLP(nn.Module):
 
 class SLP(MLP):
     """
-    A single-layer perceptron (SLP) which is a special case of MLP with exactly one layer and no hidden units.
+    A single-layer perceptron (SLP) which is a special case of MLP with exactly
+    one layer and no hidden units.
 
     Examples:
         >>> slp = SLP(in_channels=16, out_channels=1)

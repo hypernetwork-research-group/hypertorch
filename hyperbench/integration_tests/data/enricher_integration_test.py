@@ -35,7 +35,8 @@ NUM_FEATURES = 8
 # enrichers without running into excessively long test times, while still providing
 #  a meaningful test of their behavior on reasonably sized datasets.
 # With the threshold of 75000 nodes and hyperedges, we cover ~75% of the datasets.
-# The datasets.py in the scripts folder contains a function that calculates the node count cutoff to cover 75% of the datasets.
+# The datasets.py in the scripts folder contains a function that calculates the node count
+# cutoff to cover 75% of the datasets.
 
 
 @pytest.mark.flaky(reruns=3, reruns_delay=10, rerun_show_tracebacks=True)

@@ -17,14 +17,20 @@ class HyperGCN(nn.Module):
     Args:
         in_channels: The number of input channels.
         hidden_channels: The number of hidden channels.
-        num_classes: The number of classes of the classification task as HyperGCB is a node classification model.
-        bias: If set to ``False``, the layer will not learn the bias parameter. Defaults to ``True``.
-        use_batch_normalization: If set to ``True``, layers will use batch normalization. Defaults to ``False``.
+        num_classes: The number of classes of the classification task as HyperGCB is a
+            node classification model.
+        bias: If set to ``False``, the layer will not learn the bias parameter.
+            Defaults to ``True``.
+        use_batch_normalization: If set to ``True``, layers will use batch normalization.
+            Defaults to ``False``.
         drop_rate: Dropout ratio. Defaults to ``0.5``.
-        use_mediator: Whether to use mediator to transform the hyperedges to edges in the graph. Defaults to ``False``.
-        fast: If set to ``True``, the transformed graph structure will be computed once from the input hypergraph
-            and vertex features, and cached for future use. Defaults to ``True``.
-        seed: Optional random seed for the random reduction of hyperedges to edges. Defaults to ``None``.
+        use_mediator: Whether to use mediator to transform the hyperedges to edges in the graph.
+            Defaults to ``False``.
+        fast: If set to ``True``, the transformed graph structure will be computed once from
+            the input hypergraph and vertex features, and cached for future use.
+            Defaults to ``True``.
+        seed: Optional random seed for the random reduction of hyperedges to edges.
+            Defaults to ``None``.
 
     """
 
@@ -87,7 +93,8 @@ class HyperGCN(nn.Module):
             return x
 
         # If the GCN Laplacian is cached, we need to check if the node feature size has changed
-        # with cached_gcn_laplacian_matrix.size(0) != x.size(0), this can happen, for example, due to:
+        # with cached_gcn_laplacian_matrix.size(0) != x.size(0), this can happen,
+        # for example, due to:
         # adding new negative samples or having validation/test sets with different node features
         should_not_use_cached_gcn_laplacian_matrix = (
             self.cached_gcn_laplacian_matrix is None  # Not cached yet
