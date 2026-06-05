@@ -33,7 +33,8 @@ def validate_node_space_setting(node_space_setting: NodeSpaceSetting) -> None:
     Validate that the node space setting is one of the supported values.
 
     Args:
-        node_space_setting: The node space setting to validate, which should be either "inductive" or "transductive".
+        node_space_setting: The node space setting to validate, which should be either "inductive"
+            or "transductive".
 
     Raises:
         ValueError: If the node space setting is not one of the supported values.
@@ -43,5 +44,6 @@ def validate_node_space_setting(node_space_setting: NodeSpaceSetting) -> None:
         return
 
     raise ValueError(
-        f"'node_space_setting' must be one of 'transductive' or 'inductive', got {node_space_setting!r}."
+        f"node_space_setting must be one of 'transductive' or 'inductive', "
+        f"got {node_space_setting!r}."
     )
