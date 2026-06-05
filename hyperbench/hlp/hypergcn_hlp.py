@@ -21,9 +21,12 @@ class HyperGCNEncoderConfig(TypedDict):
         bias: Whether to include bias terms. Defaults to ``True``.
         use_batch_normalization: Whether to use batch normalization. Defaults to ``False``.
         drop_rate: Dropout rate. Defaults to ``0.5``.
-        use_mediator: Whether to use mediator nodes for hyperedge-to-edge conversion. Defaults to ``False``.
-        fast: Whether to cache the graph structure after first computation. Defaults to ``True``.
-        seed: Optional random seed for the random reduction of hyperedges to edges. Defaults to ``None``.
+        use_mediator: Whether to use mediator nodes for hyperedge-to-edge conversion.
+            Defaults to ``False``.
+        fast: Whether to cache the graph structure after first computation.
+            Defaults to ``True``.
+        seed: Optional random seed for the random reduction of hyperedges to edges.
+            Defaults to ``None``.
 
     """
 

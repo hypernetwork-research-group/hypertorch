@@ -115,7 +115,7 @@ select = [
     "UP",   # pyupgrade: modern Python syntax (https://docs.astral.sh/ruff/rules/#pyupgrade-up)
 ]
 ignore = [
-    "E501",    # line too long (https://docs.astral.sh/ruff/rules/line-too-long)
+    # "E501",    # line too long (https://docs.astral.sh/ruff/rules/line-too-long)
     "I001",    # unsorted imports (https://docs.astral.sh/ruff/rules/unsorted-imports)
     "N812",    # lowercase imported as non lowercase (https://docs.astral.sh/ruff/rules/lowercase-imported-as-non-lowercase)
     "PLC0415", # import outside top-level (https://docs.astral.sh/ruff/rules/import-outside-top-level)

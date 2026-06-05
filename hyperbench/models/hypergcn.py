@@ -32,7 +32,7 @@ class HyperGCN(nn.Module):
         seed: Optional random seed for the random reduction of hyperedges to edges.
             Defaults to ``None``.
 
-    """
+    """  # noqa: E501
 
     def __init__(
         self,

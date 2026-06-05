@@ -31,7 +31,7 @@ class VilLain(nn.Module):
         generation_steps: Propagation steps averaged for final embeddings. Defaults to ``100``.
         tau: Gumbel-Softmax temperature. Defaults to ``1.0``.
         eps: Numerical stability constant. Defaults to ``1e-10``.
-    """
+    """  # noqa: E501
 
     def __init__(
         self,

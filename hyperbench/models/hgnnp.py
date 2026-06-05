@@ -20,7 +20,7 @@ class HGNNP(nn.Module):
         use_batch_normalization: If set to ``True``, layers will use batch normalization.
             Defaults to ``False``.
         drop_rate: Dropout ratio. Defaults to ``0.5``.
-    """
+    """  # noqa: E501
 
     def __init__(
         self,

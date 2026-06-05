@@ -539,7 +539,8 @@ class RandomNegativeSampler(SameNodeSpaceNegativeSampler):
             attempts += 1
 
             # Sample with multinomial without replacement to ensure unique node ids
-            # and assign each node id equal probability of being selected by setting all of them to 1
+            # and assign each node id equal probability of being
+            # selected by setting all of them to 1
             # Example: num_nodes_per_sample=3, max_node_id=5
             #          -> possible output: [2, 0, 4]
             equal_probabilities = torch.ones(hdata.num_nodes, device=device)

@@ -30,7 +30,7 @@ class Node2VecGCNEncoderConfig(TypedDict):
 
     Attributes:
         mode: Whether to use precomputed node embeddings from ``x`` or train a Node2Vec encoder
-        jointly inside the module.
+            jointly inside the module.
         num_features: Dimension of the node embeddings consumed by the decoder.
         node2vec_config: Shared Node2Vec configuration used in joint mode, or metadata for
             validating precomputed embeddings.

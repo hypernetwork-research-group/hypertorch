@@ -69,7 +69,8 @@ class HyperedgeIDSplitter(Splitter):
             ratios: The final ratios of hyperedges in each split after rebalancing.
 
         Raises:
-            ValueError: If one or more nodes do not appear in any hyperedge of the source hypergraph.
+            ValueError: If one or more nodes do not appear in any hyperedge of the
+                source hypergraph.
 
         """
         validate_is_non_empty("hyperedge_ids_by_split", hyperedge_ids_by_split)

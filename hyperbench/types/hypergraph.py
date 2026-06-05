@@ -975,7 +975,7 @@ class HyperedgeIndex:
 
         Raises:
             ValueError: If any hyperedge contains fewer than 2 nodes.
-        """
+        """  # noqa: E501
         device = x.device
         generator = create_seeded_torch_generator(device, seed)
 
