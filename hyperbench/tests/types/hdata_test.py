@@ -648,7 +648,8 @@ def test_cat_same_node_space_raises_on_overlapping_hyperedge_ids():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "Overlapping hyperedge IDs found across instances. Ensure each instance uses distinct hyperedge IDs."
+            "Overlapping hyperedge IDs found across instances. Ensure each "
+            "instance uses distinct hyperedge IDs."
         ),
     ):
         HData.cat_same_node_space([hdata1, hdata2])
@@ -2053,7 +2054,8 @@ def test_remove_hyperedges_with_fewer_than_k_nodes(hyperedge_index, k, expected_
             id="disjoint_nodes_first_hyperedge_removed",
         ),
         pytest.param(
-            # Hyperedge 0: nodes {0, 2} -> 2 nodes (removed), hyperedge 1: nodes {1, 2, 3} -> 3 nodes (kept)
+            # Hyperedge 0: nodes {0, 2} -> 2 nodes (removed), hyperedge 1: nodes {1, 2, 3} ->
+            #                                                    3 nodes (kept)
             # Node 2 is shared, so it survives because hyperedge 1 is kept
             # Node 0 is the only node removed as it is only in the removed hyperedge 0
             torch.tensor([[0, 2, 1, 2, 3], [0, 0, 1, 1, 1]], dtype=torch.long),
@@ -2082,7 +2084,8 @@ def test_remove_hyperedges_with_fewer_than_k_nodes_subsets_x(hyperedge_index, k,
             id="disjoint_nodes_first_hyperedge_removed",
         ),
         pytest.param(
-            # Hyperedge 0: nodes {0, 2} -> 2 nodes (removed). hyperedge 1: nodes {1, 2, 3} -> 3 nodes (kept)
+            # Hyperedge 0: nodes {0, 2} -> 2 nodes (removed). hyperedge 1: nodes {1, 2, 3} ->
+            #                                                               3 nodes (kept)
             # Node 2 is shared, so y for hyperedge 1 must survive
             torch.tensor([[0, 2, 1, 2, 3], [0, 0, 1, 1, 1]], dtype=torch.long),
             3,
@@ -2112,7 +2115,8 @@ def test_remove_hyperedges_with_fewer_than_k_nodes_subsets_y(hyperedge_index, k,
             id="disjoint_nodes_first_hyperedge_removed",
         ),
         pytest.param(
-            # Hyperedge 0: nodes {0, 2} -> 2 nodes (removed), hyperedge 1: nodes {1, 2, 3} -> 3 nodes (kept)
+            # Hyperedge 0: nodes {0, 2} -> 2 nodes (removed), hyperedge 1: nodes {1, 2, 3} ->
+            #                                                       3 nodes (kept)
             # Node 2 is shared, so attr for hyperedge 1 must survive
             torch.tensor([[0, 2, 1, 2, 3], [0, 0, 1, 1, 1]], dtype=torch.long),
             3,
