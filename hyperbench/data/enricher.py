@@ -30,7 +30,8 @@ class _VilLainTrainer:
     Args:
         num_features: Dimensionality of the embeddings to generate.
         num_nodes: Total number of nodes, including isolated nodes missing from ``hyperedge_index``.
-        num_hyperedges: Total number of hyperedges, including empty hyperedges missing from ``hyperedge_index``.
+        num_hyperedges: Total number of hyperedges, including empty hyperedges missing
+        from ``hyperedge_index``.
         labels_per_subspace: Number of virtual labels per VilLain subspace.
         training_steps: Propagation steps used for VilLain self-supervised loss.
         generation_steps: Propagation steps averaged for final embeddings.
@@ -89,7 +90,8 @@ class _VilLainTrainer:
         Return the explicit hyperedge count or infer it from ``hyperedge_index``.
 
         Args:
-            hyperedge_index: Hyperedge index tensor used to infer the hyperedge count when no explicit count was provided.
+            hyperedge_index: Hyperedge index tensor used to infer the hyperedge count when
+            no explicit count was provided.
 
         Returns:
             Total number of hyperedges to preserve during VilLain propagation.
@@ -105,7 +107,8 @@ class _VilLainTrainer:
         Return the explicit node count or infer it from ``hyperedge_index``.
 
         Args:
-            hyperedge_index: Hyperedge index tensor used to infer the node count when no explicit count was provided.
+            hyperedge_index: Hyperedge index tensor used to infer the node count when
+            no explicit count was provided.
 
         Returns:
             Total number of nodes to preserve during VilLain training and embedding generation.
@@ -243,7 +246,8 @@ class FillValueHyperedgeAttrsEnricher(HyperedgeAttrsEnricher):
             hyperedge_index: Hyperedge index tensor of shape ``(2, num_hyperedges)``.
 
         Returns:
-            hyperedge_attr: Tensor of shape ``(num_hyperedges, 1)`` containing the generated attribute for each hyperedge.
+            hyperedge_attr: Tensor of shape ``(num_hyperedges, 1)`` containing
+            the generated attribute for each hyperedge.
         """
         num_hyperedges = HyperedgeIndex(hyperedge_index).num_hyperedges
         hyperedge_attrs = torch.full(
@@ -260,8 +264,10 @@ class VilLainHyperedgeAttrsEnricher(_VilLainTrainer, HyperedgeAttrsEnricher):
 
     Args:
         num_features: Dimensionality of the hyperedge embeddings to generate.
-        num_nodes: Total number of nodes, including isolated nodes that do not appear in ``hyperedge_index``.
-        num_hyperedges: Total number of hyperedges, including empty hyperedges that do not appear in ``hyperedge_index``.
+        num_nodes: Total number of nodes, including isolated nodes that do not
+            appear in ``hyperedge_index``.
+        num_hyperedges: Total number of hyperedges, including empty hyperedges that
+            do not appear in ``hyperedge_index``.
         labels_per_subspace: Number of virtual labels per subspace. Defaults to ``2``.
         training_steps: Propagation steps used for VilLain self-supervised loss. Defaults to ``4``.
         generation_steps: Propagation steps averaged for final embeddings. Defaults to ``100``.
@@ -315,7 +321,8 @@ class VilLainHyperedgeAttrsEnricher(_VilLainTrainer, HyperedgeAttrsEnricher):
             hyperedge_index: Hyperedge index tensor of shape ``(2, num_hyperedges)``.
 
         Returns:
-            hyperedge_embeddings: Tensor of shape ``(num_hyperedges, num_features)`` containing VilLain hyperedge embeddings.
+            hyperedge_embeddings: Tensor of shape ``(num_hyperedges, num_features)``
+            containing VilLain hyperedge embeddings.
         """
         num_hyperedges = self._num_hyperedges(hyperedge_index)
         if num_hyperedges == 0:
@@ -342,8 +349,10 @@ class ABHyperedgeWeightsEnricher(HyperedgeWeightsEnricher):
 
     Args:
         cache_dir: Directory for saving/loading cached features. If ``None``, caching is disabled.
-        alpha: Scaling factor for the random component added to weights. Must be between 0.0 and 1.0.
-        beta: If provided, the random component is alpha * beta. If None, no random component is added.
+        alpha: Scaling factor for the random component added to weights.
+            Must be between 0.0 and 1.0.
+        beta: If provided, the random component is alpha * beta.
+            If None, no random component is added.
     """
 
     def __init__(
@@ -368,10 +377,13 @@ class ABHyperedgeWeightsEnricher(HyperedgeWeightsEnricher):
             hyperedge_index: Hyperedge index tensor of shape ``(2, num_hyperedges)``.
 
         Returns:
-            hyperedge_weight: Tensor of shape ``(num_hyperedges,)`` containing the weight of each hyperedge.
+            hyperedge_weight: Tensor of shape ``(num_hyperedges,)`` containing
+            the weight of each hyperedge.
         """
-        # Count the number of nodes in each hyperedge by counting occurrences of each hyperedge index.
-        # Example: if hyperedge_index[1] = [0, 0, 1, 1, 1], then we have 2 nodes in hyperedge 0 and 3 nodes in hyperedge 1.
+        # Count the number of nodes in each hyperedge by counting occurrences of
+        # each hyperedge index.
+        # Example: if hyperedge_index[1] = [0, 0, 1, 1, 1], then we have 2 nodes
+        # in hyperedge 0 and 3 nodes in hyperedge 1.
         num_hyperedges = int(hyperedge_index[1].max().item()) + 1
         weights = torch.bincount(hyperedge_index[1], minlength=num_hyperedges).float()
 
@@ -383,40 +395,53 @@ class ABHyperedgeWeightsEnricher(HyperedgeWeightsEnricher):
 
 class Node2VecEnricher(NodeEnricher):
     """
-    Enrich node features using Node2Vec embeddings computed from the clique expansion of the hypergraph.
+    Enrich node features using Node2Vec embeddings computed from
+    the clique expansion of the hypergraph.
 
     Args:
         num_features: Dimensionality of the node embeddings to generate.
         walk_length: Length of each random walk.
-        context_size: Window size for the skip-gram model (number of neighbors in the walk considered as context).
-            For example, if ``context_size=2`` and ``walk_length=5``, then for a random walk ``[v0, v1, v2, v3, v4]``,
-            the context for ``v2`` would be ``[v0, v1, v3, v4]`` as we take neighbors within distance 2 in the walk.
+        context_size: Window size for the skip-gram model
+            (number of neighbors in the walk considered as context).
+            For example, if ``context_size=2`` and ``walk_length=5``, then for
+            a random walk ``[v0, v1, v2, v3, v4]``,
+            the context for ``v2`` would be ``[v0, v1, v3, v4]`` as we take neighbors within
+            distance 2 in the walk.
             The pairs generated by skip-gram would be ``[(v2, v0), (v2, v1), (v2, v3), (v2, v4)]``.
-            Rule of thumb: Graphs with strong local structure (5-10), Graphs with communities/long-range patterns (10-20).
+            Rule of thumb: Graphs with strong local structure (5-10), Graphs with
+            communities/long-range patterns (10-20).
             Defaults to ``10``.
         num_walks_per_node: Number of random walks to start at each node.
         p: Return hyperparameter for Node2Vec. Default is ``1.0`` (unbiased).
             This controls the probability of stepping back to the node visited in the previous step.
-            Lower values of ``p`` make immediate backtracking more likely, which keeps walks closer to the
-            local neighborhood. Higher values of ``p`` discourage returning to the previous node, so walks
+            Lower values of ``p`` make immediate backtracking more likely,
+            which keeps walks closer to the
+            local neighborhood. Higher values of ``p`` discourage returning to the previous node,
+             so walks
             are less likely to bounce back and forth across the same edge.
         q: In-out hyperparameter for Node2Vec. Default is ``1.0`` (unbiased).
             This controls whether walks stay near the source node or explore further outward.
-            Lower values of ``q`` bias the walk toward outward exploration, behaving more like DFS and
+            Lower values of ``q`` bias the walk toward outward exploration, behaving more like DFS
+            and
             emphasizing structural roles. Higher values of ``q`` bias the walk toward nearby nodes,
             behaving more like BFS and emphasizing community structure and homophily.
         num_negative_samples: Number of negative samples to use for training the skip-gram model.
-            If set to ``X``, then for each positive pair ``(u, v)`` generated from the random walks, ``X`` negative pairs ``(u, v_neg)`` will be generated,
+            If set to ``X``, then for each positive pair ``(u, v)`` generated from the random walks,
+            ``X`` negative pairs ``(u, v_neg)`` will be generated,
             where ``v_neg`` is a node sampled uniformly at random from all nodes in the graph.
             Defaults to ``1``, meaning one negative sample per positive pair.
-        num_nodes: Total number of nodes in the graph. If not provided, it will be inferred from the hyperedge_index.
-            This is only needed if the hyperedge_index does not include all nodes (e.g., some isolated nodes are missing).
-        graph_reduction_strategy: Strategy for reducing the hyperedge graph. Defaults to ``clique_expansion``.
+        num_nodes: Total number of nodes in the graph. If not provided, it will be inferred from
+            the hyperedge_index.
+            This is only needed if the hyperedge_index does not include all nodes
+            (e.g., some isolated nodes are missing).
+        graph_reduction_strategy: Strategy for reducing the hyperedge graph.
+            Defaults to ``clique_expansion``.
         num_epochs: Number of epochs used to optimize Node2Vec embeddings. Defaults to ``5``.
         learning_rate: Learning rate for embedding optimization. Defaults to ``0.01``.
         batch_size: Batch size used by the random-walk loader. Defaults to ``128``.
         sparse: Whether Node2Vec embeddings should use sparse gradients.
-        cache_dir: Optional directory to cache computed embeddings. If ``None``, caching is disabled.
+        cache_dir: Optional directory to cache computed embeddings. If ``None``, caching
+            is disabled.
         verbose: Whether to print verbose output during training. Defaults to ``False``.
     """
 
@@ -460,15 +485,18 @@ class Node2VecEnricher(NodeEnricher):
         """
         Compute Node2Vec embeddings from the clique expansion of the hypergraph.
 
-        The hypergraph is converted to a regular graph via clique expansion, where each hyperedge of size k
+        The hypergraph is converted to a regular graph via clique expansion, where each hyperedge
+        of size k
         contributes a k x k block of edges between its member nodes.
-        The resulting ``edge_index`` is then used to train a Node2Vec model using random walks and the skip-gram objective.
+        The resulting ``edge_index`` is then used to train a Node2Vec model using random walks
+        and the skip-gram objective.
 
         Args:
             hyperedge_index: Hyperedge index tensor of shape ``(2, num_hyperedges)``.
 
         Returns:
-            x: Tensor of shape ``(num_nodes, embedding_dim)`` containing the Node2Vec embeddings for each node.
+            x: Tensor of shape ``(num_nodes, embedding_dim)`` containing the Node2Vec embeddings
+            for each node.
         """
         device = hyperedge_index.device
 
@@ -492,7 +520,8 @@ class Node2VecEnricher(NodeEnricher):
         edge_index_wrapper = EdgeIndex(reduced_edge_index).remove_selfloops()
         if edge_index_wrapper.num_edges == 0:
             warnings.warn(
-                "Clique expansion produced no non-self-loop edges. Returning zero node features.",
+                """Clique expansion produced no non-self-loop edges.
+                Returning zero node features.""",
                 category=UserWarning,
                 stacklevel=2,
             )
@@ -572,13 +601,17 @@ class Node2VecEnricher(NodeEnricher):
 
 class LaplacianPositionalEncodingEnricher(NodeEnricher):
     """
-    Enrich node features with Laplacian Positional Encodings computed from the symmetric normalized Laplacian of the clique expansion of the hypergraph.
+    Enrich node features with Laplacian Positional Encodings computed from
+    the symmetric normalized Laplacian of the clique expansion of the hypergraph.
 
     Args:
         num_features: Number of positional encoding features to generate for each node.
-        num_nodes: Total number of nodes in the graph. If not provided, it will be inferred from the hyperedge_index.
-            This is only needed if the hyperedge_index does not include all nodes (e.g., some isolated nodes are missing).
-            Another instance is when the setting is transductive and the hyperedge index contains some hyperedges
+        num_nodes: Total number of nodes in the graph. If not provided, it will be inferred
+            from the hyperedge_index.
+            This is only needed if the hyperedge_index does not include all nodes
+            (e.g., some isolated nodes are missing).
+            Another instance is when the setting is transductive and the hyperedge index
+            contains some hyperedges
             that do not contain all the nodes in the node space.
         cache_dir: Optional directory to cache computed features. If ``None``, caching is disabled.
     """
@@ -648,7 +681,8 @@ class LaplacianPositionalEncodingEnricher(NodeEnricher):
             return eigenvectors[:, 1 : self.num_features + 1]
 
         # If the graph has fewer usable eigenvectors than requested
-        # (e.g., num_features = 5 but only 2 available), we create a zero-padded tensor and fill what we have.
+        # (e.g., num_features = 5 but only 2 available), we create a zero-padded tensor
+        # and fill what we have.
         # Example: num_nontrivial_eigenvectors = 2, num_features = 5
         #          -> shape (3, 5)  # columns 0-1 filled, 2-4 are zeros.
         x = torch.zeros(size=(num_nodes, self.num_features), device=edge_index.device)
@@ -662,8 +696,10 @@ class VilLainEnricher(_VilLainTrainer, NodeEnricher):
 
     Args:
         num_features: Dimensionality of the node embeddings to generate.
-        num_nodes: Total number of nodes, including isolated nodes that do not appear in ``hyperedge_index``.
-        num_hyperedges: Total number of hyperedges, including empty hyperedges that do not appear in ``hyperedge_index``.
+        num_nodes: Total number of nodes, including isolated nodes that do not appear
+            in ``hyperedge_index``.
+        num_hyperedges: Total number of hyperedges, including empty hyperedges that
+            do not appear in ``hyperedge_index``.
         labels_per_subspace: Number of virtual labels per subspace. Defaults to ``2``.
         training_steps: Propagation steps used for VilLain self-supervised loss. Defaults to ``4``.
         generation_steps: Propagation steps averaged for final embeddings. Defaults to ``100``.
@@ -717,7 +753,8 @@ class VilLainEnricher(_VilLainTrainer, NodeEnricher):
             hyperedge_index: Hyperedge index tensor of shape ``(2, num_hyperedges)``.
 
         Returns:
-            node_embeddings: Tensor of shape ``(num_nodes, num_features)`` containing VilLain node embeddings.
+            node_embeddings: Tensor of shape ``(num_nodes, num_features)`` containing
+                VilLain node embeddings.
         """
         num_nodes = self._num_nodes(hyperedge_index)
         if num_nodes == 0:

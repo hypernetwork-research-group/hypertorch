@@ -33,7 +33,8 @@ class Dataset(TorchDataset):
 
     Args:
         hdata: The processed hypergraph data in HData format.
-        sampling_strategy: The strategy used for sampling sub-hypergraphs (e.g., by node IDs or hyperedge IDs).
+        sampling_strategy: The strategy used for sampling sub-hypergraphs
+            (e.g., by node IDs or hyperedge IDs).
             If not provided, defaults to ``SamplingStrategy.HYPEREDGE``.
     """
 
@@ -47,8 +48,10 @@ class Dataset(TorchDataset):
 
         Args:
             hdata: Optional HData object to initialize the dataset with.
-                If provided, the dataset will be initialized with this data instead of loading and processing from HIF. Must be provided if prepare is set to ``False``.
-            sampling_strategy: The sampling strategy to use for the dataset. If not provided, defaults to ``SamplingStrategy.HYPEREDGE``.
+                If provided, the dataset will be initialized with this data instead of loading and
+                processing from HIF. Must be provided if prepare is set to ``False``.
+            sampling_strategy: The sampling strategy to use for the dataset. If not provided,
+                defaults to ``SamplingStrategy.HYPEREDGE``.
         """
 
         self.__sampler = create_sampler_from_strategy(sampling_strategy)
@@ -63,17 +66,21 @@ class Dataset(TorchDataset):
         Sample a sub-hypergraph based on the sampling strategy and return it as HData.
 
         If:
-            - Sampling by node IDs, the sub-hypergraph will contain all hyperedges incident to the sampled nodes and all nodes incident to those hyperedges.
-            - Sampling by hyperedge IDs, the sub-hypergraph will contain all nodes incident to the sampled hyperedges.
+            - Sampling by node IDs, the sub-hypergraph will contain all hyperedges incident to the
+            sampled nodes and all nodes incident to those hyperedges.
+            - Sampling by hyperedge IDs, the sub-hypergraph will contain all nodes incident to the
+            sampled hyperedges.
 
         Args:
-            index: An integer or a list of integers representing node or hyperedge IDs to sample, depending on the sampling strategy.
+            index: An integer or a list of integers representing node or hyperedge IDs to sample,
+                depending on the sampling strategy.
 
         Returns:
             hdata: An HData instance containing the sampled sub-hypergraph.
 
         Raises:
-            ValueError: If the provided index is invalid (e.g., empty list or list length exceeds number of nodes/hyperedges).
+            ValueError: If the provided index is invalid (e.g., empty list or list length exceeds
+                number of nodes/hyperedges).
             IndexError: If any node/hyperedge ID is out of bounds.
         """
         return self.__sampler.sample(index, self.hdata)
@@ -89,7 +96,8 @@ class Dataset(TorchDataset):
 
         Args:
             hdata: `HData` object containing the hypergraph data.
-            sampling_strategy: The sampling strategy to use for the dataset. If not provided, defaults to ``SamplingStrategy.HYPEREDGE``.
+            sampling_strategy: The sampling strategy to use for the dataset. If not provided,
+                defaults to ``SamplingStrategy.HYPEREDGE``.
 
         Returns:
             dataset: The `Dataset` instance with the provided `HData`.
@@ -104,11 +112,13 @@ class Dataset(TorchDataset):
         save_on_disk: bool = False,
     ) -> Dataset:
         """
-        Create a `Dataset` instance by loading a hypergraph from a URL pointing to a .json or .json.zst file in HIF format.
+        Create a `Dataset` instance by loading a hypergraph from a URL pointing to a .json or
+        .json.zst file in HIF format.
 
         Args:
             url: The URL to the .json or .json.zst file containing the HIF hypergraph data.
-            sampling_strategy: The sampling strategy to use for the dataset. If not provided, defaults to ``SamplingStrategy.HYPEREDGE``.
+                sampling_strategy: The sampling strategy to use for the dataset. If not provided,
+                defaults to ``SamplingStrategy.HYPEREDGE``.
             save_on_disk: Whether to save the downloaded file on disk.
 
         Returns:
@@ -125,11 +135,14 @@ class Dataset(TorchDataset):
         sampling_strategy: SamplingStrategy = SamplingStrategy.HYPEREDGE,
     ) -> Dataset:
         """
-        Create a `Dataset` instance by loading a hypergraph from a local file path pointing to a .json or .json.zst file in HIF format.
+        Create a `Dataset` instance by loading a hypergraph from a local file path pointing to a
+        .json or .json.zst file in HIF format.
 
         Args:
-            filepath: The local file path to the .json or .json.zst file containing the HIF hypergraph data.
-            sampling_strategy: The sampling strategy to use for the dataset. If not provided, defaults to ``SamplingStrategy.HYPEREDGE``.
+            filepath: The local file path to the .json or .json.zst file containing the
+                HIF hypergraph data.
+            sampling_strategy: The sampling strategy to use for the dataset. If not provided,
+                defaults to ``SamplingStrategy.HYPEREDGE``.
 
         Returns:
             dataset: The `Dataset` instance with the loaded hypergraph data.
@@ -147,7 +160,8 @@ class Dataset(TorchDataset):
         Enrich node features using the provided node feature enricher.
 
         Args:
-            enricher: An instance of NodeEnricher to generate structural node features from hypergraph topology.
+            enricher: An instance of NodeEnricher to generate structural node features from
+                hypergraph topology.
             enrichment_mode: How to combine generated features with existing ``hdata.x``.
                 ``concatenate`` appends new features to the existing ones as additional columns.
                 ``replace`` substitutes ``hdata.x`` entirely.
@@ -172,18 +186,22 @@ class Dataset(TorchDataset):
             >>> test_dataset.enrich_node_features_from(
             ...     train_dataset,
             ...     node_space_setting="inductive",
-            ...     fill_value=0.0,  # torch.tensor(0.0) also works and will be broadcast to the appropriate shape
+            ...     fill_value=0.0,  # torch.tensor(0.0) also works and will be broadcast to the
+            ...     appropriate shape
             ... )
 
         Args:
             dataset_with_features: Source dataset providing node features.
             node_space_setting: The setting for the node space, determining how nodes are handled.
                 ``transductive`` (default) preserves the full node space of the target dataset.
-                ``inductive`` allows the target dataset to have a different node space, filling missing features with ``fill_value``.
-            fill_value: Scalar or vector used to fill missing node features when ``node_space_setting`` is not transductive.
+                ``inductive`` allows the target dataset to have a different node space, filling
+                missing features with ``fill_value``.
+            fill_value: Scalar or vector used to fill missing node features when
+                ``node_space_setting`` is not transductive.
 
         Raises:
-            ValueError: If the source dataset's node features cannot be aligned with the target dataset's nodes.
+            ValueError: If the source dataset's node features cannot be aligned with the target
+                dataset's nodes.
         """
         self.hdata = self.hdata.enrich_node_features_from(
             hdata_with_features=dataset_with_features.hdata,
@@ -200,8 +218,10 @@ class Dataset(TorchDataset):
         Enrich hyperedge attributes using the provided hyperedge feature enricher.
 
         Args:
-            enricher: An instance of HyperedgeEnricher to generate structural hyperedge attributes from hypergraph topology.
-            enrichment_mode: How to combine generated attributes with existing ``hdata.hyperedge_attr``.
+            enricher: An instance of HyperedgeEnricher to generate structural hyperedge
+                attributes from hypergraph topology.
+            enrichment_mode: How to combine generated attributes with existing
+                ``hdata.hyperedge_attr``.
                 ``concatenate`` appends new attributes to the existing ones as additional columns.
                 ``replace`` substitutes ``hdata.hyperedge_attr`` entirely.
                 Defaults to ``replace`` if not provided.
@@ -217,8 +237,10 @@ class Dataset(TorchDataset):
         Enrich hyperedge weights using the provided hyperedge weight enricher.
 
         Args:
-            enricher: An instance of HyperedgeEnricher to generate structural hyperedge weights from hypergraph topology.
-            enrichment_mode: How to combine generated weights with existing ``hdata.hyperedge_weights``.
+            enricher: An instance of HyperedgeEnricher to generate structural hyperedge weights
+                from hypergraph topology.
+            enrichment_mode: How to combine generated weights with existing
+                ``hdata.hyperedge_weights``.
                 ``concatenate`` appends new weights to the existing ones as additional columns.
                 ``replace`` substitutes ``hdata.hyperedge_weights`` entirely.
                 Defaults to ``replace`` if not provided.
@@ -246,7 +268,8 @@ class Dataset(TorchDataset):
         Create a new `Dataset` with sampled negative hyperedges added.
 
         Args:
-            negative_sampler: Sampler used to generate negative hyperedges from this dataset's ``hdata``.
+            negative_sampler: Sampler used to generate negative hyperedges from
+                this dataset's ``hdata``.
             seed: Optional random seed used for both negative sampling and the final shuffle.
 
         Returns:
@@ -301,7 +324,8 @@ class Dataset(TorchDataset):
 
         Args:
             ratios: List of floats summing to ``1.0``, e.g., ``[0.8, 0.1, 0.1]``.
-            shuffle: Whether to shuffle hyperedges before splitting. Defaults to ``False`` for deterministic splits.
+                shuffle: Whether to shuffle hyperedges before splitting. Defaults to ``False``
+                for deterministic splits.
             seed: Optional random seed for reproducibility. Ignored if shuffle is set to ``False``.
             node_space_setting: Whether to preserve the full node space in the splits.
                 ``transductive`` (default) preserves the full node space on the
@@ -431,21 +455,28 @@ class Dataset(TorchDataset):
 
         Fields:
             - ``shape_x``: The shape of the node feature matrix ``x``.
-            - ``shape_hyperedge_attr``: The shape of the hyperedge attribute matrix, or ``None`` if hyperedge attributes are not present.
+            - ``shape_hyperedge_attr``: The shape of the hyperedge attribute matrix, or ``None``
+            if hyperedge attributes are not present.
             - ``num_nodes``: The number of nodes in the hypergraph.
             - ``num_hyperedges``: The number of hyperedges in the hypergraph.
-            - ``avg_degree_node_raw``: The average degree of nodes, calculated as the mean number of hyperedges each node belongs to.
+            - ``avg_degree_node_raw``: The average degree of nodes, calculated as the mean number
+             of hyperedges each node belongs to.
             - ``avg_degree_node``: The floored node average degree.
-            - ``avg_degree_hyperedge_raw``: The average size of hyperedges, calculated as the mean number of nodes each hyperedge contains.
+            - ``avg_degree_hyperedge_raw``: The average size of hyperedges, calculated as the
+            mean number of nodes each hyperedge contains.
             - ``avg_degree_hyperedge``: The floored hyperedge average size.
             - ``node_degree_max``: The maximum degree of any node in the hypergraph.
             - ``hyperedge_degree_max``: The maximum size of any hyperedge in the hypergraph.
             - ``node_degree_median``: The median degree of nodes in the hypergraph.
             - ``hyperedge_degree_median``: The median size of hyperedges in the hypergraph.
-            - ``distribution_node_degree``: A list where the value at index ``i`` represents the count of nodes with degree ``i``.
-            - ``distribution_hyperedge_size``: A list where the value at index ``i`` represents the count of hyperedges with size ``i``.
-            - ``distribution_node_degree_hist``: A dictionary where the keys are node degrees and the values are the count of nodes with that degree.
-            - ``distribution_hyperedge_size_hist``: A dictionary where the keys are hyperedge sizes and the values are the count of hyperedges with that size.
+            - ``distribution_node_degree``: A list where the value at index ``i`` represents
+            the count of nodes with degree ``i``.
+            - ``distribution_hyperedge_size``: A list where the value at index ``i`` represents
+            the count of hyperedges with size ``i``.
+            - ``distribution_node_degree_hist``: A dictionary where the keys are node degrees
+             and the values are the count of nodes with that degree.
+            - ``distribution_hyperedge_size_hist``: A dictionary where the keys are hyperedge
+             sizes and the values are the count of hyperedges with that size.
 
         Returns:
             stats: A dictionary containing various statistics about the hypergraph.
