@@ -223,6 +223,7 @@ class HData:
 
         Returns:
             hdata: A new `HData` containing the original hyperedges and sampled negatives.
+
         """
         neg_hdata = negative_sampler.sample(self, seed=seed)
         hdata_with_negatives = self.cat_same_node_space([self, neg_hdata])
@@ -399,6 +400,7 @@ class HData:
                 ``concatenate`` appends new features as additional columns.
                 ``replace`` substitutes ``hdata.x`` entirely.
                 Defaults to ``replace`` if not provided.
+
         """
         self.__validate_enrichment_mode(enrichment_mode)
         enriched_features = enricher.enrich(self.hyperedge_index)
@@ -548,6 +550,7 @@ class HData:
 
         Returns:
             hdata: A new `HData` with enriched hyperedge weights.
+
         """
         self.__validate_enrichment_mode(enrichment_mode)
         enriched_weights = enricher.enrich(self.hyperedge_index)
@@ -587,6 +590,7 @@ class HData:
                 ``concatenate`` appends new features as additional columns.
                 ``replace`` substitutes ``hdata.hyperedge_attr`` entirely.
                 Defaults to ``replace`` if not provided.
+
         """
         self.__validate_enrichment_mode(enrichment_mode)
         enriched_features = enricher.enrich(self.hyperedge_index)
@@ -615,6 +619,7 @@ class HData:
     def get_device_if_all_consistent(self) -> torch.device:
         """
         Check that all tensors are on the same device and return that device.
+
         If there are no tensors or if they are on different devices, return CPU.
 
         Returns:
@@ -622,6 +627,7 @@ class HData:
 
         Raises:
             ValueError: If tensors are on different devices.
+
         """
         devices = {
             self.x.device,
@@ -746,6 +752,7 @@ class HData:
 
         Returns:
             hdata: A new `HData` that is a deep copy of this instance.
+
         """
         return self.__class__(
             x=self.x.clone(),
@@ -768,6 +775,7 @@ class HData:
 
         Returns:
             hdata: The `HData` instance with all tensors moved to the specified device.
+
         """
         self.x = self.x.to(device=device, non_blocking=non_blocking)
         self.hyperedge_index = self.hyperedge_index.to(device=device, non_blocking=non_blocking)
@@ -797,6 +805,7 @@ class HData:
 
         Returns:
             hdata: A new `HData` instance with the same attributes except for y, which is set to a tensor of the given value.
+
         """
         return self.__class__(
             x=self.x.clone(),
@@ -815,6 +824,7 @@ class HData:
 
         Returns:
             hdata: A new `HData` instance with the same attributes except for y, which is set to a tensor of ones.
+
         """
         return self.with_y_to(1.0)
 
@@ -824,6 +834,7 @@ class HData:
 
         Returns:
             hdata: A new `HData` instance with the same attributes except for y, which is set to a tensor of zeros.
+
         """
         return self.with_y_to(0.0)
 
@@ -852,8 +863,8 @@ class HData:
 
         Returns:
             stats: A dictionary containing various statistics about the hypergraph.
-        """
 
+        """
         node_ids = self.hyperedge_index[0]
         hyperedge_ids = self.hyperedge_index[1]
 

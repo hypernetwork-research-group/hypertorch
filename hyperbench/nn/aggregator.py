@@ -17,6 +17,7 @@ class HyperedgeAggregator:
         node_embeddings: Node embedding matrix of size ``(num_nodes, num_channels)``.
         num_hyperedges: Optional explicit hyperedge count.
             When provided, the pooled output preserves empty hyperedges that do not appear in ``hyperedge_index``.
+
     """
 
     def __init__(
@@ -122,6 +123,7 @@ class NodeAggregator:
         hyperedge_index: Hyperedge incidence in COO format of size ``(2, num_incidences)``.
         hyperedge_embeddings: Hyperedge embedding matrix of size ``(num_hyperedges, num_channels)``.
         num_nodes: Optional explicit node count. When provided, the pooled output preserves isolated nodes that do not appear in ``hyperedge_index``.
+
     """
 
     def __init__(

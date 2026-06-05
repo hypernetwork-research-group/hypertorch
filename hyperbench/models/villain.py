@@ -83,6 +83,7 @@ class VilLain(nn.Module):
     ) -> tuple[Tensor, VilLainLossParts]:
         """
         Compute the self-supervised VilLain objective.
+
         Use ``hyperedge_embeddings`` or ``node_embeddings`` to generate final embeddings for inference after training.
 
         Args:
@@ -95,6 +96,7 @@ class VilLain(nn.Module):
 
         Returns:
             node_embeddings: Node embeddings of shape ``(num_local_nodes, embedding_dim)``.
+
         """
         return self.loss(
             hyperedge_index=hyperedge_index,
@@ -121,6 +123,7 @@ class VilLain(nn.Module):
 
         Returns:
             loss: A tuple ``(total_loss, loss_parts)`` where ``loss_parts`` contains ``local_loss`` and ``global_loss`` scalar tensors.
+
         """
         node_embeddings = self.__get_initial_virtual_node_features(node_ids=node_ids)
         actual_num_hyperedges = self.__num_hyperedges(hyperedge_index, num_hyperedges)
@@ -151,7 +154,9 @@ class VilLain(nn.Module):
     ) -> Tensor:
         """
         Generate hyperedge embeddings by averaging propagated hyperedge states.
-        Every generation step computes hyperedge states from the current node states, then updates node states for the next step.
+
+        Every generation step computes hyperedge states from the current node states, then updates node states for
+        the next step.
 
         Args:
             hyperedge_index: Incidence tensor of shape ``(2, num_incidences)``.
@@ -163,6 +168,7 @@ class VilLain(nn.Module):
 
         Returns:
             hyperedge_embeddings: Hyperedge embeddings of shape ``(num_hyperedges, embedding_dim)``.
+
         """
         return self.__embeddings(
             hyperedge_index=hyperedge_index,
@@ -190,6 +196,7 @@ class VilLain(nn.Module):
 
         Returns:
             node_embeddings: Node embeddings of shape ``(num_local_nodes, embedding_dim)``.
+
         """
         return self.__embeddings(
             hyperedge_index=hyperedge_index,
@@ -199,7 +206,9 @@ class VilLain(nn.Module):
         )
 
     def reset_parameters(self) -> None:
-        """Initialize trainable virtual-label logits near zero."""
+        """
+        Initialize trainable virtual-label logits near zero.
+        """
         nn.init.normal_(self.node_embedding, mean=0.0, std=0.1)
 
     def __embeddings(
@@ -220,6 +229,7 @@ class VilLain(nn.Module):
 
         Returns:
             embeddings: Averaged embeddings truncated to ``embedding_dim``.
+
         """
         with torch.no_grad():
             x = self.__get_initial_virtual_node_features(node_ids=node_ids)
@@ -261,6 +271,7 @@ class VilLain(nn.Module):
 
         Returns:
             x: A tensor of shape ``(num_selected_nodes, raw_embedding_dim)``.
+
         """
         logits = self.node_embedding if node_ids is None else self.node_embedding[node_ids]
 
@@ -293,7 +304,8 @@ class VilLain(nn.Module):
         num_hyperedges: int,
     ) -> tuple[Tensor, Tensor]:
         """
-        One round of message passing, where nodes send messages to hyperedges and then hyperedges send messages back to nodes.
+        One round of message passing, where nodes send messages to hyperedges and then hyperedges
+        send messages back to nodes.
 
         Args:
             x: Virtual node features of shape (num_nodes, raw_embedding_dim).
@@ -302,6 +314,7 @@ class VilLain(nn.Module):
 
         Returns:
             embeddings: The updated node and hyperedge embeddings after one round of message passing.
+
         """
         hyperedge_embeddings = HyperedgeAggregator(
             hyperedge_index=hyperedge_index,
@@ -323,8 +336,11 @@ class VilLain(nn.Module):
         num_hyperedges: int | None,
     ) -> int:
         """
-        Return the explicit hyperedge count or infer it from the ``hyperedge_index``, if not provided.
+        Return the explicit hyperedge count or infer it from the ``hyperedge_index``, if not
+        provided.
+
         Explicit counts are required when empty hyperedges must remain in the hypergraph.
+
         """
         if num_hyperedges is not None:
             return num_hyperedges

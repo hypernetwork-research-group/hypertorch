@@ -14,14 +14,18 @@ class HlpModule(L.LightningModule):
     A LightningModule for HLP models with optional negative sampling.
 
     Args:
-        encoder: Optional encoder module. Defaults to ``None`` as not all HLP model will use an encoder.
+        encoder: Optional encoder module. Defaults to ``None`` as not
+            all HLP model will use an encoder.
         decoder: Decoder module to use to predict whether hyperedges are positive or negative.
         loss_fn: Loss function.
         metrics: Optional ``MetricCollection`` of torchmetrics to compute during evaluation.
             Cloned per stage (train, val, test) for independent state accumulation.
         negative_sampler: Optional negative sampler. If ``None``, no negative sampling is performed.
-        negative_sampling_schedule: When to perform negative sampling during training. Defaults to ``"every_epoch"``.
-        negative_sampling_every_n: If using ``"every_n_epochs"`` schedule, how many epochs between negative sampling runs. Defaults to ``1``.
+        negative_sampling_schedule: When to perform negative sampling during training.
+            Defaults to ``"every_epoch"``.
+        negative_sampling_every_n: If using ``"every_n_epochs"`` schedule, how many epochs between
+            negative sampling runs. Defaults to ``1``.
+
     """
 
     def __init__(
@@ -80,6 +84,7 @@ class HlpModule(L.LightningModule):
 
         Returns:
             loss: The computed loss tensor.
+
         """
         loss = self.loss_fn(scores, labels)
         self.log(name=f"{stage.value}_loss", value=loss, prog_bar=True, batch_size=batch_size)
@@ -97,13 +102,15 @@ class HlpModule(L.LightningModule):
 
         Uses class-based torchmetrics with proper multi-batch accumulation:
         1. ``update()`` accumulates predictions/targets across batches.
-        2. Passing the MetricCollection to ``self.log_dict()`` tells Lightning to call ``compute()`` at epoch end and ``reset()`` automatically.
+        2. Passing the MetricCollection to ``self.log_dict()`` tells Lightning to call
+            ``compute()`` at epoch end and ``reset()`` automatically.
 
         Args:
             scores: The predicted scores (logits) from the model.
             labels: The true labels corresponding to the scores.
             batch_size: The size of the current batch, used for logging.
             stage: The current stage (train/val/test) for logging purposes.
+
         """
         stage_metrics = self._get_stage_metrics(stage)
         if stage_metrics is None:
@@ -121,7 +128,7 @@ class HlpModule(L.LightningModule):
             stage_metrics,
             prog_bar=True,
             on_step=False,
-            on_epoch=True,  # Compute and log metrics at epoch end, not per step, for proper accumulation
+            on_epoch=True,  # Compute and log metrics at epoch end for proper accumulation
             batch_size=batch_size,
         )
 
@@ -133,7 +140,9 @@ class HlpModule(L.LightningModule):
             stage: The current stage (train/val/test) for which to get metrics.
 
         Returns:
-            metrics: The metric collection corresponding to the given stage, or ``None`` if no metrics are configured.
+            metrics: The metric collection corresponding to the given stage, or ``None``
+                if no metrics are configured.
+
         """
         match stage:
             case Stage.TRAIN:
@@ -146,7 +155,9 @@ class HlpModule(L.LightningModule):
                 raise ValueError(f"Unrecognized stage: {stage}")
 
     def _should_sample_negatives(self) -> bool:
-        """Whether to resample negatives for the current epoch."""
+        """
+        Whether to resample negatives for the current epoch.
+        """
         if self.__negative_sampling_scheduler is None:
             raise ValueError(
                 "Asked to check negative sampling schedule but no negative sampler is configured."
@@ -162,6 +173,7 @@ class HlpModule(L.LightningModule):
 
         Returns:
             negatives: A batch of negative samples, either freshly sampled or from cache.
+
         """
         if self.__negative_sampling_scheduler is None:
             raise ValueError("Asked to sample negatives but no negative sampler is not configured.")

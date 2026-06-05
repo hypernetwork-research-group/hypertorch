@@ -8,7 +8,8 @@ def sparse_dropout(
     dropout_prob: float,
     fill_value: float = 0.0,
 ) -> Tensor:
-    """Dropout function for sparse matrix.
+    """
+    Dropout function for sparse matrix.
 
     Returns a new sparse matrix with the same shape as the input sparse matrix,
     but with some elements dropped out.
@@ -20,6 +21,7 @@ def sparse_dropout(
 
     Returns:
         matrix: A new sparse matrix with the same shape as the input sparse matrix, but with some elements dropped out.
+
     """
     device = sparse_tensor.device
 

@@ -281,7 +281,9 @@ def test_bidirectional_edges():
 
 
 def test_star_graph():
-    """Test star graph (all edges connected to central node)."""
+    """
+    Test star graph (all edges connected to central node).
+    """
     graph = Graph([[0, 1], [0, 2], [0, 3], [0, 4]])
     assert graph.num_nodes == 5
     assert graph.num_edges == 4
@@ -292,7 +294,9 @@ def test_star_graph():
 
 
 def test_cyclic_graph():
-    """Test cyclic graph (a closed loop)."""
+    """
+    Test cyclic graph (a closed loop).
+    """
     graph = Graph([[0, 1], [1, 2], [2, 3], [3, 0]])
     assert graph.num_nodes == 4
     assert graph.num_edges == 4
@@ -312,7 +316,9 @@ def test_cyclic_graph():
     ],
 )
 def test_smoothing_with_laplacian_output_shape_matches_x_shape(num_nodes, num_features):
-    """Output shape should match input node feature matrix X shape (num_nodes, C)."""
+    """
+    Output shape should match input node feature matrix X shape (num_nodes, C).
+    """
     x = torch.randn(num_nodes, num_features)
     edge_index = torch.tensor([[i, (i + 1) % num_nodes] for i in range(num_nodes)]).T
 
@@ -324,7 +330,9 @@ def test_smoothing_with_laplacian_output_shape_matches_x_shape(num_nodes, num_fe
 
 
 def test_smoothing_with_laplacian_with_identity_laplacian_returns_original_x():
-    """Smoothing with identity laplacian should return the original features."""
+    """
+    Smoothing with identity laplacian should return the original features.
+    """
     num_nodes = 3
     x = torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
 
@@ -339,7 +347,9 @@ def test_smoothing_with_laplacian_with_identity_laplacian_returns_original_x():
 
 
 def test_smoothing_with_laplacian_zero_features():
-    """Zero features should remain zero after smoothing."""
+    """
+    Zero features should remain zero after smoothing.
+    """
     x = torch.zeros(3, 2)
     edge_index = torch.tensor([[0, 1, 2], [1, 2, 0]])
     gcn_laplacian = EdgeIndex(edge_index).get_sparse_normalized_gcn_laplacian(num_nodes=3)
@@ -350,7 +360,9 @@ def test_smoothing_with_laplacian_zero_features():
 
 
 def test_smoothing_with_laplacian_single_node_returns_original_x():
-    """Single node with self-loop should return the original features."""
+    """
+    Single node with self-loop should return the original features.
+    """
     x = torch.tensor([[1.0, 2.0]])
     edge_index = torch.tensor([[0], [0]])  # Self-loop
     gcn_laplacian = EdgeIndex(edge_index).get_sparse_normalized_gcn_laplacian(num_nodes=1)
@@ -416,7 +428,9 @@ def test_smoothing_with_laplacian_returns_expected_x():
 
 
 def test_smoothing_with_laplacian_is_equal_for_zero_and_no_drop_rate():
-    """drop_rate=0 should produce the same result as no dropout."""
+    """
+    drop_rate=0 should produce the same result as no dropout.
+    """
     x = torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
     edge_index = torch.tensor([[0, 1, 2], [1, 2, 0]])
     gcn_laplacian = EdgeIndex(edge_index).get_sparse_normalized_gcn_laplacian(num_nodes=3)
@@ -444,7 +458,9 @@ def test_smoothing_with_laplacian_nonzero_drop_rate_changes_output():
 
 
 def test_smoothing_with_laplacian_drop_rate_stochastic():
-    """Different seeds should produce different outputs with dropout."""
+    """
+    Different seeds should produce different outputs with dropout.
+    """
     x = torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
     edge_index = torch.tensor([[0, 1, 2], [1, 2, 0]])
     gcn_laplacian = EdgeIndex(edge_index).get_sparse_normalized_gcn_laplacian(num_nodes=3)
@@ -462,7 +478,9 @@ def test_smoothing_with_laplacian_drop_rate_stochastic():
 def test_smoothing_with_laplacian_influences_connected_nodes():
     """
     Features of connected nodes should be aggregated.
+
     For a connected graph with GCN normalization, smoothing should mix features from neighbors.
+
     """
     # Two connected nodes with distinct features
     x = torch.tensor([[1.0, 0.0], [0.0, 1.0]])
@@ -478,7 +496,9 @@ def test_smoothing_with_laplacian_influences_connected_nodes():
 
 
 def test_edge_index_item_returns_tensor():
-    """Test that item property returns the edge index tensor."""
+    """
+    Test that item property returns the edge index tensor.
+    """
     edge_index_tensor = torch.tensor([[0, 1, 2], [1, 2, 0]])
     edge_index = EdgeIndex(edge_index_tensor)
 
@@ -681,7 +701,9 @@ def test_get_sparse_adjacency_matrix_shape(edge_index, num_nodes):
 
 
 def test_get_sparse_adjacency_matrix_empty_edge_index():
-    """Empty edge_index produces all-zero adjacency matrix when converted to dense."""
+    """
+    Empty edge_index produces all-zero adjacency matrix when converted to dense.
+    """
     edge_index = torch.tensor([[], []], dtype=torch.long)
     adj_matrix = EdgeIndex(edge_index).get_sparse_adjacency_matrix(num_nodes=3)
     dense_adj_matrix = adj_matrix.to_dense()
@@ -859,7 +881,9 @@ def test_get_sparse_adjacency_matrix_ignores_stored_edge_weights_by_default():
     ],
 )
 def test_get_sparse_adjacency_matrix_isolated_nodes(edge_index, num_nodes, isolated_nodes):
-    """Nodes not in edge_index have zero rows and columns."""
+    """
+    Nodes not in edge_index have zero rows and columns.
+    """
     adj_matrix = EdgeIndex(edge_index).get_sparse_adjacency_matrix(num_nodes=num_nodes)
     dense_adj_matrix = adj_matrix.to_dense()
 
@@ -890,7 +914,9 @@ def test_get_sparse_normalized_degree_matrix_shape(edge_index, num_nodes):
 
 
 def test_get_sparse_normalized_degree_matrix_is_diagonal():
-    """All non-zero entries are on the diagonal."""
+    """
+    All non-zero entries are on the diagonal.
+    """
     edge_index = torch.tensor([[0, 1, 1, 2], [1, 0, 2, 1]])
 
     degree_matrix = EdgeIndex(edge_index).get_sparse_normalized_degree_matrix(num_nodes=3)
@@ -942,7 +968,9 @@ def test_get_sparse_normalized_degree_matrix_diagonal_values(
 
 
 def test_get_sparse_normalized_degree_matrix_isolated_nodes_are_zero():
-    """Isolated nodes (degree 0) have 0 on diagonal, not inf."""
+    """
+    Isolated nodes (degree 0) have 0 on diagonal, not inf.
+    """
     edge_index = torch.tensor([[0], [1]])
 
     degree_matrix = EdgeIndex(edge_index).get_sparse_normalized_degree_matrix(num_nodes=4)
@@ -956,7 +984,9 @@ def test_get_sparse_normalized_degree_matrix_isolated_nodes_are_zero():
 
 
 def test_get_sparse_normalized_degree_matrix_empty_edge_index():
-    """Empty edge_index produces all-zero matrix (all nodes isolated)."""
+    """
+    Empty edge_index produces all-zero matrix (all nodes isolated).
+    """
     edge_index = torch.tensor([[], []], dtype=torch.long)
 
     degree_matrix = EdgeIndex(edge_index).get_sparse_normalized_degree_matrix(num_nodes=3)
@@ -1037,7 +1067,9 @@ def test_get_sparse_normalized_gcn_laplacian_is_symmetric():
 
 
 def test_get_sparse_normalized_laplacian_self_loop_diagonal():
-    """Single node graph has diagonal value 1 (self-loop normalized)."""
+    """
+    Single node graph has diagonal value 1 (self-loop normalized).
+    """
     edge_index = torch.tensor([[0], [0]])
 
     gcn_laplacian = EdgeIndex(edge_index).get_sparse_normalized_gcn_laplacian(num_nodes=1)
@@ -1282,7 +1314,9 @@ def test_get_sparse_normalized_laplacian_is_symmetric():
 
 
 def test_get_sparse_normalized_laplacian_diagonal_values():
-    """For a connected graph without self-loops, diagonal of the laplacian should be non-negative."""
+    """
+    For a connected graph without self-loops, diagonal of the laplacian should be non-negative.
+    """
     edge_index = EdgeIndex(torch.tensor([[0, 1], [1, 0]]))
     laplacian = edge_index.get_sparse_normalized_laplacian(num_nodes=2)
     dense_laplacian = laplacian.to_dense()
@@ -1384,7 +1418,9 @@ def test_remove_duplicate_edges_with_empty_weighted_edge_index_keeps_empty_conti
 
 
 def test_to_undirected_edge_index_single_directed_edge():
-    """A single directed edge (0 -> 1) should produce bidirectional edges."""
+    """
+    A single directed edge (0 -> 1) should produce bidirectional edges.
+    """
     edge_index = EdgeIndex(torch.tensor([[0], [1]]))
     edge_index.to_undirected()
     edges = set(zip(edge_index.item[0].tolist(), edge_index.item[1].tolist(), strict=True))
@@ -1421,6 +1457,7 @@ def test_to_undirected_edge_index_triangle_directed():
     Examples:
         Directed cycle: 0 -> 1 -> 2 -> 0
         Bidirectional traingle: 0 <-> 1 <-> 2 <-> 0
+
     """
     edge_index = EdgeIndex(torch.tensor([[0, 1, 2], [1, 2, 0]]))
     edge_index.to_undirected()

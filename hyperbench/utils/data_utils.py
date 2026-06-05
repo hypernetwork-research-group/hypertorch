@@ -46,6 +46,7 @@ def to_0based_ids(original_ids: Tensor, ids_to_rebase: Tensor | None = None) -> 
 
     Returns:
         ids: Tensor of 0-based IDs.
+
     """
     if ids_to_rebase is None:
         sorted_unique_original_ids = original_ids.unique(sorted=True)

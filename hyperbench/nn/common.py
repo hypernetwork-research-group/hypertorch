@@ -29,6 +29,7 @@ class _VilLainTrainer:
         learning_rate: Adam learning rate.
         weight_decay: Adam weight decay.
         verbose: Whether to print training progress.
+
     """
 
     def __init__(
@@ -68,6 +69,7 @@ class _VilLainTrainer:
 
         Returns:
             x: Empty tensor of shape ``(0, embedding_dim)``.
+
         """
         return torch.empty((0, self.embedding_dim), device=hyperedge_index.device)
 
@@ -80,6 +82,7 @@ class _VilLainTrainer:
 
         Returns:
             num_hyperedges: Total number of hyperedges to preserve during VilLain propagation.
+
         """
         return (
             self.num_hyperedges
@@ -96,6 +99,7 @@ class _VilLainTrainer:
 
         Returns:
             num_nodes: Total number of nodes to preserve during VilLain training and embedding generation.
+
         """
         return HyperedgeIndex(hyperedge_index).num_nodes_if_isolated_exist(self.num_nodes)
 
@@ -108,6 +112,7 @@ class _VilLainTrainer:
 
         Returns:
             model: Trained VilLain model ready to generate node or hyperedge embeddings.
+
         """
         # We need it here to avoid circular imports,
         # this is internal logic anyway and not part of the public API of this module.

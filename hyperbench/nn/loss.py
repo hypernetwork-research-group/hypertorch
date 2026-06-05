@@ -28,6 +28,7 @@ class NHPRankingLoss(nn.Module):
 
         Returns:
             loss: Scalar loss value.
+
         """
         # Split logits by label as we need to compare positive scores against negative scores.
         # Example: logits = [2.0, 1.0, -1.0]
@@ -69,6 +70,7 @@ class VilLainLoss:
         num_subspaces: Number of virtual-label subspaces in each embedding.
         labels_per_subspace: Number of virtual labels in each subspace.
         eps: Numerical stability constant used in logarithms and cosine similarity.
+
     """
 
     def __init__(
@@ -95,6 +97,7 @@ class VilLainLoss:
 
         Returns:
             loss: Scalar tensor containing node plus hyperedge entropy losses.
+
         """
         return self.entropy_loss(node_embeddings) + self.entropy_loss(hyperedge_embeddings)
 
@@ -111,6 +114,7 @@ class VilLainLoss:
 
         Returns:
             loss: Scalar tensor containing node plus hyperedge global losses.
+
         """
         return (
             self.balance_loss(node_embeddings)
@@ -129,6 +133,7 @@ class VilLainLoss:
 
         Returns:
             loss: Scalar tensor to minimize.
+
         """
         return local_loss + global_loss
 
@@ -141,6 +146,7 @@ class VilLainLoss:
 
         Returns:
             loss: Scalar entropy loss.
+
         """
         if x.size(0) == 0:
             return x.sum() * 0.0
@@ -169,6 +175,7 @@ class VilLainLoss:
 
         Returns:
             loss: Scalar balance loss.
+
         """
         if x.size(0) == 0:
             return x.sum() * 0.0
@@ -199,6 +206,7 @@ class VilLainLoss:
 
         Returns:
             loss: Scalar distinctiveness loss.
+
         """
         if x.size(0) == 0:
             return x.sum() * 0.0
@@ -266,6 +274,7 @@ class VilLainLossParts(TypedDict):
     Attributes:
         local_loss: Sum of node and hyperedge local entropy losses over all training propagation steps.
         global_loss: Sum of balance and distinctiveness losses over all training propagation steps.
+
     """
 
     local_loss: Tensor

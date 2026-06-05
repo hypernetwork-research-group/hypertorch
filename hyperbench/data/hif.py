@@ -25,7 +25,9 @@ GITHUB_COMMIT_SHA = "89ba250151bd5b1b65ba14a98dbe3dbdd72f5e25"
 
 
 class HIFProcessor:
-    """A utility class to process HIF hypergraph data into `HData` format."""
+    """
+    A utility class to process HIF hypergraph data into `HData` format.
+    """
 
     @staticmethod
     def transform_attrs(
@@ -34,6 +36,7 @@ class HIFProcessor:
     ) -> Tensor:
         """
         Extract and encode numeric attributes to tensor.
+
         Non-numeric attributes are discarded. Missing attributes are filled with ``0.0``.
 
         Args:
@@ -43,6 +46,7 @@ class HIFProcessor:
 
         Returns:
             attrs: Tensor of numeric attribute values
+
         """
         numeric_attrs = {
             key: value
@@ -67,8 +71,8 @@ class HIFProcessor:
 
         Returns:
             hdata: The processed hypergraph data.
-        """
 
+        """
         num_nodes = len(hypergraph.nodes)
         x = cls.__process_x(hypergraph, num_nodes)
 
@@ -145,6 +149,7 @@ class HIFProcessor:
 
         Returns:
             attr_keys: List of unique numeric attribute keys.
+
         """
         unique_keys = []
         for attrs in attr_keys:
@@ -246,7 +251,9 @@ class HIFProcessor:
 
 
 class HIFLoader:
-    """A utility class to load hypergraphs from HIF format."""
+    """
+    A utility class to load hypergraphs from HIF format.
+    """
 
     @classmethod
     def load_from_url(cls, url: str, save_on_disk: bool = False) -> HData:
@@ -259,6 +266,7 @@ class HIFLoader:
 
         Returns:
             hdata: The loaded hypergraph object.
+
         """
         url = validate_http_url(url)
 
@@ -303,8 +311,8 @@ class HIFLoader:
     @classmethod
     def load_from_path(cls, filepath: str) -> HData:
         """
-        Load a hypergraph from a local file path pointing to a .json or .json.zst
-        file in HIF format.
+        Load a hypergraph from a local file path pointing to a .json or .json.zst file in HIF
+        format.
 
         Args:
             filepath: The local file path to the .json or .json.zst file
@@ -312,6 +320,7 @@ class HIFLoader:
 
         Returns:
             hdata: The loaded hypergraph object.
+
         """
         if not os.path.exists(filepath):
             raise ValueError(f"File {filepath!r} does not exist.")

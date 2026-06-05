@@ -11,7 +11,9 @@ from hyperbench.tests import MOCK_BASE_PATH
 
 @pytest.fixture(autouse=True)
 def seed():
-    """Fix random seed for deterministic projections."""
+    """
+    Fix random seed for deterministic projections.
+    """
     torch.manual_seed(42)
 
 
@@ -798,7 +800,9 @@ def test_reduce_to_graph_output_has_two_rows(x, hyperedge_index):
 
 
 def test_reduce_to_graph_output_nodes_are_within_bounds():
-    """All node indices in the output are valid indices from the input node set."""
+    """
+    All node indices in the output are valid indices from the input node set.
+    """
     x = torch.tensor([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0], [0.5, 0.5, 0.0]])
     hyperedge_index = torch.tensor([[0, 1, 2, 1, 2, 3], [0, 0, 0, 1, 1, 1]])
 

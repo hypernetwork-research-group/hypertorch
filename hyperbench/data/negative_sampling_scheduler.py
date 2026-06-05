@@ -13,15 +13,21 @@ NegativeSamplingSchedule: TypeAlias = Literal[
 class NegativeSamplingScheduler:
     """
     Manages when to perform negative sampling during training based on a specified schedule.
-    This class allows for flexible scheduling of negative sampling, enabling it to be performed at different frequencies (e.g., every epoch, every N epochs, or only at the first epoch).
-        The scheduler maintains a cache of the most recently sampled negatives, which can be reused across epochs if the schedule does not require resampling. This helps to optimize training
-        by avoiding unnecessary sampling when the schedule dictates that negatives should only be generated at certain intervals.
+
+    This class allows for flexible scheduling of negative sampling, enabling it to be performed at
+    different frequencies (e.g., every epoch, every N epochs, or only at the first epoch). The
+    scheduler maintains a cache of the most recently sampled negatives, which can be reused across
+    epochs if the schedule does not require resampling. This helps to optimize training by avoiding
+    unnecessary sampling when the schedule dictates that negatives should only be generated at
+    certain intervals.
 
     Args:
         negative_sampler: An instance of a ``NegativeSampler`` that defines how to sample negatives.
         negative_sampling_schedule: Literal string specifying the schedule for sampling negatives.
         negative_sampling_every_n: An integer specifying the interval for sampling negatives
-            when the schedule is set to ``"every_n_epochs"``. This parameter is ignored for other schedules.
+            when the schedule is set to ``"every_n_epochs"``. This parameter is ignored
+            for other schedules.
+
     """
 
     def __init__(
@@ -38,7 +44,9 @@ class NegativeSamplingScheduler:
 
     @property
     def config(self) -> dict[str, Any]:
-        """Returns the configuration of the negative sampling scheduler as a dictionary."""
+        """
+        Returns the configuration of the negative sampling scheduler as a dictionary.
+        """
         return {
             "negative_sampler": self.negative_sampler,
             "negative_sampling_schedule": self.negative_sampling_schedule,
@@ -54,6 +62,7 @@ class NegativeSamplingScheduler:
 
         Returns:
             should_sample: True if negatives should be resampled for the current epoch, False otherwise.
+
         """
         if epoch < 0:
             raise ValueError(f"Epoch must be non-negative, got {epoch}.")
@@ -84,6 +93,7 @@ class NegativeSamplingScheduler:
 
         Returns:
             negatives: A batch of negative samples, either freshly sampled or from cache.
+
         """
         if self.should_sample(epoch):
             self.__cached_negative_samples = self.negative_sampler.sample(batch)

@@ -79,6 +79,7 @@ class NHP(nn.Module):
 
         Returns:
             scores: Scores of shape ``(num_hyperedges,)``.
+
         """
         if hyperedge_index.numel() == 0:
             return x.new_empty((0,))

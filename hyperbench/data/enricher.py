@@ -41,6 +41,7 @@ class _VilLainTrainer:
         learning_rate: Adam learning rate.
         weight_decay: Adam weight decay.
         verbose: Whether to print training progress.
+
     """
 
     def __init__(
@@ -82,6 +83,7 @@ class _VilLainTrainer:
 
         Returns:
             Empty tensor of shape ``(0, embedding_dim)``.
+
         """
         return torch.empty((0, self.embedding_dim), device=hyperedge_index.device)
 
@@ -95,6 +97,7 @@ class _VilLainTrainer:
 
         Returns:
             Total number of hyperedges to preserve during VilLain propagation.
+
         """
         return (
             self.num_hyperedges
@@ -112,6 +115,7 @@ class _VilLainTrainer:
 
         Returns:
             Total number of nodes to preserve during VilLain training and embedding generation.
+
         """
         return HyperedgeIndex(hyperedge_index).num_nodes_if_isolated_exist(self.num_nodes)
 
@@ -124,6 +128,7 @@ class _VilLainTrainer:
 
         Returns:
             Trained VilLain model ready to generate node or hyperedge embeddings.
+
         """
         model = VilLain(
             num_nodes=self._num_nodes(hyperedge_index),
@@ -188,6 +193,7 @@ class Enricher(ABC):
 
     Args:
         cache_dir: Directory for saving/loading cached features. If ``None``, caching is disabled.
+
     """
 
     def __init__(
@@ -228,6 +234,7 @@ class FillValueHyperedgeAttrsEnricher(HyperedgeAttrsEnricher):
     Args:
         cache_dir: Directory for saving/loading cached features. If ``None``, caching is disabled.
         fill_value: The constant value to fill the hyperedge attributes with. Defaults to ``1.0``.
+
     """
 
     def __init__(
@@ -248,6 +255,7 @@ class FillValueHyperedgeAttrsEnricher(HyperedgeAttrsEnricher):
         Returns:
             hyperedge_attr: Tensor of shape ``(num_hyperedges, 1)`` containing
             the generated attribute for each hyperedge.
+
         """
         num_hyperedges = HyperedgeIndex(hyperedge_index).num_hyperedges
         hyperedge_attrs = torch.full(
@@ -278,6 +286,7 @@ class VilLainHyperedgeAttrsEnricher(_VilLainTrainer, HyperedgeAttrsEnricher):
         weight_decay: Weight decay for the optimizer. Defaults to ``0.0``.
         cache_dir: Optional directory to cache computed features. If ``None``, caching is disabled.
         verbose: Whether to print verbose output during training. Defaults to ``False``.
+
     """
 
     def __init__(
@@ -323,6 +332,7 @@ class VilLainHyperedgeAttrsEnricher(_VilLainTrainer, HyperedgeAttrsEnricher):
         Returns:
             hyperedge_embeddings: Tensor of shape ``(num_hyperedges, num_features)``
             containing VilLain hyperedge embeddings.
+
         """
         num_hyperedges = self._num_hyperedges(hyperedge_index)
         if num_hyperedges == 0:
@@ -353,6 +363,7 @@ class ABHyperedgeWeightsEnricher(HyperedgeWeightsEnricher):
             Must be between 0.0 and 1.0.
         beta: If provided, the random component is alpha * beta.
             If None, no random component is added.
+
     """
 
     def __init__(
@@ -379,6 +390,7 @@ class ABHyperedgeWeightsEnricher(HyperedgeWeightsEnricher):
         Returns:
             hyperedge_weight: Tensor of shape ``(num_hyperedges,)`` containing
             the weight of each hyperedge.
+
         """
         # Count the number of nodes in each hyperedge by counting occurrences of
         # each hyperedge index.
@@ -395,8 +407,8 @@ class ABHyperedgeWeightsEnricher(HyperedgeWeightsEnricher):
 
 class Node2VecEnricher(NodeEnricher):
     """
-    Enrich node features using Node2Vec embeddings computed from
-    the clique expansion of the hypergraph.
+    Enrich node features using Node2Vec embeddings computed from the clique expansion of the
+    hypergraph.
 
     Args:
         num_features: Dimensionality of the node embeddings to generate.
@@ -443,6 +455,7 @@ class Node2VecEnricher(NodeEnricher):
         cache_dir: Optional directory to cache computed embeddings. If ``None``, caching
             is disabled.
         verbose: Whether to print verbose output during training. Defaults to ``False``.
+
     """
 
     def __init__(
@@ -497,6 +510,7 @@ class Node2VecEnricher(NodeEnricher):
         Returns:
             x: Tensor of shape ``(num_nodes, embedding_dim)`` containing the Node2Vec embeddings
             for each node.
+
         """
         device = hyperedge_index.device
 
@@ -520,8 +534,12 @@ class Node2VecEnricher(NodeEnricher):
         edge_index_wrapper = EdgeIndex(reduced_edge_index).remove_selfloops()
         if edge_index_wrapper.num_edges == 0:
             warnings.warn(
-                """Clique expansion produced no non-self-loop edges.
-                Returning zero node features.""",
+                """
+                Clique expansion produced no non-self-loop edges.
+
+                Returning zero node features.
+
+                """,
                 category=UserWarning,
                 stacklevel=2,
             )
@@ -601,8 +619,8 @@ class Node2VecEnricher(NodeEnricher):
 
 class LaplacianPositionalEncodingEnricher(NodeEnricher):
     """
-    Enrich node features with Laplacian Positional Encodings computed from
-    the symmetric normalized Laplacian of the clique expansion of the hypergraph.
+    Enrich node features with Laplacian Positional Encodings computed from the symmetric normalized
+    Laplacian of the clique expansion of the hypergraph.
 
     Args:
         num_features: Number of positional encoding features to generate for each node.
@@ -614,6 +632,7 @@ class LaplacianPositionalEncodingEnricher(NodeEnricher):
             contains some hyperedges
             that do not contain all the nodes in the node space.
         cache_dir: Optional directory to cache computed features. If ``None``, caching is disabled.
+
     """
 
     def __init__(
@@ -710,6 +729,7 @@ class VilLainEnricher(_VilLainTrainer, NodeEnricher):
         weight_decay: Weight decay for the optimizer. Defaults to ``0.0``.
         cache_dir: Optional directory to cache computed features. If ``None``, caching is disabled.
         verbose: Whether to print verbose output during training. Defaults to ``False``.
+
     """
 
     def __init__(
@@ -755,6 +775,7 @@ class VilLainEnricher(_VilLainTrainer, NodeEnricher):
         Returns:
             node_embeddings: Tensor of shape ``(num_nodes, num_features)`` containing
                 VilLain node embeddings.
+
         """
         num_nodes = self._num_nodes(hyperedge_index)
         if num_nodes == 0:

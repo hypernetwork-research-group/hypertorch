@@ -45,6 +45,7 @@ class CommonNeighborsScorer(NeighborScorer):
 
         Returns:
             score: The aggregated common neighbors score.
+
         """
         if len(candidate_nodes) < 2:
             return self.__DEFAULT_SCORE
@@ -77,6 +78,7 @@ class CommonNeighborsScorer(NeighborScorer):
 
         Returns:
             scores: A 1-D tensor of shape ``(num_hyperedges,)`` with the CN score for each hyperedge.
+
         """
         if node_to_neighbors is None:
             node_to_neighbors = Hypergraph.from_hyperedge_index(hyperedge_index).neighbors_of_all()

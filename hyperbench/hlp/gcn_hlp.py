@@ -25,9 +25,11 @@ class GCNEncoderConfig(TypedDict):
         add_self_loops: Whether to add self-loops before convolution. Defaults to ``True``.
         normalize: Whether to normalize the adjacency matrix in ``GCNConv``. Defaults to ``True``.
         cached: Whether to cache the normalized graph in ``GCNConv``. Defaults to ``False``.
-        graph_reduction_strategy: Strategy for reducing the hypergraph to a graph. Defaults to ``"clique_expansion"``.
+        graph_reduction_strategy: Strategy for reducing the hypergraph to a graph.
+            Defaults to ``"clique_expansion"``.
         activation_fn: Activation function to use after each hidden layer. Defaults to ``nn.ReLU``.
         activation_fn_kwargs: Keyword arguments for the activation function. Defaults to empty dict.
+
     """
 
     in_channels: int
@@ -59,6 +61,7 @@ class GCNHlpModule(HlpModule):
         lr: Learning rate for the optimizer. Defaults to ``0.001``.
         weight_decay: L2 regularization. Defaults to ``0.0``.
         metrics: Optional metric collection for evaluation.
+
     """
 
     def __init__(
@@ -108,6 +111,7 @@ class GCNHlpModule(HlpModule):
 
         Returns:
             scores: Logit scores of shape ``(num_hyperedges,)``.
+
         """
         if self.encoder is None:
             raise ValueError("Encoder is not defined for this HLP module.")
