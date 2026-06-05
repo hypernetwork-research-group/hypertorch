@@ -24,7 +24,7 @@ class HyperGCNConv(nn.Module):
             dropout functions. Defaults to ``False``.
         seed: Optional random seed for the random reduction of hyperedges to edges.
             Defaults to ``None``.
-    """
+    """  # noqa: E501
 
     def __init__(
         self,
@@ -128,7 +128,7 @@ class HGNNConv(nn.Module):
         drop_rate: If set to a positive number, the layer will use dropout. Defaults to ``0.5``.
         is_last: If set to ``True``, the layer will not apply the final activation and
             dropout functions. Defaults to ``False``.
-    """
+    """  # noqa: E501
 
     def __init__(
         self,
@@ -204,7 +204,7 @@ class HGNNPConv(nn.Module):
         drop_rate: If set to a positive number, the layer will use dropout. Defaults to ``0.5``.
         is_last: If set to ``True``, the layer will not apply the final activation and dropout
             functions. Defaults to ``False``.
-    """
+    """  # noqa: E501
 
     def __init__(
         self,
@@ -268,7 +268,7 @@ class HNHNConv(nn.Module):
         drop_rate: If set to a positive number, the layer will use dropout. Defaults to ``0.5``.
         is_last: If set to ``True``, the layer will not apply the final activation and
             dropout functions. Defaults to ``False``.
-    """
+    """  # noqa: E501
 
     __AGGREGATION: Literal["mean"] = "mean"
 

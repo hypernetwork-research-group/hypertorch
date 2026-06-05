@@ -22,7 +22,7 @@ class HNHN(nn.Module):
             Defaults to ``False``.
         drop_rate: Dropout ratio. Defaults to ``0.5``.
 
-    """
+    """  # noqa: E501
 
     def __init__(
         self,

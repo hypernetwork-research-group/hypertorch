@@ -46,7 +46,7 @@ class NHP(nn.Module):
         aggregation: Method to aggregate the incidence embeddings into a hyperedge embedding.
             Must be either "maxmin" or "mean". Defaults to "maxmin".
         bias: Whether to include bias terms in the linear layers. Defaults to ``True``.
-    """
+    """  # noqa: E501
 
     def __init__(
         self,
