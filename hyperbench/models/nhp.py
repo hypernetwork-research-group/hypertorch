@@ -15,7 +15,8 @@ class NHP(nn.Module):
         - Reference implementation: [Code](https://github.com/cyixiao/NHP-reproduce/).
 
     NHP scores each candidate hyperedge by building candidate-specific node embeddings.
-    A node that appears in multiple candidate hyperedges can receive a different incidence embedding in each one,
+    A node that appears in multiple candidate hyperedges can receive a different incidence
+    embedding in each one,
     because its update depends on the other nodes in that candidate hyperedge.
 
     Examples:
@@ -39,9 +40,11 @@ class NHP(nn.Module):
     Args:
         in_channels: Number of input features per node.
         hidden_channels: Number of hidden units in the node embeddings.
-        activation_fn: Activation function to use after the linear transformations. Defaults to ``nn.ReLU``.
+        activation_fn: Activation function to use after the linear transformations.
+            Defaults to ``nn.ReLU``.
         activation_fn_kwargs: Keyword arguments for the activation function. Defaults to empty dict.
-        aggregation: Method to aggregate the incidence embeddings into a hyperedge embedding. Must be either "maxmin" or "mean". Defaults to "maxmin".
+        aggregation: Method to aggregate the incidence embeddings into a hyperedge embedding.
+            Must be either "maxmin" or "mean". Defaults to "maxmin".
         bias: Whether to include bias terms in the linear layers. Defaults to ``True``.
     """
 
@@ -103,7 +106,8 @@ class NHP(nn.Module):
         #             shape: (num_incidences, in_channels)
         incidence_node_features = x[node_ids]
 
-        # Do one local message-passing step to sum original node features per hyperedge to get hyperedge features.
+        # Do one local message-passing step to sum original node features per hyperedge
+        # to get hyperedge features.
         # that are aware of all nodes in the candidate hyperedge.
         # Example: hyperedge 0 contains nodes (0, 1)    -> [1, 0] + [0, 1] = [1, 1]
         #          hyperedge 1 contains nodes (1, 2, 3) -> [0, 1] + [1, 1] + [1, 0] = [2, 2]
@@ -149,7 +153,8 @@ class NHP(nn.Module):
         # shape (num_incidences, hidden_channels)
         selfloop_embeddings = self.self_loop(incidence_node_features)
 
-        # incidence_embeddings[0] = activation_fn(selfloop_embeddings[0] + neighbor_aware_hyperedge_embeddings[0])
+        # incidence_embeddings[0] = activation_fn(selfloop_embeddings[0] +
+        # neighbor_aware_hyperedge_embeddings[0])
         # is the embedding of the first incidence (i.e., node 0 in hyperedge 0)
         # after one local message-passing step inside that candidate hyperedge.
         incidence_embeddings = self.activation_fn(
@@ -158,7 +163,8 @@ class NHP(nn.Module):
 
         # Treat each incidence embedding as a separately aggregatable set of features.
         # This is required because incidence embeddings are not global node embeddings:
-        # node 1 may appear twice with two different embeddings as it participates in two different candidate hyperedges.
+        # node 1 may appear twice with two different embeddings as it participates in
+        # two different candidate hyperedges.
         # Example: incidence_ids = [0, 1, 2, 3, 4],
         #          hyperedge_ids = [0, 0, 1, 1, 1]
         #          -> incidence_hyperedge_index = [[0, 1, 2, 3, 4],
@@ -176,10 +182,12 @@ class NHP(nn.Module):
         #                                  [5, 6],  # features 2, node 1 in hyperedge 1
         #                                  [7, 8],  # features 3, node 2 in hyperedge 1
         #                                  [9, 10]] # features 4, node 3 in hyperedge 1
-        #          -> incidence_aggregator pools features (0, 1) for hyperedge 0 and features (2, 3, 4) for hyperedge 1
+        #          -> incidence_aggregator pools features (0, 1) for hyperedge 0 and
+        #                features (2, 3, 4) for hyperedge 1
         #          if aggregation == "maxmin":
-        #          -> hyperedge_embeddings = [[max(1, 3) - min(1, 3), max(2, 4) - min(2, 4)],                # hyperedge 0
-        #                                     [max(5, 7, 9) - min(5, 7, 9), max(6, 8, 10) - min(6, 8, 10)]]  # hyperedge 1
+        #          -> hyperedge_embeddings =
+        #           [[max(1, 3) - min(1, 3), max(2, 4) - min(2, 4)],                # hyperedge 0
+        #           [max(5, 7, 9) - min(5, 7, 9), max(6, 8, 10) - min(6, 8, 10)]]  # hyperedge 1
         #                                    shape: (num_hyperedges, hidden_channels)
         #         if aggregation == "mean":
         #         -> hyperedge_embeddings = [[mean(1, 3), mean(2, 4)],         # hyperedge 0

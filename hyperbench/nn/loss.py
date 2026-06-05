@@ -249,22 +249,22 @@ class VilLainLoss:
         #          where the last dimension enumerates the four ordered label pairs above
         #          # node/hyperedge 0's label probabilities for the four pairs
         #          probs[:, :, idx_i] == [[[p00, p01, p00, p01],
-        #                                   # node/hyperedge 1's label probabilities for the four pairs
-        #                                  [p10, p11, p10, p11],
-        #                                   # node/hyperedge 2's label probabilities for the four pairs
-        #                                  [p20, p21, p20, p21],
-        #                                   # node/hyperedge 3's label probabilities for the four pairs
-        #                                  [p30, p31, p30, p31]],
-        #                                 ...]
+        #                 # node/hyperedge 1's label probabilities for the four pairs
+        #                [p10, p11, p10, p11],
+        #                 # node/hyperedge 2's label probabilities for the four pairs
+        #                [p20, p21, p20, p21],
+        #                 # node/hyperedge 3's label probabilities for the four pairs
+        #                [p30, p31, p30, p31]],
+        #               ...]
         #          # node/hyperedge 0's label probabilities for the four pairs
         #          probs[:, :, idx_j] == [[[p00, p00, p01, p01],
-        #                                   # node/hyperedge 1's label probabilities for the four pairs
-        #                                  [p10, p10, p11, p11],
-        #                                   # node/hyperedge 2's label probabilities for the four pairs
-        #                                  [p20, p20, p21, p21],
-        #                                   # node/hyperedge 3's label probabilities for the four pairs
-        #                                  [p30, p30, p31, p31]],
-        #                                 ...]
+        #                 # node/hyperedge 1's label probabilities for the four pairs
+        #                [p10, p10, p11, p11],
+        #                 # node/hyperedge 2's label probabilities for the four pairs
+        #                [p20, p20, p21, p21],
+        #                 # node/hyperedge 3's label probabilities for the four pairs
+        #                [p30, p30, p31, p31]],
+        #                ..]
         #          F.cosine_similarity(..., dim=0) compares each pair across the 4 items,
         #           producing shape (4, 4)
         #          view(-1, 2, 2) restores one 2x2 similarity matrix per subspace,

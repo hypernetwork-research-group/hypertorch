@@ -15,8 +15,10 @@ class HGNNP(nn.Module):
         in_channels: The number of input channels.
         hidden_channels: The number of hidden channels.
         num_classes: The number of output channels.
-        bias: If set to ``False``, the layer will not learn the bias parameter. Defaults to ``True``.
-        use_batch_normalization: If set to ``True``, layers will use batch normalization. Defaults to ``False``.
+        bias: If set to ``False``, the layer will not learn the bias parameter.
+            Defaults to ``True``.
+        use_batch_normalization: If set to ``True``, layers will use batch normalization.
+            Defaults to ``False``.
         drop_rate: Dropout ratio. Defaults to ``0.5``.
     """
 

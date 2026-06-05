@@ -14,15 +14,20 @@ class GCNConfig(TypedDict):
         out_channels: Dimension of the output node embeddings from the GCN layers.
         hidden_channels: Dimension of the hidden node embeddings in the GCN layers.
         num_layers: Number of GCN layers. Must be at least 1. Defaults to ``2``.
-        drop_rate: Dropout rate applied after each GCN layer (except the last one). Defaults to ``0.0`` (no dropout).
-        activation_fn: Activation function to use after each hidden layer. Defaults to ``nn.ReLU``.
-        activation_fn_kwargs: Keyword arguments for the activation function. Defaults to empty dict.
+        drop_rate: Dropout rate applied after each GCN layer (except the last one).
+            Defaults to ``0.0`` (no dropout).
+        activation_fn: Activation function to use after each hidden layer.
+            Defaults to ``nn.ReLU``.
+        activation_fn_kwargs: Keyword arguments for the activation function.
+            Defaults to empty dict.
         bias: Whether to include a bias term in the GCN layers. Defaults to ``True``.
         improved: Whether to use the improved version of GCNConv. Defaults to ``False``.
         add_self_loops: Whether to add self-loops to the input graph. Defaults to ``True``.
-        normalize: Whether to symmetrically normalize the adjacency matrix in GCNConv. Defaults to ``True``.
+        normalize: Whether to symmetrically normalize the adjacency matrix in GCNConv.
+            Defaults to ``True``.
         cached: Whether to cache the normalized adjacency matrix in GCNConv.
-            Only applicable if the graph structure does not change between epochs. Defaults to ``False``.
+            Only applicable if the graph structure does not change between epochs.
+            Defaults to ``False``.
 
     """
 
@@ -53,7 +58,8 @@ class GCN(nn.Module):
         drop_rate: Dropout rate applied after each GCN layer except the last one.
         bias: Whether to include a bias term in the GCN layers.
         activation_fn: Activation function to use after each hidden layer. Defaults to ``nn.ReLU``.
-        activation_fn_kwargs: Keyword arguments for the activation function. Defaults to empty dict.
+        activation_fn_kwargs: Keyword arguments for the activation function.
+            Defaults to empty dict.
         improved: Whether to use the improved version of ``GCNConv``.
         add_self_loops: Whether to add self-loops to the input graph.
         normalize: Whether to symmetrically normalize the adjacency matrix in ``GCNConv``.
@@ -124,7 +130,8 @@ class GCN(nn.Module):
         hidden_channels = hidden_channels if hidden_channels is not None else 0
         if num_layers > 1 and hidden_channels <= 0:
             raise ValueError(
-                f"Expected positive hidden_channels for GCN with multiple layers, got {hidden_channels}."
+                f"Expected positive hidden_channels for GCN with multiple layers, "
+                f"got {hidden_channels}."
             )
 
         common_kwargs: dict[str, bool] = {
