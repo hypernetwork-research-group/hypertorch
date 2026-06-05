@@ -14,9 +14,11 @@ from hyperbench.utils import (
     empty_nodefeatures,
     is_inductive_setting,
     is_transductive_setting,
+    validate_floating_tensor_dtype,
     validate_is_non_empty,
     validate_is_non_negative,
     validate_is_positive,
+    validate_long_tensor_dtype,
     validate_node_space_setting,
 )
 
@@ -980,6 +982,7 @@ class HData:
         if self.hyperedge_attr is None:
             return
 
+        validate_floating_tensor_dtype("hyperedge_attr", self.hyperedge_attr)
         if self.hyperedge_attr.dim() != 2:
             raise ValueError(
                 f"'hyperedge_attr' must be a 2D tensor, got shape {tuple(self.hyperedge_attr.shape)}."
@@ -991,10 +994,6 @@ class HData:
             )
 
     def __validate_hyperedge_index(self) -> None:
-        if self.hyperedge_index.dtype != torch.long:
-            raise ValueError(
-                f"'hyperedge_index' must have dtype torch.long, got {self.hyperedge_index.dtype}."
-            )
         if self.hyperedge_index.numel() > 0 and bool((self.hyperedge_index < 0).any()):
             raise ValueError("'hyperedge_index' cannot contain negative node or hyperedge IDs.")
 
@@ -1018,6 +1017,8 @@ class HData:
         if self.hyperedge_weights is None:
             return
 
+        validate_floating_tensor_dtype("hyperedge_weights", self.hyperedge_weights)
+
         if self.hyperedge_weights.dim() != 1:
             raise ValueError(
                 f"'hyperedge_weights' must be a 1D tensor, got shape {tuple(self.hyperedge_weights.shape)}."
@@ -1029,6 +1030,7 @@ class HData:
             )
 
     def __validate_global_node_ids(self) -> None:
+        validate_long_tensor_dtype("global_node_ids", self.global_node_ids)
         if self.global_node_ids.dim() != 1:
             raise ValueError(
                 f"'global_node_ids' must be a 1D tensor, got shape {tuple(self.global_node_ids.shape)}."
@@ -1040,6 +1042,7 @@ class HData:
             )
 
     def __validate_labels(self) -> None:
+        validate_floating_tensor_dtype("y", self.y)
         if self.y.dim() != 1:
             raise ValueError(f"'y' must be a 1D tensor, got shape {tuple(self.y.shape)}.")
         if self.y.size(0) != self.num_hyperedges:
@@ -1070,9 +1073,11 @@ class HData:
             raise ValueError("'fill_value' must be provided when node_space_setting='inductive'.")
 
     def __validate_x_and_hyperedge_index_type_and_dim(self) -> None:
+        validate_floating_tensor_dtype("x", self.x)
         if self.x.dim() != 2:
             raise ValueError(f"'x' must be a 2D tensor, got shape {tuple(self.x.shape)}.")
 
+        validate_long_tensor_dtype("hyperedge_index", self.hyperedge_index)
         if self.hyperedge_index.dim() != 2 or self.hyperedge_index.size(0) != 2:
             raise ValueError(
                 f"'hyperedge_index' must have shape (2, num_incidences), got "

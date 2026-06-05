@@ -171,25 +171,38 @@ def test_init_default_y_is_ones():
     hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 1]])
     data = HData(x=x, hyperedge_index=hyperedge_index)
 
+    assert data.y.dtype == torch.float
     assert torch.equal(data.y, torch.ones(2, dtype=torch.float))
+
+
+def test_init_default_global_node_ids_are_long_and_on_x_device():
+    x = torch.randn(3, 2)
+    hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 1]], dtype=torch.long)
+
+    data = HData(x=x, hyperedge_index=hyperedge_index)
+
+    assert data.global_node_ids.dtype == torch.long
+    assert data.global_node_ids.device == x.device
 
 
 def test_init_uses_explicit_y():
     x = torch.randn(3, 2)
     hyperedge_index = torch.tensor([[0, 1], [0, 0]])
-    y = torch.tensor([0.5])
+    y = torch.tensor([0.5], dtype=torch.float64)
     data = HData(x=x, hyperedge_index=hyperedge_index, y=y)
 
+    assert data.y.dtype == y.dtype
     assert torch.equal(data.y, y)
 
 
 def test_init_stores_hyperedge_attr():
     x = torch.randn(3, 2)
     hyperedge_index = torch.tensor([[0, 1], [0, 0]])
-    hyperedge_attr = torch.randn(1, 4)
+    hyperedge_attr = torch.randn(1, 4, dtype=torch.float64)
 
     data = HData(x=x, hyperedge_index=hyperedge_index, hyperedge_attr=hyperedge_attr)
 
+    assert utils.to_non_empty_edgeattr(data.hyperedge_attr).dtype == hyperedge_attr.dtype
     assert torch.equal(utils.to_non_empty_edgeattr(data.hyperedge_attr), hyperedge_attr)
 
 
@@ -208,6 +221,14 @@ def test_init_hyperedge_attr_defaults_to_none():
             {"x": torch.randn(3), "hyperedge_index": torch.tensor([[0, 1], [0, 0]])},
             "'x' must be a 2D tensor, got shape (3,).",
             id="x_not_2d",
+        ),
+        pytest.param(
+            {
+                "x": torch.ones((3, 2), dtype=torch.long),
+                "hyperedge_index": torch.tensor([[0, 1, 2], [0, 0, 0]]),
+            },
+            "'x' must have a floating-point dtype, got torch.int64.",
+            id="x_not_floating",
         ),
         pytest.param(
             {"x": torch.randn(3, 2), "hyperedge_index": torch.tensor([0, 1])},
@@ -283,6 +304,15 @@ def test_init_hyperedge_attr_defaults_to_none():
             {
                 "x": torch.randn(3, 2),
                 "hyperedge_index": torch.tensor([[0, 1, 2], [0, 0, 1]]),
+                "y": torch.tensor([1, 0]),
+            },
+            "'y' must have a floating-point dtype, got torch.int64.",
+            id="y_not_floating",
+        ),
+        pytest.param(
+            {
+                "x": torch.randn(3, 2),
+                "hyperedge_index": torch.tensor([[0, 1, 2], [0, 0, 1]]),
                 "y": torch.tensor([1.0]),
             },
             "'y' must have one entry per hyperedge. Got 1 entries but num_hyperedges=2.",
@@ -296,6 +326,15 @@ def test_init_hyperedge_attr_defaults_to_none():
             },
             "'hyperedge_weights' must be a 1D tensor, got shape (1, 2).",
             id="hyperedge_weights_not_1d",
+        ),
+        pytest.param(
+            {
+                "x": torch.randn(3, 2),
+                "hyperedge_index": torch.tensor([[0, 1, 2], [0, 0, 1]]),
+                "hyperedge_weights": torch.tensor([1, 2]),
+            },
+            "'hyperedge_weights' must have a floating-point dtype, got torch.int64.",
+            id="hyperedge_weights_not_floating",
         ),
         pytest.param(
             {
@@ -317,6 +356,15 @@ def test_init_hyperedge_attr_defaults_to_none():
             },
             "'hyperedge_attr' must be a 2D tensor, got shape (2,).",
             id="hyperedge_attr_not_2d",
+        ),
+        pytest.param(
+            {
+                "x": torch.randn(3, 2),
+                "hyperedge_index": torch.tensor([[0, 1, 2], [0, 0, 1]]),
+                "hyperedge_attr": torch.tensor([[1, 2], [3, 4]]),
+            },
+            "'hyperedge_attr' must have a floating-point dtype, got torch.int64.",
+            id="hyperedge_attr_not_floating",
         ),
         pytest.param(
             {
@@ -385,9 +433,11 @@ def test_empty_returns_empty_hdata():
 
     assert data.x is not None
     assert data.x.shape == (0, 0)
+    assert data.x.dtype == torch.float
 
     assert data.hyperedge_index is not None
     assert data.hyperedge_index.shape == (2, 0)
+    assert data.hyperedge_index.dtype == torch.long
 
     assert data.hyperedge_attr is None
     assert data.hyperedge_weights is None
@@ -397,9 +447,11 @@ def test_empty_returns_empty_hdata():
 
     assert data.global_node_ids is not None
     assert data.global_node_ids.shape == (0,)
+    assert data.global_node_ids.dtype == torch.long
 
     assert data.y is not None
     assert data.y.shape == (0,)
+    assert data.y.dtype == torch.float
 
 
 @pytest.mark.parametrize(
@@ -431,7 +483,9 @@ def test_from_hyperedge_index_counts(hyperedge_index, expected_num_nodes, expect
     assert data.num_nodes == expected_num_nodes
     assert data.num_hyperedges == expected_num_hyperedges
     assert torch.equal(data.hyperedge_index, hyperedge_index)
+    assert data.hyperedge_index.dtype == torch.long
     assert data.x.shape == (0, 0)
+    assert data.x.dtype == torch.float
     assert data.hyperedge_attr is None
 
 
@@ -727,14 +781,15 @@ def test_cat_same_node_space_concatenates_hyperedge_attr():
 
 def test_cat_same_node_space_concatenates_hyperedge_weights():
     x = torch.randn(4, 2)
-    weights1 = torch.tensor([0.25])
-    weights2 = torch.tensor([0.75])
+    weights1 = torch.tensor([0.25], dtype=torch.float64)
+    weights2 = torch.tensor([0.75], dtype=torch.float64)
     hdata1 = HData(x=x, hyperedge_index=torch.tensor([[0, 1], [0, 0]]), hyperedge_weights=weights1)
     hdata2 = HData(x=x, hyperedge_index=torch.tensor([[2, 3], [1, 1]]), hyperedge_weights=weights2)
 
     result = HData.cat_same_node_space([hdata1, hdata2])
 
     assert result.hyperedge_weights is not None
+    assert result.hyperedge_weights.dtype == weights1.dtype
     assert torch.equal(result.hyperedge_weights, torch.cat([weights1, weights2], dim=0))
 
 
@@ -1703,6 +1758,7 @@ def test_shuffle_preserves_num_nodes_and_num_hyperedges(mock_hdata):
 
     assert shuffled_hdata.num_nodes == mock_hdata.num_nodes
     assert shuffled_hdata.num_hyperedges == mock_hdata.num_hyperedges
+    assert shuffled_hdata.hyperedge_index.dtype == torch.long
 
 
 def test_shuffle_preserves_incidence_structure(mock_hdata):

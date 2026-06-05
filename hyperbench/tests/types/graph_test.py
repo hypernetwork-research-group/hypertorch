@@ -375,14 +375,23 @@ def test_smoothing_with_laplacian_preserves_x_device():
     assert smoothed_x.device == x.device
 
 
-def test_smoothing_with_laplacian_preserves_x_dtype():
-    x = torch.tensor([[1.0, 0.0], [0.0, 1.0]], dtype=torch.float32)
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        pytest.param(torch.float32, id="float32"),
+        pytest.param(torch.float64, id="float64"),
+    ],
+)
+def test_smoothing_with_laplacian_preserves_x_dtype(dtype):
+    x = torch.tensor([[1.0, 0.0], [0.0, 1.0]], dtype=dtype)
     edge_index = torch.tensor([[0, 1], [1, 0]])
     gcn_laplacian = EdgeIndex(edge_index).get_sparse_normalized_gcn_laplacian(num_nodes=2)
 
     smoothed_x = Graph.smoothing_with_laplacian_matrix(x, gcn_laplacian)
+    dropped_smoothed_x = Graph.smoothing_with_laplacian_matrix(x, gcn_laplacian, drop_rate=0.5)
 
     assert smoothed_x.dtype == x.dtype
+    assert dropped_smoothed_x.dtype == x.dtype
 
 
 def test_smoothing_with_laplacian_no_nan_or_inf():
@@ -801,6 +810,7 @@ def test_get_sparse_adjacency_matrix_entries(edge_index, num_nodes, expected_ent
     adj_matrix = EdgeIndex(edge_index).get_sparse_adjacency_matrix(num_nodes=num_nodes)
     dense_adj_matrix = adj_matrix.to_dense()
 
+    assert adj_matrix.values().dtype == torch.float
     for row, col, val in expected_entries:
         assert dense_adj_matrix[row, col] == val
 
@@ -815,7 +825,7 @@ def test_get_sparse_adjacency_matrix_preserves_device():
 
 def test_get_sparse_adjacency_matrix_uses_edge_weights_and_sums_duplicates():
     edge_index = torch.tensor([[0, 0], [1, 1]])
-    edge_weights = torch.tensor([0.25, 0.75])
+    edge_weights = torch.tensor([0.25, 0.75], dtype=torch.float64)
 
     adj_matrix = EdgeIndex(
         edge_index=edge_index,
@@ -825,8 +835,9 @@ def test_get_sparse_adjacency_matrix_uses_edge_weights_and_sums_duplicates():
         use_edge_weights=True,
     )
 
-    expected_adj_matrix = torch.tensor([[0.0, 1.0], [0.0, 0.0]])
+    expected_adj_matrix = torch.tensor([[0.0, 1.0], [0.0, 0.0]], dtype=edge_weights.dtype)
 
+    assert adj_matrix.values().dtype == edge_weights.dtype
     assert torch.allclose(adj_matrix.to_dense(), expected_adj_matrix)
 
 
@@ -1178,6 +1189,7 @@ def test_get_sparse_identity_matrix_is_sparse():
     identity_matrix = edge_index.get_sparse_identity_matrix(num_nodes=2)
 
     assert identity_matrix.is_sparse
+    assert identity_matrix.values().dtype == torch.float
 
 
 def test_edge_index_remove_selfloops():

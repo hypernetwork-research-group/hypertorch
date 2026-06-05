@@ -1,3 +1,5 @@
+import torch
+
 from enum import Enum
 from typing import TypeAlias
 from torch.nn import Module
@@ -48,3 +50,13 @@ def maxmin_scatter(
     max_embeddings = scatter(src=src, index=index, dim=dim, dim_size=dim_size, reduce="max")
     min_embeddings = scatter(src=src, index=index, dim=dim, dim_size=dim_size, reduce="min")
     return max_embeddings - min_embeddings
+
+
+def validate_floating_tensor_dtype(name: str, tensor: Tensor) -> None:
+    if not tensor.is_floating_point():
+        raise ValueError(f"{name!r} must have a floating-point dtype, got {tensor.dtype}.")
+
+
+def validate_long_tensor_dtype(name: str, tensor: Tensor) -> None:
+    if tensor.dtype != torch.long:
+        raise ValueError(f"{name!r} must have dtype torch.long, got {tensor.dtype}.")

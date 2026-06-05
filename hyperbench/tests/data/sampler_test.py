@@ -63,6 +63,7 @@ def test_hyperedge_sampling_single_index(mock_four_node_two_hyperedge_hdata):
 
     # hyperedge 0 has nodes 0 and 1
     assert result.hyperedge_index.shape == (2, 2)
+    assert result.hyperedge_index.dtype == torch.long
     assert result.num_hyperedges == 1
     assert torch.equal(result.hyperedge_index[0], torch.tensor([0, 1]))
     assert torch.equal(result.hyperedge_index[1], torch.tensor([0, 0]))
@@ -94,6 +95,7 @@ def test_node_sampling_single_index(mock_four_node_two_hyperedge_hdata):
 
     # Node 0 is in hyperedge 0 (nodes 0, 1), so we get all incidences of hyperedge 0
     assert result.hyperedge_index.shape == (2, 2)
+    assert result.hyperedge_index.dtype == torch.long
     assert result.num_hyperedges == 1
     assert torch.equal(result.hyperedge_index[0], torch.tensor([0, 1]))
     assert torch.equal(result.hyperedge_index[1], torch.tensor([0, 0]))

@@ -130,6 +130,7 @@ def test_random_negative_sampler_with_hyperedge_attr(mock_hdata_with_attr):
     assert result.num_hyperedges == 2
     assert result.x.shape[0] <= mock_hdata_with_attr.x.shape[0]
     assert result.hyperedge_index.shape[0] == 2
+    assert result.hyperedge_index.dtype == torch.long
     assert (
         result.hyperedge_index.shape[1] == 4
     )  # 2 negative hyperedges * 2 nodes per negative hyperedge
@@ -209,6 +210,7 @@ def test_random_negative_sampler_handles_missing_global_node_ids(mock_hdata_no_a
 
     assert result.num_hyperedges == 1
     assert result.global_node_ids is not None
+    assert result.global_node_ids.dtype == torch.long
     assert torch.equal(result.global_node_ids, torch.arange(result.num_nodes))
 
 
@@ -357,6 +359,7 @@ def test_random_negative_sampler_sample_depends_on_return_0based_negatives(
             assert node_id in node_ids
 
     hyperedge_ids = result.hyperedge_index[1]
+    assert result.hyperedge_index.dtype == torch.long
     assert torch.all(hyperedge_ids >= 0)
     assert torch.all(
         hyperedge_ids < mock_hdata_no_attr.num_hyperedges + sampler.num_negative_samples
@@ -499,7 +502,9 @@ def test_clique_negative_sampler_return_0based_negatives_rebases_nodes_and_hyper
 
     assert torch.equal(result.hyperedge_index[0].unique(sorted=True), torch.arange(3))
     assert torch.equal(result.hyperedge_index[1].unique(sorted=True), torch.arange(1))
+    assert result.hyperedge_index.dtype == torch.long
     assert result.global_node_ids is not None
+    assert result.global_node_ids.dtype == torch.long
     assert torch.equal(result.global_node_ids, torch.tensor([2, 3, 4]))
 
 

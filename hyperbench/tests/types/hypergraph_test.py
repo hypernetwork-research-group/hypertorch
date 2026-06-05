@@ -794,6 +794,7 @@ def test_reduce_to_graph_output_has_two_rows(x, hyperedge_index):
     ).reduce_to_edge_index_on_random_direction(x)
 
     assert edge_index.shape[0] == 2
+    assert edge_index.dtype == torch.long
     assert edge_weights is None
 
 
@@ -919,6 +920,8 @@ def test_reduce_to_graph_return_weights_true_without_mediators():
 
     assert torch.equal(edge_index, torch.tensor([[0], [2]]))
     assert edge_weights is not None
+    assert edge_weights.dtype == torch.float
+    assert edge_weights.device == x.device
     # When no mediators are present, weight = 1 / number of nodes in hyperedge = 1/3
     assert torch.allclose(edge_weights, torch.tensor([1 / 3]))
 
@@ -1370,6 +1373,7 @@ def test_get_sparse_symnormalized_node_degree_matrix_is_expected_diagonal():
 
     assert node_degree_matrix.is_sparse
     assert node_degree_matrix.shape == (3, 3)
+    assert node_degree_matrix.indices().dtype == torch.long
     assert torch.allclose(node_degree_matrix.to_dense(), torch.diag(expected_diagonal), atol=1e-6)
 
 
@@ -1497,6 +1501,7 @@ def test_get_sparse_normalized_hyperedge_degree_matrix_is_expected_diagonal():
 
     assert hyperedge_degree_matrix.is_sparse
     assert hyperedge_degree_matrix.shape == (2, 2)
+    assert hyperedge_degree_matrix.indices().dtype == torch.long
     assert torch.allclose(hyperedge_degree_matrix.to_dense(), expected_diagonal, atol=1e-6)
 
 
