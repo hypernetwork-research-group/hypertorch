@@ -148,7 +148,11 @@ class HyperedgeSampler(BaseSampler):
 
         hyperedge_index = hdata.hyperedge_index
 
-        sampled_hyperedge_ids = torch.tensor(ids, device=hyperedge_index.device)
+        sampled_hyperedge_ids = torch.tensor(
+            ids,
+            dtype=hyperedge_index.dtype,
+            device=hyperedge_index.device,
+        )
 
         # Example: sampled_hyperedge_ids = [0, 2],
         #          hyperedge_index = [[0, 0, 1, 2, 3, 4],
@@ -208,7 +212,7 @@ class NodeSampler(BaseSampler):
         node_ids = hyperedge_index[0]
         hyperedge_ids = hyperedge_index[1]
 
-        sampled_node_ids = torch.tensor(ids, device=node_ids.device)
+        sampled_node_ids = torch.tensor(ids, dtype=node_ids.dtype, device=node_ids.device)
 
         # Find incidences where the node is in our sampled nodes
         # Example: node_ids = [0, 0, 1, 2, 3, 4], sampled_node_ids = [0, 3]

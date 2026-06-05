@@ -97,7 +97,9 @@ class HData:
         self.global_node_ids: Tensor = (
             # torch.arange is to handle isolated nodes, as they are already considered
             # when computing self.num_nodes via num_nodes_if_isolated_exist
-            global_node_ids if global_node_ids is not None else torch.arange(self.num_nodes)
+            global_node_ids
+            if global_node_ids is not None
+            else torch.arange(self.num_nodes, dtype=torch.long, device=self.x.device)
         )
 
         self.y = (
@@ -674,7 +676,11 @@ class HData:
         # Example: permutation = [1, 2, 0] means new_id 0 gets old_id 1, new_id 1 gets old_id 2, new_id 2 gets old_id 0
         #          -> inverse_permutation = [2, 0, 1] means old_id 0 gets new_id 2, old_id 1 gets new_id 0, old_id 2 gets new_id 1
         inverse_permutation = torch.empty_like(permutation)
-        inverse_permutation[permutation] = torch.arange(self.num_hyperedges, device=self.device)
+        inverse_permutation[permutation] = torch.arange(
+            self.num_hyperedges,
+            dtype=permutation.dtype,
+            device=permutation.device,
+        )
 
         new_hyperedge_index = self.hyperedge_index.clone()
 
@@ -1031,11 +1037,6 @@ class HData:
             raise ValueError(
                 f"'global_node_ids' must have one entry per node. "
                 f"Got size={self.global_node_ids.size(0)} but num_nodes={self.num_nodes}."
-            )
-
-        if self.global_node_ids.dtype != torch.long:
-            raise ValueError(
-                f"'global_node_ids' must have dtype torch.long, got {self.global_node_ids.dtype}."
             )
 
     def __validate_labels(self) -> None:
