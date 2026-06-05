@@ -246,12 +246,15 @@ def test_load_from_url_raises_when_status_is_not_200():
     [
         pytest.param(
             "https://example.com/algebra.json.zst.zst",
-            r"Unsupported file format for URL 'https://example.com/algebra.json.zst.zst'\. Expected \.json or \.json\.zst",
+            r"Unsupported file format for URL 'https://example.com/algebra.json.zst.zst'\. "
+            r"Expected \.json or \.json\.zst",
             id="json-zst-zst",
         ),
         pytest.param(
             "https://example.com/algebra.zst.json.zst",
-            r"URL 'https://example.com/algebra.zst.json.zst' has an unexpected filename format\. Expected at most one dot in the base filename before the extension \(e\.g\., dataset\.json or dataset\.json\.zst\)\.",
+            r"URL 'https://example.com/algebra.zst.json.zst' has an unexpected filename format\. "
+            r"Expected at most one dot in the base filename before the extension \(e\.g\., "
+            r"dataset\.json or dataset\.json\.zst\)\.",
             id="zst-json-zst",
         ),
     ],
@@ -567,7 +570,8 @@ def test_hifloader_falls_back_to_hf_hub_download_when_github_raw_download_fails(
         pytest.raises(
             ValueError,
             match=re.escape(
-                "Failed to download dataset 'algebra' from GitHub with status code 404 and no SHA provided for Hugging Face Hub fallback."
+                "Failed to download dataset 'algebra' from GitHub with "
+                "status code 404 and no SHA provided for Hugging Face Hub fallback."
             ),
         ),
     ):
@@ -821,7 +825,8 @@ def test_load_by_name_raises_warn_when_fail_to_cleanup_hf_cache(tmp_path, mock_h
         patch(
             "hyperbench.data.hif.shutil.rmtree",
             side_effect=FileNotFoundError(
-                f"[Errno 2] No such file or directory: '{tmp_path / 'hf_cache' / 'datasets--HypernetworkRG--algebra'}'"
+                f"[Errno 2] No such file or directory: '"
+                f"{tmp_path / 'hf_cache' / 'datasets--HypernetworkRG--algebra'}'"
             ),
         ),
         pytest.warns(UserWarning, match="Failed to clean up Hugging Face Hub cache"),
@@ -897,7 +902,8 @@ def test_load_by_name_raises_when_downloaded_hf_content_cannot_be_written(tmp_pa
         pytest.warns(UserWarning, match="GitHub raw download failed"),
         pytest.raises(
             ValueError,
-            match=r"Failed to save downloaded dataset 'algebra' to disk at '.*algebra\.json\.zst': disk full\.",
+            match=r"Failed to save downloaded dataset 'algebra' to disk at '.*algebra\.json\.zst': "
+            r"disk full\.",
         ),
     ):
         HIFLoader.load_by_name("algebra", hf_sha=hf_sha, save_on_disk=True)

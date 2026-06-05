@@ -19,7 +19,8 @@ class _VilLainTrainer:
     Args:
         num_features: Dimensionality of the embeddings to generate.
         num_nodes: Total number of nodes, including isolated nodes missing from ``hyperedge_index``.
-        num_hyperedges: Total number of hyperedges, including empty hyperedges missing from ``hyperedge_index``.
+        num_hyperedges: Total number of hyperedges, including empty hyperedges missing
+            from ``hyperedge_index``.
         labels_per_subspace: Number of virtual labels per VilLain subspace.
         training_steps: Propagation steps used for VilLain self-supervised loss.
         generation_steps: Propagation steps averaged for final embeddings.
@@ -78,7 +79,8 @@ class _VilLainTrainer:
         Return the explicit hyperedge count or infer it from ``hyperedge_index``.
 
         Args:
-            hyperedge_index: Hyperedge index tensor used to infer the hyperedge count when no explicit count was provided.
+            hyperedge_index: Hyperedge index tensor used to infer the hyperedge count when
+                no explicit count was provided.
 
         Returns:
             num_hyperedges: Total number of hyperedges to preserve during VilLain propagation.
@@ -95,10 +97,12 @@ class _VilLainTrainer:
         Return the explicit node count or infer it from ``hyperedge_index``.
 
         Args:
-            hyperedge_index: Hyperedge index tensor used to infer the node count when no explicit count was provided.
+            hyperedge_index: Hyperedge index tensor used to infer the node count when no explicit
+                count was provided.
 
         Returns:
-            num_nodes: Total number of nodes to preserve during VilLain training and embedding generation.
+            num_nodes: Total number of nodes to preserve during VilLain training
+                and embedding generation.
 
         """
         return HyperedgeIndex(hyperedge_index).num_nodes_if_isolated_exist(self.num_nodes)
@@ -116,7 +120,8 @@ class _VilLainTrainer:
         """
         # We need it here to avoid circular imports,
         # this is internal logic anyway and not part of the public API of this module.
-        # This is changing when we refactor as per https://github.com/hypernetwork-research-group/hyperbench/issues/213
+        # This is changing when we refactor as per
+        # https://github.com/hypernetwork-research-group/hyperbench/issues/213
         from hyperbench.models.villain import VilLain
 
         model = VilLain(

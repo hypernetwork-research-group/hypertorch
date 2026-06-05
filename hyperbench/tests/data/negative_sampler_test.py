@@ -557,7 +557,8 @@ def test_clique_negative_sampler_fails_when_positive_clique_is_only_candidate():
 
     with pytest.raises(
         ValueError,
-        match="Asked to create 1 clique negative samples with 3 nodes each, but only 0 are available",
+        match="Asked to create 1 clique negative samples with 3 nodes each, "
+        "but only 0 are available",
     ):
         sampler.sample(hdata)
 

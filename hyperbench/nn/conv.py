@@ -13,12 +13,17 @@ class HyperGCNConv(nn.Module):
     Args:
         in_channels: The number of input channels.
         out_channels: The number of output channels.
-        bias: If set to ``False``, the layer will not learn the bias parameter. Defaults to ``True``.
-        use_batch_normalization: If set to ``True``, the layer will use batch normalization. Defaults to ``False``.
+        bias: If set to ``False``, the layer will not learn the bias parameter.
+            Defaults to ``True``.
+        use_batch_normalization: If set to ``True``, the layer will use batch normalization.
+            Defaults to ``False``.
         drop_rate: If set to a positive number, the layer will use dropout. Defaults to ``0.5``.
-        use_mediator: Whether to use mediator to transform the hyperedges to edges in the graph. Defaults to ``False``.
-        is_last: If set to ``True``, the layer will not apply the final activation and dropout functions. Defaults to ``False``.
-        seed: Optional random seed for the random reduction of hyperedges to edges. Defaults to ``None``.
+        use_mediator: Whether to use mediator to transform the hyperedges to edges in the graph.
+            Defaults to ``False``.
+        is_last: If set to ``True``, the layer will not apply the final activation and
+            dropout functions. Defaults to ``False``.
+        seed: Optional random seed for the random reduction of hyperedges to edges.
+            Defaults to ``None``.
     """
 
     def __init__(
@@ -40,7 +45,8 @@ class HyperGCNConv(nn.Module):
         self.dropout = nn.Dropout(drop_rate)
 
         # θ is the learnable weight matrix (as in the HyperGCN paper),
-        # it projects node features from in_channels to out_channels and learns how to mix feature channels
+        # it projects node features from in_channels to out_channels and
+        # learns how to mix feature channels
         self.theta = nn.Linear(in_channels, out_channels, bias=bias)
 
         self.seed = seed
@@ -56,9 +62,12 @@ class HyperGCNConv(nn.Module):
 
         Args:
             x: Input node feature matrix. Size ``(num_nodes, in_channels)``.
-            hyperedge_index: Hyperedge indices representing the hypergraph structure. Size ``(2, num_hyperedges)``.
-            gcn_laplacian_matrix: Optional precomputed normalized GCN Laplacian matrix. Size ``(num_nodes, num_nodes)``. Defaults to ``None``.
-                If provided, it will be used directly for smoothing, so we can skip computing it from edge_index.
+            hyperedge_index: Hyperedge indices representing the hypergraph structure.
+                Size ``(2, num_hyperedges)``.
+            gcn_laplacian_matrix: Optional precomputed normalized GCN Laplacian matrix.
+                Size ``(num_nodes, num_nodes)``. Defaults to ``None``.
+                If provided, it will be used directly for smoothing, so we can skip computing
+                it from edge_index.
 
         Returns:
             x: The output node feature matrix. Size ``(num_nodes, out_channels)``.
@@ -100,9 +109,11 @@ class HGNNConv(nn.Module):
         - The HGNNConv layer proposed in [Hypergraph Neural Networks](https://arxiv.org/pdf/1809.09401) paper (AAAI 2019).
         - Reference implementation: [Code](https://deephypergraph.readthedocs.io/en/latest/_modules/dhg/nn/convs/hypergraphs/hgnn_conv.html#HGNNConv).
 
-    Each layer performs: ``X' = sigma(L_HGNN X Theta)`` where ``L_HGNN = D_n^{-1/2} H D_e^{-1} H^T D_n^{-1/2}``
-    is the hypergraph Laplacian computed from the incidence matrix H. This smooths node features through
-    the hypergraph structure (nodes -> hyperedges -> nodes) without reducing to a pairwise graph.
+    Each layer performs: ``X' = sigma(L_HGNN X Theta)``
+    where ``L_HGNN = D_n^{-1/2} H D_e^{-1} H^T D_n^{-1/2}``
+    is the hypergraph Laplacian computed from the incidence matrix H.
+    This smooths node features through the hypergraph structure (nodes -> hyperedges -> nodes)
+    without reducing to a pairwise graph.
 
     Unlike ``HyperGCNConv``, which uses a GCN Laplacian on a graph reduced from the hypergraph,
     ``HGNNConv`` operates entirely in hypergraph space and preserves all higher-order relationships.
@@ -110,10 +121,13 @@ class HGNNConv(nn.Module):
     Args:
         in_channels: The number of input channels.
         out_channels: The number of output channels.
-        bias: If set to ``False``, the layer will not learn the bias parameter. Defaults to ``True``.
-        use_batch_normalization: If set to ``True``, the layer will use batch normalization. Defaults to ``False``.
+        bias: If set to ``False``, the layer will not learn the bias parameter.
+            Defaults to ``True``.
+        use_batch_normalization: If set to ``True``, the layer will use batch normalization.
+            Defaults to ``False``.
         drop_rate: If set to a positive number, the layer will use dropout. Defaults to ``0.5``.
-        is_last: If set to ``True``, the layer will not apply the final activation and dropout functions. Defaults to ``False``.
+        is_last: If set to ``True``, the layer will not apply the final activation and
+            dropout functions. Defaults to ``False``.
     """
 
     def __init__(
@@ -183,10 +197,13 @@ class HGNNPConv(nn.Module):
     Args:
         in_channels: The number of input channels.
         out_channels: The number of output channels.
-        bias: If set to ``False``, the layer will not learn the bias parameter. Defaults to ``True``.
-        use_batch_normalization: If set to ``True``, the layer will use batch normalization. Defaults to ``False``.
+        bias: If set to ``False``, the layer will not learn the bias parameter.
+            Defaults to ``True``.
+        use_batch_normalization: If set to ``True``, the layer will use batch normalization.
+            Defaults to ``False``.
         drop_rate: If set to a positive number, the layer will use dropout. Defaults to ``0.5``.
-        is_last: If set to ``True``, the layer will not apply the final activation and dropout functions. Defaults to ``False``.
+        is_last: If set to ``True``, the layer will not apply the final activation and dropout
+            functions. Defaults to ``False``.
     """
 
     def __init__(
@@ -244,10 +261,13 @@ class HNHNConv(nn.Module):
     Args:
         in_channels: The number of input channels.
         out_channels: The number of output channels.
-        bias: If set to ``False``, the layer will not learn the bias parameter. Defaults to ``True``.
-        use_batch_normalization: If set to ``True``, the layer will use batch normalization. Defaults to ``False``.
+        bias: If set to ``False``, the layer will not learn the bias parameter.
+            Defaults to ``True``.
+        use_batch_normalization: If set to ``True``, the layer will use batch normalization.
+            Defaults to ``False``.
         drop_rate: If set to a positive number, the layer will use dropout. Defaults to ``0.5``.
-        is_last: If set to ``True``, the layer will not apply the final activation and dropout functions. Defaults to ``False``.
+        is_last: If set to ``True``, the layer will not apply the final activation and
+            dropout functions. Defaults to ``False``.
     """
 
     __AGGREGATION: Literal["mean"] = "mean"

@@ -27,7 +27,7 @@ setup-tensorboard:
 	@echo '=== Setup TensorBoard ==='
 	$(UV) pip install -e ".[tensorboard]"
 
-check: lint format typecheck
+check: lint format typecheck docstring-check
 
 format:
 	@echo '=== Formatting ==='
@@ -72,8 +72,6 @@ i-test:
 si-test:
 	@echo '=== Running single integration test for $(T) ==='
 	$(UV) run $(PYTEST) -n auto -s $(PROJECT_NAME)/integration_tests/$(T) -m "integration"
-
-
 
 # If the first argument is run...
 ifeq ($(firstword $(MAKECMDGOALS)),run)

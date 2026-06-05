@@ -138,7 +138,8 @@ def test_ensure_split_covers_all_nodes_raises_when_a_node_is_missing_from_hyperg
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "Cannot create a transductive first split covering all nodes because these node ids do not appear in any hyperedge: [3]."
+            "Cannot create a transductive first split covering all nodes because these "
+            "node ids do not appear in any hyperedge: [3]."
         ),
     ):
         splitter.ensure_split_covers_all_nodes(
@@ -155,7 +156,8 @@ def test_validate_splits_have_hyperedges_raises_when_a_split_is_empty(
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "Cannot create dataset splits because splits [1] contain no hyperedges. Final ratios: [0.6, 0.0, 0.4]."
+            "Cannot create dataset splits because splits [1] contain no hyperedges. "
+            "Final ratios: [0.6, 0.0, 0.4]."
         ),
     ):
         splitter = HyperedgeIDSplitter(mock_hdata_five_hyperedges)

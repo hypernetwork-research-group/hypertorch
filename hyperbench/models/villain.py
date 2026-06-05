@@ -11,7 +11,8 @@ from hyperbench.types import HyperedgeIndex
 class VilLain(nn.Module):
     """
     VilLain learns node-specific virtual-label logits instead of consuming existing node features.
-    The model is transductive: rows in ``node_embedding`` correspond to the fixed global node space used during training.
+    The model is transductive: rows in ``node_embedding`` correspond to the fixed global node space
+    used during training.
 
     References:
         - Proposed in [VilLain: Self-Supervised Learning on Homogeneous Hypergraphs without Features via Virtual Label Propagation](https://dl.acm.org/doi/pdf/10.1145/3589334.3645454) paper (WWW 2024).
@@ -84,14 +85,19 @@ class VilLain(nn.Module):
         """
         Compute the self-supervised VilLain objective.
 
-        Use ``hyperedge_embeddings`` or ``node_embeddings`` to generate final embeddings for inference after training.
+        Use ``hyperedge_embeddings`` or ``node_embeddings`` to generate final embeddings for
+        inference after training.
 
         Args:
             hyperedge_index: Incidence tensor of shape ``(2, num_incidences)``.
-            node_ids: Optional global node ids matching local node ids the embedding table in the transductive setting.
-                Use this when a batch has rebased local node ids but the learned logits live in the full transductive node table.
-                This is needed as the model keeps an internal embedding table with a row for every node in the global node space.
-            num_hyperedges: Optional explicit hyperedge count used during node-to-hyperedge pooling to preserve empty hyperedges.
+            node_ids: Optional global node ids matching local node ids the embedding table in the
+                transductive setting.
+                Use this when a batch has rebased local node ids but the learned logits live in the
+                full transductive node table.
+                This is needed as the model keeps an internal embedding table with a row for every
+                node in the global node space.
+            num_hyperedges: Optional explicit hyperedge count used during node-to-hyperedge pooling
+                to preserve empty hyperedges.
                 If not provided, the hyperedge count is inferred from ``hyperedge_index``.
 
         Returns:
@@ -115,14 +121,18 @@ class VilLain(nn.Module):
 
         Args:
             hyperedge_index: Incidence tensor of shape ``(2, num_incidences)``.
-            node_ids: Optional global node ids matching local node ids the embedding table in the transductive setting.
-                Use this when a batch has rebased local node ids but the learned logits live in the full transductive node table.
-                This is needed as the model keeps an internal embedding table with a row for every node in the global node space.
-            num_hyperedges: Optional explicit hyperedge count used during node-to-hyperedge pooling to preserve empty hyperedges.
+            node_ids: Optional global node ids matching local node ids the embedding table in the
+                transductive setting. Use this when a batch has rebased local node ids but the
+                learned logits live in the full transductive node table.
+                This is needed as the model keeps an internal embedding table with a row for every
+                node in the global node space.
+            num_hyperedges: Optional explicit hyperedge count used during node-to-hyperedge pooling
+                to preserve empty hyperedges.
                 If not provided, the hyperedge count is inferred from ``hyperedge_index``.
 
         Returns:
-            loss: A tuple ``(total_loss, loss_parts)`` where ``loss_parts`` contains ``local_loss`` and ``global_loss`` scalar tensors.
+            loss: A tuple ``(total_loss, loss_parts)`` where ``loss_parts`` contains ``local_loss``
+                and ``global_loss`` scalar tensors.
 
         """
         node_embeddings = self.__get_initial_virtual_node_features(node_ids=node_ids)
@@ -155,16 +165,19 @@ class VilLain(nn.Module):
         """
         Generate hyperedge embeddings by averaging propagated hyperedge states.
 
-        Every generation step computes hyperedge states from the current node states, then updates node states for
-        the next step.
+        Every generation step computes hyperedge states from the current node states, then updates
+        node states for the next step.
 
         Args:
             hyperedge_index: Incidence tensor of shape ``(2, num_incidences)``.
-            node_ids: Optional global node ids matching local node ids the embedding table in the transductive setting.
-                Use this when a batch has rebased local node ids but the learned logits live in the full transductive node table.
-                This is needed as the model keeps an internal embedding table with a row for every node in the global node space.
-            num_hyperedges: Optional explicit hyperedge count used during node-to-hyperedge pooling to preserve empty hyperedges.
-                If not provided, the hyperedge count is inferred from ``hyperedge_index``.
+            node_ids: Optional global node ids matching local node ids the embedding table in the
+                transductive setting. Use this when a batch has rebased local node ids but the
+                learned logits live in the full transductive node table.
+                This is needed as the model keeps an internal embedding table with a row for every
+                node in the global node space.
+            num_hyperedges: Optional explicit hyperedge count used during node-to-hyperedge pooling
+                to preserve empty hyperedges. If not provided, the hyperedge count is inferred from
+                ``hyperedge_index``.
 
         Returns:
             hyperedge_embeddings: Hyperedge embeddings of shape ``(num_hyperedges, embedding_dim)``.
@@ -188,11 +201,14 @@ class VilLain(nn.Module):
 
         Args:
             hyperedge_index: Incidence tensor of shape ``(2, num_incidences)``.
-            node_ids: Optional global node ids matching local node ids the embedding table in the transductive setting.
-                Use this when a batch has rebased local node ids but the learned logits live in the full transductive node table.
-                This is needed as the model keeps an internal embedding table with a row for every node in the global node space.
-            num_hyperedges: Optional explicit hyperedge count used during node-to-hyperedge pooling to preserve empty hyperedges.
-                If not provided, the hyperedge count is inferred from ``hyperedge_index``.
+            node_ids: Optional global node ids matching local node ids the embedding table in the
+                transductive setting. Use this when a batch has rebased local node ids but the
+                learned logits live in the full transductive node table.
+                This is needed as the model keeps an internal embedding table with a row for every
+                node in the global node space.
+            num_hyperedges: Optional explicit hyperedge count used during node-to-hyperedge pooling
+                to preserve empty hyperedges. If not provided, the hyperedge count is inferred from
+                ``hyperedge_index``.
 
         Returns:
             node_embeddings: Node embeddings of shape ``(num_local_nodes, embedding_dim)``.
@@ -223,8 +239,10 @@ class VilLain(nn.Module):
 
         Args:
             hyperedge_index: Incidence tensor of shape ``(2, num_incidences)``.
-            node_ids: Optional global node ids matching local node ids the embedding table in the transductive setting.
-            num_hyperedges: Optional explicit hyperedge count to preserve empty hyperedges during propagation.
+            node_ids: Optional global node ids matching local node ids the embedding table in the
+                transductive setting.
+            num_hyperedges: Optional explicit hyperedge count to preserve empty hyperedges
+                during propagation.
             mode: Selects whether to accumulate propagated node states or hyperedge states.
 
         Returns:
@@ -249,16 +267,20 @@ class VilLain(nn.Module):
                 )
 
                 # Suppose generation_steps = 100.
-                # Average 100 propagated embeddings for each node/hyperedge to get more stable final embeddings.
-                # Sum here and divide by generation_steps later to avoid storing all 100 embeddings in memory at once.
+                # Average 100 propagated embeddings for each node/hyperedge to get more
+                # stable final embeddings.
+                # Sum here and divide by generation_steps later to avoid storing all 100 embeddings
+                # in memory at once.
                 final_embeddings = final_embeddings + (
                     x if mode == "node" else hyperedge_embeddings
                 )
             final_embeddings = final_embeddings / self.generation_steps
 
-            # Example: final_embeddings.shape = (num_nodes/num_hyperedges, 8) with raw_embedding_dim=8
+            # Example: final_embeddings.shape = (num_nodes/num_hyperedges, 8)
+            # with raw_embedding_dim=8
             #          -> returned shape = (num_nodes/num_hyperedges, 4) with embedding_dim=4
-            #             as it takes the first 4 channels of the raw embedding as the final embedding.
+            #             as it takes the first 4 channels of the raw embedding
+            #               as the final embedding.
             return final_embeddings[:, : self.embedding_dim]
 
     def __get_initial_virtual_node_features(self, node_ids: Tensor | None = None) -> Tensor:
@@ -266,7 +288,8 @@ class VilLain(nn.Module):
         Convert trainable node logits into flattened virtual-label probabilities.
 
         Args:
-            node_ids: Optional global node ids matching local node ids the embedding table in the transductive setting.
+            node_ids: Optional global node ids matching local node ids the embedding table
+                in the transductive setting.
                 If ``None``, all node rows are used.
 
         Returns:
@@ -313,7 +336,8 @@ class VilLain(nn.Module):
             num_hyperedges: Total number of hyperedges.
 
         Returns:
-            embeddings: The updated node and hyperedge embeddings after one round of message passing.
+            embeddings: The updated node and hyperedge embeddings after one round
+                of message passing.
 
         """
         hyperedge_embeddings = HyperedgeAggregator(

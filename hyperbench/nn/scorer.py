@@ -74,10 +74,12 @@ class CommonNeighborsScorer(NeighborScorer):
 
         Args:
             hyperedge_index: Tensor of shape ``(2, |E|)``.
-            node_to_neighbors: Optional precomputed node to neighborhood mapping. If None, it will be computed from ``hyperedge_index``.
+            node_to_neighbors: Optional precomputed node to neighborhood mapping. If None, it will
+                be computed from ``hyperedge_index``.
 
         Returns:
-            scores: A 1-D tensor of shape ``(num_hyperedges,)`` with the CN score for each hyperedge.
+            scores: A 1-D tensor of shape ``(num_hyperedges,)`` with the CN score
+                or each hyperedge.
 
         """
         if node_to_neighbors is None:
