@@ -30,6 +30,14 @@ repos:
   - id: pretty-format-yaml
     args: [--autofix, --indent, '2', --preserve-quotes]
 
+- repo: local
+  hooks:
+  - id: branch-naming
+    name: Enforce branch naming convention
+    language: system
+    entry: bash -c 'scripts/check_branch_naming.sh'
+    require_serial: true
+
 - repo: https://github.com/compilerla/conventional-pre-commit
   rev: v3.4.0
   hooks:
