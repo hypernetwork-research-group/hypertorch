@@ -253,7 +253,8 @@ def test_finalize_writes_comprehensive_overall_table_trail(tmp_path, mock_option
         \multicolumn{3}{c}{\textbf{Test Results}} \\
         \midrule
         Model & test\_auc & test\_loss \\
-        model\_a & \cellcolor[HTML]{59FF59}\underline{0.9123} & \cellcolor[HTML]{59FF59}\underline{0.1230} \\
+        model\_a & \cellcolor[HTML]{59FF59}\underline{0.9123} & """
+        r"""\cellcolor[HTML]{59FF59}\underline{0.1230} \\
         model\_b & \cellcolor[HTML]{FF5959}0.8821 & - \\
         \hline
         \addlinespace[3pt]
@@ -309,7 +310,8 @@ def test_finalize_writes_comprehensive_test_table_trail(tmp_path, mock_option_co
         \multicolumn{3}{c}{\textbf{Test Results}} \\
         \midrule
         Model & test\_auc & test\_loss \\
-        model\_a & \cellcolor[HTML]{59FF59}\underline{0.9123} & \cellcolor[HTML]{59FF59}\underline{0.1234} \\
+        model\_a & \cellcolor[HTML]{59FF59}\underline{0.9123} & """
+        r"""\cellcolor[HTML]{59FF59}\underline{0.1234} \\
         model\_b & \cellcolor[HTML]{FF5959}0.8821 & - \\
         \hline
         \end{tabular}

@@ -71,14 +71,16 @@ def test_maxmin_scatter_respects_explicit_dim_size():
     # Example:
     # - index[1] == 0 means src[1] = [3, 1] contributes to output row 0.
     # - index[2] == 2 means src[2] = [-2, 7] contributes to output row 2.
-    # Missing group ids indicate that those groups receive no source rows, so group 1 and group 3 are empty.
+    # Missing group ids indicate that those groups receive no source rows, so group 1
+    # and group 3 are empty.
     index = torch.tensor([0, 0, 2])
 
     # dim_size=4 forces four output rows even though max(index) would only imply three rows.
     result = maxmin_scatter(src=src, index=index, dim=0, dim_size=4)
 
     # Group 0 receives [1, 4] and [3, 1], so its range is [2, 3].
-    # Group 2 receives only row [-2, 7], so max(-2) - min(-2) and max(7) - min(7) are both 0 and the range is [0, 0].
+    # Group 2 receives only row [-2, 7], so max(-2) - min(-2) and max(7) - min(7) are both 0 and
+    # the range is [0, 0].
     # Empty groups 1 and 3 follow torch_geometric.scatter's neutral empty output,
     # so max and min both become [0, 0], and max - min is also [0, 0].
     expected = torch.tensor(

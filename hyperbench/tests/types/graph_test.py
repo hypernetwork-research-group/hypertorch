@@ -232,7 +232,8 @@ def test_to_edge_index_is_contiguous(mock_single_edge_graph):
 
     Examples:
         If edges = [[0, 1]], then edge_index = [[0], [1]] should be contiguous.
-        If edges = [[0, 1], [1, 2], [2, 3]], then edge_index = [[0, 1, 2], [1, 2, 3]] should be contiguous.
+        If edges = [[0, 1], [1, 2], [2, 3]], then edge_index = [[0, 1, 2], [1, 2, 3]]
+            should be contiguous.
     """
     edge_index = mock_single_edge_graph.to_edge_index()
     assert edge_index.is_contiguous()
@@ -1133,7 +1134,8 @@ def test_get_sparse_normalized_laplacian_has_features_for_isolated_nodes():
     # isolated nodes are not in the edge_index
     edge_index = torch.tensor([[0], [1]])
 
-    # we want all nodes in the gcn laplacian, so we specify num_nodes=4 to include nodes 2 and 3 which are isolated
+    # we want all nodes in the gcn laplacian, so we specify num_nodes=4 to include nodes 2 and 3
+    # which are isolated
     gcn_laplacian = EdgeIndex(edge_index).get_sparse_normalized_gcn_laplacian(num_nodes=4)
     dense_gcn_laplacian = gcn_laplacian.to_dense()
 

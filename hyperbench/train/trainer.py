@@ -28,18 +28,21 @@ class MultiModelTrainer:
     A trainer class to handle training multiple models with individual trainers.
 
     Args:
-        model_configs: A list of ModelConfig objects, each containing a model and its associated trainer (if any).
+        model_configs: A list of ModelConfig objects, each containing a model and its
+            associated trainer (if any).
 
         experiment_name: Name for this experiment run's log directory. When ``None`` (default),
-            auto-increments as ``experiment_0``, ``experiment_1``, etc. under the log root directory.
-            Only used when ``logger`` is not provided.
+            auto-increments as ``experiment_0``, ``experiment_1``, etc. under
+            the log root directory. Only used when ``logger`` is not provided.
 
-        accelerator: Supports passing different accelerator types ("cpu", "gpu", "tpu", "hpu", "mps", "auto")
+        accelerator: Supports passing different accelerator types
+            ("cpu", "gpu", "tpu", "hpu", "mps", "auto")
             as well as custom accelerator instances.
 
-        devices: The devices to use. Can be set to a positive number (int or str), a sequence of device indices
-            (list or str), the value ``-1`` to indicate all available devices should be used, or ``"auto"`` for
-            automatic selection based on the chosen accelerator. Defaults to ``"auto"``.
+        devices: The devices to use. Can be set to a positive number (int or str), a
+            sequence of device indices (list or str), the value ``-1`` to indicate all available
+            devices should be used, or ``"auto"`` for automatic selection based on the chosen
+            accelerator. Defaults to ``"auto"``.
 
         strategy: Supports different training strategies with aliases as well custom strategies.
             Defaults to ``"auto"``.
@@ -47,8 +50,9 @@ class MultiModelTrainer:
         num_nodes: Number of GPU nodes for distributed training.
             Defaults to ``1``.
 
-        precision: Double precision (64, '64' or '64-true'), full precision (32, '32' or '32-true'),
-            16bit mixed precision (16, '16', '16-mixed') or bfloat16 mixed precision ('bf16', 'bf16-mixed').
+        precision: Double precision (64, '64' or '64-true'),
+            full precision (32, '32' or '32-true'), 16bit mixed precision (16, '16', '16-mixed') or
+            bfloat16 mixed precision ('bf16', 'bf16-mixed').
             Can be used on CPU, GPU, TPUs, or HPUs.
             Defaults to ``'32-true'``.
 
@@ -58,27 +62,28 @@ class MultiModelTrainer:
 
         min_epochs: Force training for at least these many epochs. Disabled by default (None).
 
-        max_steps: Stop training after this number of steps. Disabled by default (-1). If ``max_steps = -1``
-            and ``max_epochs = None``, will default to ``max_epochs = 1000``. To enable infinite training, set
-            ``max_epochs`` to ``-1``.
+        max_steps: Stop training after this number of steps. Disabled by default (-1).
+            If ``max_steps = -1`` and ``max_epochs = None``, will default to ``max_epochs = 1000``.
+            To enable infinite training, set ``max_epochs`` to ``-1``.
 
-        min_steps: Force training for at least these number of steps. Disabled by default (``None``).
+        min_steps: Force training for at least these number of steps.
+            Disabled by default (``None``).
 
-        check_val_every_n_epoch: Perform a validation loop after every `N` training epochs. If ``None``,
-            validation will be done solely based on the number of training batches, requiring ``val_check_interval``
-            to be an integer value. When used together with a time-based ``val_check_interval`` and
-            ``check_val_every_n_epoch`` > 1, validation is aligned to epoch multiples: if the interval elapses
-            before the next multiple-N epoch, validation runs at the start of that epoch (after the first batch)
-            and the timer resets; if it elapses during a multiple-N epoch, validation runs after the current batch.
-            For ``None`` or ``1`` cases, the time-based behavior of ``val_check_interval`` applies without
-            additional alignment.
-            Defaults to ``1``.
+        check_val_every_n_epoch: Perform a validation loop after every `N` training epochs.
+            If ``None``, validation will be done solely based on the number of training batches,
+            requiring ``val_check_interval`` to be an integer value. When used together with a
+            time-based ``val_check_interval`` and ``check_val_every_n_epoch`` > 1, validation is
+            aligned to epoch multiples: if the interval elapses before the next multiple-N epoch,
+            validation runs at the start of that epoch (after the first batch) and the timer resets;
+            if it elapses during a multiple-N epoch, validation runs after the current batch.
+            For ``None`` or ``1`` cases, the time-based behavior of ``val_check_interval``
+            applies without additional alignment. Defaults to ``1``.
 
-        logger: Logger (or iterable collection of loggers) for experiment tracking. A ``True`` value uses
-            the default ``TensorBoardLogger`` if it is installed, otherwise ``CSVLogger``.
-            ``False`` will disable logging. If multiple loggers are provided, local files
-            (checkpoints, profiler traces, etc.) are saved in the ``log_dir`` of the first logger.
-            Defaults to ``True``.
+        logger: Logger (or iterable collection of loggers) for experiment tracking. A ``True``
+            value uses the default ``TensorBoardLogger`` if it is installed,
+            otherwise ``CSVLogger``. ``False`` will disable logging. If multiple loggers are
+            provided, local files (checkpoints, profiler traces, etc.) are saved in the ``log_dir``
+            of the first logger. Defaults to ``True``.
 
         default_root_dir: Default path for logs and weights when no logger/ckpt_callback passed.
             Defaults to ``os.getcwd()``.
@@ -98,8 +103,8 @@ class MultiModelTrainer:
             Defaults to ``False``.
 
         enable_checkpointing: If ``True``, enable checkpointing.
-            It will configure a default ModelCheckpoint callback if there is no user-defined ModelCheckpoint in
-            :paramref:`~hyperbench.train.MultiModelTrainer.callbacks`.
+            It will configure a default ModelCheckpoint callback if there is no user-defined
+                ModelCheckpoint in :paramref:`~hyperbench.train.MultiModelTrainer.callbacks`.
             Defaults to ``True``.
 
         enable_progress_bar: Whether to enable the progress bar by default.
@@ -113,10 +118,11 @@ class MultiModelTrainer:
 
         auto_start_tensorboard: When ``True`` and tensorboard is installed, automatically starts
             a TensorBoard server pointing at the experiment log directory.
-            Using this option requires that TensorBoard is installed in the environment and moves control
-            of the TensorBoard server lifecycle to the trainer, which will automatically terminate the server
-            when the trainer is finalized (e.g., at the end of a `with` block or when the object is garbage collected).
-            Enable `auto_wait` to keep the server alive after training completes so you can inspect results before the trainer is finalized.
+            Using this option requires that TensorBoard is installed in the environment and moves
+            control of the TensorBoard server lifecycle to the trainer, which will automatically
+            terminate the server when the trainer is finalized (e.g., at the end of a `with` block
+            or when the object is garbage collected). Enable `auto_wait` to keep the server alive
+            after training completes so you can inspect results before the trainer is finalized.
             Defaults to ``False``.
 
         tensorboard_port: Port for the auto-launched TensorBoard server.
@@ -246,7 +252,8 @@ class MultiModelTrainer:
             if not config.is_trainable:
                 if verbose:
                     print(
-                        f"Skipping training for model {config.full_model_name()} [{i + 1}/{len(self.model_configs)} models] (is_trainable=False)"
+                        f"Skipping training for model {config.full_model_name()} "
+                        f"[{i + 1}/{len(self.model_configs)} models] (is_trainable=False)"
                     )
                 continue
 
@@ -305,7 +312,8 @@ class MultiModelTrainer:
                 verbose=verbose_loop,
             )
 
-            # In Lightning, test() returns a list of dicts, one per dataloader, but we use a single dataloader
+            # In Lightning, test() returns a list of dicts, one per dataloader,
+            # but we use a single dataloader
             test_results[config.full_model_name()] = (
                 trainer_test_results[0] if len(trainer_test_results) > 0 else {}
             )
@@ -345,7 +353,8 @@ class MultiModelTrainer:
             else:
                 warnings.warn(
                     "TensorBoard is not available. "
-                    "Install it with `pip install hyperbench[tensorboard]` or `pip install tensorboard`"
+                    "Install it with `pip install hyperbench[tensorboard]` or "
+                    "`pip install tensorboard`"
                     "to enable auto-start.",
                     category=UserWarning,
                     stacklevel=2,
