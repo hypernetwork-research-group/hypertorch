@@ -46,8 +46,8 @@ class Node2VecGCNHlpModule(HlpModule):
     A LightningModule for Node2Vec-based Hyperedge Link Prediction with GCN encoder.
 
     Supports two modes:
-    - ``precomputed``: use node embeddings already stored in ``batch.x``.
-    - ``joint``: train a Node2Vec encoder jointly with the GCN layers and hyperedge decoder.
+        - ``precomputed``: use node embeddings already stored in ``batch.x``.
+        - ``joint``: train a Node2Vec encoder jointly with the GCN layers and hyperedge decoder.
 
     Args:
         encoder_config: Configuration for the Node2Vec encoder and GCN layers.

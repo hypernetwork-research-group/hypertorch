@@ -7,9 +7,11 @@ class HyperGCN(nn.Module):
     """
     HyperGCN approximates each hyperedge of the hypergraph by a set of pairwise edges connecting the vertices of the hyperedge
     and treats the learning problem as a graph learning problem on the approximation.
-    - Proposed in `HyperGCN: A New Method of Training Graph Convolutional Networks on Hypergraphs <https://dl.acm.org/doi/10.5555/3454287.3454422>`_ paper (NeurIPS 2019).
-    - Code of the paper: `source <https://github.com/malllabiisc/HyperGCN>`_.
-    - Reference implementation: `source <https://deephypergraph.readthedocs.io/en/latest/_modules/dhg/models/hypergraphs/hypergcn.html#HyperGCN>`_.
+
+    References:
+        - Proposed in [HyperGCN: A New Method of Training Graph Convolutional Networks on Hypergraphs](https://dl.acm.org/doi/10.5555/3454287.3454422) paper (NeurIPS 2019).
+        - Code of the paper: [source](https://github.com/malllabiisc/HyperGCN).
+        - Reference implementation: [source](https://deephypergraph.readthedocs.io/en/latest/_modules/dhg/models/hypergraphs/hypergcn.html#HyperGCN).
 
     Args:
         in_channels: The number of input channels.

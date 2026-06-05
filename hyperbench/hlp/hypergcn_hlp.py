@@ -87,6 +87,7 @@ class HyperGCNHlpModule(HlpModule):
         self.lr = lr
         self.weight_decay = weight_decay
 
+    # TODO format forward pass
     def forward(self, x: Tensor, hyperedge_index: Tensor) -> Tensor:
         """
         Encode node features via HyperGCN, aggregate per hyperedge, and score.

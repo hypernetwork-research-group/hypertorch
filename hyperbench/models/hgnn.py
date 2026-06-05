@@ -9,8 +9,10 @@ class HGNN(nn.Module):
     Unlike HyperGCN (which approximates each hyperedge by selecting representative pairwise
     edges via random projection), HGNN preserves all higher-order relationships by passing
     messages through the full incidence structure: nodes -> hyperedges -> nodes.
-    - Proposed in `Hypergraph Neural Networks <https://arxiv.org/pdf/1809.09401>`_ paper (AAAI 2019).
-    - Reference implementation: `source <https://deephypergraph.readthedocs.io/en/latest/_modules/dhg/models/hypergraphs/hgnn.html#HGNN>`_.
+
+    References:
+        - Proposed in [Hypergraph Neural Networks](https://arxiv.org/pdf/1809.09401) (AAAI 2019).
+        - Reference implementation: [Code](https://deephypergraph.readthedocs.io/en/latest/_modules/dhg/models/hypergraphs/hgnn.html#HGNN).
 
     Args:
         in_channels: The number of input channels.

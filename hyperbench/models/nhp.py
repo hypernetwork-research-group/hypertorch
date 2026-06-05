@@ -9,8 +9,10 @@ from hyperbench.utils import ActivationFn
 class NHP(nn.Module):
     """
     Neural Hyperlink Predictor (NHP) for undirected hyperedge link prediction.
-    - Proposed in `NHP: Neural Hypergraph Link Prediction <https://dl.acm.org/doi/10.1145/3340531.3411870>`_ paper (CIKM 2020).
-    - Reference implementation: `source <https://github.com/cyixiao/NHP-reproduce/>`_.
+
+    References:
+        - Proposed in [NHP: Neural Hypergraph Link Prediction](https://dl.acm.org/doi/10.1145/3340531.3411870) paper (CIKM 2020).
+        - Reference implementation: [Code](https://github.com/cyixiao/NHP-reproduce/).
 
     NHP scores each candidate hyperedge by building candidate-specific node embeddings.
     A node that appears in multiple candidate hyperedges can receive a different incidence embedding in each one,

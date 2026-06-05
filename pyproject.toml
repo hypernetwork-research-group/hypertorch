@@ -47,7 +47,7 @@ dev = [
     "pytest-xdist==2.5.0",
     "ruff==0.15.11",
     "ty==0.0.34",
-    "zensical==0.0.43",
+    "zensical==0.0.44",
 ]
 
 [tool.pytest.ini_options]
