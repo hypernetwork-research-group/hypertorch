@@ -1,7 +1,14 @@
 import pytest
 import torch
 
-from hyperbench.utils import is_layer, is_input_layer, INPUT_LAYER, maxmin_scatter
+from hyperbench.utils import (
+    INPUT_LAYER,
+    is_input_layer,
+    is_layer,
+    maxmin_scatter,
+    validate_floating_tensor_dtype,
+    validate_long_tensor_dtype,
+)
 
 
 @pytest.mark.parametrize(
@@ -120,3 +127,59 @@ def test_maxmin_scatter_supports_nonzero_scatter_dimension():
         ]
     )
     assert torch.allclose(result, expected)
+
+
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        pytest.param(torch.float16, id="float16"),
+        pytest.param(torch.float32, id="float32"),
+        pytest.param(torch.float64, id="float64"),
+    ],
+)
+def test_validate_floating_tensor_dtype_accepts_floating_dtype(dtype):
+    tensor = torch.tensor([1.0], dtype=dtype)
+
+    validate_floating_tensor_dtype("t", tensor)
+
+
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        pytest.param(torch.long, id="long"),
+        pytest.param(torch.int, id="int"),
+        pytest.param(torch.bool, id="bool"),
+    ],
+)
+def test_validate_floating_tensor_dtype_rejects_non_floating_dtype(dtype):
+    tensor = torch.tensor([1], dtype=dtype)
+
+    with pytest.raises(
+        ValueError,
+        match=rf"'t' must have a floating-point dtype, got {dtype}\.",
+    ):
+        validate_floating_tensor_dtype("t", tensor)
+
+
+def test_validate_long_tensor_dtype_accepts_long_dtype():
+    tensor = torch.tensor([1], dtype=torch.long)
+
+    validate_long_tensor_dtype("t", tensor)
+
+
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        pytest.param(torch.int32, id="int32"),
+        pytest.param(torch.float32, id="float32"),
+        pytest.param(torch.int, id="int"),
+    ],
+)
+def test_validate_long_tensor_dtype_rejects_non_long_dtype(dtype):
+    tensor = torch.tensor([1], dtype=dtype)
+
+    with pytest.raises(
+        ValueError,
+        match=rf"'t' must have dtype torch.long, got {dtype}\.",
+    ):
+        validate_long_tensor_dtype("t", tensor)
