@@ -1172,26 +1172,6 @@ class HData:
         if is_inductive_setting(node_space_setting) and fill_value is None:
             raise ValueError("'fill_value' must be provided when node_space_setting='inductive'.")
 
-    @staticmethod
-    def __validate_enrichment_mode(enrichment_mode: EnrichmentMode | None) -> None:
-        if enrichment_mode is None or enrichment_mode in ("replace", "concatenate"):
-            return
-
-        raise ValueError(
-            f"'enrichment_mode' must be one of 'replace', 'concatenate', "
-            f"or None, got {enrichment_mode!r}."
-        )
-
-    @staticmethod
-    def __validate_node_space_setting_value(node_space_setting: NodeSpaceSetting) -> None:
-        if is_transductive_setting(node_space_setting) or is_inductive_setting(node_space_setting):
-            return
-
-        raise ValueError(
-            "node_space_setting must be one of 'transductive' or 'inductive', "
-            f"got {node_space_setting!r}."
-        )
-
     def __validate_x_and_hyperedge_index_type_and_dim(self) -> None:
         validate_floating_tensor_dtype("x", self.x)
         if self.x.dim() != 2:
