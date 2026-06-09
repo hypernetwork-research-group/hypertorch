@@ -31,6 +31,7 @@ make help
 or check the [Makefile documentation](../development/makefile.md) for details on each command.
 
 To build the project, run:
+
 ```bash
 make
 ```
@@ -86,7 +87,14 @@ uv run pre-commit install --config .github/hooks/.pre-commit-config.yaml \
 Use [pytest](https://docs.pytest.org/en/latest/) to run the test suite:
 
 ```bash
+# Run all unit tests
 make test
+
+# Run all integration tests
+make i-test
+
+# Run both unit and integration tests
+make release
 
 # Run tests with HTML report
 uv run pytest --cov=hyperbench --cov-report=html

@@ -32,7 +32,7 @@ make help
 make
 
 # Run an existing example
-make run examples/mlp_common_neighbors.py
+make run examples/mlp.py
 ```
 
 For a full explanation of the project structure, commands, and development guidelines, refer to the [documentation](https://hypernetwork-research-group.github.io/hyperbench/).

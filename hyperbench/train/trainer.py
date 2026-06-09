@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any
 from collections.abc import Iterable, Mapping
 from lightning.pytorch.accelerators import Accelerator
-from lightning.pytorch.callbacks import Callback
+from lightning.pytorch.callbacks import Callback, ModelCheckpoint
 from lightning.pytorch.loggers import CSVLogger, Logger
 from lightning.pytorch.profilers import Profiler
 from lightning.pytorch.strategies import Strategy
@@ -111,6 +111,12 @@ class MultiModelTrainer:
         callbacks: Add a callback or list of callbacks.
             Defaults to ``None``.
 
+        checkpoint_callback_kwargs: Keyword arguments passed to the default
+            ``ModelCheckpoint`` callback when checkpointing is enabled and no
+            user-defined ``ModelCheckpoint`` is provided. Pass ``dirpath`` to
+            override the default checkpoint directory.
+            Defaults to ``None``.
+
         auto_start_tensorboard: When ``True`` and tensorboard is installed, automatically starts
             a TensorBoard server pointing at the experiment log directory.
             Using this option requires that TensorBoard is installed in the environment and moves control
@@ -130,7 +136,11 @@ class MultiModelTrainer:
 
     DEFAULT_BASE_LOG_DIR = "hyperbench_logs"
     EXPERIMENT_NAME_PREFIX = "experiment"
+    EXPERIMENT_SEPARATOR = "_"
+    FIRST_EXPERIMENT_NUMBER = 0
     VERSION_NAME_PREFIX = "version"
+
+    DEFAULT_BASE_CHECKPOINT_DIR = "checkpoints"
 
     __UNKNOWN_DEVICE = "unknown"
 
@@ -160,6 +170,7 @@ class MultiModelTrainer:
         enable_progress_bar: bool = True,
         enable_model_summary: bool | None = None,
         callbacks: list[Callback] | Callback | None = None,
+        checkpoint_callback_kwargs: dict[str, Any] | None = None,
         auto_start_tensorboard: bool = False,
         tensorboard_port: int = 6006,
         auto_wait: bool = False,
@@ -172,14 +183,29 @@ class MultiModelTrainer:
         self.model_configs = model_configs
         validate_is_non_empty("model_configs", self.model_configs)
 
-        self.log_dir = self.__setup_logdir(default_root_dir, experiment_name)
+        self.log_dir = self.__logdir(default_root_dir, experiment_name)
 
         self.auto_start_tensorboard = auto_start_tensorboard
         self.tensorboard_port = tensorboard_port
+        self.__checkpoint_callback_kwargs = (
+            checkpoint_callback_kwargs if checkpoint_callback_kwargs is not None else {}
+        )
 
-        for model_config in model_configs:
+        full_model_name_counts = self.__full_model_name_counts(model_configs)
+        for model_index, model_config in enumerate(model_configs):
             if model_config.trainer is None:
                 model_logger = self.__setup_logger(model_config, logger)
+
+                has_duplicate_full_model_name = (
+                    full_model_name_counts[model_config.full_model_name()] > 1
+                )
+                model_callbacks = self.__setup_callbacks(
+                    model_config=model_config,
+                    model_index=model_index,
+                    has_duplicate_full_model_name=has_duplicate_full_model_name,
+                    callbacks=callbacks,
+                    enable_checkpointing=enable_checkpointing,
+                )
 
                 model_config.trainer = L.Trainer(
                     accelerator=accelerator,
@@ -201,7 +227,7 @@ class MultiModelTrainer:
                     enable_checkpointing=enable_checkpointing,
                     enable_progress_bar=enable_progress_bar,
                     enable_model_summary=enable_model_summary,
-                    callbacks=copy.deepcopy(callbacks),
+                    callbacks=model_callbacks,
                     **kwargs,
                 )
 
@@ -257,7 +283,9 @@ class MultiModelTrainer:
                 print(
                     f"Fit model {config.full_model_name()} "
                     f"[{i + 1}/{len(self.model_configs)} models] "
-                    f"(device: {self.__device(config.trainer)})"
+                    f"(device: {self.__device(config.trainer)}, "
+                    f"log_dir: {config.trainer.log_dir}, "
+                    f"ckpt_path: {ckpt_path if ckpt_path is not None else 'None'})"
                 )
 
             train_dataloaders = (
@@ -291,7 +319,9 @@ class MultiModelTrainer:
                 print(
                     f"Test model {config.full_model_name()} "
                     f"[{i + 1}/{len(self.model_configs)} models] "
-                    f"(device: {self.__device(config.trainer)})"
+                    f"(device: {self.__device(config.trainer)}, "
+                    f"log_dir: {config.trainer.log_dir}, "
+                    f"ckpt_path: {ckpt_path if ckpt_path is not None else 'None'})"
                 )
 
             test_dataloaders = (
@@ -375,6 +405,25 @@ class MultiModelTrainer:
             )
             return None
 
+    def __checkpoint_dir(
+        self,
+        model_config: ModelConfig,
+        model_index: int,
+        has_duplicate_full_model_name: bool,
+    ) -> Path:
+        provided_dirpath: str | Path | None = self.__checkpoint_callback_kwargs.get("dirpath")
+        if provided_dirpath is not None:
+            return Path(provided_dirpath)
+
+        checkpoint_dir = (
+            self.log_dir / model_config.name / f"{self.VERSION_NAME_PREFIX}_{model_config.version}"
+        )
+
+        if has_duplicate_full_model_name:
+            checkpoint_dir /= f"model_{model_index}"
+
+        return checkpoint_dir / self.DEFAULT_BASE_CHECKPOINT_DIR
+
     def __device(self, trainer: L.Trainer) -> str:
         if trainer.strategy is None:
             return self.__UNKNOWN_DEVICE
@@ -383,9 +432,24 @@ class MultiModelTrainer:
             return self.__UNKNOWN_DEVICE
         return str(strategy.root_device)
 
+    def __full_model_name_counts(self, model_configs: list[ModelConfig]) -> dict[str, int]:
+        full_model_name_counts: dict[str, int] = {}
+        for model_config in model_configs:
+            full_model_name = model_config.full_model_name()
+            full_model_name_counts[full_model_name] = (
+                full_model_name_counts.get(full_model_name, 0) + 1
+            )
+        return full_model_name_counts
+
     def __next_experiment_name(self, save_dir: Path) -> Path:
         if not save_dir.exists():
-            return Path(f"{self.EXPERIMENT_NAME_PREFIX}_0")
+            # Example: EXPERIMENT_NAME_PREFIX = "experiment",
+            #          EXPERIMENT_SEPARATOR = "_",
+            #          FIRST_EXPERIMENT_NUMBER = 0
+            #          -> next_experiment_name = "experiment_0"
+            return Path(
+                f"{self.EXPERIMENT_NAME_PREFIX}{self.EXPERIMENT_SEPARATOR}{self.FIRST_EXPERIMENT_NUMBER}"
+            )
 
         existing_experiment_names: list[str] = [
             dir.name
@@ -393,16 +457,20 @@ class MultiModelTrainer:
             if dir.is_dir() and dir.name.startswith(self.EXPERIMENT_NAME_PREFIX)
         ]
         if len(existing_experiment_names) < 1:
-            return Path(f"{self.EXPERIMENT_NAME_PREFIX}_0")
+            return Path(
+                f"{self.EXPERIMENT_NAME_PREFIX}{self.EXPERIMENT_SEPARATOR}{self.FIRST_EXPERIMENT_NUMBER}"
+            )
 
         last_experiment_number = max(
-            int(experiment_name.split("_")[1])
+            int(experiment_name.split(self.EXPERIMENT_SEPARATOR)[1])
             for experiment_name in existing_experiment_names
-            if experiment_name.split("_")[1].isdigit()
+            if experiment_name.split(self.EXPERIMENT_SEPARATOR)[1].isdigit()
         )
-        return Path(f"{self.EXPERIMENT_NAME_PREFIX}_{last_experiment_number + 1}")
+        return Path(
+            f"{self.EXPERIMENT_NAME_PREFIX}{self.EXPERIMENT_SEPARATOR}{last_experiment_number + 1}"
+        )
 
-    def __setup_logdir(
+    def __logdir(
         self,
         default_root_dir: str | Path | None,
         experiment_name: str | None,
@@ -462,3 +530,45 @@ class MultiModelTrainer:
             )
 
         return loggers
+
+    def __setup_callbacks(
+        self,
+        model_config: ModelConfig,
+        model_index: int,
+        has_duplicate_full_model_name: bool,
+        callbacks: list[Callback] | Callback | None,
+        enable_checkpointing: bool,
+    ) -> list[Callback] | Callback | None:
+        model_callbacks = copy.deepcopy(callbacks)
+
+        if not enable_checkpointing:
+            return model_callbacks
+
+        checkpoint_dir = self.__checkpoint_dir(
+            model_config=model_config,
+            model_index=model_index,
+            has_duplicate_full_model_name=has_duplicate_full_model_name,
+        )
+
+        callback_list = self.__to_callback_list(model_callbacks)
+        checkpoint_callbacks = [
+            callback for callback in callback_list if isinstance(callback, ModelCheckpoint)
+        ]
+
+        if len(checkpoint_callbacks) < 1:
+            checkpoint_callback_kwargs = copy.deepcopy(self.__checkpoint_callback_kwargs)
+            checkpoint_callback_kwargs["dirpath"] = checkpoint_dir
+            callback_list.append(ModelCheckpoint(**checkpoint_callback_kwargs))
+            return callback_list
+
+        for callback in checkpoint_callbacks:
+            if callback.dirpath is None:
+                callback.dirpath = str(checkpoint_dir)
+        return callback_list
+
+    def __to_callback_list(self, callbacks: list[Callback] | Callback | None) -> list[Callback]:
+        if callbacks is None:
+            return []
+        if isinstance(callbacks, Callback):
+            return [callbacks]
+        return callbacks

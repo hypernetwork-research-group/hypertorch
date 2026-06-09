@@ -109,6 +109,26 @@ train_ds, test_ds = dataset.split(
 Use `split_with_ratios(...)` instead of `split(...)` when you need the final
 hyperedge ratios after optional rebalancing.
 
+## Checkpoint callback options
+
+When checkpointing is enabled and you do not pass your own Lightning
+`ModelCheckpoint`, HyperBench creates a default checkpoint callback per model.
+Use `checkpoint_callback_kwargs` to configure that default callback:
+
+```python
+trainer = MultiModelTrainer(
+    model_configs=configs,
+    enable_checkpointing=True,
+    checkpoint_callback_kwargs={
+        "filename": "weights-only-{epoch}",
+        "save_weights_only": True,
+    },
+)
+```
+
+Pass `dirpath` in `checkpoint_callback_kwargs` to override the default per-model
+checkpoint directory.
+
 ## Next steps
 
 - Comparing multiple models consistently: [Benchmarking](benchmarking.md).

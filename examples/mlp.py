@@ -6,7 +6,7 @@ from torchmetrics.classification import (
     BinaryPrecision,
     BinaryRecall,
 )
-from hyperbench.hlp import CommonNeighborsHlpModule, MLPHlpModule
+from hyperbench.hlp import MLPHlpModule
 from hyperbench.train import MultiModelTrainer
 from hyperbench.types import ModelConfig
 from hyperbench.data import (
@@ -50,9 +50,6 @@ if __name__ == "__main__":
         print(f"Train dataset:\n {train_dataset.hdata}\n")
         print(f"Val dataset:\n {val_dataset.hdata}\n")
         print(f"Test dataset:\n {test_dataset.hdata}\n")
-
-    # Save train hyperedge index before adding negatives (for CommonNeighbors)
-    train_hyperedge_index = train_dataset.hdata.hyperedge_index
 
     # Add negative samples to all splits
     for name, ds in [("Train", train_dataset), ("Val", val_dataset), ("Test", test_dataset)]:
@@ -114,12 +111,6 @@ if __name__ == "__main__":
         persistent_workers=True,
     )
 
-    mean_cn_module = CommonNeighborsHlpModule(
-        train_hyperedge_index=train_hyperedge_index,
-        aggregation="mean",
-        metrics=metrics,
-    )
-
     mean_mlp_module = MLPHlpModule(
         encoder_config={
             "in_channels": num_features,
@@ -134,19 +125,20 @@ if __name__ == "__main__":
 
     configs = [
         ModelConfig(
-            name="common_neighbors",
+            name="mlp",
             version="mean",
-            model=mean_cn_module,
-            is_trainable=False,
+            model=mean_mlp_module,
+            train_dataloader=train_loader,
+            val_dataloader=val_loader,
+            test_dataloader=test_loader,
         ),
-        ModelConfig(name="mlp", version="mean", model=mean_mlp_module),
     ]
 
     print("Starting training and evaluation...")
 
     with MultiModelTrainer(
         model_configs=configs,
-        max_epochs=200,
+        max_epochs=100,
         accelerator="auto",
         log_every_n_steps=10,
         enable_checkpointing=False,

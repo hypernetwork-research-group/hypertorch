@@ -15,6 +15,7 @@ HyperBench is organized as a flat Python package: the `hyperbench/` package live
 ├── hyperbench              # core Python package
 │   ├── data                # datasets, loaders, and sampling
 │   ├── hlp                 # hyperlink prediction modules
+│   ├── integration_tests   # integration test suite
 │   ├── models              # model implementations
 │   ├── nn                  # neural network building blocks
 │   ├── tests               # test suite
