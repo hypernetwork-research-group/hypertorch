@@ -25,7 +25,9 @@ class GCNEncoderConfig(TypedDict):
         add_self_loops: Whether to add self-loops before convolution. Defaults to ``True``.
         normalize: Whether to normalize the adjacency matrix in ``GCNConv``. Defaults to ``True``.
         cached: Whether to cache the normalized graph in ``GCNConv``. Defaults to ``False``.
-        graph_reduction_strategy: Strategy for reducing the hypergraph to a graph. Defaults to ``"clique_expansion"``.
+        graph_reduction_strategy: Strategy for reducing the hypergraph to a graph. Defaults to ``"clique_expansion"``
+        num_nodes: Total number of nodes in the hypergraph. This is useful when setting is transductive
+            but train dataset may not contain all hyperedges where some nodes appear, to ensure consistent encoding across splits.
         activation_fn: Activation function to use after each hidden layer. Defaults to ``nn.ReLU``.
         activation_fn_kwargs: Keyword arguments for the activation function. Defaults to empty dict.
     """
@@ -41,6 +43,7 @@ class GCNEncoderConfig(TypedDict):
     normalize: NotRequired[bool]
     cached: NotRequired[bool]
     graph_reduction_strategy: NotRequired[Literal["clique_expansion"]]
+    num_nodes: NotRequired[int]
     activation_fn: NotRequired[ActivationFn]
     activation_fn_kwargs: NotRequired[dict]
 
@@ -114,7 +117,8 @@ class GCNHlpModule(HlpModule):
 
         # Reduce hypergraph to graph and remove self-loops
         reduced_edge_index = HyperedgeIndex(hyperedge_index).reduce(
-            strategy=self.encoder_config.get("graph_reduction_strategy", "clique_expansion")
+            strategy=self.encoder_config.get("graph_reduction_strategy", "clique_expansion"),
+            num_nodes=self.encoder_config.get("num_nodes"),
         )
         edge_index = EdgeIndex(reduced_edge_index).remove_selfloops().item
 

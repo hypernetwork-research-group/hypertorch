@@ -15,7 +15,6 @@ from hyperbench.data import CoraDataset, DataLoader, RandomNegativeSampler, Samp
 if __name__ == "__main__":
     verbose = False
     num_workers = 8
-    sampling_strategy = SamplingStrategy.HYPEREDGE
     metrics = MetricCollection(
         {
             "auc": BinaryAUROC(),
@@ -28,16 +27,17 @@ if __name__ == "__main__":
 
     print("Loading and preparing dataset...")
 
-    dataset = CoraDataset(sampling_strategy=sampling_strategy)
+    dataset = CoraDataset(sampling_strategy=SamplingStrategy.HYPEREDGE)
     if verbose:
         print(f"Dataset:\n {dataset.hdata}\n")
 
     # Split dataset into train, val and test (70/10/20)
     train_dataset, val_dataset, test_dataset = dataset.split(
         ratios=[0.7, 0.1, 0.2],
+        node_space_setting="transductive",
+        cover_all_nodes_in_train_split=True,
         shuffle=True,
         seed=42,
-        node_space_setting="transductive",
     )
 
     for name, ds in [("Train", train_dataset), ("Val", val_dataset), ("Test", test_dataset)]:
@@ -88,7 +88,6 @@ if __name__ == "__main__":
 
     node_villain_module = VilLainHlpModule(
         encoder_config={
-            "num_nodes": train_dataset.hdata.num_nodes,
             "embedding_dim": 128,
             "labels_per_subspace": 8,
             "training_steps": 4,
@@ -96,6 +95,8 @@ if __name__ == "__main__":
             "tau": 1.0,
             "eps": 1e-10,
             "villain_loss_weight": 1.0,
+            # We are using transductive with all nodes coverage in the train split
+            "num_nodes": dataset.hdata.num_nodes,
         },
         embedding_mode="node",
         aggregation="maxmin",
@@ -106,7 +107,6 @@ if __name__ == "__main__":
 
     hyperedge_villain_module = VilLainHlpModule(
         encoder_config={
-            "num_nodes": train_dataset.hdata.num_nodes,
             "embedding_dim": 128,
             "labels_per_subspace": 8,
             "training_steps": 4,
@@ -114,6 +114,8 @@ if __name__ == "__main__":
             "tau": 1.0,
             "eps": 1e-10,
             "villain_loss_weight": 1.0,
+            # We are using transductive with all nodes coverage in the train split
+            "num_nodes": dataset.hdata.num_nodes,
         },
         embedding_mode="hyperedge",
         lr=0.01,

@@ -14,7 +14,6 @@ from hyperbench.data import (
     Dataset,
     LaplacianPositionalEncodingEnricher,
     RandomNegativeSampler,
-    SamplingStrategy,
 )
 
 
@@ -22,7 +21,6 @@ if __name__ == "__main__":
     verbose = False
     num_workers = 8
     num_features = 32
-    sampling_strategy = SamplingStrategy.HYPEREDGE
     metrics = MetricCollection(
         {
             "auc": BinaryAUROC(),
@@ -44,7 +42,11 @@ if __name__ == "__main__":
 
     # Split dataset into train, val and test (70/10/20)
     train_dataset, val_dataset, test_dataset = dataset.split(
-        ratios=[0.7, 0.1, 0.2], shuffle=True, seed=42, node_space_setting="transductive"
+        ratios=[0.7, 0.1, 0.2],
+        shuffle=True,
+        seed=42,
+        node_space_setting="transductive",
+        cover_all_nodes_in_train_split=False,
     )
     if verbose:
         print(f"Train dataset:\n {train_dataset.hdata}\n")

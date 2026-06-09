@@ -22,7 +22,6 @@ if __name__ == "__main__":
     verbose = False
     num_workers = 8
     num_features = 128
-    sampling_strategy = SamplingStrategy.HYPEREDGE
     metrics = MetricCollection(
         {
             "auc": BinaryAUROC(),
@@ -35,13 +34,17 @@ if __name__ == "__main__":
 
     print("Loading and preparing dataset...")
 
-    dataset = AlgebraDataset(sampling_strategy=sampling_strategy)
+    dataset = AlgebraDataset(sampling_strategy=SamplingStrategy.HYPEREDGE)
     if verbose:
         print(f"Dataset:\n {dataset.hdata}\n")
 
     # Split dataset into train, val and test (70/10/20)
     train_dataset, val_dataset, test_dataset = dataset.split(
-        ratios=[0.7, 0.1, 0.2], shuffle=True, seed=42, node_space_setting="transductive"
+        ratios=[0.7, 0.1, 0.2],
+        node_space_setting="transductive",
+        cover_all_nodes_in_train_split=True,
+        shuffle=True,
+        seed=42,
     )
 
     for name, ds in [("Train", train_dataset), ("Val", val_dataset), ("Test", test_dataset)]:
@@ -74,6 +77,7 @@ if __name__ == "__main__":
         walk_length=20,
         num_walks_per_node=10,
         num_negative_samples=1,
+        # We are using transductive with all nodes coverage in the train split
         num_nodes=dataset.hdata.num_nodes,
         num_epochs=10,
         learning_rate=0.01,

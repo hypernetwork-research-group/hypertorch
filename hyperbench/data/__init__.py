@@ -63,7 +63,12 @@ from .sampler import (
     create_sampler_from_strategy,
 )
 
-from .splitter import HyperedgeIDSplitter, Splitter
+from .splitter import (
+    DefaultDatasetSplitter,
+    DefaultHDataSplitter,
+    HyperedgeIDSplitter,
+    Splitter,
+)
 
 __all__ = [
     "ABHyperedgeWeightsEnricher",
@@ -78,6 +83,8 @@ __all__ = [
     "DBLPDataset",
     "DataLoader",
     "Dataset",
+    "DefaultDatasetSplitter",
+    "DefaultHDataSplitter",
     "EmailEnronDataset",
     "EmailW3CDataset",
     "EnrichmentMode",

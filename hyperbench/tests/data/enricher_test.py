@@ -242,8 +242,8 @@ def test_node2vec_enricher_returns_zero_features_when_clique_has_no_non_selfloop
             True,
             "Reducing hypergraph to graph via clique_expansion...\n"
             "Training Node2Vec model for 2 epochs...\n"
-            "Epoch 1/2\n"
-            "Epoch 2/2\n"
+            "Epoch 1/2\r"
+            "Epoch 2/2\r"
             "Training complete. Generating node embeddings...\n",
             id="verbose",
         ),
@@ -679,7 +679,7 @@ def test_villain_hyperedge_attrs_enricher_uses_trained_model_for_hyperedge_embed
         pytest.param(False, "", id="quiet"),
         pytest.param(
             True,
-            "Training VilLain model for 2 epochs...\nEpoch 1/2\nEpoch 2/2\n",
+            "Training VilLain model for 2 epochs...\nEpoch 1/2\rEpoch 2/2\r",
             id="verbose",
         ),
     ],

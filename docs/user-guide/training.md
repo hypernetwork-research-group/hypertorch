@@ -93,8 +93,21 @@ with MultiModelTrainer(
     trainer.test_all(dataloader=test_loader)
 ```
 
-Transductive splits may move hyperedges into the first split to cover every node.
-Use `split_with_ratios(...)` instead of `split(...)` when you need the final hyperedge ratios after that rebalancing.
+Transductive splits keep the full node feature matrix in the first split, but by
+default they do not force the first split's hyperedges to cover every node. Pass
+`cover_all_nodes_in_train_split=True` when the training hyperedges themselves
+must be incident to every node:
+
+```python
+train_ds, test_ds = dataset.split(
+    ratios=[0.8, 0.2],
+    node_space_setting="transductive",
+    cover_all_nodes_in_train_split=True,
+)
+```
+
+Use `split_with_ratios(...)` instead of `split(...)` when you need the final
+hyperedge ratios after optional rebalancing.
 
 ## Next steps
 

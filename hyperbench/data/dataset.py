@@ -9,14 +9,11 @@ from hyperbench.types import HData
 from hyperbench.utils import (
     NodeSpaceFiller,
     NodeSpaceSetting,
-    is_transductive_setting,
-    validate_node_space_setting,
-    validate_ratios,
 )
 
 from hyperbench.data.hif import HIFLoader, HIFProcessor
 from hyperbench.data.sampler import SamplingStrategy, create_sampler_from_strategy
-from hyperbench.data.splitter import HyperedgeIDSplitter
+from hyperbench.data.splitter import DefaultDatasetSplitter, Splitter
 
 if TYPE_CHECKING:
     from hyperbench.data import (
@@ -258,31 +255,47 @@ class Dataset(TorchDataset):
         )
         return self.update_from_hdata(hdata_with_negatives)
 
-    def remove_hyperedges_with_fewer_than_k_nodes(self, k: int) -> None:
+    def remove_hyperedges_with_fewer_than_k_nodes(
+        self,
+        k: int,
+        preserve_global_node_ids: bool = False,
+    ) -> None:
         """
         Remove hyperedges that have fewer than k incident nodes.
 
         Args:
             k: The minimum number of nodes a hyperedge must have to be retained.
+            preserve_global_node_ids: Whether to preserve the global node IDs after removing hyperedges. Defaults to ``False``.
+                If ``False``, the global node IDs will be reindexed to be contiguous after removing hyperedges.
+                If ``True``, the global node IDs will be preserved, which may cause some models to raise
+                as they may expect contiguous global node IDs.
         """
-        self.hdata = self.hdata.remove_hyperedges_with_fewer_than_k_nodes(k)
+        self.hdata = self.hdata.remove_hyperedges_with_fewer_than_k_nodes(
+            k, preserve_global_node_ids
+        )
 
     def split(
         self,
-        ratios: list[float],
+        ratios: list[float] | None = None,
         shuffle: bool | None = False,
         seed: int | None = None,
         node_space_setting: NodeSpaceSetting = "transductive",
+        cover_all_nodes_in_train_split: bool = False,
+        train_split_idx: int = 0,
+        splitter: Splitter[Dataset, Any] | None = None,
     ) -> list[Dataset]:
         """
         Split the dataset by hyperedges into partitions with contiguous 0-based hyperedge IDs.
 
         Boundaries are computed using cumulative floor to prevent early splits from
-        over-consuming edges. The last split absorbs any rounding remainder. In the
-        transductive setting, the first split is rebalanced with real hyperedges
-        from later splits when needed to cover the full node space.
+        over-consuming edges. The last split absorbs any rounding remainder.
+        In the transductive setting, the first split keeps the full node space
+        and can optionally be rebalanced with real hyperedges from later splits
+        to cover every node.
+
         Splits that would end with zero hyperedges are rejected.
-        Use ``split_with_ratios`` to get the final ratios after splitting.
+
+        Use ``split_with_ratios`` to also get the final ratios after splitting.
 
         Examples:
             Transductive split keeping and covering the full node space on the first split:
@@ -301,29 +314,48 @@ class Dataset(TorchDataset):
         Args:
             ratios: List of floats summing to ``1.0``, e.g., ``[0.8, 0.1, 0.1]``.
             shuffle: Whether to shuffle hyperedges before splitting. Defaults to ``False`` for deterministic splits.
-            seed: Optional random seed for reproducibility. Ignored if shuffle is set to ``False``.
             node_space_setting: Whether to preserve the full node space in the splits.
                 ``transductive`` (default) preserves the full node space on the
-                first split and ensures every node is incident to one of its
-                selected hyperedges. ``inductive`` keeps each split's local node
-                space. Ratios are approximate when transductive coverage requires
-                moving hyperedges into the first split.
+                first split. ``inductive`` keeps each split's local node space.
+            cover_all_nodes_in_train_split: Whether a transductive first split
+                should move hyperedges from later splits until every node is
+                incident to one of its selected hyperedges. Ratios are approximate
+                when this coverage requires moving hyperedges into the first split.
+            train_split_idx: The index of the split to treat as the train split. Defaults to ``0``,
+                so the first split is the train split that gets the full node space in the
+                transductive setting and is optionally rebalanced to cover all nodes.
+                This is used only when ``node_space_setting=="transductive"`` and ``cover_all_nodes_in_train_split==True``,
+                to determine which split should be rebalanced to cover all nodes.
+                For the 'inductive' setting, splits are always returned based on the provided ratios.
+            seed: Optional random seed for reproducibility. Ignored if shuffle is set to ``False``.
+            splitter: Optional dataset splitter. When provided, it owns split
+                construction and final-ratio reporting.
 
         Returns:
             datasets: List of Dataset objects, one per split, each with contiguous IDs.
 
         Raises:
             ValueError: If ratios do not sum to ``1.0``, a final split has zero
-                hyperedges, or a transductive first split cannot cover the full
-                node space.
+                hyperedges, or a requested transductive train-cover split cannot
+                cover the full node space.
         """
-        split_datasets, _ = self.split_with_ratios(
-            ratios=ratios,
+        if splitter is not None:
+            return splitter.split(self)
+
+        if ratios is None:
+            raise ValueError("'ratios' must be provided when no custom 'splitter' is provided.")
+
+        splits, _ = DefaultDatasetSplitter(
+            node_space_setting=node_space_setting,
             shuffle=shuffle,
             seed=seed,
-            node_space_setting=node_space_setting,
+        ).split(
+            to_split=self,
+            ratios=ratios,
+            train_split_idx=train_split_idx,
+            cover_all_nodes_in_train_split=cover_all_nodes_in_train_split,
         )
-        return split_datasets
+        return splits
 
     def split_with_ratios(
         self,
@@ -331,23 +363,43 @@ class Dataset(TorchDataset):
         shuffle: bool | None = False,
         seed: int | None = None,
         node_space_setting: NodeSpaceSetting = "transductive",
+        cover_all_nodes_in_train_split: bool = False,
+        train_split_idx: int = 0,
     ) -> tuple[list[Dataset], list[float]]:
         """
         Split the dataset and return the final hyperedge ratios.
 
+        Boundaries are computed using cumulative floor to prevent early splits from
+        over-consuming edges. The last split absorbs any rounding remainder.
+        In the transductive setting, the first split keeps the full node space
+        and can optionally be rebalanced with real hyperedges from later splits
+        to cover every node.
+
+        Splits that would end with zero hyperedges are rejected.
+
         Final ratios are computed from split hyperedge counts after ratio
-        boundaries and any transductive rebalancing have been applied.
+        boundaries and any requested transductive rebalancing have been applied.
+
+        To provide a custom splitting implementation, use the ``splitter``
+        argument of the ``split`` method instead.
 
         Args:
             ratios: List of floats summing to ``1.0``, e.g., ``[0.8, 0.1, 0.1]``.
             shuffle: Whether to shuffle hyperedges before splitting. Defaults to
                 ``False`` for deterministic splits.
-            seed: Optional random seed for reproducibility. Ignored if ``shuffle``
-                is set to ``False``.
             node_space_setting: Whether to preserve the full node space in the
                 splits. ``transductive`` (default) preserves the full node space
-                on the first split and may move hyperedges from later splits to
-                cover all nodes. ``inductive`` keeps each split's local node space.
+                on the first split. ``inductive`` keeps each split's local node space.
+            cover_all_nodes_in_train_split: Whether a transductive first split
+                should move hyperedges from later splits until every node is
+                incident to one of its selected hyperedges.
+            train_split_idx: The index of the split to treat as the train split. Defaults to ``0``,
+                so the first split is the train split that gets the full node space in the
+                transductive setting and is optionally rebalanced to cover all nodes.
+                This is used only when ``node_space_setting=="transductive"`` and ``cover_all_nodes_in_train_split==True``,
+                to determine which split should be rebalanced to cover all nodes.
+                For the 'inductive' setting, splits are always returned based on the provided ratios.
+            seed: Optional random seed for reproducibility. Ignored if ``shuffle`` is set to ``False``.
 
         Returns:
             datasets_and_ratios: A tuple containing the split datasets and their
@@ -355,46 +407,19 @@ class Dataset(TorchDataset):
 
         Raises:
             ValueError: If ratios do not sum to ``1.0``, a final split has zero
-                hyperedges, or a transductive first split cannot cover the full
-                node space.
+                hyperedges, or a requested transductive train-cover split cannot
+                cover the full node space.
         """
-        validate_node_space_setting(node_space_setting)
-        validate_ratios(ratios)
-
-        device = self.hdata.device
-
-        hyperedge_splitter = HyperedgeIDSplitter(self.hdata)
-        hyperedge_ids_permutation = hyperedge_splitter.get_hyperedge_ids_permutation(shuffle, seed)
-        hyperedge_ids_by_split, final_ratios = hyperedge_splitter.split(
-            hyperedge_ids_permutation, ratios
+        return DefaultDatasetSplitter(
+            node_space_setting=node_space_setting,
+            shuffle=shuffle,
+            seed=seed,
+        ).split(
+            to_split=self,
+            ratios=ratios,
+            train_split_idx=train_split_idx,
+            cover_all_nodes_in_train_split=cover_all_nodes_in_train_split,
         )
-        if is_transductive_setting(node_space_setting):
-            hyperedge_ids_by_split, final_ratios = hyperedge_splitter.ensure_split_covers_all_nodes(
-                hyperedge_ids_by_split=hyperedge_ids_by_split,
-                split_idx=0,
-            )
-        hyperedge_splitter.validate_splits_have_hyperedges(hyperedge_ids_by_split)
-
-        split_datasets = []
-        for split_num, split_hyperedge_ids in enumerate(hyperedge_ids_by_split):
-            split_node_space_setting: NodeSpaceSetting = (
-                "transductive"
-                if is_transductive_setting(node_space_setting) and split_num == 0
-                else "inductive"
-            )
-            split_hdata = HData.split(
-                hdata=self.hdata,
-                split_hyperedge_ids=split_hyperedge_ids,
-                node_space_setting=split_node_space_setting,
-            ).to(device=device)
-
-            split_dataset = self.__class__(
-                hdata=split_hdata,
-                sampling_strategy=self.sampling_strategy,
-            )
-            split_datasets.append(split_dataset)
-
-        return split_datasets, final_ratios
 
     def to(self, device: torch.device) -> Dataset:
         """

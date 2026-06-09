@@ -65,10 +65,13 @@ def validate_is_between(
 ) -> None:
     if min_value > max_value:
         raise ValueError(
-            f"Invalid bounds for {name!r}: min_value ({min_value}) cannot be greater than max_value ({max_value})."
+            f"Invalid bounds for {name!r}: 'min_value' ({min_value}) "
+            f"cannot be greater than 'max_value' ({max_value})."
         )
     if not math.isfinite(value) or value < min_value or value > max_value:
-        raise ValueError(f"{name!r} must be between {min_value} and {max_value}, got {value}.")
+        raise ValueError(
+            f"{name!r} must be between {min_value} and {max_value} inclusive, got {value}."
+        )
 
 
 def validate_is_finite(name: str, value: int | float) -> None:

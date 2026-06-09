@@ -104,7 +104,7 @@ class Graph:
 
         if len(edge_weights) != self.num_edges:
             raise ValueError(
-                "edge_weights must have the same number of entries as edges. "
+                "'edge_weights' must have the same number of entries as edges. "
                 f"Got {len(edge_weights)} edge weights but {self.num_edges} edges."
             )
 
@@ -666,13 +666,13 @@ class EdgeIndex:
 
         if edge_weights.dim() != 1:
             raise ValueError(
-                f"edge_weights must be a 1D tensor. Got {edge_weights.dim()}D tensor with shape {edge_weights.shape}."
+                f"'edge_weights' must be a 1D tensor. Got {edge_weights.dim()}D tensor with shape {edge_weights.shape}."
             )
 
         if edge_weights.size(0) != self.__edge_index.size(1):
             raise ValueError(
-                "edge_weights must have the same number of entries as edge_index columns. "
-                f"Got {edge_weights.size(0)} edge weights but {self.__edge_index.size(1)} edge columns."
+                "'edge_weights' must have the same number of entries as edges in the 'edge_index'. "
+                f"Got {edge_weights.size(0)} edge weights but {self.__edge_index.size(1)} edges."
             )
 
     def __validate_num_nodes(self, num_nodes: int) -> None:
