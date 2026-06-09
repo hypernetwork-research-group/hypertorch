@@ -100,7 +100,7 @@ docs-serve:
 
 loc:
 	@echo '=== Counting lines of code ==='
-	find . -type f -name "*.py" -not -path "*/.venv/*" | xargs wc -l
+	./scripts/count_loc.sh
 
 clean:
 	@echo '=== Cleaning up ==='
