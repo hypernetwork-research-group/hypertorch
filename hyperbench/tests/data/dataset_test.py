@@ -1397,7 +1397,8 @@ def test_split_with_ratios_raises_when_train_split_idx_provided_but_not_transduc
             # 3/5 and 2/5 as we ensure splits don't get more then requested,
             # in this way, all later splits get at least what they requested,
             # except the last one that might get slightly more due to rounding.
-            # This effect is mitigated the more hyperedges we have, as the ratios get closer to the requested ones.
+            # This effect is mitigated the more hyperedges we have, as the ratios get closer to the
+            # requested ones.
             [0.6, 0.4],
             id="five_hyperedges_rounds_train_up",
         ),
@@ -1408,7 +1409,7 @@ def test_split_with_ratios_raises_when_train_split_idx_provided_but_not_transduc
                     torch.arange(
                         500,
                         dtype=torch.long,
-                    ),  # 500 hyperedges, 125 per node, so we can split exactly according to the ratios
+                    ),  # 500 hyperedges, 125 per node, so we can split according to the ratios
                 ]
             ),
             [375, 125],

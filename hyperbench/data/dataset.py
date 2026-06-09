@@ -300,10 +300,11 @@ class Dataset(TorchDataset):
 
         Args:
             k: The minimum number of nodes a hyperedge must have to be retained.
-            preserve_global_node_ids: Whether to preserve the global node IDs after removing hyperedges. Defaults to ``False``.
-                If ``False``, the global node IDs will be reindexed to be contiguous after removing hyperedges.
-                If ``True``, the global node IDs will be preserved, which may cause some models to raise
-                as they may expect contiguous global node IDs.
+            preserve_global_node_ids: Whether to preserve the global node IDs
+                after removing hyperedges. Defaults to ``False``. If ``False``, the global node IDs
+                will be reindexed to be contiguous after removing hyperedges.
+                If ``True``, the global node IDs will be preserved, which may cause some models
+                to raise as they may expect contiguous global node IDs.
         """
         self.hdata = self.hdata.remove_hyperedges_with_fewer_than_k_nodes(
             k, preserve_global_node_ids
@@ -361,9 +362,11 @@ class Dataset(TorchDataset):
             train_split_idx: The index of the split to treat as the train split. Defaults to ``0``,
                 so the first split is the train split that gets the full node space in the
                 transductive setting and is optionally rebalanced to cover all nodes.
-                This is used only when ``node_space_setting=="transductive"`` and ``cover_all_nodes_in_train_split==True``,
+                This is used only when ``node_space_setting=="transductive"``
+                and ``cover_all_nodes_in_train_split==True``,
                 to determine which split should be rebalanced to cover all nodes.
-                For the 'inductive' setting, splits are always returned based on the provided ratios.
+                For the 'inductive' setting, splits are always returned based on
+                the provided ratios.
             seed: Optional random seed for reproducibility. Ignored if shuffle is set to ``False``.
             splitter: Optional dataset splitter. When provided, it owns split
                 construction and final-ratio reporting.
@@ -433,10 +436,13 @@ class Dataset(TorchDataset):
             train_split_idx: The index of the split to treat as the train split. Defaults to ``0``,
                 so the first split is the train split that gets the full node space in the
                 transductive setting and is optionally rebalanced to cover all nodes.
-                This is used only when ``node_space_setting=="transductive"`` and ``cover_all_nodes_in_train_split==True``,
+                This is used only when ``node_space_setting=="transductive"``
+                and ``cover_all_nodes_in_train_split==True``,
                 to determine which split should be rebalanced to cover all nodes.
-                For the 'inductive' setting, splits are always returned based on the provided ratios.
-            seed: Optional random seed for reproducibility. Ignored if ``shuffle`` is set to ``False``.
+                For the 'inductive' setting, splits are always returned based on
+                the provided ratios.
+            seed: Optional random seed for reproducibility. Ignored if ``shuffle``
+                is set to ``False``.
 
         Returns:
             datasets_and_ratios: A tuple containing the split datasets and their

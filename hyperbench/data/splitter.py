@@ -34,20 +34,15 @@ class Splitter(ABC, Generic[_ToSplitType, _SplitResultType]):
     @abstractmethod
     def split(self, to_split: _ToSplitType, **kwargs: Any) -> _SplitResultType:
         """
-        Split the input tensor into multiple tensors according to the provided ratios.
-
-        The output tensors are not guaranteed to be non-empty, so downstream validation may
-        be necessary.
+        Split the input object and return the split result.
 
         Args:
-            to_split: The tensor to split. For example, a list of hyperedge IDs.
-            ratios: The ratios for the splits. For example, ``[0.7, 0.1, 0.2]`` for
-                a 70/10/20 split.
+            to_split: The object to split.
+            **kwargs: Additional keyword arguments that may be required by specific splitter
+                implementations.
 
         Returns:
-            (Values per split, ratios after splitting): A tuple of (list of split tensors, list
-                of actual ratios achieved by the splits).
-
+            The result of splitting the input object.
         """
         pass
 
@@ -57,17 +52,7 @@ class DefaultDatasetSplitter(Splitter["Dataset", tuple[list["Dataset"], list[flo
     Split a dataset by hyperedges and materialize dataset partitions.
 
     Args:
-        ratios: List of floats summing to ``1.0``.
         node_space_setting: Whether to preserve full or local node spaces.
-        cover_all_nodes_in_train_split: Whether transductive splits should move
-            hyperedges into the first split until all nodes are incident to at
-            least one selected training hyperedge.
-            train_split_idx: The index of the split to treat as the train split. Defaults to ``0``,
-                so the first split is the train split that gets the full node space in the
-                transductive setting and is optionally rebalanced to cover all nodes.
-                This is used only when ``node_space_setting=="transductive"`` and ``cover_all_nodes_in_train_split==True``,
-                to determine which split should be rebalanced to cover all nodes.
-                For the 'inductive' setting, splits are always returned based on the provided ratios.
         shuffle: Whether to shuffle hyperedges before splitting.
         seed: Optional random seed for reproducibility.
     """
@@ -90,9 +75,22 @@ class DefaultDatasetSplitter(Splitter["Dataset", tuple[list["Dataset"], list[flo
 
         Args:
             to_split: The `Dataset` to split.
-            ratios: Desired split ratios, used for initial split construction and
-                as a reference during rebalancing. Expected as a keyword argument.
 
+            kwargs:
+                ratios: Desired split ratios, used for initial split construction and
+                    as a reference during rebalancing. Expected as a keyword argument.
+                    List of floats summing to ``1.0``.
+                cover_all_nodes_in_train_split: Whether transductive splits should move
+                    hyperedges into the first split until all nodes are incident to at
+                    least one selected training hyperedge.
+                train_split_idx: The index of the split to treat as the train split.
+                    Defaults to ``0``, so the first split is the train split that gets the full
+                    node space in the transductive setting and is optionally rebalanced to cover
+                    all nodes. This is used only when ``node_space_setting=="transductive"``
+                    and ``cover_all_nodes_in_train_split==True``,
+                    to determine which split should be rebalanced to cover all nodes.
+                    For the 'inductive' setting, splits are always returned based on the
+                    provided ratios.
         Returns:
             datasets_and_ratios: Split datasets and final hyperedge-count ratios.
 
@@ -155,7 +153,8 @@ class DefaultDatasetSplitter(Splitter["Dataset", tuple[list["Dataset"], list[flo
         if self.node_space_setting != "transductive" and train_split_idx != 0:
             raise ValueError(
                 f"'train_split_idx' is only relevant when 'node_space_setting' is 'transductive', "
-                f"got 'node_space_setting={self.node_space_setting}' and 'train_split_idx={train_split_idx}'."
+                f"got 'node_space_setting={self.node_space_setting}' and"
+                f" 'train_split_idx={train_split_idx}'."
                 "For the 'inductive' setting, splits are returned based on the provided ratios."
             )
         validate_is_between("train_split_idx", train_split_idx, 0, len(ratios) - 1)
@@ -182,7 +181,9 @@ class DefaultHDataSplitter(Splitter["HData", "HData"]):
 
         Args:
             to_split: The original `HData` containing the full hypergraph.
-            split_hyperedge_ids: The hyperedge IDs that should be included in the split, expected as a keyword argument.
+            kwargs:
+                split_hyperedge_ids: The hyperedge IDs that should be included in the split,
+                    expected as a keyword argument.
 
         Returns:
             hdata: The splitted instance with remapped node and hyperedge IDs.
@@ -252,8 +253,9 @@ class HyperedgeIDSplitter(Splitter["Tensor", tuple[list["Tensor"], list[float]]]
     Initialize a splitter for hyperedge-ID based dataset partitioning.
 
     Args:
-        hdata: Hypergraph data whose hyperedges and node coverage drive the split logic.
-
+        hyperedge_index: Hypergraph incidence index whose node coverage drives the split logic.
+        num_nodes: Number of nodes in the source hypergraph.
+        num_hyperedges: Number of hyperedges in the source hypergraph.
     """
 
     def __init__(
@@ -287,9 +289,8 @@ class HyperedgeIDSplitter(Splitter["Tensor", tuple[list["Tensor"], list[float]]]
             ratios: The final ratios of hyperedges in each split after rebalancing.
 
         Raises:
-            ValueError: If one or more nodes do not appear in any hyperedge of the
-                source hypergraph.
-
+            ValueError: If one or more nodes do not appear in any hyperedge of
+                he source hypergraph.
         """
         validate_is_non_empty("hyperedge_ids_by_split", hyperedge_ids_by_split)
         validate_is_between("split_idx", split_idx, 0, len(hyperedge_ids_by_split) - 1)
@@ -339,7 +340,6 @@ class HyperedgeIDSplitter(Splitter["Tensor", tuple[list["Tensor"], list[float]]]
 
         Raises:
             ValueError: If any split is empty after splitting or rebalancing.
-
         """
         empty_split_indices = [
             split_idx
@@ -363,11 +363,7 @@ class HyperedgeIDSplitter(Splitter["Tensor", tuple[list["Tensor"], list[float]]]
 
         Returns:
             hyperedge_ids_permutation: Ordered or shuffled hyperedge IDs on the HData device.
-
         """
-        device = self.hdata.device
-        num_hyperedges = self.hdata.num_hyperedges
-
         # Shuffle hyperedge IDs if shuffle is requested, otherwise keep original order
         # for deterministic splits
         if shuffle:
@@ -396,7 +392,6 @@ class HyperedgeIDSplitter(Splitter["Tensor", tuple[list["Tensor"], list[float]]]
 
         Returns:
             ratios: Ratios derived from the number of hyperedges in each split.
-
         """
         num_hyperedges_by_split = [
             int(split_hyperedge_ids.numel()) for split_hyperedge_ids in hyperedge_ids_by_split
@@ -419,13 +414,13 @@ class HyperedgeIDSplitter(Splitter["Tensor", tuple[list["Tensor"], list[float]]]
 
         Args:
             to_split: Hyperedge IDs to partition.
-            ratios: Desired split ratios, used for initial split construction and
-                as a reference during rebalancing. Expected as a keyword argument.
+            kwargs:
+                ratios: Desired split ratios, used for initial split construction and
+                    as a reference during rebalancing. Expected as a keyword argument.
 
         Returns:
             hyperedge_ids_by_split: The updated hyperedge IDs for each split.
             ratios: The final ratios of hyperedges in each split after rebalancing.
-
         """
         ratios: list[float] = kwargs.get("ratios", [])
         validate_ratios(ratios)
@@ -459,7 +454,6 @@ class HyperedgeIDSplitter(Splitter["Tensor", tuple[list["Tensor"], list[float]]]
 
         Returns:
             missing_node_ids: Required node IDs that are still uncovered.
-
         """
         covered_node_ids = self.__nodes_covered_by_hyperedges(hyperedge_ids)
         covered_node_ids_mask = torch.isin(required_node_ids, covered_node_ids)
@@ -475,7 +469,6 @@ class HyperedgeIDSplitter(Splitter["Tensor", tuple[list["Tensor"], list[float]]]
 
         Returns:
             nodes_covered_by_hyperedge: Unique node IDs covered by the input hyperedges.
-
         """
         all_hyperedge_ids = self.hyperedge_index[1]
         nodes_in_input_hyperedges_mask = torch.isin(all_hyperedge_ids, hyperedge_ids)
@@ -499,7 +492,6 @@ class HyperedgeIDSplitter(Splitter["Tensor", tuple[list["Tensor"], list[float]]]
         Returns:
             split_idx: The index of the donor split containing the selected hyperedge.
             hyperedge_id: The ID of the selected hyperedge.
-
         """
         best_gain = 0
         best_split_idx: int | None = None

@@ -752,14 +752,14 @@ class EdgeIndex:
 
         if edge_weights.dim() != 1:
             raise ValueError(
-                f"edge_weights must be a 1D tensor. Got "
+                f"'edge_weights' must be a 1D tensor. Got "
                 f"{edge_weights.dim()}D tensor with shape {edge_weights.shape}."
             )
 
         if edge_weights.size(0) != self.__edge_index.size(1):
             raise ValueError(
-                "edge_weights must have the same number of entries as edge_index columns. "
-                f"Got {edge_weights.size(0)} edge weights but "
+                f"'edge_weights' must have the same number of entries as edges in "
+                f"the 'edge_index'. Got {edge_weights.size(0)} edge weights but "
                 f"{self.__edge_index.size(1)} edge columns."
             )
 

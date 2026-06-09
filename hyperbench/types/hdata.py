@@ -341,8 +341,10 @@ class HData:
         Args:
             hdata: The original `HData` containing the full hypergraph.
             split_hyperedge_ids: Tensor of hyperedge IDs to include in this split.
-                It is assumed that the provided hyperedge IDs are valid and exist in ``hdata.hyperedge_index[1]``.
-                It is mandatory to provide this argument unless a custom ``splitter`` is provided that owns split materialization.
+                It is assumed that the provided hyperedge IDs are valid and exist
+                in ``hdata.hyperedge_index[1]``.
+                It is mandatory to provide this argument unless a custom ``splitter`` is provided
+                that owns split materialization.
             node_space_setting: Whether to preserve the full node space in the splits.
                 ``transductive`` (default) ensures all node features are present in the split,
                 while ``inductive`` allows splits to have disjoint node spaces.
@@ -457,7 +459,7 @@ class HData:
         source_x = hdata_with_features.x
         if source_x.size(0) != source_global_node_ids.size(0):
             raise ValueError(
-                "Expected hdata_with_features.x rows to align with "
+                "Expected 'hdata_with_features.x' rows to align with "
                 "hdata_with_features.global_node_ids."
             )
         self.__validate_node_space_setting(node_space_setting, fill_value)
@@ -655,10 +657,12 @@ class HData:
 
         Args:
             k: The minimum number of nodes a hyperedge must have to be retained.
-            preserve_global_node_ids: Whether to preserve the global node IDs after removing hyperedges. Defaults to ``False``.
-                If ``False``, the global node IDs will be reindexed to be contiguous after removing hyperedges.
-                If ``True``, the global node IDs will be preserved, which may cause some models to raise
-                as they may expect contiguous global node IDs.
+            preserve_global_node_ids: Whether to preserve the global node IDs after
+                removing hyperedges. Defaults to ``False``.
+                If ``False``, the global node IDs will be reindexed to be contiguous after
+                removing hyperedges.
+                If ``True``, the global node IDs will be preserved, which may cause some models
+                to raise as they may expect contiguous global node IDs.
         """
         validate_is_positive("k", k)
 
@@ -1064,7 +1068,8 @@ class HData:
             return
 
         raise ValueError(
-            f"'enrichment_mode' must be one of 'replace', 'concatenate', or None, got {enrichment_mode!r}."
+            f"'enrichment_mode' must be one of 'replace', 'concatenate', "
+            f"or None, got {enrichment_mode!r}."
         )
 
     def __validate_hyperedge_attr(self) -> None:
@@ -1074,11 +1079,12 @@ class HData:
         validate_floating_tensor_dtype("hyperedge_attr", self.hyperedge_attr)
         if self.hyperedge_attr.dim() != 2:
             raise ValueError(
-                f"'hyperedge_attr' must be a 2D tensor, got shape {tuple(self.hyperedge_attr.shape)}."
+                f"'hyperedge_attr' must be a 2D tensor, got shape "
+                f"{tuple(self.hyperedge_attr.shape)}."
             )
         if self.hyperedge_attr.size(0) != self.num_hyperedges:
             raise ValueError(
-                "hyperedge_attr must have one row per hyperedge. "
+                "'hyperedge_attr' must have one row per hyperedge. "
                 f"Got size={self.hyperedge_attr.size(0)} but "
                 f"num_hyperedges={self.num_hyperedges}."
             )
@@ -1111,12 +1117,12 @@ class HData:
 
         if self.hyperedge_weights.dim() != 1:
             raise ValueError(
-                f"hyperedge_weights must be a 1D tensor, "
+                f"'hyperedge_weights' must be a 1D tensor, "
                 f"got shape {tuple(self.hyperedge_weights.shape)}."
             )
         if self.hyperedge_weights.size(0) != self.num_hyperedges:
             raise ValueError(
-                "hyperedge_weights must have one entry per hyperedge. "
+                f"'hyperedge_weights' must have one entry per hyperedge. "
                 f"Got size={self.hyperedge_weights.size(0)} but "
                 f"num_hyperedges={self.num_hyperedges}."
             )
@@ -1125,7 +1131,7 @@ class HData:
         validate_long_tensor_dtype("global_node_ids", self.global_node_ids)
         if self.global_node_ids.dim() != 1:
             raise ValueError(
-                f"global_node_ids must be a 1D tensor, got "
+                f"'global_node_ids' must be a 1D tensor, got "
                 f"shape {tuple(self.global_node_ids.shape)}."
             )
         if self.global_node_ids.size(0) != self.num_nodes:
@@ -1147,8 +1153,8 @@ class HData:
     def __validate_x(self) -> None:
         if self.x.size(0) not in (0, self.num_nodes):
             raise ValueError(
-                "x must have one feature row per node, or be 'torch.empty((0, 0))' "
-                "if there are no nodes. "
+                f"'x' must have one feature row per node, or be 'torch.empty((0, 0))' "
+                f"if there are no nodes. "
                 f"Got x.shape={tuple(self.x.shape)} but num_nodes={self.num_nodes}."
             )
 
@@ -1164,7 +1170,7 @@ class HData:
                 "'fill_value' cannot be provided when node_space_setting='transductive'."
             )
         if is_inductive_setting(node_space_setting) and fill_value is None:
-            raise ValueError("fill_value must be provided when node_space_setting='inductive'.")
+            raise ValueError("'fill_value' must be provided when node_space_setting='inductive'.")
 
     @staticmethod
     def __validate_enrichment_mode(enrichment_mode: EnrichmentMode | None) -> None:
@@ -1172,7 +1178,7 @@ class HData:
             return
 
         raise ValueError(
-            f"enrichment_mode must be one of 'replace', 'concatenate', "
+            f"'enrichment_mode' must be one of 'replace', 'concatenate', "
             f"or None, got {enrichment_mode!r}."
         )
 
