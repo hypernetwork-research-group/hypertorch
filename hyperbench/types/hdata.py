@@ -671,13 +671,22 @@ class HData:
             hdata: A new `HData` instance with hyperedge IDs, ``y``, and ``hyperedge_attr`` permuted.
         """
         generator = create_seeded_torch_generator(device=self.device, seed=seed)
-        permutation = torch.randperm(self.num_hyperedges, generator=generator, device=self.device)
+        permutation = torch.randperm(
+            self.num_hyperedges,
+            generator=generator,
+            dtype=torch.long,
+            device=self.device,
+        )
 
         # permutation[new_id] = old_id, so y[permutation] puts old labels into new slots
         # inverse_permutation[old_id] = new_id, used to remap hyperedge IDs in incidences
         # Example: permutation = [1, 2, 0] means new_id 0 gets old_id 1, new_id 1 gets old_id 2, new_id 2 gets old_id 0
         #          -> inverse_permutation = [2, 0, 1] means old_id 0 gets new_id 2, old_id 1 gets new_id 0, old_id 2 gets new_id 1
-        inverse_permutation = torch.empty_like(permutation)
+        inverse_permutation = torch.empty_like(
+            permutation,
+            dtype=permutation.dtype,
+            device=permutation.device,
+        )
         inverse_permutation[permutation] = torch.arange(
             self.num_hyperedges,
             dtype=permutation.dtype,
@@ -841,16 +850,17 @@ class HData:
                 hyperedge_ids, minlength=self.num_hyperedges
             ).float()
         else:
-            distribution_node_degree = torch.zeros(self.num_nodes, dtype=torch.float)
-            distribution_hyperedge_size = torch.zeros(self.num_hyperedges, dtype=torch.float)
-
-        num_nodes = self.num_nodes
-        num_hyperedges = self.num_hyperedges
+            distribution_node_degree = torch.zeros(
+                self.num_nodes, dtype=torch.float, device=self.device
+            )
+            distribution_hyperedge_size = torch.zeros(
+                self.num_hyperedges, dtype=torch.float, device=self.device
+            )
 
         if distribution_node_degree.numel() > 0:
-            avg_degree_node_raw = distribution_node_degree.mean().item()
+            avg_degree_node_raw = distribution_node_degree.mean(dtype=torch.float).item()
             avg_degree_node = int(avg_degree_node_raw)
-            avg_degree_hyperedge_raw = distribution_hyperedge_size.mean().item()
+            avg_degree_hyperedge_raw = distribution_hyperedge_size.mean(dtype=torch.float).item()
             avg_degree_hyperedge = int(avg_degree_hyperedge_raw)
             node_degree_max = int(distribution_node_degree.max().item())
             hyperedge_degree_max = int(distribution_hyperedge_size.max().item())
@@ -889,8 +899,8 @@ class HData:
             "shape_hyperedge_attr": self.hyperedge_attr.shape
             if self.hyperedge_attr is not None
             else None,
-            "num_nodes": num_nodes,
-            "num_hyperedges": num_hyperedges,
+            "num_nodes": self.num_nodes,
+            "num_hyperedges": self.num_hyperedges,
             "avg_degree_node_raw": avg_degree_node_raw,
             "avg_degree_node": avg_degree_node,
             "avg_degree_hyperedge_raw": avg_degree_hyperedge_raw,

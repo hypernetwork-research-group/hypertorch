@@ -72,7 +72,7 @@ def test_fill_value_hyperedge_attrs_enricher_returns_fixed_attrs(
     assert result.shape == (2, 1)
     assert result.dtype == torch.float
     assert result.device == mock_two_hyperedge_index.device
-    assert torch.equal(result, torch.tensor(expected))
+    assert torch.equal(result, torch.tensor(expected, dtype=torch.float))
 
 
 def test_fill_value_hyperedge_attrs_enricher_returns_empty_attrs_for_empty_input() -> None:
@@ -111,7 +111,7 @@ def test_ab_hyperedge_weights_enricher_counts_nodes_per_hyperedge(
 
     result = enricher.enrich(mock_two_hyperedge_index)
 
-    assert torch.equal(result, torch.tensor([2.0, 2.0]))
+    assert torch.equal(result, torch.tensor([2.0, 2.0], dtype=torch.float))
 
 
 @pytest.mark.parametrize(
@@ -234,7 +234,7 @@ def test_node2vec_enricher_returns_zero_features_when_clique_has_no_non_selfloop
     ):
         result = enricher.enrich(hyperedge_index)
 
-    assert torch.equal(result, torch.zeros((1, 3)))
+    assert torch.equal(result, torch.zeros((1, 3), dtype=torch.float))
     assert result.dtype == torch.float
 
 
@@ -346,7 +346,7 @@ def test_laplacian_positional_encoding_enricher_zero_pads_missing_eigenvectors(
     #              from eigenvectors returned by torch.linalg.eigh
     assert torch.allclose(
         torch.matmul(result[:, :2].T, result[:, :2]),
-        torch.eye(2),
+        torch.eye(2, dtype=torch.float),
         atol=1e-6,
     )
 

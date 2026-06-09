@@ -43,7 +43,7 @@ def sparse_dropout(
     # 'torch.bernoulli()' samples 1 with probability keep_prob and 0 with probability dropout_prob
     # Example: values = [0.5, 1.2, 3.4], keep_prob = 0.8
     #          -> keep_mask might be [1, 0, 1], meaning we keep the 1st and 3rd elements, drop the 2nd
-    keep_mask = torch.bernoulli(torch.full_like(values, keep_prob)).to(device)
+    keep_mask = torch.bernoulli(torch.full_like(values, keep_prob, dtype=values.dtype)).to(device)
 
     if fill_value == 0.0:
         # If fill_value is 0, just zero out the dropped elements,

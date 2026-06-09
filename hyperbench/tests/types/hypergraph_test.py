@@ -155,9 +155,9 @@ def test_from_edge_index_parametrized(edge_index_data, expected_edges):
 @pytest.mark.parametrize(
     "hyperedge_index_tensor",
     [
-        pytest.param(torch.tensor([[0, 1, 2], [0, 0, 0]]), id="single_hyperedge"),
-        pytest.param(torch.tensor([[0, 1], [0, 1]]), id="two_hyperedges"),
-        pytest.param(torch.tensor([[], []]), id="empty"),
+        pytest.param(torch.tensor([[0, 1, 2], [0, 0, 0]], dtype=torch.long), id="single_hyperedge"),
+        pytest.param(torch.tensor([[0, 1], [0, 1]], dtype=torch.long), id="two_hyperedges"),
+        pytest.param(torch.tensor([[], []], dtype=torch.float), id="empty"),
     ],
 )
 def test_hyperedge_index_item_returns_tensor(hyperedge_index_tensor):
@@ -257,16 +257,28 @@ def test_to_0based_with_explicit_ids_rebases_using_provided_spaces():
 @pytest.mark.parametrize(
     "hyperedge_index_tensor, expected_num_hyperedges",
     [
-        pytest.param(torch.tensor([[], []]), 0, id="empty_hypergraph"),
-        pytest.param(torch.tensor([[0], [0]]), 1, id="single_hyperedge_single_node"),
-        pytest.param(torch.tensor([[0, 1, 2], [0, 0, 0]]), 1, id="single_hyperedge_multiple_nodes"),
-        pytest.param(torch.tensor([[0, 1], [0, 1]]), 2, id="two_hyperedges"),
+        pytest.param(torch.tensor([[], []], dtype=torch.float), 0, id="empty_hypergraph"),
         pytest.param(
-            torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]]), 2, id="two_hyperedges_multiple_nodes"
+            torch.tensor([[0], [0]], dtype=torch.long), 1, id="single_hyperedge_single_node"
         ),
-        pytest.param(torch.tensor([[0, 1, 2], [0, 1, 2]]), 3, id="three_singleton_hyperedges"),
         pytest.param(
-            torch.tensor([[0, 1, 2, 3, 4], [0, 0, 1, 2, 2]]),
+            torch.tensor([[0, 1, 2], [0, 0, 0]], dtype=torch.long),
+            1,
+            id="single_hyperedge_multiple_nodes",
+        ),
+        pytest.param(torch.tensor([[0, 1], [0, 1]], dtype=torch.long), 2, id="two_hyperedges"),
+        pytest.param(
+            torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long),
+            2,
+            id="two_hyperedges_multiple_nodes",
+        ),
+        pytest.param(
+            torch.tensor([[0, 1, 2], [0, 1, 2]], dtype=torch.long),
+            3,
+            id="three_singleton_hyperedges",
+        ),
+        pytest.param(
+            torch.tensor([[0, 1, 2, 3, 4], [0, 0, 1, 2, 2]], dtype=torch.long),
             3,
             id="multiple_hyperedges_varying_sizes",
         ),
@@ -281,15 +293,27 @@ def test_hyperedge_index_num_hyperedges(hyperedge_index_tensor, expected_num_hyp
 @pytest.mark.parametrize(
     "hyperedge_index_tensor, expected_num_nodes",
     [
-        pytest.param(torch.tensor([[], []]), 0, id="empty_hypergraph"),
-        pytest.param(torch.tensor([[0], [0]]), 1, id="single_node"),
-        pytest.param(torch.tensor([[0, 1, 2], [0, 0, 0]]), 3, id="three_nodes_one_hyperedge"),
-        pytest.param(torch.tensor([[0, 1], [0, 1]]), 2, id="two_nodes_two_hyperedges"),
-        pytest.param(torch.tensor([[0, 5], [0, 0]]), 2, id="non_consecutive_node_indices"),
+        pytest.param(torch.tensor([[], []], dtype=torch.float), 0, id="empty_hypergraph"),
+        pytest.param(torch.tensor([[0], [0]], dtype=torch.long), 1, id="single_node"),
         pytest.param(
-            torch.tensor([[0, 1, 2, 3, 4], [0, 0, 1, 1, 2]]), 5, id="five_nodes_three_hyperedges"
+            torch.tensor([[0, 1, 2], [0, 0, 0]], dtype=torch.long),
+            3,
+            id="three_nodes_one_hyperedge",
         ),
-        pytest.param(torch.tensor([[9, 2, 5], [0, 0, 0]]), 3, id="sparse_node_indices"),
+        pytest.param(
+            torch.tensor([[0, 1], [0, 1]], dtype=torch.long), 2, id="two_nodes_two_hyperedges"
+        ),
+        pytest.param(
+            torch.tensor([[0, 5], [0, 0]], dtype=torch.long), 2, id="non_consecutive_node_indices"
+        ),
+        pytest.param(
+            torch.tensor([[0, 1, 2, 3, 4], [0, 0, 1, 1, 2]], dtype=torch.long),
+            5,
+            id="five_nodes_three_hyperedges",
+        ),
+        pytest.param(
+            torch.tensor([[9, 2, 5], [0, 0, 0]], dtype=torch.long), 3, id="sparse_node_indices"
+        ),
     ],
 )
 def test_hyperedge_index_num_nodes(hyperedge_index_tensor, expected_num_nodes):
@@ -302,19 +326,19 @@ def test_hyperedge_index_num_nodes(hyperedge_index_tensor, expected_num_nodes):
     "hyperedge_index_tensor, num_nodes_arg, expected",
     [
         pytest.param(
-            torch.tensor([[0, 1, 2], [0, 0, 1]]),
+            torch.tensor([[0, 1, 2], [0, 0, 1]], dtype=torch.long),
             10,
             10,
             id="isolated_nodes_exist",
         ),
         pytest.param(
-            torch.tensor([[0, 1, 2], [0, 0, 1]]),
+            torch.tensor([[0, 1, 2], [0, 0, 1]], dtype=torch.long),
             3,
             3,
             id="no_isolated_nodes",
         ),
         pytest.param(
-            torch.tensor([[0, 1, 2], [0, 0, 1]]),
+            torch.tensor([[0, 1, 2], [0, 0, 1]], dtype=torch.long),
             1,
             3,
             id="arg_less_than_unique_nodes",
@@ -486,25 +510,25 @@ def test_hifhypergraph_stats_returns_correct_statistics():
     "hyperedge_index_tensor, hyperedge_id, expected_nodes",
     [
         pytest.param(
-            torch.tensor([[0, 1, 2], [0, 0, 0]]),
+            torch.tensor([[0, 1, 2], [0, 0, 0]], dtype=torch.long),
             0,
             [0, 1, 2],
             id="single_hyperedge_all_nodes",
         ),
         pytest.param(
-            torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]]),
+            torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long),
             0,
             [0, 1],
             id="first_of_two_hyperedges",
         ),
         pytest.param(
-            torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]]),
+            torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long),
             1,
             [2, 3],
             id="second_of_two_hyperedges",
         ),
         pytest.param(
-            torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]]),
+            torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long),
             10,
             [],
             id="non_existent_hyperedge_id",
@@ -596,17 +620,17 @@ def test_reduce_rejects_unsupported_strategy():
     "hyperedge_index_tensor, expected_num_edges",
     [
         pytest.param(
-            torch.tensor([[0, 1, 2], [0, 0, 0]]),
+            torch.tensor([[0, 1, 2], [0, 0, 0]], dtype=torch.long),
             9,  # Clique of 3 nodes: 6 directed cross-edges + 3 self-loops
             id="single_hyperedge_3_nodes",
         ),
         pytest.param(
-            torch.tensor([[0, 1], [0, 0]]),
+            torch.tensor([[0, 1], [0, 0]], dtype=torch.long),
             4,  # Clique of 2 nodes: 2 directed cross-edges + 2 self-loops
             id="single_hyperedge_2_nodes",
         ),
         pytest.param(
-            torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]]),
+            torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long),
             8,  # Two disjoint hyperedges of 2 nodes each: 4 directed cross-edges + 4 self-loops
             id="two_disjoint_hyperedges",
         ),
@@ -621,7 +645,7 @@ def test_clique_expansion_edge_count(hyperedge_index_tensor, expected_num_edges)
 
 def test_clique_expansion_overlapping_hyperedges():
     # Two hyperedges sharing node 1: {0,1} and {1,2}
-    hyperedge_index = torch.tensor([[0, 1, 1, 2], [0, 0, 1, 1]])
+    hyperedge_index = torch.tensor([[0, 1, 1, 2], [0, 0, 1, 1]], dtype=torch.long)
     result = HyperedgeIndex(hyperedge_index).reduce_to_edge_index_on_clique_expansion()
     edges = set(zip(result[0].tolist(), result[1].tolist(), strict=True))
 
@@ -689,15 +713,15 @@ def test_get_clique_expansion_adjacency_rejects_num_nodes_too_small():
     "x, hyperedge_index, with_mediators, expected_num_edges",
     [
         pytest.param(
-            torch.tensor([[1.0, 0.0], [0.0, 1.0]]),
-            torch.tensor([[0, 1], [0, 0]]),
+            torch.tensor([[1.0, 0.0], [0.0, 1.0]], dtype=torch.float),
+            torch.tensor([[0, 1], [0, 0]], dtype=torch.long),
             False,
             1,  # One hyperedge, so one graph edge, no mediators to create additional edges
             id="single_hyperedge_2_nodes_no_mediators",
         ),
         pytest.param(
-            torch.tensor([[1.0, 0.0], [0.0, 1.0]]),
-            torch.tensor([[0, 1], [0, 0]]),
+            torch.tensor([[1.0, 0.0], [0.0, 1.0]], dtype=torch.float),
+            torch.tensor([[0, 1], [0, 0]], dtype=torch.long),
             True,
             # Only 2 nodes and both are extremes (argmin/argmax)
             # No mediators exist (mediators are nodes that are neither argmin nor argmax)
@@ -706,22 +730,22 @@ def test_get_clique_expansion_adjacency_rejects_num_nodes_too_small():
             id="single_hyperedge_2_nodes_with_mediators_produces_no_edges",
         ),
         pytest.param(
-            torch.tensor([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]),
-            torch.tensor([[0, 1, 2], [0, 0, 0]]),
+            torch.tensor([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], dtype=torch.float),
+            torch.tensor([[0, 1, 2], [0, 0, 0]], dtype=torch.long),
             False,
             1,  # One hyperedge, so one graph edge, no mediators to create additional edges
             id="single_hyperedge_3_nodes_no_mediators",
         ),
         pytest.param(
-            torch.tensor([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]),
-            torch.tensor([[0, 1, 2], [0, 0, 0]]),
+            torch.tensor([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], dtype=torch.float),
+            torch.tensor([[0, 1, 2], [0, 0, 0]], dtype=torch.long),
             True,
             2,  # If argmin = 0 and argmax = 2, mediator 1 creates 2 edges [0,1] and [1,2]
             id="single_hyperedge_3_nodes_with_mediators",
         ),
         pytest.param(
-            torch.tensor([[1.0, 0.0], [0.0, 1.0], [0.5, 0.5], [1.0, 1.0]]),
-            torch.tensor([[0, 1, 2, 3], [0, 0, 0, 0]]),
+            torch.tensor([[1.0, 0.0], [0.0, 1.0], [0.5, 0.5], [1.0, 1.0]], dtype=torch.float),
+            torch.tensor([[0, 1, 2, 3], [0, 0, 0, 0]], dtype=torch.long),
             True,
             # 2 nodes are extremes (argmin/argmax), 2 are mediators
             # Each mediator connects to both extremes: 2 mediators * 2 edges = 4 edges
@@ -729,8 +753,8 @@ def test_get_clique_expansion_adjacency_rejects_num_nodes_too_small():
             id="single_hyperedge_4_nodes_with_mediators",
         ),
         pytest.param(
-            torch.tensor([[1.0, 0.0], [0.0, 1.0], [0.5, 0.5], [1.0, 1.0]]),
-            torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]]),
+            torch.tensor([[1.0, 0.0], [0.0, 1.0], [0.5, 0.5], [1.0, 1.0]], dtype=torch.float),
+            torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long),
             False,
             # Two hyperedges, each with 2 nodes -> 2 graph edges,
             # there are no mediators to create additional edges
@@ -745,9 +769,10 @@ def test_get_clique_expansion_adjacency_rejects_num_nodes_too_small():
                     [0.0, 0.0, 1.0],
                     [0.5, 0.5, 0.0],
                     [0.0, 0.5, 0.5],
-                ]
+                ],
+                dtype=torch.float,
             ),
-            torch.tensor([[0, 1, 2, 2, 3, 4], [0, 0, 0, 1, 1, 1]]),
+            torch.tensor([[0, 1, 2, 2, 3, 4], [0, 0, 0, 1, 1, 1]], dtype=torch.long),
             True,
             # Hyperedge 0 has 3 nodes -> 1 mediator -> 2 edges
             # Hyperedge 1 has 3 nodes -> 1 mediator -> 2 edges
@@ -772,18 +797,18 @@ def test_reduce_to_graph_edge_count(x, hyperedge_index, with_mediators, expected
     "x, hyperedge_index",
     [
         pytest.param(
-            torch.tensor([[1.0, 0.0], [0.0, 1.0]]),
-            torch.tensor([[0, 1], [0, 0]]),
+            torch.tensor([[1.0, 0.0], [0.0, 1.0]], dtype=torch.float),
+            torch.tensor([[0, 1], [0, 0]], dtype=torch.long),
             id="2_nodes_1_hyperedge",
         ),
         pytest.param(
-            torch.tensor([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]),
-            torch.tensor([[0, 1, 2], [0, 0, 0]]),
+            torch.tensor([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], dtype=torch.float),
+            torch.tensor([[0, 1, 2], [0, 0, 0]], dtype=torch.long),
             id="3_nodes_1_hyperedge",
         ),
         pytest.param(
-            torch.tensor([[1.0, 0.0], [0.0, 1.0], [0.5, 0.5], [1.0, 1.0]]),
-            torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]]),
+            torch.tensor([[1.0, 0.0], [0.0, 1.0], [0.5, 0.5], [1.0, 1.0]], dtype=torch.float),
+            torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long),
             id="4_nodes_2_hyperedges",
         ),
     ],
@@ -800,8 +825,10 @@ def test_reduce_to_graph_output_has_two_rows(x, hyperedge_index):
 
 def test_reduce_to_graph_output_nodes_are_within_bounds():
     """All node indices in the output are valid indices from the input node set."""
-    x = torch.tensor([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0], [0.5, 0.5, 0.0]])
-    hyperedge_index = torch.tensor([[0, 1, 2, 1, 2, 3], [0, 0, 0, 1, 1, 1]])
+    x = torch.tensor(
+        [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0], [0.5, 0.5, 0.0]], dtype=torch.float
+    )
+    hyperedge_index = torch.tensor([[0, 1, 2, 1, 2, 3], [0, 0, 0, 1, 1, 1]], dtype=torch.long)
 
     edge_index, edge_weights = HyperedgeIndex(
         hyperedge_index
@@ -816,8 +843,8 @@ def test_reduce_to_graph_output_nodes_are_within_bounds():
 def test_reduce_to_graph_removes_selfloops():
     # Duplicate node in hyperedge forces a self-loop: projections are identical,
     # so argmax and argmin both select index 0, producing edge [0, 0].
-    x = torch.tensor([[1.0, 0.0], [0.0, 1.0]])
-    hyperedge_index = torch.tensor([[0, 0], [0, 0]])
+    x = torch.tensor([[1.0, 0.0], [0.0, 1.0]], dtype=torch.float)
+    hyperedge_index = torch.tensor([[0, 0], [0, 0]], dtype=torch.long)
 
     edge_index, edge_weights = HyperedgeIndex(
         hyperedge_index
@@ -836,8 +863,8 @@ def test_reduce_to_graph_removes_selfloops():
 
 
 def test_reduce_to_graph_keeps_selfloops_when_disabled():
-    x = torch.tensor([[1.0, 0.0], [0.0, 1.0]])
-    hyperedge_index = torch.tensor([[0, 0], [0, 0]])
+    x = torch.tensor([[1.0, 0.0], [0.0, 1.0]], dtype=torch.float)
+    hyperedge_index = torch.tensor([[0, 0], [0, 0]], dtype=torch.long)
 
     edge_index, edge_weights = HyperedgeIndex(
         hyperedge_index
@@ -849,8 +876,8 @@ def test_reduce_to_graph_keeps_selfloops_when_disabled():
 
 
 def test_reduce_to_graph_raises_on_single_node_hyperedge():
-    x = torch.tensor([[1.0, 0.0], [0.0, 1.0]])
-    hyperedge_index = torch.tensor([[0], [0]])
+    x = torch.tensor([[1.0, 0.0], [0.0, 1.0]], dtype=torch.float)
+    hyperedge_index = torch.tensor([[0], [0]], dtype=torch.long)
 
     with pytest.raises(
         ValueError,
@@ -860,7 +887,7 @@ def test_reduce_to_graph_raises_on_single_node_hyperedge():
 
 
 def test_reduce_to_graph_returns_empty_edge_index_for_empty_hyperedge_index():
-    x = torch.empty((0, 2))
+    x = torch.empty((0, 2), dtype=torch.float)
     hyperedge_index = torch.empty((2, 0), dtype=torch.long)
 
     edge_index, edge_weights = HyperedgeIndex(
@@ -872,9 +899,9 @@ def test_reduce_to_graph_returns_empty_edge_index_for_empty_hyperedge_index():
 
 
 def test_reduce_to_graph_keeps_duplicate_edges_from_different_hyperedges():
-    x = torch.tensor([[0.0, 0.0], [1.0, 1.0]])
+    x = torch.tensor([[0.0, 0.0], [1.0, 1.0]], dtype=torch.float)
     # Two identical hyperedges {0,1} and both reduce to the same graph edge
-    hyperedge_index = torch.tensor([[0, 1, 0, 1], [0, 0, 1, 1]])
+    hyperedge_index = torch.tensor([[0, 1, 0, 1], [0, 0, 1, 1]], dtype=torch.long)
 
     edge_index, edge_weights = HyperedgeIndex(
         hyperedge_index
@@ -889,12 +916,12 @@ def test_reduce_to_graph_keeps_duplicate_edges_from_different_hyperedges():
 
     # hyperedges [[0,1],[0,1]] both project to graph edge [0,1],
     # so we expect two identical edges in the output
-    assert torch.equal(edge_index, torch.tensor([[0, 0], [1, 1]]))
+    assert torch.equal(edge_index, torch.tensor([[0, 0], [1, 1]], dtype=torch.long))
 
 
 def test_reduce_to_graph_return_weights_false_returns_none():
-    x = torch.tensor([[0.0, 0.0], [1.0, 1.0]])
-    hyperedge_index = torch.tensor([[0, 1], [0, 0]])
+    x = torch.tensor([[0.0, 0.0], [1.0, 1.0]], dtype=torch.float)
+    hyperedge_index = torch.tensor([[0, 1], [0, 0]], dtype=torch.long)
 
     edge_index, edge_weights = HyperedgeIndex(
         hyperedge_index
@@ -903,13 +930,13 @@ def test_reduce_to_graph_return_weights_false_returns_none():
         return_weights=False,
     )
 
-    assert torch.equal(edge_index, torch.tensor([[0], [1]]))
+    assert torch.equal(edge_index, torch.tensor([[0], [1]], dtype=torch.long))
     assert edge_weights is None
 
 
 def test_reduce_to_graph_return_weights_true_without_mediators():
-    x = torch.tensor([[0.0, 0.0], [0.5, 0.5], [1.0, 1.0]])
-    hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 0]])
+    x = torch.tensor([[0.0, 0.0], [0.5, 0.5], [1.0, 1.0]], dtype=torch.float)
+    hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 0]], dtype=torch.long)
 
     edge_index, edge_weights = HyperedgeIndex(
         hyperedge_index
@@ -918,17 +945,17 @@ def test_reduce_to_graph_return_weights_true_without_mediators():
         return_weights=True,
     )
 
-    assert torch.equal(edge_index, torch.tensor([[0], [2]]))
+    assert torch.equal(edge_index, torch.tensor([[0], [2]], dtype=torch.long))
     assert edge_weights is not None
     assert edge_weights.dtype == torch.float
     assert edge_weights.device == x.device
     # When no mediators are present, weight = 1 / number of nodes in hyperedge = 1/3
-    assert torch.allclose(edge_weights, torch.tensor([1 / 3]))
+    assert torch.allclose(edge_weights, torch.tensor([1 / 3], dtype=torch.float))
 
 
 def test_reduce_to_graph_return_weights_true_with_mediators():
-    x = torch.tensor([[0.0, 0.0], [0.5, 0.5], [1.0, 1.0]])
-    hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 0]])
+    x = torch.tensor([[0.0, 0.0], [0.5, 0.5], [1.0, 1.0]], dtype=torch.float)
+    hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 0]], dtype=torch.long)
 
     edge_index, edge_weights = HyperedgeIndex(
         hyperedge_index
@@ -939,14 +966,14 @@ def test_reduce_to_graph_return_weights_true_with_mediators():
         remove_selfloops=False,
     )
 
-    assert torch.equal(edge_index, torch.tensor([[0, 2], [1, 1]]))
+    assert torch.equal(edge_index, torch.tensor([[0, 2], [1, 1]], dtype=torch.long))
     assert edge_weights is not None
-    assert torch.allclose(edge_weights, torch.tensor([1 / 3, 1 / 3]))
+    assert torch.allclose(edge_weights, torch.tensor([1 / 3, 1 / 3], dtype=torch.float))
 
 
 def test_reduce_to_graph_return_weights_true_keeps_duplicate_edge_weights_aligned():
-    x = torch.tensor([[0.0, 0.0], [1.0, 1.0]])
-    hyperedge_index = torch.tensor([[0, 1, 0, 1], [0, 0, 1, 1]])
+    x = torch.tensor([[0.0, 0.0], [1.0, 1.0]], dtype=torch.float)
+    hyperedge_index = torch.tensor([[0, 1, 0, 1], [0, 0, 1, 1]], dtype=torch.long)
 
     edge_index, edge_weights = HyperedgeIndex(
         hyperedge_index
@@ -956,14 +983,14 @@ def test_reduce_to_graph_return_weights_true_keeps_duplicate_edge_weights_aligne
         remove_selfloops=False,
     )
 
-    assert torch.equal(edge_index, torch.tensor([[0, 0], [1, 1]]))
+    assert torch.equal(edge_index, torch.tensor([[0, 0], [1, 1]], dtype=torch.long))
     assert edge_weights is not None
-    assert torch.allclose(edge_weights, torch.tensor([0.5, 0.5]))
+    assert torch.allclose(edge_weights, torch.tensor([0.5, 0.5], dtype=torch.float))
 
 
 def test_reduce_to_graph_return_weights_true_removes_weights_for_selfloops():
-    x = torch.tensor([[1.0, 0.0], [0.0, 1.0]])
-    hyperedge_index = torch.tensor([[0, 0], [0, 0]])
+    x = torch.tensor([[1.0, 0.0], [0.0, 1.0]], dtype=torch.float)
+    hyperedge_index = torch.tensor([[0, 0], [0, 0]], dtype=torch.long)
 
     edge_index, edge_weights = HyperedgeIndex(
         hyperedge_index
@@ -988,57 +1015,57 @@ def test_reduce_to_graph_return_weights_true_removes_weights_for_selfloops():
             id="empty_index",
         ),
         pytest.param(
-            torch.tensor([[0, 1, 2], [0, 0, 0]]),
+            torch.tensor([[0, 1, 2], [0, 0, 0]], dtype=torch.long),
             1,
-            torch.tensor([[0, 1, 2], [0, 0, 0]]),
+            torch.tensor([[0, 1, 2], [0, 0, 0]], dtype=torch.long),
             id="single_hyperedge_3_nodes_k1_all_kept",
         ),
         pytest.param(
-            torch.tensor([[0, 1, 2], [0, 0, 0]]),
+            torch.tensor([[0, 1, 2], [0, 0, 0]], dtype=torch.long),
             3,
-            torch.tensor([[0, 1, 2], [0, 0, 0]]),
+            torch.tensor([[0, 1, 2], [0, 0, 0]], dtype=torch.long),
             id="single_hyperedge_3_nodes_k3_exact_boundary_kept",
         ),
         pytest.param(
-            torch.tensor([[0, 1, 2], [0, 0, 0]]),
+            torch.tensor([[0, 1, 2], [0, 0, 0]], dtype=torch.long),
             4,
             torch.zeros((2, 0), dtype=torch.long),
             id="single_hyperedge_3_nodes_k4_removed",
         ),
         pytest.param(
-            torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]]),
+            torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long),
             2,
-            torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]]),
+            torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long),
             id="two_hyperedges_2_nodes_each_k2_both_kept",
         ),
         pytest.param(
-            torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]]),
+            torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long),
             3,
             torch.zeros((2, 0), dtype=torch.long),
             id="two_hyperedges_2_nodes_each_k3_both_removed",
         ),
         pytest.param(
-            torch.tensor([[0, 1, 2, 3, 4], [0, 0, 0, 1, 1]]),
+            torch.tensor([[0, 1, 2, 3, 4], [0, 0, 0, 1, 1]], dtype=torch.long),
             3,
-            torch.tensor([[0, 1, 2], [0, 0, 0]]),
+            torch.tensor([[0, 1, 2], [0, 0, 0]], dtype=torch.long),
             id="two_hyperedges_first_3_nodes_second_2_nodes_k3_only_first_kept",
         ),
         pytest.param(
-            torch.tensor([[0, 1, 2, 3, 4], [0, 0, 1, 1, 1]]),
+            torch.tensor([[0, 1, 2, 3, 4], [0, 0, 1, 1, 1]], dtype=torch.long),
             3,
-            torch.tensor([[2, 3, 4], [1, 1, 1]]),
+            torch.tensor([[2, 3, 4], [1, 1, 1]], dtype=torch.long),
             id="two_hyperedges_first_2_nodes_second_3_nodes_k3_only_second_kept",
         ),
         pytest.param(
-            torch.tensor([[0, 1, 2, 3, 4, 5], [0, 0, 1, 1, 1, 2]]),
+            torch.tensor([[0, 1, 2, 3, 4, 5], [0, 0, 1, 1, 1, 2]], dtype=torch.long),
             3,
-            torch.tensor([[2, 3, 4], [1, 1, 1]]),
+            torch.tensor([[2, 3, 4], [1, 1, 1]], dtype=torch.long),
             id="three_hyperedges_sizes_2_3_1_k3_only_middle_kept",
         ),
         pytest.param(
-            torch.tensor([[0, 1, 2, 3, 4, 5], [0, 0, 0, 1, 1, 1]]),
+            torch.tensor([[0, 1, 2, 3, 4, 5], [0, 0, 0, 1, 1, 1]], dtype=torch.long),
             2,
-            torch.tensor([[0, 1, 2, 3, 4, 5], [0, 0, 0, 1, 1, 1]]),
+            torch.tensor([[0, 1, 2, 3, 4, 5], [0, 0, 0, 1, 1, 1]], dtype=torch.long),
             id="two_hyperedges_3_nodes_each_k2_both_kept",
         ),
     ],
@@ -1050,7 +1077,7 @@ def test_remove_hyperedges_with_fewer_than_k_nodes(hyperedge_index_tensor, k, ex
 
 
 def test_remove_hyperedges_with_fewer_than_k_nodes_returns_self():
-    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1, 2], [0, 0, 0]]))
+    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1, 2], [0, 0, 0]], dtype=torch.long))
     result = hyperedge_index.remove_hyperedges_with_fewer_than_k_nodes(1)
 
     assert result is hyperedge_index
@@ -1071,12 +1098,12 @@ def test_remove_hyperedges_with_fewer_than_k_nodes_rejects_invalid_k():
     ],
 )
 def test_hypergraph_smoothing_with_matrix_does_not_apply_dropout_when_not_provided(dropout):
-    x = torch.tensor([[1.0], [2.0]])
-    matrix = torch.tensor([[1.0, 0.0], [0.0, 1.0]]).to_sparse()
+    x = torch.tensor([[1.0], [2.0]], dtype=torch.float)
+    matrix = torch.tensor([[1.0, 0.0], [0.0, 1.0]], dtype=torch.float).to_sparse()
 
     with patch(
         "hyperbench.types.hypergraph.sparse_dropout",
-        return_value=torch.zeros_like(matrix),
+        return_value=torch.zeros_like(matrix, dtype=matrix.dtype),
     ) as mock_sparse_dropout:
         if dropout is not None:
             smoothed_matrix = Hypergraph.smoothing_with_matrix(x, matrix, drop_rate=dropout)
@@ -1091,12 +1118,12 @@ def test_hypergraph_smoothing_with_matrix_does_not_apply_dropout_when_not_provid
 
 
 def test_hypergraph_smoothing_with_matrix_applies_dropout_when_enabled():
-    x = torch.tensor([[1.0], [2.0]])
-    matrix = torch.tensor([[1.0, 0.0], [0.0, 1.0]]).to_sparse()
+    x = torch.tensor([[1.0], [2.0]], dtype=torch.float)
+    matrix = torch.tensor([[1.0, 0.0], [0.0, 1.0]], dtype=torch.float).to_sparse()
 
     with patch(
         "hyperbench.types.hypergraph.sparse_dropout",
-        return_value=torch.zeros_like(matrix),
+        return_value=torch.zeros_like(matrix, dtype=matrix.dtype),
     ) as mock_sparse_dropout:
         smoothed_matrix = Hypergraph.smoothing_with_matrix(x, matrix, drop_rate=0.7)
 
@@ -1107,13 +1134,13 @@ def test_hypergraph_smoothing_with_matrix_applies_dropout_when_enabled():
     assert called_matrix is matrix
     assert called_drop_rate == 0.7
     assert smoothed_matrix.shape == x.shape
-    assert torch.equal(smoothed_matrix, torch.zeros_like(x))
+    assert torch.equal(smoothed_matrix, torch.zeros_like(x, dtype=x.dtype))
 
 
 def test_hyperedge_index_sparse_symnormalized_node_degree_handles_isolated_nodes():
     # Node 2 is isolated by setting num_nodes=3 while incidences involve only nodes 0 and 1
     num_nodes = 3
-    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 0, 1], [0, 1, 1]]))
+    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 0, 1], [0, 1, 1]], dtype=torch.long))
     incidence_matrix = hyperedge_index.get_sparse_incidence_matrix(
         num_nodes=num_nodes, num_hyperedges=2
     )
@@ -1123,7 +1150,9 @@ def test_hyperedge_index_sparse_symnormalized_node_degree_handles_isolated_nodes
     )
 
     expected_node_degree_matrix = torch.diag(
-        torch.tensor([1 / torch.sqrt(torch.tensor(2.0)), 1.0, 0.0])
+        torch.tensor(
+            [1 / torch.sqrt(torch.tensor(2.0, dtype=torch.float)), 1.0, 0.0], dtype=torch.float
+        )
     )
     assert torch.allclose(node_degree_matrix.to_dense(), expected_node_degree_matrix, atol=1e-6)
 
@@ -1131,7 +1160,7 @@ def test_hyperedge_index_sparse_symnormalized_node_degree_handles_isolated_nodes
 def test_hyperedge_index_sparse_rownormalized_node_degree_handles_isolated_nodes():
     # Node 2 is isolated by setting num_nodes=3 while incidences involve only nodes 0 and 1
     num_nodes = 3
-    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 0, 1], [0, 1, 1]]))
+    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 0, 1], [0, 1, 1]], dtype=torch.long))
     incidence_matrix = hyperedge_index.get_sparse_incidence_matrix(
         num_nodes=num_nodes, num_hyperedges=2
     )
@@ -1143,14 +1172,14 @@ def test_hyperedge_index_sparse_rownormalized_node_degree_handles_isolated_nodes
     # Node 2 is isolated, so its degree is 0.
     # Nodes 0 and 1 have degree 2 (as it is connected to 2 hyperedges) and 1 respectively,
     # so their normalized degrees are 1/2 and 1 respectively.
-    expected_node_degree_matrix = torch.diag(torch.tensor([0.5, 1.0, 0.0]))
+    expected_node_degree_matrix = torch.diag(torch.tensor([0.5, 1.0, 0.0], dtype=torch.float))
     assert torch.allclose(node_degree_matrix.to_dense(), expected_node_degree_matrix, atol=1e-6)
 
 
 def test_hyperedge_index_sparse_normalized_hyperedge_degree_handles_empty_hyperedge_slot():
     # Hyperedge 1 is isolated by setting num_hyperedges=2 while incidences involve only hyperedge 0
     num_hyperedges = 2
-    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1], [0, 0]]))
+    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1], [0, 0]], dtype=torch.long))
     incidence_matrix = hyperedge_index.get_sparse_incidence_matrix(
         num_nodes=2, num_hyperedges=num_hyperedges
     )
@@ -1159,14 +1188,14 @@ def test_hyperedge_index_sparse_normalized_hyperedge_degree_handles_empty_hypere
         incidence_matrix, num_hyperedges=num_hyperedges
     )
 
-    expected_hyperedge_degree_matrix = torch.diag(torch.tensor([0.5, 0.0]))
+    expected_hyperedge_degree_matrix = torch.diag(torch.tensor([0.5, 0.0], dtype=torch.float))
     assert torch.allclose(
         hyperedge_degree_matrix.to_dense(), expected_hyperedge_degree_matrix, atol=1e-6
     )
 
 
 def test_hyperedge_index_sparse_hgnn_laplacian_matches_formula():
-    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 0, 1], [0, 1, 1]]))
+    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 0, 1], [0, 1, 1]], dtype=torch.long))
 
     laplacian = hyperedge_index.get_sparse_hgnn_smoothing_matrix(num_nodes=3, num_hyperedges=2)
 
@@ -1175,10 +1204,15 @@ def test_hyperedge_index_sparse_hgnn_laplacian_matches_formula():
             [1.0, 1.0],
             [0.0, 1.0],
             [0.0, 0.0],
-        ]
+        ],
+        dtype=torch.float,
     )
-    node_degree_inv_sqrt = torch.diag(torch.tensor([1 / torch.sqrt(torch.tensor(2.0)), 1.0, 0.0]))
-    hyperedge_degree_inv = torch.diag(torch.tensor([1.0, 0.5]))
+    node_degree_inv_sqrt = torch.diag(
+        torch.tensor(
+            [1 / torch.sqrt(torch.tensor(2.0, dtype=torch.float)), 1.0, 0.0], dtype=torch.float
+        )
+    )
+    hyperedge_degree_inv = torch.diag(torch.tensor([1.0, 0.5], dtype=torch.float))
 
     expected_laplacian = torch.mm(
         node_degree_inv_sqrt,
@@ -1196,7 +1230,7 @@ def test_hyperedge_index_sparse_hgnn_laplacian_matches_formula():
 
 
 def test_get_sparse_hgnn_laplacian_inferred_equals_explicit():
-    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1, 0, 2], [0, 0, 1, 1]]))
+    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1, 0, 2], [0, 0, 1, 1]], dtype=torch.long))
 
     laplacian_inferred = hyperedge_index.get_sparse_hgnn_smoothing_matrix()
     laplacian_explicit = hyperedge_index.get_sparse_hgnn_smoothing_matrix(
@@ -1214,7 +1248,7 @@ def test_get_sparse_hgnn_laplacian_inferred_equals_explicit():
 
 
 def test_hyperedge_index_sparse_hgnnp_smoothing_matrix_matches_formula():
-    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 0, 1], [0, 1, 1]]))
+    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 0, 1], [0, 1, 1]], dtype=torch.long))
 
     smoothing_matrix = hyperedge_index.get_sparse_hgnnp_smoothing_matrix(
         num_nodes=3,
@@ -1226,10 +1260,11 @@ def test_hyperedge_index_sparse_hgnnp_smoothing_matrix_matches_formula():
             [1.0, 1.0],
             [0.0, 1.0],
             [0.0, 0.0],
-        ]
+        ],
+        dtype=torch.float,
     )
-    node_degree_inv = torch.diag(torch.tensor([0.5, 1.0, 0.0]))
-    hyperedge_degree_inv = torch.diag(torch.tensor([1.0, 0.5]))
+    node_degree_inv = torch.diag(torch.tensor([0.5, 1.0, 0.0], dtype=torch.float))
+    hyperedge_degree_inv = torch.diag(torch.tensor([1.0, 0.5], dtype=torch.float))
 
     expected_smoothing_matrix = torch.mm(
         node_degree_inv,
@@ -1244,7 +1279,7 @@ def test_hyperedge_index_sparse_hgnnp_smoothing_matrix_matches_formula():
 
 
 def test_get_sparse_hgnnp_smoothing_matrix_inferred_equals_explicit():
-    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1, 0, 2], [0, 0, 1, 1]]))
+    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1, 0, 2], [0, 0, 1, 1]], dtype=torch.long))
 
     smoothing_inferred = hyperedge_index.get_sparse_hgnnp_smoothing_matrix()
     smoothing_explicit = hyperedge_index.get_sparse_hgnnp_smoothing_matrix(
@@ -1262,16 +1297,18 @@ def test_get_sparse_hgnnp_smoothing_matrix_inferred_equals_explicit():
 
 
 def test_get_sparse_hgnnp_smoothing_matrix_is_row_stochastic_for_non_isolated_nodes():
-    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1, 2, 0, 3], [0, 0, 0, 1, 1]]))
+    hyperedge_index = HyperedgeIndex(
+        torch.tensor([[0, 1, 2, 0, 3], [0, 0, 0, 1, 1]], dtype=torch.long)
+    )
 
     smoothing_matrix = hyperedge_index.get_sparse_hgnnp_smoothing_matrix(num_nodes=4).to_dense()
-    row_sums = smoothing_matrix.sum(dim=1)
+    row_sums = smoothing_matrix.sum(dim=1, dtype=torch.float)
 
-    assert torch.allclose(row_sums, torch.ones(4), atol=1e-6)
+    assert torch.allclose(row_sums, torch.ones(4, dtype=torch.float), atol=1e-6)
 
 
 def test_get_sparse_incidence_matrix_infers_shape_and_values():
-    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1, 0, 2], [0, 0, 1, 1]]))
+    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1, 0, 2], [0, 0, 1, 1]], dtype=torch.long))
 
     incidence_matrix = hyperedge_index.get_sparse_incidence_matrix()
 
@@ -1280,7 +1317,8 @@ def test_get_sparse_incidence_matrix_infers_shape_and_values():
             [1.0, 1.0],
             [1.0, 0.0],
             [0.0, 1.0],
-        ]
+        ],
+        dtype=torch.float,
     )
     assert incidence_matrix.is_sparse
     assert incidence_matrix.shape == (3, 2)
@@ -1288,7 +1326,7 @@ def test_get_sparse_incidence_matrix_infers_shape_and_values():
 
 
 def test_get_sparse_incidence_matrix_with_explicit_sizes_adds_isolated_nodes_and_hyperedges():
-    hyperedge_index = HyperedgeIndex(torch.tensor([[0], [0]]))
+    hyperedge_index = HyperedgeIndex(torch.tensor([[0], [0]], dtype=torch.long))
 
     incidence_matrix = hyperedge_index.get_sparse_incidence_matrix(num_nodes=3, num_hyperedges=2)
 
@@ -1297,7 +1335,8 @@ def test_get_sparse_incidence_matrix_with_explicit_sizes_adds_isolated_nodes_and
             [1.0, 0.0],
             [0.0, 0.0],
             [0.0, 0.0],
-        ]
+        ],
+        dtype=torch.float,
     )
     assert incidence_matrix.shape == (3, 2)
     assert torch.allclose(incidence_matrix.to_dense(), expected_incidence_matrix, atol=1e-6)
@@ -1312,7 +1351,8 @@ def test_get_sparse_incidence_matrix_sums_duplicate_incidences_when_coalesced():
         [
             [2.0, 0.0],
             [0.0, 1.0],
-        ]
+        ],
+        dtype=torch.float,
     )
 
     assert incidence_matrix.is_sparse
@@ -1359,7 +1399,7 @@ def test_get_sparse_incidence_matrix_rejects_negative_dimensions(kwargs, expecte
 
 
 def test_get_sparse_symnormalized_node_degree_matrix_is_expected_diagonal():
-    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1, 0, 2], [0, 0, 1, 1]]))
+    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1, 0, 2], [0, 0, 1, 1]], dtype=torch.long))
     incidence_matrix = hyperedge_index.get_sparse_incidence_matrix()  # shape (3,2)
 
     node_degree_matrix = hyperedge_index.get_sparse_symnormalized_node_degree_matrix(
@@ -1369,7 +1409,9 @@ def test_get_sparse_symnormalized_node_degree_matrix_is_expected_diagonal():
 
     # Example: node degrees: [2,1,1]
     #          -> inv sqrt: [1/sqrt(2),1,1]
-    expected_diagonal = torch.tensor([1 / torch.sqrt(torch.tensor(2.0)), 1.0, 1.0])
+    expected_diagonal = torch.tensor(
+        [1 / torch.sqrt(torch.tensor(2.0, dtype=torch.float)), 1.0, 1.0], dtype=torch.float
+    )
 
     assert node_degree_matrix.is_sparse
     assert node_degree_matrix.shape == (3, 3)
@@ -1378,7 +1420,7 @@ def test_get_sparse_symnormalized_node_degree_matrix_is_expected_diagonal():
 
 
 def test_get_sparse_symnormalized_node_degree_matrix_infers_num_nodes():
-    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1, 0, 2], [0, 0, 1, 1]]))
+    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1, 0, 2], [0, 0, 1, 1]], dtype=torch.long))
     incidence_matrix = hyperedge_index.get_sparse_incidence_matrix()  # shape (3,2)
 
     node_degree_matrix = hyperedge_index.get_sparse_symnormalized_node_degree_matrix(
@@ -1391,15 +1433,15 @@ def test_get_sparse_symnormalized_node_degree_matrix_infers_num_nodes():
 @pytest.mark.parametrize(
     "power, expected_diagonal",
     [
-        pytest.param(1.0, torch.tensor([2.0, 1.0, 1.0]), id="power_1"),
-        pytest.param(2.0, torch.tensor([4.0, 1.0, 1.0]), id="power_2"),
-        pytest.param(-2.0, torch.tensor([0.25, 1.0, 1.0]), id="power_minus_2"),
+        pytest.param(1.0, torch.tensor([2.0, 1.0, 1.0], dtype=torch.float), id="power_1"),
+        pytest.param(2.0, torch.tensor([4.0, 1.0, 1.0], dtype=torch.float), id="power_2"),
+        pytest.param(-2.0, torch.tensor([0.25, 1.0, 1.0], dtype=torch.float), id="power_minus_2"),
     ],
 )
 def test_get_sparse_normalized_node_degree_matrix_applies_requested_power_to_node_degrees(
     power, expected_diagonal
 ):
-    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1, 0, 2], [0, 0, 1, 1]]))
+    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1, 0, 2], [0, 0, 1, 1]], dtype=torch.long))
     incidence_matrix = hyperedge_index.get_sparse_incidence_matrix()  # shape (3,2)
 
     node_degree_matrix = hyperedge_index.get_sparse_normalized_node_degree_matrix(
@@ -1413,7 +1455,7 @@ def test_get_sparse_normalized_node_degree_matrix_applies_requested_power_to_nod
 
 
 def test_get_sparse_normalized_node_degree_matrix_zeroes_isolated_nodes_for_negative_powers():
-    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1, 0], [0, 0, 1]]))
+    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1, 0], [0, 0, 1]], dtype=torch.long))
     incidence_matrix = hyperedge_index.get_sparse_incidence_matrix(num_nodes=3)  # shape (3,2)
 
     node_degree_matrix = hyperedge_index.get_sparse_normalized_node_degree_matrix(
@@ -1427,7 +1469,8 @@ def test_get_sparse_normalized_node_degree_matrix_zeroes_isolated_nodes_for_nega
             1 / (2**1.5),
             1.0,
             0.0,
-        ]
+        ],
+        dtype=torch.float,
     )
 
     assert node_degree_matrix.is_sparse
@@ -1460,7 +1503,7 @@ def test_get_sparse_normalized_node_degree_matrix_rejects_negative_num_nodes():
 
 
 def test_get_sparse_rownormalized_node_degree_matrix_is_expected_diagonal():
-    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1, 0, 2], [0, 0, 1, 1]]))
+    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1, 0, 2], [0, 0, 1, 1]], dtype=torch.long))
     incidence_matrix = hyperedge_index.get_sparse_incidence_matrix()  # shape (3,2)
 
     node_degree_matrix = hyperedge_index.get_sparse_rownormalized_node_degree_matrix(
@@ -1468,7 +1511,7 @@ def test_get_sparse_rownormalized_node_degree_matrix_is_expected_diagonal():
         num_nodes=3,
     )
 
-    expected_diagonal = torch.tensor([0.5, 1.0, 1.0])
+    expected_diagonal = torch.tensor([0.5, 1.0, 1.0], dtype=torch.float)
 
     assert node_degree_matrix.is_sparse
     assert node_degree_matrix.shape == (3, 3)
@@ -1476,7 +1519,7 @@ def test_get_sparse_rownormalized_node_degree_matrix_is_expected_diagonal():
 
 
 def test_get_sparse_rownormalized_node_degree_matrix_infers_num_nodes():
-    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1, 0, 2], [0, 0, 1, 1]]))
+    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1, 0, 2], [0, 0, 1, 1]], dtype=torch.long))
     incidence_matrix = hyperedge_index.get_sparse_incidence_matrix()  # shape (3,2)
 
     node_degree_matrix = hyperedge_index.get_sparse_rownormalized_node_degree_matrix(
@@ -1487,7 +1530,7 @@ def test_get_sparse_rownormalized_node_degree_matrix_infers_num_nodes():
 
 
 def test_get_sparse_normalized_hyperedge_degree_matrix_is_expected_diagonal():
-    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1, 0, 2], [0, 0, 1, 1]]))
+    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1, 0, 2], [0, 0, 1, 1]], dtype=torch.long))
     incidence_matrix = hyperedge_index.get_sparse_incidence_matrix()  # shape (3,2)
 
     hyperedge_degree_matrix = hyperedge_index.get_sparse_normalized_hyperedge_degree_matrix(
@@ -1497,7 +1540,7 @@ def test_get_sparse_normalized_hyperedge_degree_matrix_is_expected_diagonal():
 
     # Example: hyperedge degrees: [2, 2]
     #          -> inv: [0.5, 0.5]
-    expected_diagonal = torch.diag(torch.tensor([0.5, 0.5]))
+    expected_diagonal = torch.diag(torch.tensor([0.5, 0.5], dtype=torch.float))
 
     assert hyperedge_degree_matrix.is_sparse
     assert hyperedge_degree_matrix.shape == (2, 2)
@@ -1506,7 +1549,7 @@ def test_get_sparse_normalized_hyperedge_degree_matrix_is_expected_diagonal():
 
 
 def test_get_sparse_normalized_hyperedge_degree_matrix_infers_num_hyperedges():
-    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1, 0, 2], [0, 0, 1, 1]]))
+    hyperedge_index = HyperedgeIndex(torch.tensor([[0, 1, 0, 2], [0, 0, 1, 1]], dtype=torch.long))
     incidence_matrix = hyperedge_index.get_sparse_incidence_matrix()  # shape (3,2)
 
     hyperedge_degree_matrix = hyperedge_index.get_sparse_normalized_hyperedge_degree_matrix(

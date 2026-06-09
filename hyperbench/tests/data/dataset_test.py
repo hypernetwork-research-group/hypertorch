@@ -172,7 +172,9 @@ def test_dataset_process_with_hyperedge_weights(mock_hdata_with_hyperedge_weight
     assert dataset.hdata is not None
     assert dataset.hdata.hyperedge_weights is not None
     assert dataset.hdata.hyperedge_weights.shape == (2,)
-    assert torch.allclose(dataset.hdata.hyperedge_weights, torch.tensor([1.0, 2.0]))
+    assert torch.allclose(
+        dataset.hdata.hyperedge_weights, torch.tensor([1.0, 2.0], dtype=torch.float)
+    )
 
 
 def test_dataset_process_without_hyperedge_weights(mock_hdata):
@@ -188,8 +190,12 @@ def test_dataset_process_hyperedge_index_in_correct_format(mock_hdata_four_nodes
         dataset = AlgebraDataset()
 
     assert dataset.hdata.hyperedge_index.shape == (2, 4)
-    assert torch.allclose(dataset.hdata.hyperedge_index[0], torch.tensor([0, 1, 2, 3]))
-    assert torch.allclose(dataset.hdata.hyperedge_index[1], torch.tensor([0, 0, 1, 1]))
+    assert torch.allclose(
+        dataset.hdata.hyperedge_index[0], torch.tensor([0, 1, 2, 3], dtype=torch.long)
+    )
+    assert torch.allclose(
+        dataset.hdata.hyperedge_index[1], torch.tensor([0, 0, 1, 1], dtype=torch.long)
+    )
 
 
 @pytest.mark.parametrize(
@@ -452,7 +458,7 @@ def test_enrich_node_features_replace(mock_hdata):
     dataset = Dataset.from_hdata(mock_hdata)
 
     enricher = MagicMock(spec=NodeEnricher)
-    enriched_x = torch.randn(3, 4)
+    enriched_x = torch.randn(3, 4, dtype=torch.float)
     enricher.enrich.return_value = enriched_x
 
     dataset.enrich_node_features(enricher)
@@ -466,7 +472,7 @@ def test_enrich_node_features_concatenate(mock_hdata):
     original_x = dataset.hdata.x.clone()
 
     enricher = MagicMock(spec=NodeEnricher)
-    enriched_x = torch.randn(3, 4)
+    enriched_x = torch.randn(3, 4, dtype=torch.float)
     enricher.enrich.return_value = enriched_x
 
     dataset.enrich_node_features(enricher, enrichment_mode="concatenate")
@@ -481,7 +487,7 @@ def test_enrich_hyperedge_attr_replace(mock_hdata):
     dataset = Dataset.from_hdata(mock_hdata)
 
     enricher = MagicMock(spec=HyperedgeEnricher)
-    enriched_x = torch.randn(2, 4)
+    enriched_x = torch.randn(2, 4, dtype=torch.float)
     enricher.enrich.return_value = enriched_x
 
     dataset.enrich_hyperedge_attr(enricher)
@@ -499,7 +505,7 @@ def test_enrich_hyperedge_attr_concatenate(mock_hdata_with_hyperedge_attr):
     original_hyperedge_attr = original_hyperedge_attr.clone()
 
     enricher = MagicMock(spec=HyperedgeEnricher)
-    enriched_x = torch.randn(2, 4)
+    enriched_x = torch.randn(2, 4, dtype=torch.float)
     enricher.enrich.return_value = enriched_x
 
     dataset.enrich_hyperedge_attr(enricher, enrichment_mode="concatenate")
@@ -516,7 +522,7 @@ def test_enrich_hyperedge_weights_replace(mock_hdata):
     dataset = Dataset.from_hdata(mock_hdata)
 
     enricher = MagicMock(spec=HyperedgeEnricher)
-    enriched_weights = torch.randn(2)
+    enriched_weights = torch.randn(2, dtype=torch.float)
     enricher.enrich.return_value = enriched_weights
 
     dataset.enrich_hyperedge_weights(enricher)
@@ -531,12 +537,12 @@ def test_enrich_hyperedge_weights_concatenate(
     mock_hdata_with_hyperedge_weights,
 ):
     dataset = Dataset.from_hdata(mock_hdata_with_hyperedge_weights)
-    dataset.hdata.hyperedge_index = torch.tensor([[0, 1, 2, 0], [0, 0, 1, 2]])
+    dataset.hdata.hyperedge_index = torch.tensor([[0, 1, 2, 0], [0, 0, 1, 2]], dtype=torch.long)
     dataset.hdata.num_hyperedges = 3
     dataset.hdata.y = torch.ones(3, dtype=torch.float)
 
     enricher = MagicMock(spec=HyperedgeEnricher)
-    enriched_weights = torch.tensor([3.0])
+    enriched_weights = torch.tensor([3.0], dtype=torch.float)
     enricher.enrich.return_value = enriched_weights
 
     dataset.enrich_hyperedge_weights(enricher, enrichment_mode="concatenate")
@@ -546,7 +552,9 @@ def test_enrich_hyperedge_weights_concatenate(
 
     assert torch.equal(enriched_hyperedge_index, dataset.hdata.hyperedge_index)
     assert dataset.hdata.hyperedge_weights is not None
-    assert torch.equal(dataset.hdata.hyperedge_weights, torch.tensor([1.0, 2.0, 3.0]))
+    assert torch.equal(
+        dataset.hdata.hyperedge_weights, torch.tensor([1.0, 2.0, 3.0], dtype=torch.float)
+    )
     assert dataset.hdata.hyperedge_weights.shape == (3,)
 
 
@@ -554,31 +562,31 @@ def test_enrich_hyperedge_weights_concatenate(
     "hyperedge_index, k, expected_hyperedge_index",
     [
         pytest.param(
-            torch.tensor([[0, 1, 2], [0, 0, 0]]),
+            torch.tensor([[0, 1, 2], [0, 0, 0]], dtype=torch.long),
             4,
             torch.zeros((2, 0), dtype=torch.long),
             id="single_hyperedge_below_k_removed",
         ),
         pytest.param(
-            torch.tensor([[0, 1, 2], [0, 0, 0]]),
+            torch.tensor([[0, 1, 2], [0, 0, 0]], dtype=torch.long),
             3,
-            torch.tensor([[0, 1, 2], [0, 0, 0]]),
+            torch.tensor([[0, 1, 2], [0, 0, 0]], dtype=torch.long),
             id="single_hyperedge_at_exact_k_kept",
         ),
         pytest.param(
-            torch.tensor([[0, 1, 2, 3, 4], [0, 0, 0, 1, 1]]),
+            torch.tensor([[0, 1, 2, 3, 4], [0, 0, 0, 1, 1]], dtype=torch.long),
             3,
-            torch.tensor([[0, 1, 2], [0, 0, 0]]),
+            torch.tensor([[0, 1, 2], [0, 0, 0]], dtype=torch.long),
             id="two_hyperedges_first_kept_second_removed",
         ),
         pytest.param(
-            torch.tensor([[0, 1, 2, 3, 4, 5], [0, 0, 0, 1, 1, 1]]),
+            torch.tensor([[0, 1, 2, 3, 4, 5], [0, 0, 0, 1, 1, 1]], dtype=torch.long),
             3,
-            torch.tensor([[0, 1, 2, 3, 4, 5], [0, 0, 0, 1, 1, 1]]),
+            torch.tensor([[0, 1, 2, 3, 4, 5], [0, 0, 0, 1, 1, 1]], dtype=torch.long),
             id="two_hyperedges_both_kept",
         ),
         pytest.param(
-            torch.tensor([[0, 1, 2, 3, 4, 5], [0, 0, 1, 1, 2, 2]]),
+            torch.tensor([[0, 1, 2, 3, 4, 5], [0, 0, 1, 1, 2, 2]], dtype=torch.long),
             3,
             torch.zeros((2, 0), dtype=torch.long),
             id="three_hyperedges_all_removed",
@@ -1149,7 +1157,8 @@ def mock_hdata_stats():
         [
             [0, 1, 2, 2, 3],
             [0, 0, 0, 1, 1],
-        ]
+        ],
+        dtype=torch.long,
     )
     return HData(x=x, hyperedge_index=hyperedge_index)
 
@@ -1184,37 +1193,39 @@ def test_dataset_stats_computation(mock_hdata_stats):
 def test_enrich_node_features_from_dataset():
     source_dataset = Dataset.from_hdata(
         HData(
-            x=torch.tensor([[1.0, 10.0], [2.0, 20.0], [3.0, 30.0]]),
-            hyperedge_index=torch.tensor([[0, 1, 2], [0, 0, 1]]),
-            global_node_ids=torch.tensor([100, 200, 300]),
+            x=torch.tensor([[1.0, 10.0], [2.0, 20.0], [3.0, 30.0]], dtype=torch.float),
+            hyperedge_index=torch.tensor([[0, 1, 2], [0, 0, 1]], dtype=torch.long),
+            global_node_ids=torch.tensor([100, 200, 300], dtype=torch.long),
         )
     )
     target_dataset = Dataset.from_hdata(
         HData(
-            x=torch.tensor([[0.0], [0.0]]),
-            hyperedge_index=torch.tensor([[0, 1], [0, 0]]),
-            global_node_ids=torch.tensor([300, 100]),
+            x=torch.tensor([[0.0], [0.0]], dtype=torch.float),
+            hyperedge_index=torch.tensor([[0, 1], [0, 0]], dtype=torch.long),
+            global_node_ids=torch.tensor([300, 100], dtype=torch.long),
         )
     )
 
     target_dataset.enrich_node_features_from(source_dataset)
 
-    assert torch.equal(target_dataset.hdata.x, torch.tensor([[3.0, 30.0], [1.0, 10.0]]))
+    assert torch.equal(
+        target_dataset.hdata.x, torch.tensor([[3.0, 30.0], [1.0, 10.0]], dtype=torch.float)
+    )
 
 
 def test_enrich_node_features_from_dataset_with_fill_value():
     source_dataset = Dataset.from_hdata(
         HData(
-            x=torch.tensor([[1.0, 10.0], [2.0, 20.0]]),
-            hyperedge_index=torch.tensor([[0, 1], [0, 0]]),
-            global_node_ids=torch.tensor([10, 20]),
+            x=torch.tensor([[1.0, 10.0], [2.0, 20.0]], dtype=torch.float),
+            hyperedge_index=torch.tensor([[0, 1], [0, 0]], dtype=torch.long),
+            global_node_ids=torch.tensor([10, 20], dtype=torch.long),
         )
     )
     target_dataset = Dataset.from_hdata(
         HData(
-            x=torch.tensor([[0.0], [0.0]]),
-            hyperedge_index=torch.tensor([[0, 1], [0, 0]]),
-            global_node_ids=torch.tensor([10, 30]),
+            x=torch.tensor([[0.0], [0.0]], dtype=torch.float),
+            hyperedge_index=torch.tensor([[0, 1], [0, 0]], dtype=torch.long),
+            global_node_ids=torch.tensor([10, 30], dtype=torch.long),
         )
     )
 
@@ -1224,14 +1235,16 @@ def test_enrich_node_features_from_dataset_with_fill_value():
         fill_value=[7.0, 8.0],
     )
 
-    assert torch.equal(target_dataset.hdata.x, torch.tensor([[1.0, 10.0], [7.0, 8.0]]))
+    assert torch.equal(
+        target_dataset.hdata.x, torch.tensor([[1.0, 10.0], [7.0, 8.0]], dtype=torch.float)
+    )
 
 
 def test_split_transductive_rebalances_first_split_to_cover_all_nodes():
     hdata = HData(
         x=torch.arange(4, dtype=torch.float).unsqueeze(1),
-        hyperedge_index=torch.tensor([[0, 1, 2, 3, 0], [0, 1, 2, 3, 4]]),
-        global_node_ids=torch.tensor([100, 200, 300, 400]),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3, 0], [0, 1, 2, 3, 4]], dtype=torch.long),
+        global_node_ids=torch.tensor([100, 200, 300, 400], dtype=torch.long),
         y=torch.arange(5, dtype=torch.float),
     )
     dataset = Dataset.from_hdata(hdata)
@@ -1245,7 +1258,7 @@ def test_split_transductive_rebalances_first_split_to_cover_all_nodes():
     assert torch.equal(train_dataset.hdata.x, dataset.hdata.x)
     assert torch.equal(
         train_dataset.hdata.hyperedge_index[0].unique(sorted=True),
-        torch.arange(hdata.num_nodes),
+        torch.arange(hdata.num_nodes, dtype=torch.long),
     )
     # The only way to cover all 4 nodes with 75% of the hyperedges is to:
     # - Put 3 hyperedges in the train split.
@@ -1261,8 +1274,8 @@ def test_split_transductive_rebalances_first_split_to_cover_all_nodes():
 def test_split_transductive_skips_train_coverage_rebalance_by_default():
     hdata = HData(
         x=torch.arange(4, dtype=torch.float).unsqueeze(1),
-        hyperedge_index=torch.tensor([[0, 1, 2, 3, 0], [0, 1, 2, 3, 4]]),
-        global_node_ids=torch.tensor([100, 200, 300, 400]),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3, 0], [0, 1, 2, 3, 4]], dtype=torch.long),
+        global_node_ids=torch.tensor([100, 200, 300, 400], dtype=torch.long),
         y=torch.arange(5, dtype=torch.float),
     )
     dataset = Dataset.from_hdata(hdata)
@@ -1273,14 +1286,14 @@ def test_split_transductive_skips_train_coverage_rebalance_by_default():
     assert [train_dataset.hdata.num_hyperedges, test_dataset.hdata.num_hyperedges] == [3, 2]
     assert torch.equal(
         train_dataset.hdata.hyperedge_index[0].unique(sorted=True),
-        torch.tensor([0, 1, 2]),
+        torch.tensor([0, 1, 2], dtype=torch.long),
     )
 
 
 def test_split_with_ratios_returns_final_transductive_ratios_when_train_coverage_is_enabled():
     hdata = HData(
         x=torch.arange(4, dtype=torch.float).unsqueeze(1),
-        hyperedge_index=torch.tensor([[0, 1, 2, 3, 0], [0, 1, 2, 3, 4]]),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3, 0], [0, 1, 2, 3, 4]], dtype=torch.long),
     )
     dataset = Dataset.from_hdata(hdata)
 
@@ -1300,7 +1313,8 @@ def test_split_with_ratios_transductive_keeps_ratios_when_train_covers_all_nodes
             [
                 [0, 1, 2, 3, 0, 2, 1, 3],
                 [0, 0, 1, 1, 2, 2, 3, 3],
-            ]
+            ],
+            dtype=torch.long,
         ),
     )
     dataset = Dataset.from_hdata(hdata)
@@ -1311,14 +1325,14 @@ def test_split_with_ratios_transductive_keeps_ratios_when_train_covers_all_nodes
     assert final_ratios == pytest.approx([0.5, 0.5])
     assert torch.equal(
         splits[0].hdata.hyperedge_index[0].unique(sorted=True),
-        torch.arange(hdata.num_nodes),
+        torch.arange(hdata.num_nodes, dtype=torch.long),
     )
 
 
 def test_split_with_ratios_uses_train_split_idx():
     hdata = HData(
         x=torch.arange(4, dtype=torch.float).unsqueeze(1),
-        hyperedge_index=torch.tensor([[0, 1, 2, 3, 0], [0, 1, 2, 3, 4]]),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3, 0], [0, 1, 2, 3, 4]], dtype=torch.long),
     )
     dataset = Dataset.from_hdata(hdata)
 
@@ -1335,7 +1349,7 @@ def test_split_with_ratios_uses_train_split_idx():
 def test_split_with_ratios_raises_when_train_split_idx_is_out_of_bounds():
     hdata = HData(
         x=torch.arange(4, dtype=torch.float).unsqueeze(1),
-        hyperedge_index=torch.tensor([[0, 1, 2, 3, 0], [0, 1, 2, 3, 4]]),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3, 0], [0, 1, 2, 3, 4]], dtype=torch.long),
     )
     dataset = Dataset.from_hdata(hdata)
 
@@ -1352,7 +1366,7 @@ def test_split_with_ratios_raises_when_train_split_idx_is_out_of_bounds():
 def test_split_with_ratios_raises_when_train_split_idx_provided_but_not_transductive():
     hdata = HData(
         x=torch.arange(4, dtype=torch.float).unsqueeze(1),
-        hyperedge_index=torch.tensor([[0, 1, 2, 3, 0], [0, 1, 2, 3, 4]]),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3, 0], [0, 1, 2, 3, 4]], dtype=torch.long),
     )
     dataset = Dataset.from_hdata(hdata)
 
@@ -1373,7 +1387,7 @@ def test_split_with_ratios_raises_when_train_split_idx_provided_but_not_transduc
     ("hyperedge_index", "expected_split_sizes", "expected_final_ratios"),
     [
         pytest.param(
-            torch.tensor([[0, 1, 2, 3, 0], [0, 1, 2, 3, 4]]),
+            torch.tensor([[0, 1, 2, 3, 0], [0, 1, 2, 3, 4]], dtype=torch.long),
             [3, 2],
             # 3/5 and 2/5 as we ensure splits don't get more then requested,
             # in this way, all later splits get at least what they requested,
@@ -1385,9 +1399,10 @@ def test_split_with_ratios_raises_when_train_split_idx_provided_but_not_transduc
         pytest.param(
             torch.stack(
                 [
-                    torch.arange(500) % 4,  # 4 nodes
+                    torch.arange(500, dtype=torch.long) % 4,  # 4 nodes
                     torch.arange(
-                        500
+                        500,
+                        dtype=torch.long,
                     ),  # 500 hyperedges, 125 per node, so we can split exactly according to the ratios
                 ]
             ),
@@ -1417,7 +1432,7 @@ def test_split_with_ratios_returns_returns_expected_cumulative_ratios(
 def test_split_transductive_raises_when_rebalancing_empties_split():
     hdata = HData(
         x=torch.arange(4, dtype=torch.float).unsqueeze(1),
-        hyperedge_index=torch.tensor([[0, 1, 2, 3], [0, 1, 2, 3]]),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3], [0, 1, 2, 3]], dtype=torch.long),
     )
     dataset = Dataset.from_hdata(hdata)
 
@@ -1431,7 +1446,7 @@ def test_split_transductive_raises_when_rebalancing_empties_split():
 def test_split_transductive_raises_when_node_is_missing_from_all_hyperedges():
     hdata = HData(
         x=torch.arange(4, dtype=torch.float).unsqueeze(1),
-        hyperedge_index=torch.tensor([[0, 1, 2], [0, 0, 1]]),
+        hyperedge_index=torch.tensor([[0, 1, 2], [0, 0, 1]], dtype=torch.long),
     )
     dataset = Dataset.from_hdata(hdata)
 
@@ -1451,7 +1466,7 @@ def test_split_transductive_raises_when_node_is_missing_from_all_hyperedges():
 def test_split_transductive_allows_missing_nodes_without_train_coverage_rebalance():
     hdata = HData(
         x=torch.arange(4, dtype=torch.float).unsqueeze(1),
-        hyperedge_index=torch.tensor([[0, 1, 2], [0, 0, 1]]),
+        hyperedge_index=torch.tensor([[0, 1, 2], [0, 0, 1]], dtype=torch.long),
     )
     dataset = Dataset.from_hdata(hdata)
 
@@ -1460,7 +1475,7 @@ def test_split_transductive_allows_missing_nodes_without_train_coverage_rebalanc
     assert train_dataset.hdata.num_nodes == hdata.num_nodes
     assert torch.equal(
         train_dataset.hdata.hyperedge_index[0].unique(sorted=True),
-        torch.tensor([0, 1]),
+        torch.tensor([0, 1], dtype=torch.long),
     )
     assert test_dataset.hdata.num_nodes == 1
 
@@ -1468,7 +1483,7 @@ def test_split_transductive_allows_missing_nodes_without_train_coverage_rebalanc
 def test_split_uses_train_split_idx():
     hdata = HData(
         x=torch.arange(4, dtype=torch.float).unsqueeze(1),
-        hyperedge_index=torch.tensor([[0, 1, 2, 3, 0], [0, 1, 2, 3, 4]]),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3, 0], [0, 1, 2, 3, 4]], dtype=torch.long),
     )
     dataset = Dataset.from_hdata(hdata)
 
@@ -1484,7 +1499,7 @@ def test_split_uses_train_split_idx():
 def test_split_raises_when_train_split_idx_is_out_of_bounds():
     hdata = HData(
         x=torch.arange(4, dtype=torch.float).unsqueeze(1),
-        hyperedge_index=torch.tensor([[0, 1, 2, 3, 0], [0, 1, 2, 3, 4]]),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3, 0], [0, 1, 2, 3, 4]], dtype=torch.long),
     )
     dataset = Dataset.from_hdata(hdata)
 
@@ -1501,7 +1516,7 @@ def test_split_raises_when_train_split_idx_is_out_of_bounds():
 def test_split_raises_when_train_split_idx_provided_but_not_transductive():
     hdata = HData(
         x=torch.arange(4, dtype=torch.float).unsqueeze(1),
-        hyperedge_index=torch.tensor([[0, 1, 2, 3, 0], [0, 1, 2, 3, 4]]),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3, 0], [0, 1, 2, 3, 4]], dtype=torch.long),
     )
     dataset = Dataset.from_hdata(hdata)
 
@@ -1528,7 +1543,7 @@ def test_split_raises_when_train_split_idx_provided_but_not_transductive():
 def test_default_dataset_splitter_returns_dataset_instances_with_sampling_strategy(strategy):
     hdata = HData(
         x=torch.arange(4, dtype=torch.float).unsqueeze(1),
-        hyperedge_index=torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]]),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long),
     )
     dataset = Dataset.from_hdata(hdata, sampling_strategy=strategy)
 
@@ -1568,9 +1583,10 @@ def test_nested_transductive_split_supports_train_feature_reuse():
             [
                 [0, 1, 2, 3, 0, 1, 2, 3],
                 [0, 0, 0, 0, 1, 1, 2, 3],
-            ]
+            ],
+            dtype=torch.long,
         ),
-        global_node_ids=torch.tensor([100, 200, 300, 400]),
+        global_node_ids=torch.tensor([100, 200, 300, 400], dtype=torch.long),
     )
     dataset = Dataset.from_hdata(hdata)
 
@@ -1585,14 +1601,15 @@ def test_nested_transductive_split_supports_train_feature_reuse():
 
     enricher = MagicMock(spec=NodeEnricher)
     enricher.enrich.return_value = torch.tensor(
-        [[10.0, 11.0], [20.0, 21.0], [30.0, 31.0], [40.0, 41.0]]
+        [[10.0, 11.0], [20.0, 21.0], [30.0, 31.0], [40.0, 41.0]],
+        dtype=torch.float,
     )
     train_dataset.enrich_node_features(enricher, enrichment_mode="replace")
     val_dataset.enrich_node_features_from(train_dataset)
     test_dataset.enrich_node_features_from(train_dataset)
 
-    assert torch.equal(val_dataset.hdata.x, torch.tensor([[30.0, 31.0]]))
-    assert torch.equal(test_dataset.hdata.x, torch.tensor([[40.0, 41.0]]))
+    assert torch.equal(val_dataset.hdata.x, torch.tensor([[30.0, 31.0]], dtype=torch.float))
+    assert torch.equal(test_dataset.hdata.x, torch.tensor([[40.0, 41.0]], dtype=torch.float))
 
 
 def test_transform_node_attrs_adds_padding_zero_when_attr_keys_padding(mock_hdata):
@@ -1607,20 +1624,22 @@ def test_transform_node_attrs_adds_padding_zero_when_attr_keys_padding(mock_hdat
         attrs = {"weight": 1.5}
         result = dataset.transform_node_attrs(attrs, attr_keys=["score", "weight", "age"])
         assert torch.allclose(
-            result, torch.tensor([0.0, 1.5, 0.0])
+            result, torch.tensor([0.0, 1.5, 0.0], dtype=torch.float)
         )  # score=0.0, weight=1.5, age=0.0
 
         # Test with all attributes present
         attrs = {"weight": 1.5, "score": 0.8, "age": 25.0}
         result = dataset.transform_node_attrs(attrs, attr_keys=["age", "score", "weight"])
         assert torch.allclose(
-            result, torch.tensor([25.0, 0.8, 1.5])
+            result, torch.tensor([25.0, 0.8, 1.5], dtype=torch.float)
         )  # age=25.0, score=0.8, weight=1.5
 
         # Test without attr_keys - maintains insertion order
         attrs = {"weight": 1.5, "score": 0.8}
         result = dataset.transform_node_attrs(attrs)
-        assert torch.allclose(result, torch.tensor([1.5, 0.8]))  # weight, score (insertion order)
+        assert torch.allclose(
+            result, torch.tensor([1.5, 0.8], dtype=torch.float)
+        )  # weight, score (insertion order)
 
 
 def test_transform_hyperedge_attrs_adds_padding_zero_when_attr_keys_padding(mock_hdata):
@@ -1637,7 +1656,7 @@ def test_transform_hyperedge_attrs_adds_padding_zero_when_attr_keys_padding(mock
             attrs, attr_keys=["capacity", "weight", "length"]
         )
         assert torch.allclose(
-            result, torch.tensor([0.0, 1.5, 0.0])
+            result, torch.tensor([0.0, 1.5, 0.0], dtype=torch.float)
         )  # capacity=0.0, weight=1.5, length=0.0
 
         # Test with all attributes present
@@ -1646,12 +1665,12 @@ def test_transform_hyperedge_attrs_adds_padding_zero_when_attr_keys_padding(mock
             attrs, attr_keys=["length", "capacity", "weight"]
         )
         assert torch.allclose(
-            result, torch.tensor([5.0, 10.0, 1.5])
+            result, torch.tensor([5.0, 10.0, 1.5], dtype=torch.float)
         )  # length=5.0, capacity=10.0, weight=1.5
 
         # Test without attr_keys - maintains insertion order
         attrs = {"weight": 1.5, "capacity": 10.0}
         result = dataset.transform_hyperedge_attrs(attrs)
         assert torch.allclose(
-            result, torch.tensor([1.5, 10.0])
+            result, torch.tensor([1.5, 10.0], dtype=torch.float)
         )  # capacity, weight (insertion order)

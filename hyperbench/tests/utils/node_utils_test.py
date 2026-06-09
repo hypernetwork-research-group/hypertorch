@@ -16,9 +16,10 @@ def test_assign_hyperedge_label_to_nodes_maps_labels_to_node_sets():
         [
             [2, 0, 1, 3, 4, 2],
             [1, 0, 0, 2, 2, 1],
-        ]
+        ],
+        dtype=torch.long,
     )
-    y = torch.tensor([1, 0, 1])
+    y = torch.tensor([1, 0, 1], dtype=torch.long)
 
     labels_by_nodes = assign_hyperedge_label_to_nodes(
         hyperedge_index=hyperedge_index,
@@ -34,12 +35,15 @@ def test_assign_hyperedge_label_to_nodes_maps_labels_to_node_sets():
 
     assert labels_by_nodes.keys() == expected.keys()
     for nodes, expected_label in expected.items():
-        assert torch.equal(torch.as_tensor(labels_by_nodes[nodes]), torch.as_tensor(expected_label))
+        assert torch.equal(
+            torch.as_tensor(labels_by_nodes[nodes], dtype=torch.long),
+            torch.as_tensor(expected_label, dtype=torch.float),
+        )
 
 
 def test_assign_hyperedge_label_to_nodes_includes_empty_hyperedge_slots():
-    hyperedge_index = torch.tensor([[0, 1], [0, 0]])
-    y = torch.tensor([1, 0])
+    hyperedge_index = torch.tensor([[0, 1], [0, 0]], dtype=torch.long)
+    y = torch.tensor([1, 0], dtype=torch.long)
 
     labels_by_nodes = assign_hyperedge_label_to_nodes(
         hyperedge_index=hyperedge_index,
@@ -54,7 +58,10 @@ def test_assign_hyperedge_label_to_nodes_includes_empty_hyperedge_slots():
 
     assert labels_by_nodes.keys() == expected.keys()
     for nodes, expected_label in expected.items():
-        assert torch.equal(torch.as_tensor(labels_by_nodes[nodes]), torch.as_tensor(expected_label))
+        assert torch.equal(
+            torch.as_tensor(labels_by_nodes[nodes], dtype=torch.long),
+            torch.as_tensor(expected_label, dtype=torch.float),
+        )
 
 
 def test_assign_hyperedge_label_to_nodes_returns_empty_mapping_without_hyperedges():

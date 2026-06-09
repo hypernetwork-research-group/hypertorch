@@ -336,7 +336,13 @@ class EdgeIndex:
             adj_values = torch.ones(self.num_edges, dtype=torch.float, device=device)
 
         adj_indices = torch.stack([src, dest], dim=0)
-        adj_matrix = torch.sparse_coo_tensor(adj_indices, adj_values, size=(num_nodes, num_nodes))
+        adj_matrix = torch.sparse_coo_tensor(
+            indices=adj_indices,
+            values=adj_values,
+            size=(num_nodes, num_nodes),
+            dtype=adj_values.dtype,
+            device=device,
+        )
         return adj_matrix.coalesce()
 
     def get_sparse_identity_matrix(self, num_nodes: int | None = None) -> Tensor:
@@ -382,6 +388,8 @@ class EdgeIndex:
             indices=identity_indices,
             values=torch.ones(num_nodes, dtype=torch.float, device=device),
             size=(num_nodes, num_nodes),
+            dtype=torch.float,
+            device=device,
         )
         return identity_matrix.coalesce()
 
@@ -414,7 +422,7 @@ class EdgeIndex:
         adj_values = adj_matrix.values()
 
         # Compute degree for each node as the weighted row-sum of the adjacency matrix.
-        degrees: Tensor = torch.zeros(num_nodes, device=device, dtype=adj_values.dtype)
+        degrees: Tensor = torch.zeros(num_nodes, dtype=adj_values.dtype, device=device)
         degrees.scatter_add_(dim=0, index=adj_indices[0], src=adj_values)
 
         # Compute D^-1/2 == D^-0.5
@@ -440,6 +448,8 @@ class EdgeIndex:
             indices=diagonal_indices,
             values=degree_inv_sqrt,
             size=(num_nodes, num_nodes),
+            dtype=degree_inv_sqrt.dtype,
+            device=device,
         )
         return degree_matrix.coalesce()
 
@@ -582,6 +592,8 @@ class EdgeIndex:
             self.__edge_index,
             self.__edge_weights,
             size=(num_nodes, num_nodes),
+            dtype=self.__edge_weights.dtype,
+            device=self.__edge_weights.device,
         ).coalesce()
         self.__edge_index = coalesced.indices().contiguous()
         self.__edge_weights = coalesced.values().contiguous()

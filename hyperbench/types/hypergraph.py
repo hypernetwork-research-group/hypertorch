@@ -544,6 +544,8 @@ class HyperedgeIndex:
             indices=incidence_indices,
             values=incidence_values,
             size=(num_nodes, num_hyperedges),
+            dtype=incidence_values.dtype,
+            device=device,
         )
         return incidence_matrix.coalesce()
 
@@ -574,7 +576,7 @@ class HyperedgeIndex:
 
         device = self.__hyperedge_index.device
 
-        degrees = torch.sparse.sum(incidence_matrix, dim=1).to_dense()
+        degrees = torch.sparse.sum(incidence_matrix, dim=1, dtype=torch.float).to_dense()
         normalized_degrees = degrees.pow(power)
         normalized_degrees[normalized_degrees == float("inf")] = 0
 
@@ -587,6 +589,8 @@ class HyperedgeIndex:
             indices=diagonal_indices,
             values=normalized_degrees,
             size=(num_nodes, num_nodes),
+            dtype=normalized_degrees.dtype,
+            device=device,
         )
         return degree_matrix.coalesce()
 
@@ -691,7 +695,7 @@ class HyperedgeIndex:
         #                                   [1, 0], node 1
         #                                   [1, 0]] node 2
         #          -> column-sum gives hyperedge degrees: d_e = [3, 1], shape (num_hyperedges,)
-        degrees = torch.sparse.sum(incidence_matrix, dim=0).to_dense()
+        degrees = torch.sparse.sum(incidence_matrix, dim=0, dtype=torch.float).to_dense()
 
         # Example: d_e = [3, 1]
         #          -> degree_inv = [1/3, 1]
@@ -714,6 +718,8 @@ class HyperedgeIndex:
             indices=diagonal_indices,
             values=degree_inv,
             size=(num_hyperedges, num_hyperedges),
+            dtype=degree_inv.dtype,
+            device=device,
         )
         return degree_matrix.coalesce()
 

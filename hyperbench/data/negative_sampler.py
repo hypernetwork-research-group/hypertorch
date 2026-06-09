@@ -899,6 +899,7 @@ class CliqueNegativeSampler(SameNodeSpaceNegativeSampler):
         shuffled_clique_candidate_indexes = torch.randperm(
             n=num_valid_clique_candidates,
             generator=generator,
+            dtype=torch.long,
             device=device,
         )
         sampled_clique_candidate_indexes = shuffled_clique_candidate_indexes[
