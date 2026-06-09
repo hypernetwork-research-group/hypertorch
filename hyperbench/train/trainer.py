@@ -111,6 +111,12 @@ class MultiModelTrainer:
         callbacks: Add a callback or list of callbacks.
             Defaults to ``None``.
 
+        checkpoint_callback_kwargs: Keyword arguments passed to the default
+            ``ModelCheckpoint`` callback when checkpointing is enabled and no
+            user-defined ``ModelCheckpoint`` is provided. Pass ``dirpath`` to
+            override the default checkpoint directory.
+            Defaults to ``None``.
+
         auto_start_tensorboard: When ``True`` and tensorboard is installed, automatically starts
             a TensorBoard server pointing at the experiment log directory.
             Using this option requires that TensorBoard is installed in the environment and moves control
@@ -164,6 +170,7 @@ class MultiModelTrainer:
         enable_progress_bar: bool = True,
         enable_model_summary: bool | None = None,
         callbacks: list[Callback] | Callback | None = None,
+        checkpoint_callback_kwargs: dict[str, Any] | None = None,
         auto_start_tensorboard: bool = False,
         tensorboard_port: int = 6006,
         auto_wait: bool = False,
@@ -180,6 +187,9 @@ class MultiModelTrainer:
 
         self.auto_start_tensorboard = auto_start_tensorboard
         self.tensorboard_port = tensorboard_port
+        self.__checkpoint_callback_kwargs = (
+            checkpoint_callback_kwargs if checkpoint_callback_kwargs is not None else {}
+        )
 
         full_model_name_counts = self.__full_model_name_counts(model_configs)
         for model_index, model_config in enumerate(model_configs):
@@ -273,7 +283,9 @@ class MultiModelTrainer:
                 print(
                     f"Fit model {config.full_model_name()} "
                     f"[{i + 1}/{len(self.model_configs)} models] "
-                    f"(device: {self.__device(config.trainer)})"
+                    f"(device: {self.__device(config.trainer)}, "
+                    f"log_dir: {config.trainer.log_dir}, "
+                    f"ckpt_path: {ckpt_path if ckpt_path is not None else 'None'})"
                 )
 
             train_dataloaders = (
@@ -307,7 +319,9 @@ class MultiModelTrainer:
                 print(
                     f"Test model {config.full_model_name()} "
                     f"[{i + 1}/{len(self.model_configs)} models] "
-                    f"(device: {self.__device(config.trainer)})"
+                    f"(device: {self.__device(config.trainer)}, "
+                    f"log_dir: {config.trainer.log_dir}, "
+                    f"ckpt_path: {ckpt_path if ckpt_path is not None else 'None'})"
                 )
 
             test_dataloaders = (
@@ -397,6 +411,10 @@ class MultiModelTrainer:
         model_index: int,
         has_duplicate_full_model_name: bool,
     ) -> Path:
+        provided_dirpath: str | Path | None = self.__checkpoint_callback_kwargs.get("dirpath")
+        if provided_dirpath is not None:
+            return Path(provided_dirpath)
+
         checkpoint_dir = (
             self.log_dir / model_config.name / f"{self.VERSION_NAME_PREFIX}_{model_config.version}"
         )
@@ -531,13 +549,16 @@ class MultiModelTrainer:
             model_index=model_index,
             has_duplicate_full_model_name=has_duplicate_full_model_name,
         )
+
         callback_list = self.__to_callback_list(model_callbacks)
         checkpoint_callbacks = [
             callback for callback in callback_list if isinstance(callback, ModelCheckpoint)
         ]
 
         if len(checkpoint_callbacks) < 1:
-            callback_list.append(ModelCheckpoint(dirpath=checkpoint_dir))
+            checkpoint_callback_kwargs = copy.deepcopy(self.__checkpoint_callback_kwargs)
+            checkpoint_callback_kwargs["dirpath"] = checkpoint_dir
+            callback_list.append(ModelCheckpoint(**checkpoint_callback_kwargs))
             return callback_list
 
         for callback in checkpoint_callbacks:

@@ -362,6 +362,47 @@ def test_user_checkpoint_callback_with_custom_dirpath_is_respected(
     assert not (tmp_path / EXPERIMENT_NAME / "tiny" / "version_0" / "checkpoints").exists()
 
 
+@pytest.mark.integration
+def test_checkpoint_callback_kwargs_configure_default_checkpoint_callback(
+    tmp_path,
+    mock_tiny_dataloader,
+):
+    custom_checkpoint_dir = tmp_path / "checkpoint_kwargs"
+    trainer = MultiModelTrainer(
+        model_configs=__distinct_model_configs(num_models=1),
+        default_root_dir=tmp_path,
+        experiment_name=EXPERIMENT_NAME,
+        max_epochs=1,
+        accelerator="auto",
+        devices=1,
+        logger=False,
+        enable_checkpointing=True,
+        enable_progress_bar=False,
+        enable_model_summary=False,
+        log_every_n_steps=1,
+        checkpoint_callback_kwargs={
+            "dirpath": custom_checkpoint_dir,
+            "filename": "weights-only-{epoch}",
+            "save_weights_only": True,
+        },
+    )
+
+    trainer.fit_all(
+        train_dataloader=mock_tiny_dataloader,
+        val_dataloader=mock_tiny_dataloader,
+        verbose=False,
+    )
+
+    print(list(custom_checkpoint_dir.glob("*.ckpt")))
+    checkpoint_paths = list(custom_checkpoint_dir.glob("weights-only-*.ckpt"))
+    assert len(checkpoint_paths) == 1
+
+    checkpoint = torch.load(checkpoint_paths[0], map_location="cpu")
+    assert "state_dict" in checkpoint
+    assert "optimizer_states" not in checkpoint
+    assert not (tmp_path / EXPERIMENT_NAME / "tiny" / "version_0" / "checkpoints").exists()
+
+
 def __checkpoint_dirs(experiment_dir: Path) -> list[Path]:
     return [
         experiment_dir / "tiny" / "version_duplicate" / "model_0" / "checkpoints",
