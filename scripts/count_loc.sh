@@ -1,14 +1,21 @@
 #!/usr/bin/env bash
 
-find . -type f -name "*.py" \
-    -not -path "*/.venv/*" \
-    -not -path "*/__init__.py" \
-    -not -path "*/examples/*" \
-    -not -path "*/integration_tests/*" \
-    -not -path "*/scripts/*" \
-    -not -path "*/tests/*" \
-    -print0 \
-    | xargs -0 awk '\
+find_py_files() {
+	find . -type f -name "*.py" \
+		-not -path "*/.venv/*" \
+		-not -path "*/__init__.py" \
+		-not -path "*/examples/*" \
+		-not -path "*/integration_tests/*" \
+		-not -path "*/scripts/*" \
+		-not -path "*/tests/*" \
+        "$@"
+}
+
+echo "Counting lines of code in the following Python files:"
+find_py_files
+
+LOC_COUNT=$(
+    find_py_files -print0 | xargs -0 awk '\
         FNR==1 { in_docstring = 0 } \
         /^[[:blank:]]*#/ { next } \
         /"""/ { \
@@ -19,3 +26,5 @@ find . -type f -name "*.py" \
         !in_docstring { count++ } \
         END { print count } \
     '
+)
+echo "=$LOC_COUNT lines of code (excluding comments and docstrings)"
