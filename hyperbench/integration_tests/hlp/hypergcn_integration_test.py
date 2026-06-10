@@ -70,32 +70,32 @@ def test_model_hypergcn_with_mediator(tmp_path, sampling_strategy, full, batch_s
     )
 
     train_test_loop(
-        configs, path=tmp_path, experiment_name=f"hypergcn_med_integration_test_{test_id}"
+        configs, path=tmp_path, experiment_name=f"hypergcn_mediator_integration_test_{test_id}"
     )
 
     assert (
-        tmp_path / f"hypergcn_med_integration_test_{test_id}" / "comparison" / "overall.tex"
+        tmp_path / f"hypergcn_mediator_integration_test_{test_id}" / "comparison" / "overall.tex"
     ).exists()
     assert (
-        tmp_path / f"hypergcn_med_integration_test_{test_id}" / "comparison" / "overall.md"
+        tmp_path / f"hypergcn_mediator_integration_test_{test_id}" / "comparison" / "overall.md"
     ).exists()
     assert (
-        tmp_path / f"hypergcn_med_integration_test_{test_id}" / "comparison" / "test.tex"
+        tmp_path / f"hypergcn_mediator_integration_test_{test_id}" / "comparison" / "test.tex"
     ).exists()
     assert (
-        tmp_path / f"hypergcn_med_integration_test_{test_id}" / "comparison" / "test.md"
+        tmp_path / f"hypergcn_mediator_integration_test_{test_id}" / "comparison" / "test.md"
     ).exists()
     assert (
-        tmp_path / f"hypergcn_med_integration_test_{test_id}" / "comparison" / "train.md"
+        tmp_path / f"hypergcn_mediator_integration_test_{test_id}" / "comparison" / "train.md"
     ).exists()
     assert (
-        tmp_path / f"hypergcn_med_integration_test_{test_id}" / "comparison" / "train.tex"
+        tmp_path / f"hypergcn_mediator_integration_test_{test_id}" / "comparison" / "train.tex"
     ).exists()
     assert (
-        tmp_path / f"hypergcn_med_integration_test_{test_id}" / "comparison" / "val.md"
+        tmp_path / f"hypergcn_mediator_integration_test_{test_id}" / "comparison" / "val.md"
     ).exists()
     assert (
-        tmp_path / f"hypergcn_med_integration_test_{test_id}" / "comparison" / "val.tex"
+        tmp_path / f"hypergcn_mediator_integration_test_{test_id}" / "comparison" / "val.tex"
     ).exists()
 
 

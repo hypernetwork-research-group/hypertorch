@@ -249,3 +249,29 @@ def test_finalize_writes_val_section_when_train_missing(tmp_path):
     content = result_path.read_text()
     assert "## Train Results" not in content
     assert "## Val Results" in content
+
+
+def test_all_md_files_written_to_comparison_subdir(tmp_path):
+    experiment_name = "exp_comparison_subdir"
+    logger = MarkdownTableLogger(
+        save_dir=str(tmp_path),
+        model_name="model_a",
+        experiment_name=experiment_name,
+        precision=3,
+    )
+
+    logger.log_metrics({"test_auc": 0.91, "train_loss": 0.25, "val_f1": 0.88})
+    logger.finalize("success")
+
+    comparison_dir = tmp_path / "comparison"
+    assert comparison_dir.exists() and comparison_dir.is_dir()
+
+    overall_md = comparison_dir / "overall.md"
+    train_md = comparison_dir / "train.md"
+    val_md = comparison_dir / "val.md"
+    test_md = comparison_dir / "test.md"
+
+    assert overall_md.exists()
+    assert train_md.exists()
+    assert val_md.exists()
+    assert test_md.exists()

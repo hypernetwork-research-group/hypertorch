@@ -553,3 +553,29 @@ def test_finalize_bordered_table_ends_with_hline_before_tabular_close(tmp_path):
 
     assert r"\begin{tabular}{l|c|c}" in content
     assert content.split(r"\end{tabular}")[0].rstrip().endswith(r"\hline")
+
+
+def test_all_tex_files_written_to_comparison_subdir(tmp_path):
+    experiment_name = "exp_comparison_subdir"
+    logger = LaTexTableLogger(
+        save_dir=str(tmp_path),
+        model_name="model_a",
+        experiment_name=experiment_name,
+        options={"table_caption": "Comparison Table", "sort_by": ["asc"], "border": True},
+    )
+
+    logger.log_metrics({"test_auc": 0.91, "train_loss": 0.25, "val_f1": 0.88})
+    logger.finalize("success")
+
+    comparison_dir = tmp_path / "comparison"
+    assert comparison_dir.exists() and comparison_dir.is_dir()
+
+    overall_tex = comparison_dir / "overall.tex"
+    train_tex = comparison_dir / "train.tex"
+    val_tex = comparison_dir / "val.tex"
+    test_tex = comparison_dir / "test.tex"
+
+    assert overall_tex.exists()
+    assert train_tex.exists()
+    assert val_tex.exists()
+    assert test_tex.exists()
