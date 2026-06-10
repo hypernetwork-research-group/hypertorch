@@ -79,10 +79,8 @@ if __name__ == "__main__":
     train_dataset.enrich_node_features(
         enricher=LaplacianPositionalEncodingEnricher(
             num_features=num_features,
-            # In transductive setting, use total number of nodes to ensure consistent encoding
-            # across splits
-            # as the train dataset contain all nodes but may have no hyperedges where they appear
-            num_nodes=train_dataset.hdata.num_nodes,
+            # We are using transductive with all nodes coverage in the train split
+            num_nodes=dataset.hdata.num_nodes,
         ),
         enrichment_mode="replace",
     )
