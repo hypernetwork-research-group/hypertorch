@@ -64,7 +64,7 @@ dev = [
 ]
 docs = [
     "mkdocstrings[python]>=1.0.4,<2.0.0",
-    "zensical>=0.0.43,<1.0.0",
+    "zensical>=0.0.44,<1.0.0",
 ]
 test = [
     "pytest>=9.0.3,<10.0.0",
@@ -76,19 +76,6 @@ test = [
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["hyperbench"]
-
-[dependency-groups]
-dev = [
-    "mkdocstrings[python]==1.0.4",
-    "pre-commit==4.6.0",
-    "pytest==9.0.3",
-    "pytest-cov==7.1.0",
-    "pytest-rerunfailures==16.3",
-    "pytest-xdist==3.8.0",
-    "ruff==0.15.16",
-    "ty==0.0.44",
-    "zensical==0.0.44",
-]
 
 [tool.pytest.ini_options]
 addopts = ["--color=yes", "--verbose", "--tb=short", "--strict-markers"]

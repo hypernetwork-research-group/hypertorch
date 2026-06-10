@@ -1344,7 +1344,9 @@ def test_get_sparse_normalized_laplacian_is_symmetric():
 
 
 def test_get_sparse_normalized_laplacian_diagonal_values():
-    """For a connected graph without self-loops, diagonal of the laplacian should be non-negative."""
+    """
+    For a connected graph without self-loops, diagonal of the laplacian should be non-negative.
+    """
     edge_index = EdgeIndex(torch.tensor([[0, 1], [1, 0]], dtype=torch.long))
     laplacian = edge_index.get_sparse_normalized_laplacian(num_nodes=2)
     dense_laplacian = laplacian.to_dense()
