@@ -66,14 +66,7 @@ def test_all_supported_datasets_load(dataset_name):
 
 @pytest.mark.flaky(reruns=3, reruns_delay=5 * 60, rerun_show_tracebacks=True)
 @pytest.mark.integration
-@pytest.mark.parametrize(
-    "mock",
-    [
-        pytest.param(True, id="load_from_hf"),
-    ],
-)
-def test_all_supported_datasets_load_from_hf(mock, request):
-    test_id = request.node.callspec.id
+def test_all_supported_datasets_load_from_hf(request):
     datasets = list_datasets()
     response = requests.Response()
     response.status_code = 404
@@ -95,13 +88,14 @@ def test_all_supported_datasets_load_from_hf(mock, request):
 
             if _is_network_download_failure(e):
                 warn_ci(
-                    f"Skipping integration test {test_id} for {dataset_name} because an "
-                    "upstream download failed due to network issues."
+                    f"Skipping 'test_all_supported_datasets_load_from_hf' for "
+                    f"{dataset_name!r} because an upstream download failed due to network issues."
                 )
 
                 if execution_count > 2:
                     pytest.skip(
-                        f"Skipping {dataset_name} due to Hugging Face network failure: {message}"
+                        f"Skipping {dataset_name!r} due to "
+                        f"Hugging Face network failure: {message!r}"
                     )
 
             raise
