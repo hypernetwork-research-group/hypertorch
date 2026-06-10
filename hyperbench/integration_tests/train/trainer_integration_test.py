@@ -444,14 +444,43 @@ def __assert_default_logger_outputs(experiment_dir: Path, model_configs: list[Mo
 
     comparison_dir = experiment_dir / "comparison"
     for result_file in [
-        comparison_dir / "results.md",
+        comparison_dir / "overall.md",
         comparison_dir / "overall.tex",
         comparison_dir / "test.tex",
+        comparison_dir / "test.md",
     ]:
         assert result_file.exists()
 
         content = result_file.read_text()
         assert "test_loss" in content or "test\\_loss" in content
+
+        for config in model_configs:
+            assert config.full_model_name() in content
+
+    for result_file in [
+        comparison_dir / "overall.md",
+        comparison_dir / "overall.tex",
+        comparison_dir / "train.md",
+        comparison_dir / "train.tex",
+    ]:
+        assert result_file.exists()
+
+        content = result_file.read_text()
+        assert "train_loss" in content or "train\\_loss" in content
+
+        for config in model_configs:
+            assert config.full_model_name() in content
+
+    for result_file in [
+        comparison_dir / "overall.md",
+        comparison_dir / "overall.tex",
+        comparison_dir / "val.md",
+        comparison_dir / "val.tex",
+    ]:
+        assert result_file.exists()
+
+        content = result_file.read_text()
+        assert "val_loss" in content or "val\\_loss" in content
 
         for config in model_configs:
             assert config.full_model_name() in content

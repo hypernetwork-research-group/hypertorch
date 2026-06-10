@@ -103,6 +103,34 @@ class MarkdownTableLogger(Logger):
             train_results=train_results or None,
             val_results=val_results or None,
             precision=self.__precision,
+            filename="overall.md",
+        )
+        # test
+        self.__save_comparison_tables(
+            test_results=test_results,
+            save_dir=comparison_dir,
+            train_results=None,
+            val_results=None,
+            precision=self.__precision,
+            filename="test.md",
+        )
+        # train
+        self.__save_comparison_tables(
+            test_results={},
+            save_dir=comparison_dir,
+            train_results=train_results or None,
+            val_results=None,
+            precision=self.__precision,
+            filename="train.md",
+        )
+        # val
+        self.__save_comparison_tables(
+            test_results={},
+            save_dir=comparison_dir,
+            train_results=None,
+            val_results=val_results or None,
+            precision=self.__precision,
+            filename="val.md",
         )
 
     def __split_results(

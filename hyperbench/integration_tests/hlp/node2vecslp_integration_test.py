@@ -71,17 +71,41 @@ def test_model_node2vecslp_precomputed(tmp_path, sampling_strategy, full, batch_
     train_test_loop(
         configs=configs,
         path=tmp_path,
-        experiment_name=f"node2vecslp_integration_test_{test_id}",
+        experiment_name=f"node2vecslp_precomputed_integration_test_{test_id}",
     )
 
     assert (
-        tmp_path / f"node2vecslp_integration_test_{test_id}" / "comparison" / "overall.tex"
+        tmp_path
+        / f"node2vecslp_precomputed_integration_test_{test_id}"
+        / "comparison"
+        / "overall.tex"
     ).exists()
     assert (
-        tmp_path / f"node2vecslp_integration_test_{test_id}" / "comparison" / "test.tex"
+        tmp_path
+        / f"node2vecslp_precomputed_integration_test_{test_id}"
+        / "comparison"
+        / "overall.md"
     ).exists()
     assert (
-        tmp_path / f"node2vecslp_integration_test_{test_id}" / "comparison" / "results.md"
+        tmp_path / f"node2vecslp_precomputed_integration_test_{test_id}" / "comparison" / "test.tex"
+    ).exists()
+    assert (
+        tmp_path / f"node2vecslp_precomputed_integration_test_{test_id}" / "comparison" / "test.md"
+    ).exists()
+    assert (
+        tmp_path / f"node2vecslp_precomputed_integration_test_{test_id}" / "comparison" / "train.md"
+    ).exists()
+    assert (
+        tmp_path
+        / f"node2vecslp_precomputed_integration_test_{test_id}"
+        / "comparison"
+        / "train.tex"
+    ).exists()
+    assert (
+        tmp_path / f"node2vecslp_precomputed_integration_test_{test_id}" / "comparison" / "val.md"
+    ).exists()
+    assert (
+        tmp_path / f"node2vecslp_precomputed_integration_test_{test_id}" / "comparison" / "val.tex"
     ).exists()
 
 
@@ -155,15 +179,30 @@ def test_model_node2vecslp_joint(tmp_path, sampling_strategy, full, batch_size, 
     train_test_loop(
         configs=configs,
         path=tmp_path,
-        experiment_name=f"node2vecslp_integration_test_{test_id}",
+        experiment_name=f"node2vecslp_joint_integration_test_{test_id}",
     )
 
     assert (
-        tmp_path / f"node2vecslp_integration_test_{test_id}" / "comparison" / "overall.tex"
+        tmp_path / f"node2vecslp_joint_integration_test_{test_id}" / "comparison" / "overall.tex"
     ).exists()
     assert (
-        tmp_path / f"node2vecslp_integration_test_{test_id}" / "comparison" / "test.tex"
+        tmp_path / f"node2vecslp_joint_integration_test_{test_id}" / "comparison" / "overall.md"
     ).exists()
     assert (
-        tmp_path / f"node2vecslp_integration_test_{test_id}" / "comparison" / "results.md"
+        tmp_path / f"node2vecslp_joint_integration_test_{test_id}" / "comparison" / "test.tex"
+    ).exists()
+    assert (
+        tmp_path / f"node2vecslp_joint_integration_test_{test_id}" / "comparison" / "test.md"
+    ).exists()
+    assert (
+        tmp_path / f"node2vecslp_joint_integration_test_{test_id}" / "comparison" / "train.md"
+    ).exists()
+    assert (
+        tmp_path / f"node2vecslp_joint_integration_test_{test_id}" / "comparison" / "train.tex"
+    ).exists()
+    assert (
+        tmp_path / f"node2vecslp_joint_integration_test_{test_id}" / "comparison" / "val.md"
+    ).exists()
+    assert (
+        tmp_path / f"node2vecslp_joint_integration_test_{test_id}" / "comparison" / "val.tex"
     ).exists()
