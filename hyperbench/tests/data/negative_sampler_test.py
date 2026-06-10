@@ -18,9 +18,9 @@ from hyperbench.types import HData
 @pytest.fixture
 def mock_hdata_with_attr() -> HData:
     return HData(
-        x=torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]]),
-        hyperedge_index=torch.tensor([[0, 1, 2], [0, 1, 2]]),
-        hyperedge_attr=torch.tensor([[0.5, 0.6], [0.7, 0.8], [0.9, 1.0]]),
+        x=torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]], dtype=torch.float),
+        hyperedge_index=torch.tensor([[0, 1, 2], [0, 1, 2]], dtype=torch.long),
+        hyperedge_attr=torch.tensor([[0.5, 0.6], [0.7, 0.8], [0.9, 1.0]], dtype=torch.float),
         num_nodes=3,
         num_hyperedges=3,
     )
@@ -29,8 +29,8 @@ def mock_hdata_with_attr() -> HData:
 @pytest.fixture
 def mock_hdata_no_attr() -> HData:
     return HData(
-        x=torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]]),
-        hyperedge_index=torch.tensor([[0, 1, 2], [0, 0, 1]]),
+        x=torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]], dtype=torch.float),
+        hyperedge_index=torch.tensor([[0, 1, 2], [0, 0, 1]], dtype=torch.long),
         hyperedge_attr=None,
         num_nodes=3,
         num_hyperedges=2,
@@ -40,9 +40,9 @@ def mock_hdata_no_attr() -> HData:
 @pytest.fixture
 def mock_hdata_with_weights() -> HData:
     return HData(
-        x=torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]]),
-        hyperedge_index=torch.tensor([[0, 1, 2], [0, 1, 2]]),
-        hyperedge_weights=torch.tensor([0.5, 0.7, 0.9]),
+        x=torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]], dtype=torch.float),
+        hyperedge_index=torch.tensor([[0, 1, 2], [0, 1, 2]], dtype=torch.long),
+        hyperedge_weights=torch.tensor([0.5, 0.7, 0.9], dtype=torch.float),
         num_nodes=3,
         num_hyperedges=3,
     )
@@ -51,8 +51,8 @@ def mock_hdata_with_weights() -> HData:
 @pytest.fixture
 def mock_hdata_no_weights() -> HData:
     return HData(
-        x=torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]]),
-        hyperedge_index=torch.tensor([[0, 1, 2], [0, 0, 1]]),
+        x=torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]], dtype=torch.float),
+        hyperedge_index=torch.tensor([[0, 1, 2], [0, 0, 1]], dtype=torch.long),
         hyperedge_weights=None,
         num_nodes=3,
         num_hyperedges=2,
@@ -130,6 +130,7 @@ def test_random_negative_sampler_with_hyperedge_attr(mock_hdata_with_attr):
     assert result.num_hyperedges == 2
     assert result.x.shape[0] <= mock_hdata_with_attr.x.shape[0]
     assert result.hyperedge_index.shape[0] == 2
+    assert result.hyperedge_index.dtype == torch.long
     assert (
         result.hyperedge_index.shape[1] == 4
     )  # 2 negative hyperedges * 2 nodes per negative hyperedge
@@ -209,7 +210,8 @@ def test_random_negative_sampler_handles_missing_global_node_ids(mock_hdata_no_a
 
     assert result.num_hyperedges == 1
     assert result.global_node_ids is not None
-    assert torch.equal(result.global_node_ids, torch.arange(result.num_nodes))
+    assert result.global_node_ids.dtype == torch.long
+    assert torch.equal(result.global_node_ids, torch.arange(result.num_nodes, dtype=torch.long))
 
 
 def test_random_negative_sampler_sample_unique_nodes(mock_hdata_no_attr):
@@ -232,8 +234,8 @@ def test_random_negative_sampler_sample_unique_nodes(mock_hdata_no_attr):
 
 def test_random_negative_sampler_rejects_positive_hyperedges():
     hdata = HData(
-        x=torch.tensor([[1.0], [2.0], [3.0]]),
-        hyperedge_index=torch.tensor([[0, 1, 0, 2], [0, 0, 1, 1]]),
+        x=torch.tensor([[1.0], [2.0], [3.0]], dtype=torch.float),
+        hyperedge_index=torch.tensor([[0, 1, 0, 2], [0, 0, 1, 1]], dtype=torch.long),
         num_nodes=3,
         num_hyperedges=2,
     )
@@ -251,7 +253,7 @@ def test_random_negative_sampler_rejects_positive_hyperedges():
 
 def test_random_negative_sampler_rejects_duplicate_negative_hyperedges():
     hdata = HData(
-        x=torch.tensor([[1.0], [2.0], [3.0]]),
+        x=torch.tensor([[1.0], [2.0], [3.0]], dtype=torch.float),
         hyperedge_index=torch.empty((2, 0), dtype=torch.long),
         num_nodes=3,
         num_hyperedges=0,
@@ -270,8 +272,8 @@ def test_random_negative_sampler_rejects_duplicate_negative_hyperedges():
 
 def test_random_negative_sampler_fails_when_unique_negatives_are_unavailable():
     hdata = HData(
-        x=torch.tensor([[1.0], [2.0], [3.0]]),
-        hyperedge_index=torch.tensor([[0, 1, 0, 2, 1, 2], [0, 0, 1, 1, 2, 2]]),
+        x=torch.tensor([[1.0], [2.0], [3.0]], dtype=torch.float),
+        hyperedge_index=torch.tensor([[0, 1, 0, 2, 1, 2], [0, 0, 1, 1, 2, 2]], dtype=torch.long),
         num_nodes=3,
         num_hyperedges=3,
     )
@@ -288,8 +290,8 @@ def test_random_negative_sampler_fails_when_unique_negatives_are_unavailable():
 
 def test_random_negative_sampler_fails_when_retry_budget_is_exhausted(monkeypatch):
     hdata = HData(
-        x=torch.tensor([[1.0], [2.0], [3.0]]),
-        hyperedge_index=torch.tensor([[0, 1], [0, 0]]),
+        x=torch.tensor([[1.0], [2.0], [3.0]], dtype=torch.float),
+        hyperedge_index=torch.tensor([[0, 1], [0, 0]], dtype=torch.long),
         num_nodes=3,
         num_hyperedges=1,
     )
@@ -300,7 +302,7 @@ def test_random_negative_sampler_fails_when_retry_budget_is_exhausted(monkeypatc
     )
 
     def sample_positive_hyperedge(**kwargs):
-        return torch.tensor([0, 1], device=kwargs["input"].device)
+        return torch.tensor([0, 1], device=kwargs["input"].device, dtype=torch.long)
 
     monkeypatch.setattr(torch, "multinomial", sample_positive_hyperedge)
 
@@ -357,6 +359,7 @@ def test_random_negative_sampler_sample_depends_on_return_0based_negatives(
             assert node_id in node_ids
 
     hyperedge_ids = result.hyperedge_index[1]
+    assert result.hyperedge_index.dtype == torch.long
     assert torch.all(hyperedge_ids >= 0)
     assert torch.all(
         hyperedge_ids < mock_hdata_no_attr.num_hyperedges + sampler.num_negative_samples
@@ -368,8 +371,8 @@ def test_random_negative_sampler_sample_depends_on_return_0based_negatives(
 
 
 def test_random_negative_sampler_uses_hyperedge_enrichers(mock_hdata_no_attr):
-    hyperedge_attr = torch.tensor([[10.0, 11.0], [12.0, 13.0]])
-    hyperedge_weights = torch.tensor([0.2, 0.3])
+    hyperedge_attr = torch.tensor([[10.0, 11.0], [12.0, 13.0]], dtype=torch.float)
+    hyperedge_weights = torch.tensor([0.2, 0.3], dtype=torch.float)
     hyperedge_attr_enricher = MagicMock(spec=HyperedgeAttrsEnricher)
     hyperedge_weights_enricher = MagicMock(spec=HyperedgeWeightsEnricher)
     hyperedge_attr_enricher.enrich.return_value = hyperedge_attr
@@ -391,7 +394,9 @@ def test_random_negative_sampler_uses_hyperedge_enrichers(mock_hdata_no_attr):
     attr_enricher_index = hyperedge_attr_enricher.enrich.call_args.args[0]
     weights_enricher_index = hyperedge_weights_enricher.enrich.call_args.args[0]
     assert torch.equal(attr_enricher_index, weights_enricher_index)
-    assert torch.equal(attr_enricher_index[1].unique(sorted=True), torch.arange(2))
+    assert torch.equal(
+        attr_enricher_index[1].unique(sorted=True), torch.arange(2, dtype=torch.long)
+    )
     for node_id in range(int(attr_enricher_index[0].max().item()) + 1):
         assert node_id in attr_enricher_index[0]
 
@@ -497,18 +502,24 @@ def test_clique_negative_sampler_return_0based_negatives_rebases_nodes_and_hyper
 
     result = sampler.sample(hdata, seed=123)
 
-    assert torch.equal(result.hyperedge_index[0].unique(sorted=True), torch.arange(3))
-    assert torch.equal(result.hyperedge_index[1].unique(sorted=True), torch.arange(1))
+    assert torch.equal(
+        result.hyperedge_index[0].unique(sorted=True), torch.arange(3, dtype=torch.long)
+    )
+    assert torch.equal(
+        result.hyperedge_index[1].unique(sorted=True), torch.arange(1, dtype=torch.long)
+    )
+    assert result.hyperedge_index.dtype == torch.long
     assert result.global_node_ids is not None
-    assert torch.equal(result.global_node_ids, torch.tensor([2, 3, 4]))
+    assert result.global_node_ids.dtype == torch.long
+    assert torch.equal(result.global_node_ids, torch.tensor([2, 3, 4], dtype=torch.long))
 
 
 def test_clique_negative_sampler_uses_hyperedge_enrichers(mock_clique_hdata):
-    hyperedge_attr = torch.tensor([[10.0, 11.0]])
+    hyperedge_attr = torch.tensor([[10.0, 11.0]], dtype=torch.float)
     hyperedge_attr_enricher = MagicMock(spec=HyperedgeAttrsEnricher)
     hyperedge_attr_enricher.enrich.return_value = hyperedge_attr
 
-    hyperedge_weights = torch.tensor([0.2])
+    hyperedge_weights = torch.tensor([0.2], dtype=torch.float)
     hyperedge_weights_enricher = MagicMock(spec=HyperedgeWeightsEnricher)
     hyperedge_weights_enricher.enrich.return_value = hyperedge_weights
 
@@ -528,12 +539,18 @@ def test_clique_negative_sampler_uses_hyperedge_enrichers(mock_clique_hdata):
     attr_enricher_index = hyperedge_attr_enricher.enrich.call_args.args[0]
     weights_enricher_index = hyperedge_weights_enricher.enrich.call_args.args[0]
     assert torch.equal(attr_enricher_index, weights_enricher_index)
-    assert torch.equal(attr_enricher_index[0].unique(sorted=True), torch.arange(3))
-    assert torch.equal(attr_enricher_index[1].unique(sorted=True), torch.arange(1))
+    assert torch.equal(
+        attr_enricher_index[0].unique(sorted=True), torch.arange(3, dtype=torch.long)
+    )
+    assert torch.equal(
+        attr_enricher_index[1].unique(sorted=True), torch.arange(1, dtype=torch.long)
+    )
 
 
 def test_clique_negative_sampler_defaults_to_random_hyperedge_attr(mock_clique_hdata):
-    mock_clique_hdata.hyperedge_attr = torch.tensor([[0.1], [0.2], [0.3], [0.4], [0.5]])
+    mock_clique_hdata.hyperedge_attr = torch.tensor(
+        [[0.1], [0.2], [0.3], [0.4], [0.5]], dtype=torch.float
+    )
 
     sampler = CliqueNegativeSampler(num_negative_samples=1, num_nodes_per_sample=3)
 

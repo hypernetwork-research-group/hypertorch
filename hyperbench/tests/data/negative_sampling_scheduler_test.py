@@ -11,8 +11,8 @@ from hyperbench.types import HData
 @pytest.fixture
 def mock_batch():
     return HData(
-        x=torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]]),
-        hyperedge_index=torch.tensor([[0, 1, 2], [0, 0, 1]]),
+        x=torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]], dtype=torch.float),
+        hyperedge_index=torch.tensor([[0, 1, 2], [0, 0, 1]], dtype=torch.long),
         num_nodes=3,
         num_hyperedges=2,
     )
@@ -21,8 +21,8 @@ def mock_batch():
 @pytest.fixture
 def mock_negative_hdata():
     return HData(
-        x=torch.tensor([[1.0, 2.0], [3.0, 4.0]]),
-        hyperedge_index=torch.tensor([[0, 1], [0, 0]]),
+        x=torch.tensor([[1.0, 2.0], [3.0, 4.0]], dtype=torch.float),
+        hyperedge_index=torch.tensor([[0, 1], [0, 0]], dtype=torch.long),
         num_nodes=2,
         num_hyperedges=1,
     )

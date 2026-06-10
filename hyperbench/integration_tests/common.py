@@ -37,13 +37,17 @@ def __cached_split_dataset(
 ) -> tuple[Dataset, Dataset, Dataset]:
     if dataset is None:
         generator = create_seeded_torch_generator(device=torch.device("cpu"), seed=SEED)
-        x = torch.randn((100, 4), generator=generator)  # 100 nodes with 4 features each
+        x = torch.randn(
+            (100, 4), generator=generator, dtype=torch.float
+        )  # 100 nodes with 4 features each
         hyperedge_index = torch.cat(  # 200 hyperedges, each connecting 5 nodes
             [
                 torch.stack(
                     [
-                        torch.randint(0, 100, (5,), generator=generator),  # 5 nodes per hyperedge
-                        torch.full((5,), i),  # hyperedge ID
+                        torch.randint(
+                            0, 100, (5,), generator=generator, dtype=torch.long
+                        ),  # 5 nodes per hyperedge
+                        torch.full((5,), i, dtype=torch.long),  # hyperedge ID
                     ],
                     dim=0,
                 )

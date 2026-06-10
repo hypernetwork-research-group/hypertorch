@@ -16,6 +16,6 @@ def test_create_seeded_torch_generator_returns_reproducible_generator_with_seed(
     assert generator_a is not None
     assert generator_b is not None
     assert torch.equal(
-        torch.randperm(5, generator=generator_a),
-        torch.randperm(5, generator=generator_b),
+        torch.randperm(5, generator=generator_a, dtype=torch.long),
+        torch.randperm(5, generator=generator_b, dtype=torch.long),
     )

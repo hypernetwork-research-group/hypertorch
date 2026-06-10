@@ -12,7 +12,7 @@ from hyperbench.types import HData
 def describe_negative_dataset(name: str, dataset: Dataset) -> None:
     hdata = dataset.hdata
     negative_mask = hdata.y == 0
-    num_negative_hyperedges = int(negative_mask.sum().item())
+    num_negative_hyperedges = negative_mask.sum(dtype=torch.int).item()
 
     print(f"{name}:")
     print(f"- Hyperedges after sampling: {hdata.num_hyperedges}")

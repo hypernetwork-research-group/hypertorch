@@ -544,6 +544,8 @@ class HyperedgeIndex:
             indices=incidence_indices,
             values=incidence_values,
             size=(num_nodes, num_hyperedges),
+            dtype=incidence_values.dtype,
+            device=device,
         )
         return incidence_matrix.coalesce()
 
@@ -574,15 +576,21 @@ class HyperedgeIndex:
 
         device = self.__hyperedge_index.device
 
-        degrees = torch.sparse.sum(incidence_matrix, dim=1).to_dense()
+        degrees = torch.sparse.sum(incidence_matrix, dim=1, dtype=torch.float).to_dense()
         normalized_degrees = degrees.pow(power)
         normalized_degrees[normalized_degrees == float("inf")] = 0
 
-        diagonal_indices = torch.arange(num_nodes, device=device).unsqueeze(0).repeat(2, 1)
+        diagonal_indices = (
+            torch.arange(num_nodes, dtype=self.__hyperedge_index.dtype, device=device)
+            .unsqueeze(0)
+            .repeat(2, 1)
+        )
         degree_matrix = torch.sparse_coo_tensor(
             indices=diagonal_indices,
             values=normalized_degrees,
             size=(num_nodes, num_nodes),
+            dtype=normalized_degrees.dtype,
+            device=device,
         )
         return degree_matrix.coalesce()
 
@@ -687,7 +695,7 @@ class HyperedgeIndex:
         #                                   [1, 0], node 1
         #                                   [1, 0]] node 2
         #          -> column-sum gives hyperedge degrees: d_e = [3, 1], shape (num_hyperedges,)
-        degrees = torch.sparse.sum(incidence_matrix, dim=0).to_dense()
+        degrees = torch.sparse.sum(incidence_matrix, dim=0, dtype=torch.float).to_dense()
 
         # Example: d_e = [3, 1]
         #          -> degree_inv = [1/3, 1]
@@ -701,11 +709,17 @@ class HyperedgeIndex:
         #               hyperedges 0  1
         #          -> D_e^{-1} = [[1/3, 0], hyperedge 0
         #                         [0, 1]]   hyperedge 1
-        diagonal_indices = torch.arange(num_hyperedges, device=device).unsqueeze(0).repeat(2, 1)
+        diagonal_indices = (
+            torch.arange(num_hyperedges, dtype=self.__hyperedge_index.dtype, device=device)
+            .unsqueeze(0)
+            .repeat(2, 1)
+        )
         degree_matrix = torch.sparse_coo_tensor(
             indices=diagonal_indices,
             values=degree_inv,
             size=(num_hyperedges, num_hyperedges),
+            dtype=degree_inv.dtype,
+            device=device,
         )
         return degree_matrix.coalesce()
 
@@ -910,7 +924,12 @@ class HyperedgeIndex:
 
         # Random direction (feature_dim, 1) for projecting nodes in each hyperedge
         # Geometrically, we are choosing a random line through the origin in ℝᵈ, where ᵈ = feature_dim
-        random_direction = torch.rand((x.shape[1], 1), device=device, generator=generator)
+        random_direction = torch.rand(
+            size=(x.shape[1], 1),
+            dtype=x.dtype,
+            device=device,
+            generator=generator,
+        )
 
         for edge in hypergraph_edges:
             num_nodes_in_edge = len(edge)

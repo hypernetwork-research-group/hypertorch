@@ -4,7 +4,7 @@ import warnings
 
 from abc import ABC, abstractmethod
 from torch import Tensor, optim
-from typing import Literal, TypeAlias
+from typing import Literal, TypeAlias, cast
 from torch_geometric.nn import Node2Vec as PyGNode2Vec
 from hyperbench.types import EdgeIndex, HyperedgeIndex
 from hyperbench.models import VilLain
@@ -82,7 +82,11 @@ class _VilLainTrainer:
         Returns:
             Empty tensor of shape ``(0, embedding_dim)``.
         """
-        return torch.empty((0, self.embedding_dim), device=hyperedge_index.device)
+        return torch.empty(
+            size=(0, self.embedding_dim),
+            dtype=torch.float,
+            device=hyperedge_index.device,
+        )
 
     def _num_hyperedges(self, hyperedge_index: Tensor) -> int:
         """
@@ -249,6 +253,7 @@ class FillValueHyperedgeAttrsEnricher(HyperedgeAttrsEnricher):
         hyperedge_attrs = torch.full(
             size=(num_hyperedges, 1),
             fill_value=self.fill_value,
+            dtype=torch.float,
             device=hyperedge_index.device,
         )
         return hyperedge_attrs
@@ -483,7 +488,7 @@ class Node2VecEnricher(NodeEnricher):
                 category=UserWarning,
                 stacklevel=2,
             )
-            return torch.empty((0, self.embedding_dim), device=device)
+            return torch.empty(size=(0, self.embedding_dim), dtype=torch.float, device=device)
 
         reduced_edge_index = hyperedge_index_wrapper.reduce(
             self.graph_reduction_strategy,
@@ -496,7 +501,11 @@ class Node2VecEnricher(NodeEnricher):
                 category=UserWarning,
                 stacklevel=2,
             )
-            return torch.zeros((num_nodes, self.embedding_dim), device=device)
+            return torch.zeros(
+                size=(num_nodes, self.embedding_dim),
+                dtype=torch.float,
+                device=device,
+            )
 
         edge_index = edge_index_wrapper.item.to(device)
         model = PyGNode2Vec(
@@ -633,6 +642,7 @@ class LaplacianPositionalEncodingEnricher(NodeEnricher):
         # eigenvectors shape is ``(num_nodes, num_nodes)``, each column is an eigenvector.
         with torch.no_grad():
             _, eigenvectors = torch.linalg.eigh(laplacian_matrix_dense)
+            eigenvectors = cast(Tensor, eigenvectors)
 
         # We skip the first (trivial) eigenvector, so at most num_nodes - 1 are usable.
         # Example: 3 nodes -> 2 available non-trivial eigenvectors
@@ -651,7 +661,11 @@ class LaplacianPositionalEncodingEnricher(NodeEnricher):
         # (e.g., num_features = 5 but only 2 available), we create a zero-padded tensor and fill what we have.
         # Example: num_nontrivial_eigenvectors = 2, num_features = 5
         #          -> shape (3, 5)  # columns 0-1 filled, 2-4 are zeros.
-        x = torch.zeros(size=(num_nodes, self.num_features), device=edge_index.device)
+        x = torch.zeros(
+            size=(num_nodes, self.num_features),
+            dtype=eigenvectors.dtype,
+            device=eigenvectors.device,
+        )
         x[:, :num_nontrivial_eigenvectors] = eigenvectors[:, 1:]
         return x
 

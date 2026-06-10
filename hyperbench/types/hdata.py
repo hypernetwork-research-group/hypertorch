@@ -14,9 +14,11 @@ from hyperbench.utils import (
     empty_nodefeatures,
     is_inductive_setting,
     is_transductive_setting,
+    validate_floating_tensor_dtype,
     validate_is_non_empty,
     validate_is_non_negative,
     validate_is_positive,
+    validate_long_tensor_dtype,
     validate_node_space_setting,
 )
 
@@ -97,7 +99,9 @@ class HData:
         self.global_node_ids: Tensor = (
             # torch.arange is to handle isolated nodes, as they are already considered
             # when computing self.num_nodes via num_nodes_if_isolated_exist
-            global_node_ids if global_node_ids is not None else torch.arange(self.num_nodes)
+            global_node_ids
+            if global_node_ids is not None
+            else torch.arange(self.num_nodes, dtype=torch.long, device=self.x.device)
         )
 
         self.y = (
@@ -667,14 +671,27 @@ class HData:
             hdata: A new `HData` instance with hyperedge IDs, ``y``, and ``hyperedge_attr`` permuted.
         """
         generator = create_seeded_torch_generator(device=self.device, seed=seed)
-        permutation = torch.randperm(self.num_hyperedges, generator=generator, device=self.device)
+        permutation = torch.randperm(
+            self.num_hyperedges,
+            generator=generator,
+            dtype=torch.long,
+            device=self.device,
+        )
 
         # permutation[new_id] = old_id, so y[permutation] puts old labels into new slots
         # inverse_permutation[old_id] = new_id, used to remap hyperedge IDs in incidences
         # Example: permutation = [1, 2, 0] means new_id 0 gets old_id 1, new_id 1 gets old_id 2, new_id 2 gets old_id 0
         #          -> inverse_permutation = [2, 0, 1] means old_id 0 gets new_id 2, old_id 1 gets new_id 0, old_id 2 gets new_id 1
-        inverse_permutation = torch.empty_like(permutation)
-        inverse_permutation[permutation] = torch.arange(self.num_hyperedges, device=self.device)
+        inverse_permutation = torch.empty_like(
+            permutation,
+            dtype=permutation.dtype,
+            device=permutation.device,
+        )
+        inverse_permutation[permutation] = torch.arange(
+            self.num_hyperedges,
+            dtype=permutation.dtype,
+            device=permutation.device,
+        )
 
         new_hyperedge_index = self.hyperedge_index.clone()
 
@@ -833,16 +850,17 @@ class HData:
                 hyperedge_ids, minlength=self.num_hyperedges
             ).float()
         else:
-            distribution_node_degree = torch.zeros(self.num_nodes, dtype=torch.float)
-            distribution_hyperedge_size = torch.zeros(self.num_hyperedges, dtype=torch.float)
-
-        num_nodes = self.num_nodes
-        num_hyperedges = self.num_hyperedges
+            distribution_node_degree = torch.zeros(
+                self.num_nodes, dtype=torch.float, device=self.device
+            )
+            distribution_hyperedge_size = torch.zeros(
+                self.num_hyperedges, dtype=torch.float, device=self.device
+            )
 
         if distribution_node_degree.numel() > 0:
-            avg_degree_node_raw = distribution_node_degree.mean().item()
+            avg_degree_node_raw = distribution_node_degree.mean(dtype=torch.float).item()
             avg_degree_node = int(avg_degree_node_raw)
-            avg_degree_hyperedge_raw = distribution_hyperedge_size.mean().item()
+            avg_degree_hyperedge_raw = distribution_hyperedge_size.mean(dtype=torch.float).item()
             avg_degree_hyperedge = int(avg_degree_hyperedge_raw)
             node_degree_max = int(distribution_node_degree.max().item())
             hyperedge_degree_max = int(distribution_hyperedge_size.max().item())
@@ -881,8 +899,8 @@ class HData:
             "shape_hyperedge_attr": self.hyperedge_attr.shape
             if self.hyperedge_attr is not None
             else None,
-            "num_nodes": num_nodes,
-            "num_hyperedges": num_hyperedges,
+            "num_nodes": self.num_nodes,
+            "num_hyperedges": self.num_hyperedges,
             "avg_degree_node_raw": avg_degree_node_raw,
             "avg_degree_node": avg_degree_node,
             "avg_degree_hyperedge_raw": avg_degree_hyperedge_raw,
@@ -974,6 +992,7 @@ class HData:
         if self.hyperedge_attr is None:
             return
 
+        validate_floating_tensor_dtype("hyperedge_attr", self.hyperedge_attr)
         if self.hyperedge_attr.dim() != 2:
             raise ValueError(
                 f"'hyperedge_attr' must be a 2D tensor, got shape {tuple(self.hyperedge_attr.shape)}."
@@ -985,10 +1004,6 @@ class HData:
             )
 
     def __validate_hyperedge_index(self) -> None:
-        if self.hyperedge_index.dtype != torch.long:
-            raise ValueError(
-                f"'hyperedge_index' must have dtype torch.long, got {self.hyperedge_index.dtype}."
-            )
         if self.hyperedge_index.numel() > 0 and bool((self.hyperedge_index < 0).any()):
             raise ValueError("'hyperedge_index' cannot contain negative node or hyperedge IDs.")
 
@@ -1012,6 +1027,8 @@ class HData:
         if self.hyperedge_weights is None:
             return
 
+        validate_floating_tensor_dtype("hyperedge_weights", self.hyperedge_weights)
+
         if self.hyperedge_weights.dim() != 1:
             raise ValueError(
                 f"'hyperedge_weights' must be a 1D tensor, got shape {tuple(self.hyperedge_weights.shape)}."
@@ -1023,6 +1040,7 @@ class HData:
             )
 
     def __validate_global_node_ids(self) -> None:
+        validate_long_tensor_dtype("global_node_ids", self.global_node_ids)
         if self.global_node_ids.dim() != 1:
             raise ValueError(
                 f"'global_node_ids' must be a 1D tensor, got shape {tuple(self.global_node_ids.shape)}."
@@ -1033,12 +1051,8 @@ class HData:
                 f"Got size={self.global_node_ids.size(0)} but num_nodes={self.num_nodes}."
             )
 
-        if self.global_node_ids.dtype != torch.long:
-            raise ValueError(
-                f"'global_node_ids' must have dtype torch.long, got {self.global_node_ids.dtype}."
-            )
-
     def __validate_labels(self) -> None:
+        validate_floating_tensor_dtype("y", self.y)
         if self.y.dim() != 1:
             raise ValueError(f"'y' must be a 1D tensor, got shape {tuple(self.y.shape)}.")
         if self.y.size(0) != self.num_hyperedges:
@@ -1069,9 +1083,11 @@ class HData:
             raise ValueError("'fill_value' must be provided when node_space_setting='inductive'.")
 
     def __validate_x_and_hyperedge_index_type_and_dim(self) -> None:
+        validate_floating_tensor_dtype("x", self.x)
         if self.x.dim() != 2:
             raise ValueError(f"'x' must be a 2D tensor, got shape {tuple(self.x.shape)}.")
 
+        validate_long_tensor_dtype("hyperedge_index", self.hyperedge_index)
         if self.hyperedge_index.dim() != 2 or self.hyperedge_index.size(0) != 2:
             raise ValueError(
                 f"'hyperedge_index' must have shape (2, num_incidences), got "

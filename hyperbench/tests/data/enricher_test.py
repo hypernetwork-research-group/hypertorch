@@ -70,8 +70,9 @@ def test_fill_value_hyperedge_attrs_enricher_returns_fixed_attrs(
 
     assert enricher.cache_dir == str(cache_dir)
     assert result.shape == (2, 1)
+    assert result.dtype == torch.float
     assert result.device == mock_two_hyperedge_index.device
-    assert torch.equal(result, torch.tensor(expected))
+    assert torch.equal(result, torch.tensor(expected, dtype=torch.float))
 
 
 def test_fill_value_hyperedge_attrs_enricher_returns_empty_attrs_for_empty_input() -> None:
@@ -81,6 +82,7 @@ def test_fill_value_hyperedge_attrs_enricher_returns_empty_attrs_for_empty_input
     result = enricher.enrich(hyperedge_index)
 
     assert result.shape == (0, 1)
+    assert result.dtype == torch.float
     assert result.device == hyperedge_index.device
 
 
@@ -109,7 +111,7 @@ def test_ab_hyperedge_weights_enricher_counts_nodes_per_hyperedge(
 
     result = enricher.enrich(mock_two_hyperedge_index)
 
-    assert torch.equal(result, torch.tensor([2.0, 2.0]))
+    assert torch.equal(result, torch.tensor([2.0, 2.0], dtype=torch.float))
 
 
 @pytest.mark.parametrize(
@@ -218,6 +220,7 @@ def test_node2vec_enricher_returns_empty_features_when_no_nodes() -> None:
         result = enricher.enrich(hyperedge_index)
 
     assert result.shape == (0, 3)
+    assert result.dtype == torch.float
     assert result.device == hyperedge_index.device
 
 
@@ -231,7 +234,8 @@ def test_node2vec_enricher_returns_zero_features_when_clique_has_no_non_selfloop
     ):
         result = enricher.enrich(hyperedge_index)
 
-    assert torch.equal(result, torch.zeros((1, 3)))
+    assert torch.equal(result, torch.zeros((1, 3), dtype=torch.float))
+    assert result.dtype == torch.float
 
 
 @pytest.mark.parametrize(
@@ -314,6 +318,7 @@ def test_laplacian_positional_encoding_enricher_enriches_correctly(
     )
 
     assert result.shape == expected_shape
+    assert result.dtype == torch.float
     assert result.device == mock_clique_hyperedge_index.device
     assert result.requires_grad is False
 
@@ -329,7 +334,7 @@ def test_laplacian_positional_encoding_enricher_zero_pads_missing_eigenvectors(
     # Example: result: [[v1_0, v2_0, 0, 0],
     #                   [v1_1, v2_1, 0, 0],
     #                   [v1_2, v2_2, 0, 0]]
-    assert torch.allclose(result[:, 2:], torch.zeros((3, 2)))
+    assert torch.allclose(result[:, 2:], torch.zeros((3, 2), dtype=result.dtype))
 
     # The first two columns are the two usable non-trivial eigenvectors.
     # Example: features = [[a, b],
@@ -341,7 +346,7 @@ def test_laplacian_positional_encoding_enricher_zero_pads_missing_eigenvectors(
     #              from eigenvectors returned by torch.linalg.eigh
     assert torch.allclose(
         torch.matmul(result[:, :2].T, result[:, :2]),
-        torch.eye(2),
+        torch.eye(2, dtype=torch.float),
         atol=1e-6,
     )
 
@@ -387,6 +392,7 @@ def test_villain_trainer_resolves_explicit_and_inferred_counts(
     assert trainer._num_nodes(mock_two_hyperedge_index) == 6
     assert trainer._num_hyperedges(mock_two_hyperedge_index) == 5
     assert trainer._empty_features(mock_two_hyperedge_index).shape == (0, 3)
+    assert trainer._empty_features(mock_two_hyperedge_index).dtype == torch.float
 
 
 def test_villain_trainer_falls_back_to_inferred_counts(
@@ -494,6 +500,7 @@ def test_villain_node_enricher_returns_empty_features_when_no_nodes() -> None:
         result = enricher.enrich(hyperedge_index)
 
     assert result.shape == (0, 3)
+    assert result.dtype == torch.float
     assert result.device == hyperedge_index.device
 
 

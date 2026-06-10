@@ -287,7 +287,7 @@ class HyperedgeIDSplitter(Splitter["Tensor", tuple[list["Tensor"], list[float]]]
         validate_is_non_empty("hyperedge_ids_by_split", hyperedge_ids_by_split)
         validate_is_between("split_idx", split_idx, 0, len(hyperedge_ids_by_split) - 1)
 
-        required_node_ids = torch.arange(self.num_nodes, device=self.device)
+        required_node_ids = torch.arange(self.num_nodes, dtype=torch.long, device=self.device)
         available_node_ids = self.hyperedge_index[0].unique()
         missing_from_hypergraph_mask = torch.logical_not(
             torch.isin(required_node_ids, available_node_ids)
@@ -362,11 +362,16 @@ class HyperedgeIDSplitter(Splitter["Tensor", tuple[list["Tensor"], list[float]]]
             random_hyperedge_ids_permutation = torch.randperm(
                 n=self.num_hyperedges,
                 generator=generator,
+                dtype=torch.long,
                 device=self.device,
             )
             return random_hyperedge_ids_permutation
 
-        ranged_hyperedge_ids_permutation = torch.arange(self.num_hyperedges, device=self.device)
+        ranged_hyperedge_ids_permutation = torch.arange(
+            self.num_hyperedges,
+            dtype=torch.long,
+            device=self.device,
+        )
         return ranged_hyperedge_ids_permutation
 
     def get_split_ratios(self, hyperedge_ids_by_split: list[Tensor]) -> list[float]:
@@ -488,7 +493,7 @@ class HyperedgeIDSplitter(Splitter["Tensor", tuple[list["Tensor"], list[float]]]
             for hyperedge_id in split_hyperedge_ids:
                 covered_node_ids = self.__nodes_covered_by_hyperedges(hyperedge_id.view(1))
                 missing_nodes_in_covered_nodes_mask = torch.isin(covered_node_ids, missing_node_ids)
-                gain = int(missing_nodes_in_covered_nodes_mask.sum().item())
+                gain = missing_nodes_in_covered_nodes_mask.sum(dtype=torch.int).item()
                 if gain > best_gain:
                     best_split_idx = split_idx
                     best_hyperedge_id = hyperedge_id

@@ -26,7 +26,7 @@ def test_clone_optional_tensor_with_none():
 
 
 def test_clone_optional_tensor_with_tensor_preserves_values():
-    tensor = torch.tensor([[1.0, 2.0], [3.0, 4.0]])
+    tensor = torch.tensor([[1.0, 2.0], [3.0, 4.0]], dtype=torch.float)
 
     result = clone_optional_tensor(tensor)
 
@@ -35,7 +35,7 @@ def test_clone_optional_tensor_with_tensor_preserves_values():
 
 
 def test_clone_optional_tensor_with_tensor_does_not_share_storage():
-    tensor = torch.tensor([[1.0, 2.0], [3.0, 4.0]])
+    tensor = torch.tensor([[1.0, 2.0], [3.0, 4.0]], dtype=torch.float)
 
     result = clone_optional_tensor(tensor)
     assert result is not None
@@ -81,7 +81,7 @@ def test_to_non_empty_edgeattr_with_none():
 
 
 def test_to_non_empty_edgeattr_with_tensor():
-    edge_attr = torch.tensor([[0.5], [0.7], [0.9]])
+    edge_attr = torch.tensor([[0.5], [0.7], [0.9]], dtype=torch.float)
     result = to_non_empty_edgeattr(edge_attr)
 
     assert torch.equal(result, edge_attr)
@@ -90,7 +90,7 @@ def test_to_non_empty_edgeattr_with_tensor():
 
 
 def test_to_non_empty_edgeattr_with_empty_tensor():
-    edge_attr = torch.empty((0, 3))
+    edge_attr = torch.empty((0, 3), dtype=torch.float)
     result = to_non_empty_edgeattr(edge_attr)
 
     assert torch.equal(result, edge_attr)
@@ -99,7 +99,7 @@ def test_to_non_empty_edgeattr_with_empty_tensor():
 
 
 def test_to_non_empty_edgeattr_with_multi_dimensional():
-    edge_attr = torch.tensor([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]])
+    edge_attr = torch.tensor([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]], dtype=torch.float)
     result = to_non_empty_edgeattr(edge_attr)
 
     assert torch.equal(result, edge_attr)
@@ -118,21 +118,21 @@ def test_empty_nodefeatures():
     "original_ids, ids_to_rebase, expected_result",
     [
         pytest.param(
-            torch.tensor([1, 3, 3, 7]),
-            torch.tensor([3, 7]),
-            torch.tensor([0, 0, 1]),
+            torch.tensor([1, 3, 3, 7], dtype=torch.long),
+            torch.tensor([3, 7], dtype=torch.long),
+            torch.tensor([0, 0, 1], dtype=torch.long),
             id="with_ids_to_rebase",
         ),
         pytest.param(
-            torch.tensor([1, 3, 3, 7]),
-            torch.tensor([1, 3, 7]),
-            torch.tensor([0, 1, 1, 2]),
+            torch.tensor([1, 3, 3, 7], dtype=torch.long),
+            torch.tensor([1, 3, 7], dtype=torch.long),
+            torch.tensor([0, 1, 1, 2], dtype=torch.long),
             id="with_ids_to_rebase_all",
         ),
         pytest.param(
-            torch.tensor([5, 3, 5, 8]),
+            torch.tensor([5, 3, 5, 8], dtype=torch.long),
             None,
-            torch.tensor([1, 0, 1, 2]),
+            torch.tensor([1, 0, 1, 2], dtype=torch.long),
             id="without_ids_to_rebase",
         ),
     ],

@@ -63,9 +63,10 @@ def test_hyperedge_sampling_single_index(mock_four_node_two_hyperedge_hdata):
 
     # hyperedge 0 has nodes 0 and 1
     assert result.hyperedge_index.shape == (2, 2)
+    assert result.hyperedge_index.dtype == torch.long
     assert result.num_hyperedges == 1
-    assert torch.equal(result.hyperedge_index[0], torch.tensor([0, 1]))
-    assert torch.equal(result.hyperedge_index[1], torch.tensor([0, 0]))
+    assert torch.equal(result.hyperedge_index[0], torch.tensor([0, 1], dtype=torch.long))
+    assert torch.equal(result.hyperedge_index[1], torch.tensor([0, 0], dtype=torch.long))
     assert result.hyperedge_attr is None
     assert result.x.shape == (0, 0)
 
@@ -77,8 +78,8 @@ def test_hyperedge_sampling_index_list(mock_four_node_two_hyperedge_hdata):
     # hyperedge 0 (nodes 0, 1) + hyperedge 1 (nodes 2, 3)
     assert result.hyperedge_index.shape == (2, 4)
     assert result.num_hyperedges == 2
-    assert torch.equal(result.hyperedge_index[0], torch.tensor([0, 1, 2, 3]))
-    assert torch.equal(result.hyperedge_index[1], torch.tensor([0, 0, 1, 1]))
+    assert torch.equal(result.hyperedge_index[0], torch.tensor([0, 1, 2, 3], dtype=torch.long))
+    assert torch.equal(result.hyperedge_index[1], torch.tensor([0, 0, 1, 1], dtype=torch.long))
     assert result.hyperedge_attr is None
     assert result.x.shape == (0, 0)
 
@@ -94,9 +95,10 @@ def test_node_sampling_single_index(mock_four_node_two_hyperedge_hdata):
 
     # Node 0 is in hyperedge 0 (nodes 0, 1), so we get all incidences of hyperedge 0
     assert result.hyperedge_index.shape == (2, 2)
+    assert result.hyperedge_index.dtype == torch.long
     assert result.num_hyperedges == 1
-    assert torch.equal(result.hyperedge_index[0], torch.tensor([0, 1]))
-    assert torch.equal(result.hyperedge_index[1], torch.tensor([0, 0]))
+    assert torch.equal(result.hyperedge_index[0], torch.tensor([0, 1], dtype=torch.long))
+    assert torch.equal(result.hyperedge_index[1], torch.tensor([0, 0], dtype=torch.long))
     assert result.hyperedge_attr is None
     assert result.x.shape == (0, 0)
 
@@ -109,8 +111,8 @@ def test_node_sampling_index_list(mock_four_node_two_hyperedge_hdata):
     # Node 2 -> hyperedge 1 (nodes 2, 3)
     assert result.hyperedge_index.shape == (2, 4)
     assert result.num_hyperedges == 2
-    assert torch.equal(result.hyperedge_index[0], torch.tensor([0, 1, 2, 3]))
-    assert torch.equal(result.hyperedge_index[1], torch.tensor([0, 0, 1, 1]))
+    assert torch.equal(result.hyperedge_index[0], torch.tensor([0, 1, 2, 3], dtype=torch.long))
+    assert torch.equal(result.hyperedge_index[1], torch.tensor([0, 0, 1, 1], dtype=torch.long))
     assert result.hyperedge_attr is None
     assert result.x.shape == (0, 0)
 
@@ -220,8 +222,8 @@ def test_sample_single_node_graph_node_sampler(mock_single_node_single_hyperedge
 
     assert result.hyperedge_index.shape == (2, 1)
     assert result.num_hyperedges == 1
-    assert torch.equal(result.hyperedge_index[0], torch.tensor([0]))
-    assert torch.equal(result.hyperedge_index[1], torch.tensor([0]))
+    assert torch.equal(result.hyperedge_index[0], torch.tensor([0], dtype=torch.long))
+    assert torch.equal(result.hyperedge_index[1], torch.tensor([0], dtype=torch.long))
 
 
 def test_sample_single_node_graph_hyperedge_sampler(mock_single_node_single_hyperedge_hdata):
@@ -230,8 +232,8 @@ def test_sample_single_node_graph_hyperedge_sampler(mock_single_node_single_hype
 
     assert result.hyperedge_index.shape == (2, 1)
     assert result.num_hyperedges == 1
-    assert torch.equal(result.hyperedge_index[0], torch.tensor([0]))
-    assert torch.equal(result.hyperedge_index[1], torch.tensor([0]))
+    assert torch.equal(result.hyperedge_index[0], torch.tensor([0], dtype=torch.long))
+    assert torch.equal(result.hyperedge_index[1], torch.tensor([0], dtype=torch.long))
 
 
 def test_sample_hyperedge_of_size_one_node_sampler(mock_single_node_single_hyperedge_hdata):
@@ -241,8 +243,8 @@ def test_sample_hyperedge_of_size_one_node_sampler(mock_single_node_single_hyper
     # Node 0 is in hyperedge 0 which has only node 0
     assert result.hyperedge_index.shape == (2, 1)
     assert result.num_hyperedges == 1
-    assert torch.equal(result.hyperedge_index[0], torch.tensor([0]))
-    assert torch.equal(result.hyperedge_index[1], torch.tensor([0]))
+    assert torch.equal(result.hyperedge_index[0], torch.tensor([0], dtype=torch.long))
+    assert torch.equal(result.hyperedge_index[1], torch.tensor([0], dtype=torch.long))
 
 
 def test_sample_hyperedge_of_size_one_hyperedge_sampler(mock_single_node_single_hyperedge_hdata):
@@ -252,8 +254,8 @@ def test_sample_hyperedge_of_size_one_hyperedge_sampler(mock_single_node_single_
     # Hyperedge 0 has only node 0
     assert result.hyperedge_index.shape == (2, 1)
     assert result.num_hyperedges == 1
-    assert torch.equal(result.hyperedge_index[0], torch.tensor([0]))
-    assert torch.equal(result.hyperedge_index[1], torch.tensor([0]))
+    assert torch.equal(result.hyperedge_index[0], torch.tensor([0], dtype=torch.long))
+    assert torch.equal(result.hyperedge_index[1], torch.tensor([0], dtype=torch.long))
 
 
 @pytest.mark.parametrize(

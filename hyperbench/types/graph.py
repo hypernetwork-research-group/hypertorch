@@ -125,6 +125,8 @@ class Graph:
         Returns:
             x: The smoothed feature matrix. Size ``(num_nodes, C)``.
         """
+        if laplacian_matrix.dtype != x.dtype or laplacian_matrix.device != x.device:
+            laplacian_matrix = laplacian_matrix.to(dtype=x.dtype, device=x.device)
         if drop_rate > 0.0:
             laplacian_matrix = sparse_dropout(laplacian_matrix, drop_rate)
         return laplacian_matrix.matmul(x)
@@ -250,7 +252,11 @@ class EdgeIndex:
         #          -> dest = [1, 0, 3, 0, 1, 2, 3, 4, 5]
         #          -> edge_index_with_selfloops = [[0, 1, 2, 0, 1, 2, 3, 4, 5],
         #                                          [1, 0, 3, 0, 1, 2, 3, 4, 5]]
-        selfloop_indices = torch.arange(num_selfloop_nodes, device=device)
+        selfloop_indices = torch.arange(
+            num_selfloop_nodes,
+            dtype=self.__edge_index.dtype,
+            device=device,
+        )
         src = torch.cat([src, selfloop_indices])
         dest = torch.cat([dest, selfloop_indices])
         edge_index_with_selfloops = torch.stack([src, dest], dim=0)
@@ -324,13 +330,19 @@ class EdgeIndex:
             adj_values = (
                 self.edge_weights
                 if self.edge_weights is not None
-                else torch.ones(self.num_edges, device=device)
+                else torch.ones(self.num_edges, dtype=torch.float, device=device)
             )
         else:
-            adj_values = torch.ones(self.num_edges, device=device)
+            adj_values = torch.ones(self.num_edges, dtype=torch.float, device=device)
 
         adj_indices = torch.stack([src, dest], dim=0)
-        adj_matrix = torch.sparse_coo_tensor(adj_indices, adj_values, size=(num_nodes, num_nodes))
+        adj_matrix = torch.sparse_coo_tensor(
+            indices=adj_indices,
+            values=adj_values,
+            size=(num_nodes, num_nodes),
+            dtype=adj_values.dtype,
+            device=device,
+        )
         return adj_matrix.coalesce()
 
     def get_sparse_identity_matrix(self, num_nodes: int | None = None) -> Tensor:
@@ -367,11 +379,17 @@ class EdgeIndex:
         #          -> I = [[1, 0, 0], 0
         #                  [0, 1, 0], 1
         #                  [0, 0, 1]] 2
-        identity_indices = torch.arange(num_nodes, device=device).unsqueeze(0).repeat(2, 1)
+        identity_indices = (
+            torch.arange(num_nodes, dtype=self.__edge_index.dtype, device=device)
+            .unsqueeze(0)
+            .repeat(2, 1)
+        )
         identity_matrix = torch.sparse_coo_tensor(
             indices=identity_indices,
-            values=torch.ones(num_nodes, device=device),
+            values=torch.ones(num_nodes, dtype=torch.float, device=device),
             size=(num_nodes, num_nodes),
+            dtype=torch.float,
+            device=device,
         )
         return identity_matrix.coalesce()
 
@@ -404,7 +422,7 @@ class EdgeIndex:
         adj_values = adj_matrix.values()
 
         # Compute degree for each node as the weighted row-sum of the adjacency matrix.
-        degrees: Tensor = torch.zeros(num_nodes, device=device, dtype=adj_values.dtype)
+        degrees: Tensor = torch.zeros(num_nodes, dtype=adj_values.dtype, device=device)
         degrees.scatter_add_(dim=0, index=adj_indices[0], src=adj_values)
 
         # Compute D^-1/2 == D^-0.5
@@ -421,11 +439,17 @@ class EdgeIndex:
         #                  [0, 0.707, 0, 0], 1
         #                  [0, 0,     1, 0], 2
         #                  [0, 0,     0, 0]] 3
-        diagonal_indices = torch.arange(num_nodes, device=device).unsqueeze(0).repeat(2, 1)
+        diagonal_indices = (
+            torch.arange(num_nodes, dtype=self.__edge_index.dtype, device=device)
+            .unsqueeze(0)
+            .repeat(2, 1)
+        )
         degree_matrix = torch.sparse_coo_tensor(
             indices=diagonal_indices,
             values=degree_inv_sqrt,
             size=(num_nodes, num_nodes),
+            dtype=degree_inv_sqrt.dtype,
+            device=device,
         )
         return degree_matrix.coalesce()
 
@@ -568,6 +592,8 @@ class EdgeIndex:
             self.__edge_index,
             self.__edge_weights,
             size=(num_nodes, num_nodes),
+            dtype=self.__edge_weights.dtype,
+            device=self.__edge_weights.device,
         ).coalesce()
         self.__edge_index = coalesced.indices().contiguous()
         self.__edge_weights = coalesced.values().contiguous()

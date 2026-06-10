@@ -197,6 +197,7 @@ class NegativeSampler(ABC):
         return torch.arange(
             start=new_hyperedge_id_offset,
             end=num_hyperedges_including_negatives,
+            dtype=torch.long,
             device=device,
         )
 
@@ -415,7 +416,11 @@ class RandomNegativeSampler(SameNodeSpaceNegativeSampler):
             seed=seed,
         )
 
-        negative_node_ids_tensor = torch.tensor(sorted(sampled_negative_node_ids), device=device)
+        negative_node_ids_tensor = torch.tensor(
+            sorted(sampled_negative_node_ids),
+            dtype=torch.long,
+            device=device,
+        )
         new_x, num_negative_nodes = self._new_x(hdata.x, negative_node_ids_tensor)
 
         negative_hyperedge_ids = self._new_negative_hyperedge_ids(
@@ -498,7 +503,11 @@ class RandomNegativeSampler(SameNodeSpaceNegativeSampler):
             # and assign each node id equal probability of being selected by setting all of them to 1
             # Example: num_nodes_per_sample=3, max_node_id=5
             #          -> possible output: [2, 0, 4]
-            equal_probabilities = torch.ones(hdata.num_nodes, device=device)
+            equal_probabilities = torch.ones(
+                size=(hdata.num_nodes,),
+                dtype=torch.float,
+                device=device,
+            )
             sampled_node_ids = torch.multinomial(
                 input=equal_probabilities,
                 num_samples=self.num_nodes_per_sample,
@@ -523,6 +532,7 @@ class RandomNegativeSampler(SameNodeSpaceNegativeSampler):
             sampled_hyperedge_id_tensor = torch.full(
                 size=(self.num_nodes_per_sample,),
                 fill_value=new_hyperedge_id + new_hyperedge_id_offset,
+                dtype=torch.long,
                 device=device,
             )
             sampled_hyperedge_index = torch.stack(
@@ -703,7 +713,11 @@ class CliqueNegativeSampler(SameNodeSpaceNegativeSampler):
             seed=seed,
         )
 
-        negative_node_ids_tensor = torch.tensor(sorted(sampled_negative_node_ids), device=device)
+        negative_node_ids_tensor = torch.tensor(
+            sorted(sampled_negative_node_ids),
+            dtype=torch.long,
+            device=device,
+        )
         new_x, num_negative_nodes = self._new_x(hdata.x, negative_node_ids_tensor)
 
         negative_hyperedge_ids = self._new_negative_hyperedge_ids(
@@ -885,6 +899,7 @@ class CliqueNegativeSampler(SameNodeSpaceNegativeSampler):
         shuffled_clique_candidate_indexes = torch.randperm(
             n=num_valid_clique_candidates,
             generator=generator,
+            dtype=torch.long,
             device=device,
         )
         sampled_clique_candidate_indexes = shuffled_clique_candidate_indexes[
@@ -913,6 +928,7 @@ class CliqueNegativeSampler(SameNodeSpaceNegativeSampler):
             sampled_hyperedge_id_tensor = torch.full(
                 size=(self.num_nodes_per_sample,),
                 fill_value=new_hyperedge_id + new_hyperedge_id_offset,
+                dtype=torch.long,
                 device=device,
             )
             sampled_hyperedge_indexes.append(

@@ -50,7 +50,7 @@ class CommonNeighborsScorer(NeighborScorer):
             return self.__DEFAULT_SCORE
 
         pairwise_counts: list[int] = []
-        candidates_tensor = torch.tensor(candidate_nodes)
+        candidates_tensor = torch.tensor(candidate_nodes, dtype=torch.long)
 
         # Example: candidate_nodes = [1, 2, 3]
         #          -> compute common neighbors for pairs (1, 2), (1, 3), and (2, 3)

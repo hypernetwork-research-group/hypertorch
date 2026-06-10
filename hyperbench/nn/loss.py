@@ -48,13 +48,13 @@ class NHPRankingLoss(nn.Module):
         # We interpret margin_i as follows:
         # - If pos_i > mean(negatives), then margin_i < 0    -> desirable
         # - If pos_i <= mean(negatives), then margin_i >= 0  -> violation
-        margins = negative_scores.mean() - positive_scores
+        margins = negative_scores.mean(dtype=torch.float) - positive_scores
 
         # Then softplus(margin_i):
         # - Is ~0 when margin_i is strongly negative (good ranking).
         # - Grows smoothly when margin_i > 0 (penalizing violations).
         # Final loss is the average over all positive samples.
-        return F.softplus(margins).mean()
+        return F.softplus(margins).mean(dtype=torch.float)
 
 
 class VilLainLoss:
@@ -143,7 +143,7 @@ class VilLainLoss:
             loss: Scalar entropy loss.
         """
         if x.size(0) == 0:
-            return x.sum() * 0.0
+            return x.sum(dtype=torch.float) * 0.0
 
         # Example: x.shape = (num_nodes, 8)
         #          -> probs.shape = (num_nodes, 4, 2)
@@ -154,8 +154,8 @@ class VilLainLoss:
         # With this, we induce structurally close nodes (or hyperedges) to be assigned to the same label.
         # Example: probs.shape = (num_nodes, 4, 2)
         #          -> entropy.shape = (num_nodes, 4), one entropy per item and subspace
-        entropy = -(probs * torch.log(probs + self.eps)).sum(dim=2)
-        return entropy.mean()
+        entropy = -(probs * torch.log(probs + self.eps)).sum(dim=2, dtype=torch.float)
+        return entropy.mean(dtype=torch.float)
 
     def balance_loss(self, x: Tensor) -> Tensor:
         """
@@ -171,7 +171,7 @@ class VilLainLoss:
             loss: Scalar balance loss.
         """
         if x.size(0) == 0:
-            return x.sum() * 0.0
+            return x.sum(dtype=torch.float) * 0.0
 
         # Example: with raw_embedding_dim=8, num_subspaces=4, labels_per_subspace=2:
         #          x.shape = (num_nodes, 8)
@@ -180,12 +180,12 @@ class VilLainLoss:
         #          mean_probs[0] = average usage of the two labels in subspace 0
         #          across all num_nodes nodes/hyperedges in this tensor.
         probs = x.view(-1, self.num_subspaces, self.labels_per_subspace)
-        mean_probs = probs.mean(dim=0)
+        mean_probs = probs.mean(dim=0, dtype=torch.float)
 
         # Negative entropy to maximize global label diversity and prevents collapse.
         # Example: mean_probs[0] = [0.50, 0.50] has higher entropy than mean_probs[0] = [0.99, 0.01].
-        entropy = -(mean_probs * torch.log(mean_probs + self.eps)).sum(dim=1)
-        return -entropy.mean()
+        entropy = -(mean_probs * torch.log(mean_probs + self.eps)).sum(dim=1, dtype=torch.float)
+        return -entropy.mean(dtype=torch.float)
 
     def distinctiveness_loss(self, x: Tensor) -> Tensor:
         """
@@ -201,7 +201,7 @@ class VilLainLoss:
             loss: Scalar distinctiveness loss.
         """
         if x.size(0) == 0:
-            return x.sum() * 0.0
+            return x.sum(dtype=torch.float) * 0.0
 
         # Distinctiveness compares virtual-label columns inside each subspace across all items.
         # Example: with raw_embedding_dim=8, num_subspaces=4, labels_per_subspace=2:
@@ -214,12 +214,12 @@ class VilLainLoss:
         #         idx_i = [0, 1, 0, 1], shape = (4,)
         #         idx_j = [0, 0, 1, 1], shape = (4,)
         #         pairs are (0,0), (1,0), (0,1), (1,1)
-        idx_i = torch.arange(self.labels_per_subspace, device=x.device).repeat(
+        idx_i = torch.arange(self.labels_per_subspace, dtype=torch.long, device=x.device).repeat(
             self.labels_per_subspace
         )
-        idx_j = torch.arange(self.labels_per_subspace, device=x.device).repeat_interleave(
-            self.labels_per_subspace
-        )
+        idx_j = torch.arange(
+            self.labels_per_subspace, dtype=torch.long, device=x.device
+        ).repeat_interleave(self.labels_per_subspace)
 
         # Compare every virtual-label column against every other column.
         # Two different labels in the same subspace should not describe the same pattern of nodes/hyperedges.
@@ -254,9 +254,9 @@ class VilLainLoss:
         # Minimizing -log(diagonal_probs) encourages each label column to be:
         # - Most similar to itself
         # - Less similar to other label columns
-        assignment_probs = torch.softmax(similarity, dim=2)
+        assignment_probs = torch.softmax(similarity, dim=2, dtype=torch.float)
         diagonal_probs = torch.diagonal(assignment_probs, dim1=1, dim2=2)
-        return torch.mean(-torch.log(diagonal_probs + self.eps))
+        return torch.mean(-torch.log(diagonal_probs + self.eps), dtype=torch.float)
 
 
 class VilLainLossParts(TypedDict):

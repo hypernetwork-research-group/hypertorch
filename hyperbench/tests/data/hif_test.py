@@ -180,27 +180,27 @@ def test_transform_attrs_empty_attrs():
 def test_transform_attrs_adds_padding_zero_when_attr_keys_padding():
     attrs = {"weight": 1.5}
     result = HIFProcessor.transform_attrs(attrs, attr_keys=["score", "weight", "age"])
-    assert torch.allclose(result, torch.tensor([0.0, 1.5, 0.0]))
+    assert torch.allclose(result, torch.tensor([0.0, 1.5, 0.0], dtype=torch.float))
 
     attrs = {"weight": 1.5, "score": 0.8, "age": 25.0}
     result = HIFProcessor.transform_attrs(attrs, attr_keys=["age", "score", "weight"])
-    assert torch.allclose(result, torch.tensor([25.0, 0.8, 1.5]))
+    assert torch.allclose(result, torch.tensor([25.0, 0.8, 1.5], dtype=torch.float))
 
     attrs = {"weight": 1.5, "score": 0.8}
     result = HIFProcessor.transform_attrs(attrs)
-    assert torch.allclose(result, torch.tensor([1.5, 0.8]))
+    assert torch.allclose(result, torch.tensor([1.5, 0.8], dtype=torch.float))
 
 
 def test_transform_hyperedge_attrs_adds_padding_zero_when_attr_keys_padding():
     attrs = {"weight": 2.5}
     result = HIFProcessor.transform_attrs(attrs, attr_keys=["score", "weight"])
-    assert torch.allclose(result, torch.tensor([0.0, 2.5]))
+    assert torch.allclose(result, torch.tensor([0.0, 2.5], dtype=torch.float))
 
 
 def test_transform_node_attrs_adds_padding_zero_when_attr_keys_padding():
     attrs = {"weight": 2.5}
     result = HIFProcessor.transform_attrs(attrs, attr_keys=["score", "weight"])
-    assert torch.allclose(result, torch.tensor([0.0, 2.5]))
+    assert torch.allclose(result, torch.tensor([0.0, 2.5], dtype=torch.float))
 
 
 def test_process_hypergraph_rejects_duplicate_node_ids():
@@ -517,8 +517,8 @@ def test_load_from_path_processes_node_numeric_attrs_into_features(tmp_path):
         hdata = HIFLoader.load_from_path(json_path)
 
     assert hdata.x.shape == (2, 2)
-    assert torch.allclose(hdata.x[0], torch.tensor([1.0, 0.5]))
-    assert torch.allclose(hdata.x[1], torch.tensor([2.0, 1.5]))
+    assert torch.allclose(hdata.x[0], torch.tensor([1.0, 0.5], dtype=torch.float))
+    assert torch.allclose(hdata.x[1], torch.tensor([2.0, 1.5], dtype=torch.float))
 
 
 def test_load_from_url_raises_for_unsupported_temp_extension(tmp_path):

@@ -65,10 +65,10 @@ class CommonNeighborsHlpModule(HlpModule):
             )
 
     def training_step(self, batch: HData, batch_idx: int) -> Tensor:
-        return torch.tensor(0.0, device=self.device)
+        return torch.tensor(0.0, dtype=torch.float, device=self.device)
 
     def validation_step(self, batch: HData, batch_idx: int) -> Tensor:
-        return torch.tensor(0.0, device=self.device)
+        return torch.tensor(0.0, dtype=torch.float, device=self.device)
 
     def test_step(self, batch: HData, batch_idx: int) -> Tensor:
         return self.__step(batch, stage=Stage.TEST)

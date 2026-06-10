@@ -31,6 +31,8 @@ from .nn_utils import (
     is_input_layer,
     is_layer,
     maxmin_scatter,
+    validate_floating_tensor_dtype,
+    validate_long_tensor_dtype,
 )
 
 from .node_utils import (
@@ -92,6 +94,7 @@ __all__ = [
     "sparse_dropout",
     "to_0based_ids",
     "to_non_empty_edgeattr",
+    "validate_floating_tensor_dtype",
     "validate_hif_data",
     "validate_hif_json",
     "validate_http_url",
@@ -101,6 +104,7 @@ __all__ = [
     "validate_is_non_empty",
     "validate_is_non_negative",
     "validate_is_positive",
+    "validate_long_tensor_dtype",
     "validate_node_space_setting",
     "validate_ratios",
     "write_dataset_to_disk_as_zst",

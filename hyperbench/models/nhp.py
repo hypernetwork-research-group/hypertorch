@@ -161,7 +161,11 @@ class NHP(nn.Module):
         #          -> incidence_hyperedge_index = [[0, 1, 2, 3, 4],
         #                                          [0, 0, 1, 1, 1]]
         num_incidences = incidence_embeddings.size(0)
-        incidence_ids = torch.arange(num_incidences, device=hyperedge_index.device)
+        incidence_ids = torch.arange(
+            num_incidences,
+            dtype=hyperedge_index.dtype,
+            device=hyperedge_index.device,
+        )
         incidence_hyperedge_index = torch.stack([incidence_ids, hyperedge_ids], dim=0)
 
         # Example: incidence_embeddings = [[1, 2],  # features 0, node 0 in hyperedge 0
