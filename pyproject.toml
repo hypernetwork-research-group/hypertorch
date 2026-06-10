@@ -35,8 +35,14 @@ required-environments = [
 ]
 
 [tool.uv.sources]
-pyg-lib = { index = "pyg-cpu-torch211" }
+pyg-lib = { index = "pyg-cpu-torch212" }
 torch-cluster = { index = "pyg-cpu-torch211" }
+
+[[tool.uv.index]]
+name = "pyg-cpu-torch211"
+url = "https://data.pyg.org/whl/torch-2.12.0+cpu.html"
+format = "flat"
+explicit = true
 
 [[tool.uv.index]]
 name = "pyg-cpu-torch211"
