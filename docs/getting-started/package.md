@@ -29,7 +29,7 @@ HyperBench is organized as a flat Python package: the `hyperbench/` package live
 │       ├── ...             # more experiment outputs
 │       └── villain
 ├── pyproject.toml          # package metadata and dependencies
-├── uv.lock                 # pinned dependency lockfile
+├── uv.lock                 # exact dependency lockfile for development and CI
 └── zensical.toml           # zensical config for docs
 ```
 

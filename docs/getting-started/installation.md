@@ -32,35 +32,38 @@ Use the development installation for contributing or if you want to use the late
 
 ## Required dependencies
 
-HyperBench has the following required dependencies:
+HyperBench declares compatibility ranges for direct dependencies in `pyproject.toml`.
 
-| Dependency | Version | Markers / notes |
+| Dependency | Supported range | Markers / notes |
 | --- | --- | --- |
-| fastjsonschema | 2.21.2 |  |
-| huggingface-hub | 1.11.0 |  |
-| lightning | 2.6.1 |  |
-| numpy | 2.2.6 | `python_full_version < '3.11'` |
-| numpy | 2.4.4 | `python_full_version >= '3.11'` |
-| requests | 2.33.1 |  |
-| torch | 2.11.0 |  |
-| torch-cluster | 1.6.3 | Installed via a custom `uv` index (`pyg-cpu`) |
-| torch-geometric | 2.7.0 |  |
-| zstandard | 0.25.0 |  |
+| fastjsonschema | `>=2.21.2,<3.0.0` |  |
+| huggingface-hub | `>=1.16.4,<2.0.0` |  |
+| lightning | `>=2.6.1,<3.0.0` |  |
+| numpy | `>=2.2.6,<3.0.0` | `python_full_version < '3.11'` |
+| numpy | `>=2.4.4,<3.0.0` | `python_full_version >= '3.11'` |
+| pyg-lib | `>=0.6.0,<1.0.0` | Installed via a custom `uv` index on macOS arm64, Linux x86_64, and Windows x64 |
+| requests | `>=2.34.2,<3.0.0` |  |
+| torch | `>=2.11.0,<3.0.0` |  |
+| torch-cluster | `>=1.6.3,<2.0.0` | Installed via a custom `uv` index on platforms without a compatible `pyg-lib` wheel |
+| torch-geometric | `>=2.7.0,<2.8.0` | Capped below 2.8 so Node2Vec can use the `torch-cluster` fallback |
+| zstandard | `>=0.25.0,<1.0.0` |  |
 
 ## Optional dependencies
 
-| Dependency | Version | Notes |
+| Dependency | Supported range | Notes |
 | --- | --- | --- |
-| tensorboard | 2.20.0 | See [TensorBoard Integration](../development/development.md#tensorboard-support) |
+| tensorboard | `>=2.20.0,<3.0.0` | See [TensorBoard Integration](../development/development.md#tensorboard-support) |
 
 ## Development dependencies
 
-| Dependency | Version | Notes |
+| Dependency | Supported range | Notes |
 | --- | --- | --- |
-| mkdocstrings-python | 1.0.4 |  |
-| pre-commit | 4.5.1 |  |
-| pytest | 9.0.3 |  |
-| pytest-cov | 7.1.0 |  |
-| ruff | 0.15.11 |  |
-| ty | 0.0.34 |  |
-| zensical | 0.0.41 |  |
+| mkdocstrings[python] | `>=1.0.4,<2.0.0` |  |
+| pre-commit | `>=4.5.1,<5.0.0` |  |
+| pytest | `>=9.0.3,<10.0.0` |  |
+| pytest-cov | `>=7.1.0,<8.0.0` |  |
+| pytest-rerunfailures | `>=16.3,<17.0.0` |  |
+| pytest-xdist | `>=2.5.0,<3.0.0` |  |
+| ruff | `>=0.15.11,<1.0.0` |  |
+| ty | `>=0.0.34,<1.0.0` |  |
+| zensical | `>=0.0.43,<1.0.0` |  |
