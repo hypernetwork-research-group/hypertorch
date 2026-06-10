@@ -1,3 +1,5 @@
+import os
+import sys
 from unittest.mock import patch
 
 import pytest
@@ -8,7 +10,43 @@ from hyperbench.data import (
 )
 
 
-RATE_LIMIT_TERMS = ["429", "rate limit", "too many requests"]
+NETWORK_ERROR_TERMS = [
+    "429",
+    "rate limit",
+    "too many requests",
+    "connection error",
+    "connection refused",
+    "connection reset",
+    "network error",
+    "name resolution",
+    "remote disconnected",
+    "service unavailable",
+    "temporary failure",
+    "timed out",
+    "unable to locate the file on the hub",
+    "unable to find the requested files in the local cache",
+    "nodename nor servname provided",
+    "cannot send a request",
+    "client has been closed",
+]
+
+
+def _exception_chain_text(exception: BaseException) -> str:
+    parts: list[str] = []
+    current: BaseException | None = exception
+    seen_ids: set[int] = set()
+
+    while current is not None and id(current) not in seen_ids:
+        seen_ids.add(id(current))
+        parts.append(str(current).lower())
+        current = current.__cause__ or current.__context__
+
+    return "\n".join(parts)
+
+
+def _is_network_download_failure(exception: BaseException) -> bool:
+    message = _exception_chain_text(exception)
+    return any(term in message for term in NETWORK_ERROR_TERMS)
 
 
 @pytest.mark.flaky(reruns=3, reruns_delay=10, rerun_show_tracebacks=True)
@@ -26,7 +64,7 @@ def test_all_supported_datasets_load(dataset_name):
     assert len(dataset) > 0
 
 
-@pytest.mark.flaky(reruns=1, reruns_delay=10 * 60, rerun_show_tracebacks=True)
+@pytest.mark.flaky(reruns=3, reruns_delay=5 * 60, rerun_show_tracebacks=True)
 @pytest.mark.integration
 def test_all_supported_datasets_load_from_hf(request):
     datasets = list_datasets()
@@ -46,14 +84,18 @@ def test_all_supported_datasets_load_from_hf(request):
                 dataset = get_dataset_by_name(dataset_name)
         except Exception as e:
             message = str(e)
-
             execution_count = getattr(request.node, "execution_count", 1)
-            max_attempts = request.node.get_closest_marker("flaky").kwargs.get("reruns", 0) + 1
 
-            if execution_count == max_attempts and any(
-                term in message.lower() for term in RATE_LIMIT_TERMS
-            ):
-                pytest.skip(f"Skipping {dataset_name} due to Hugging Face rate limit: {message}")
+            if _is_network_download_failure(e):
+                if os.getenv("GITHUB_ACTIONS") == "true":
+                    print(
+                        "::warning::Skipping integration dataset checks because an upstream download failed due to network issues.",
+                        file=sys.stderr,
+                    )
+                if execution_count > 2:
+                    pytest.skip(
+                        f"Skipping {dataset_name} due to Hugging Face network failure: {message}"
+                    )
 
             raise
 
