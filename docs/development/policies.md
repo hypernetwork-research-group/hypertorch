@@ -11,7 +11,7 @@ HyperBench versions follow semantic versioning (`MAJOR.MINOR.PATCH`).
 - Supported Python: `>=3.10` (see `pyproject.toml`).
 - CI currently tests multiple Python versions (from 3.10 to 3.14).
 
-If you hit install issues, ensure your `torch` / `torch-geometric` / `torch-cluster` versions are compatible with your Python version.
+If you hit install issues, ensure your `torch` / `torch-geometric` / PyG extension versions are compatible with your Python version and platform. HyperBench installs `pyg-lib` where the configured PyG CPU index publishes compatible wheels and `torch-cluster` as the fallback extension elsewhere.
 
 ### Supported platforms
 
@@ -20,7 +20,7 @@ For each version we aim to support Linux, macOS, and Windows.
 Our CI relies on [GitHub-hosted runners](https://docs.github.com/en/actions/reference/runners/github-hosted-runners).
 
 The current CI matrix tests these runner labels:
-- `ubuntu-latest`, `ubuntu-24.04`, `ubuntu-24.04-arm`, and `ubuntu-slim`.
+- `ubuntu-latest`, `ubuntu-24.04`, and `ubuntu-24.04-arm`.
 - `macos-latest` and `macos-26`.
 - `windows-latest` and `windows-2025`.
 

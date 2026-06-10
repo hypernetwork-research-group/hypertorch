@@ -60,7 +60,7 @@
 │       ├── comparison
 │       └── mlp
 ├── pyproject.toml          # package metadata and dependencies
-├── uv.lock                 # pinned dependency lockfile
+├── uv.lock                 # exact dependency lockfile for development and CI
 └── zensical.toml           # zensical config for docs
 ```
 

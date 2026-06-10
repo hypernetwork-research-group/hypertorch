@@ -45,6 +45,7 @@ For users working with the [pip](https://pip.pypa.io/en/stable/) package manager
 
 ```bash
 pip install hyperbench
+
 # if you want to install optional dependencies for tensorboard support:
 pip install "hyperbench[tensorboard]"
 ```
@@ -53,7 +54,8 @@ or alternatively, using [uv](https://docs.astral.sh/uv/):
 
 ```bash
 uv add hyperbench # or uv pip install hyperbench
-# for optional dependencies:
+
+# for optional dependencies for tensorboard support:
 uv add "hyperbench[tensorboard]"
 ```
 
@@ -66,13 +68,13 @@ You can download [examples](examples) directory and run the example scripts to g
 With Python:
 
 ```bash
-python3 examples/early_stopping.py
+python3 examples/nhp.py
 ```
 
 Or with `uv`:
 
 ```bash
-uv run examples/early_stopping.py
+uv run examples/nhp.py
 ```
 
 ## Contributing
