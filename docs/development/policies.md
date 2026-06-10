@@ -22,7 +22,7 @@ Our CI relies on [GitHub-hosted runners](https://docs.github.com/en/actions/refe
 The current CI matrix tests these runner labels:
 - `ubuntu-latest`, `ubuntu-24.04`, and `ubuntu-24.04-arm`.
 - `macos-latest` and `macos-26`.
-- `windows-latest` and `windows-2025`.
+- `windows-latest` and `windows-2025-vs2026`.
 
 We do not support these platforms:
 - `macos-26-intel` for incompatibility with PyTorch.
@@ -32,7 +32,7 @@ We do not support these platforms:
 |---|---:|---:|---:|---|---|:--:|
 | Linux | 1 | 5 GB | 14 GB | x64 | ubuntu-slim | :x: |
 | Linux | 4 | 16 GB | 14 GB | x64 | ubuntu-latest, ubuntu-24.04 | :heavy_check_mark: |
-| Windows | 4 | 16 GB | 14 GB | x64 | windows-latest, windows-2025 | :heavy_check_mark: |
+| Windows | 4 | 16 GB | 14 GB | x64 | windows-latest, windows-2025-vs2026 | :heavy_check_mark: |
 | Linux | 4 | 16 GB | 14 GB | arm64 | ubuntu-24.04-arm | :heavy_check_mark: |
 | Windows | 4 | 16 GB | 14 GB | arm64 | windows-11-arm | :x: |
 | macOS | 4 | 14 GB | 14 GB | Intel | macos-26-intel | :x: |

@@ -1,5 +1,8 @@
 import lightning as L
+
 import torch
+import os
+import sys
 
 from collections.abc import Sequence
 from functools import cache
@@ -288,3 +291,12 @@ def zero_models_parameters(model_configs: Sequence[ModelConfig]) -> None:
     """
     for config in model_configs:
         zero_model_parameters(config.model)
+
+
+def is_ci() -> bool:
+    return os.getenv("GITHUB_ACTIONS") == "true"
+
+
+def warn_ci(message: str) -> None:
+    if is_ci():
+        print(f"::warning::{message}", file=sys.stderr)
