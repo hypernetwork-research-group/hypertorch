@@ -66,6 +66,12 @@ def test_all_supported_datasets_load(dataset_name):
 
 @pytest.mark.flaky(reruns=3, reruns_delay=5 * 60, rerun_show_tracebacks=True)
 @pytest.mark.integration
+@pytest.mark.parametrize(
+    "mock",
+    [
+        pytest.param(True, id="load_from_hf"),
+    ],
+)
 def test_all_supported_datasets_load_from_hf(request):
     test_id = request.node.callspec.id
     datasets = list_datasets()
@@ -89,8 +95,8 @@ def test_all_supported_datasets_load_from_hf(request):
 
             if _is_network_download_failure(e):
                 warn_ci(
-                    f"Skipping integration test {test_id} because an upstream download "
-                    "failed due to network issues."
+                    f"Skipping integration test {test_id} for {dataset_name} because an "
+                    "upstream download failed due to network issues."
                 )
 
                 if execution_count > 2:
