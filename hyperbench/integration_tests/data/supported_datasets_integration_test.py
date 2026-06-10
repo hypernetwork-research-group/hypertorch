@@ -72,7 +72,7 @@ def test_all_supported_datasets_load(dataset_name):
         pytest.param(True, id="load_from_hf"),
     ],
 )
-def test_all_supported_datasets_load_from_hf(request):
+def test_all_supported_datasets_load_from_hf(mock, request):
     test_id = request.node.callspec.id
     datasets = list_datasets()
     response = requests.Response()
