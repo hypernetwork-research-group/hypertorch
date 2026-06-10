@@ -1,5 +1,3 @@
-import os
-import sys
 from unittest.mock import patch
 
 import pytest
@@ -8,6 +6,8 @@ from hyperbench.data import (
     get_dataset_by_name,
     list_datasets,
 )
+
+from hyperbench.integration_tests.common import warn_ci
 
 
 NETWORK_ERROR_TERMS = [
@@ -67,6 +67,7 @@ def test_all_supported_datasets_load(dataset_name):
 @pytest.mark.flaky(reruns=3, reruns_delay=5 * 60, rerun_show_tracebacks=True)
 @pytest.mark.integration
 def test_all_supported_datasets_load_from_hf(request):
+    test_id = request.node.callspec.id
     datasets = list_datasets()
     response = requests.Response()
     response.status_code = 404
@@ -87,11 +88,11 @@ def test_all_supported_datasets_load_from_hf(request):
             execution_count = getattr(request.node, "execution_count", 1)
 
             if _is_network_download_failure(e):
-                if os.getenv("GITHUB_ACTIONS") == "true":
-                    print(
-                        "::warning::Skipping integration dataset checks because an upstream download failed due to network issues.",
-                        file=sys.stderr,
-                    )
+                warn_ci(
+                    f"Skipping integration test {test_id} because an upstream download "
+                    "failed due to network issues."
+                )
+
                 if execution_count > 2:
                     pytest.skip(
                         f"Skipping {dataset_name} due to Hugging Face network failure: {message}"
