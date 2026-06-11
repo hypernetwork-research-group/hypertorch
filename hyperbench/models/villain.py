@@ -101,7 +101,10 @@ class VilLain(nn.Module):
                 If not provided, the hyperedge count is inferred from ``hyperedge_index``.
 
         Returns:
-            node_embeddings: Node embeddings of shape ``(num_local_nodes, embedding_dim)``.
+            total_loss: The combined loss scalar tensor to optimize.
+            loss_parts: A dictionary containing the individual loss components. It contains
+                ``local_loss`` and ``global_loss`` scalar tensors.
+
         """
         return self.loss(
             hyperedge_index=hyperedge_index,
@@ -130,8 +133,10 @@ class VilLain(nn.Module):
                 If not provided, the hyperedge count is inferred from ``hyperedge_index``.
 
         Returns:
-            loss: A tuple ``(total_loss, loss_parts)`` where ``loss_parts`` contains ``local_loss``
-                and ``global_loss`` scalar tensors.
+            total_loss: The combined loss scalar tensor to optimize.
+            loss_parts: A dictionary containing the individual loss components. It contains
+                ``local_loss`` and ``global_loss`` scalar tensors.
+
         """
         node_embeddings = self.__get_initial_virtual_node_features(node_ids=node_ids)
         actual_num_hyperedges = self.__num_hyperedges(hyperedge_index, num_hyperedges)
@@ -330,7 +335,8 @@ class VilLain(nn.Module):
             num_hyperedges: Total number of hyperedges.
 
         Returns:
-            embeddings: The updated node and hyperedge embeddings after one round
+            node_embeddings: The updated node embeddings after one round of message passing.
+            hyperedge_embeddings: The updated hyperedge embeddings after one round
                 of message passing.
         """
         hyperedge_embeddings = HyperedgeAggregator(

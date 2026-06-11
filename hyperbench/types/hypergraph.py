@@ -966,10 +966,9 @@ class HyperedgeIndex:
                 edge index. Defaults to ``False``.
 
         Returns:
-            reduced_graph: A tuple ``(edge_index, edge_weights)`` where:
-            - ``edge_index`` has size ``(2, |num_edges|)``.
-            - ``edge_weights`` has size ``(|num_edges|,)`` when ``return_weights=True``,
-                otherwise ``None``.
+            edge_index: The edge index of the reduced graph. Size ``(2, |num_edges|)``.
+            edge_weights: The edge weights of the reduced graph. Size ``(|num_edges|,)`` when
+                ``return_weights=True``, otherwise ``None``.
 
         Raises:
             ValueError: If any hyperedge contains fewer than 2 nodes.

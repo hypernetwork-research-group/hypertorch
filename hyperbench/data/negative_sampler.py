@@ -177,8 +177,8 @@ class NegativeSampler(ABC):
             negative_node_ids: Tensor of negative node IDs.
 
         Returns:
-            x_and_num_negative_nodes: The node feature matrix for the negative samples
-                and the number of negative nodes.
+            x: The node feature matrix for the negative samples
+            num_negative_nodes: The number of negative nodes.
         """
         return x[negative_node_ids], len(negative_node_ids)
 
@@ -505,8 +505,10 @@ class RandomNegativeSampler(SameNodeSpaceNegativeSampler):
             seed: Optional random seed for reproducible sampling.
 
         Returns:
-            samples: A tuple containing sampled hyperedge index tensors, sampled hyperedge attribute
-            tensors, sampled node IDs, and the first negative hyperedge ID.
+            sampled_hyperedge_indexes:  sampled hyperedge index tensors
+            sampled_hyperedge_attrs: sampled hyperedge attribute tensors.
+            sampled_negative_node_ids: sampled negative node IDs.
+            new_hyperedge_id_offset: first negative hyperedge ID.
 
         Raises:
             ValueError: If the sampler cannot produce the requested number of unique negative
@@ -921,8 +923,10 @@ class CliqueNegativeSampler(SameNodeSpaceNegativeSampler):
             seed: Optional seed for reproducible candidate shuffling and random attributes.
 
         Returns:
-            samples: A tuple containing sampled hyperedge index tensors, sampled hyperedge
-            attribute tensors, sampled node IDs, and the first negative hyperedge ID.
+            sampled_hyperedge_indexes:  sampled hyperedge index tensors
+            sampled_hyperedge_attrs: sampled hyperedge attribute tensors.
+            sampled_negative_node_ids: sampled negative node IDs.
+            new_hyperedge_id_offset: first negative hyperedge ID.
         """
         device = hdata.device
         generator = create_seeded_torch_generator(device=device, seed=seed)

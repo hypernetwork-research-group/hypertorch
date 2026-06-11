@@ -145,11 +145,14 @@ class MarkdownTableLogger(Logger):
         - "train*" --> train_results
         - "val*" --> val_results
         - anything else (e.g., "epoch") --> ignored
+        Models with no metrics in a category are excluded from that category's dict.
 
         Returns:
             results: Tuple of (test_results, train_results, val_results), where each is a dict
-            mapping model names to their respective metric dicts. Models with no metrics
-            in a category are excluded from that category's dict.
+            mapping model names to their respective metric dicts.
+            test_results: Dict mapping model names to their test metric dicts.
+            train_results: Dict mapping model names to their train metric dicts.
+            val_results: Dict mapping model names to their val metric dicts.
         """
         store = self.__shared_stores.get(self.__experiment_name, {})
         test_results: dict[str, dict[str, float]] = {}

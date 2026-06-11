@@ -92,7 +92,8 @@ class DefaultDatasetSplitter(Splitter["Dataset", tuple[list["Dataset"], list[flo
                     For the 'inductive' setting, splits are always returned based on the
                     provided ratios.
         Returns:
-            datasets_and_ratios: Split datasets and final hyperedge-count ratios.
+            split_datasets: The list of split datasets.
+            final_ratios: The list of final hyperedge-count ratios.
 
         Raises:
             ValueError: If ratios do not sum to ``1.0``, a final split has zero
