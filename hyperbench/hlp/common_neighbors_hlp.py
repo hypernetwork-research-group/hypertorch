@@ -55,7 +55,9 @@ class CommonNeighborsHlpModule(HlpModule):
         return self.decoder(hyperedge_index, self.node_to_neighbors)
 
     def on_fit_start(self) -> None:
-        """Warn users if they are running unnecessary training epochs."""
+        """
+        Warn users if they are running unnecessary training epochs.
+        """
         if self.trainer.max_epochs is None or self.trainer.max_epochs > 0:
             warnings.warn(
                 f"{self.__class__.__name__} is a non-trainable heuristic model. "
@@ -86,7 +88,8 @@ class CommonNeighborsHlpModule(HlpModule):
 
         Args:
             batch: `HData` object containing the hypergraph.
-            stage: The current stage of evaluation (e.g., ``Stage.TRAIN``, ``Stage.VAL``, ``Stage.TEST``).
+            stage: The current stage of evaluation
+                (e.g., ``Stage.TRAIN``, ``Stage.VAL``, ``Stage.TEST``).
 
         Returns:
             loss: The computed loss.

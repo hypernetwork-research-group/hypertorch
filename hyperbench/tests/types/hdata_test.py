@@ -277,8 +277,8 @@ def test_init_hyperedge_attr_defaults_to_none():
                 "hyperedge_index": torch.tensor([[0, 1, 2], [0, 0, 0]], dtype=torch.long),
             },
             (
-                "'x' must have one feature row per node, or be 'torch.empty((0, 0))' if there are no "
-                "nodes. Got x.shape=(2, 2) but num_nodes=3."
+                "'x' must have one feature row per node, or be 'torch.empty((0, 0))' "
+                "if there are no nodes. Got x.shape=(2, 2) but num_nodes=3."
             ),
             id="x_rows_do_not_match_num_nodes",
         ),
@@ -648,7 +648,8 @@ def test_cat_same_node_space_raises_on_overlapping_hyperedge_ids():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "Overlapping hyperedge IDs found across instances. Ensure each instance uses distinct hyperedge IDs."
+            "Overlapping hyperedge IDs found across instances. Ensure each "
+            "instance uses distinct hyperedge IDs."
         ),
     ):
         HData.cat_same_node_space([hdata1, hdata2])
@@ -1443,7 +1444,8 @@ def test_enrich_node_features_from_raises_when_source_rows_do_not_match_global_n
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "Expected 'hdata_with_features.x' rows to align with hdata_with_features.global_node_ids."
+            "Expected 'hdata_with_features.x' rows to align with "
+            "hdata_with_features.global_node_ids."
         ),
     ):
         target_hdata.enrich_node_features_from(source_hdata)
@@ -2053,7 +2055,8 @@ def test_remove_hyperedges_with_fewer_than_k_nodes(hyperedge_index, k, expected_
             id="disjoint_nodes_first_hyperedge_removed",
         ),
         pytest.param(
-            # Hyperedge 0: nodes {0, 2} -> 2 nodes (removed), hyperedge 1: nodes {1, 2, 3} -> 3 nodes (kept)
+            # Hyperedge 0: nodes {0, 2} -> 2 nodes (removed), hyperedge 1: nodes {1, 2, 3}
+            #                                                            -> 3 nodes (kept)
             # Node 2 is shared, so it survives because hyperedge 1 is kept
             # Node 0 is the only node removed as it is only in the removed hyperedge 0
             torch.tensor([[0, 2, 1, 2, 3], [0, 0, 1, 1, 1]], dtype=torch.long),
@@ -2082,7 +2085,8 @@ def test_remove_hyperedges_with_fewer_than_k_nodes_subsets_x(hyperedge_index, k,
             id="disjoint_nodes_first_hyperedge_removed",
         ),
         pytest.param(
-            # Hyperedge 0: nodes {0, 2} -> 2 nodes (removed). hyperedge 1: nodes {1, 2, 3} -> 3 nodes (kept)
+            # Hyperedge 0: nodes {0, 2} -> 2 nodes (removed). hyperedge 1: nodes {1, 2, 3}
+            #                                                            -> 3 nodes (kept)
             # Node 2 is shared, so y for hyperedge 1 must survive
             torch.tensor([[0, 2, 1, 2, 3], [0, 0, 1, 1, 1]], dtype=torch.long),
             3,
@@ -2112,7 +2116,8 @@ def test_remove_hyperedges_with_fewer_than_k_nodes_subsets_y(hyperedge_index, k,
             id="disjoint_nodes_first_hyperedge_removed",
         ),
         pytest.param(
-            # Hyperedge 0: nodes {0, 2} -> 2 nodes (removed), hyperedge 1: nodes {1, 2, 3} -> 3 nodes (kept)
+            # Hyperedge 0: nodes {0, 2} -> 2 nodes (removed), hyperedge 1: nodes {1, 2, 3}
+            #                                                            -> 3 nodes (kept)
             # Node 2 is shared, so attr for hyperedge 1 must survive
             torch.tensor([[0, 2, 1, 2, 3], [0, 0, 1, 1, 1]], dtype=torch.long),
             3,
@@ -2165,7 +2170,7 @@ def test_remove_hyperedges_with_fewer_than_k_nodes_subsets_global_node_ids_when_
     assert torch.equal(result.global_node_ids, torch.tensor([30, 40, 50], dtype=torch.long))
 
 
-def test_remove_hyperedges_with_fewer_than_k_nodes_does_not_subset_global_node_ids_when_preserve_false():
+def test_remove_hyperedges_with_fewer_than_k_nodes_not_subset_global_node_ids_when_preserve_false():
     x = torch.randn(5, 2, dtype=torch.float)
     hyperedge_index = torch.tensor([[0, 1, 2, 3, 4], [0, 0, 1, 1, 1]], dtype=torch.long)
     hdata = HData(x=x, hyperedge_index=hyperedge_index)

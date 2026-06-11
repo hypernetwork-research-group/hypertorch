@@ -58,7 +58,7 @@ HyperBench declares compatibility ranges for direct dependencies in `pyproject.t
 
 | Dependency | Supported range | Notes |
 | --- | --- | --- |
-| mkdocstrings[python] | `>=1.0.4,<2.0.0` |  |
+| mkdocstrings\[python\] | `>=1.0.4,<2.0.0` |  |
 | pre-commit | `>=4.5.1,<5.0.0` |  |
 | pytest | `>=9.0.3,<10.0.0` |  |
 | pytest-cov | `>=7.1.0,<8.0.0` |  |

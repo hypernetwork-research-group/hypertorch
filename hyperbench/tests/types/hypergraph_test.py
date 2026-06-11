@@ -11,7 +11,9 @@ from hyperbench.tests import MOCK_BASE_PATH
 
 @pytest.fixture(autouse=True)
 def seed():
-    """Fix random seed for deterministic projections."""
+    """
+    Fix random seed for deterministic projections.
+    """
     torch.manual_seed(42)
 
 

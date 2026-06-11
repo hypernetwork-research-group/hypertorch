@@ -35,12 +35,14 @@ class DataLoader(TorchDataLoader):
         """
         Collates a list of `HData` objects into a single batched `HData` object.
 
-        This function combines multiple separate samples into a single batched representation suitable for mini-batch training.
-        It handles:
-        - Concatenating node features from all samples.
-        - Concatenating and offsetting hyperedges from all samples.
-        - Concatenating hyperedge attributes from all samples, if present.
-        - Concatenating hyperedge weights from all samples, if present.
+        This function combines multiple separate samples into a single batched representation
+        suitable for mini-batch training.
+
+        Handles:
+            - Concatenating node features from all samples.
+            - Concatenating and offsetting hyperedges from all samples.
+            - Concatenating hyperedge attributes from all samples, if present.
+            - Concatenating hyperedge weights from all samples, if present.
 
         Examples:
             Given ``batch = [HData_0, HData_1]``:
@@ -56,7 +58,7 @@ class DataLoader(TorchDataLoader):
             - ``HData_0`` (3 nodes, 2 hyperedges):
 
             >>> hyperedge_index = [[0, 1, 1, 2],  # Nodes 0, 1, 1, 2
-            ...                    [0, 0, 1, 1]]  # Hyperedge 0 contains {0,1}, Hyperedge 1 contains {1,2}
+            ...                    [0, 0, 1, 1]]  # HE 0 contains {0,1}, HE 1 contains {1,2}
 
             - ``HData_1`` (2 nodes, 1 hyperedge):
 

@@ -14,17 +14,23 @@ class MlpEncoderConfig(TypedDict):
     """
     Configuration for the MLP encoder in MLPHlpModule.
 
-    Args:
+    Attributes:
         in_channels: Number of input features per node.
         out_channels: Number of output features (embedding size) per node.
         num_layers: Number of layers in the MLP encoder.
-        hidden_channels: Optional number of hidden units per layer. If ``None``, no hidden layers are used and the encoder is a simple linear layer.
-        activation_fn: Optional activation function class to use in the MLP encoder. If ``None``, no activation function is applied.
-        activation_fn_kwargs: Optional dictionary of keyword arguments to pass to the activation function constructor.
-        normalization_fn: Optional normalization function class to use in the MLP encoder. If ``None``, no normalization is applied.
-        normalization_fn_kwargs: Optional dictionary of keyword arguments to pass to the normalization function constructor.
+        hidden_channels: Optional number of hidden units per layer. If ``None``, no hidden layers
+            are used and the encoder is a simple linear layer.
+        activation_fn: Optional activation function class to use in the MLP encoder.
+            If ``None``, no activation function is applied.
+        activation_fn_kwargs: Optional dictionary of keyword arguments to pass to the activation
+            function constructor.
+        normalization_fn: Optional normalization function class to use in the MLP encoder.
+            If ``None``, no normalization is applied.
+        normalization_fn_kwargs: Optional dictionary of keyword arguments to pass to the
+            normalization function constructor.
         bias: Whether to include bias terms in the MLP layers. Defaults to ``True``.
-        drop_rate: Dropout rate to apply after each MLP layer (except the last one). Defaults to ``0.0`` (no dropout).
+        drop_rate: Dropout rate to apply after each MLP layer (except the last one).
+            Defaults to ``0.0`` (no dropout).
     """
 
     in_channels: int
@@ -76,7 +82,8 @@ class MLPHlpModule(HlpModule):
             drop_rate=encoder_config.get("drop_rate", 0.0),
         )
 
-        # The decoder takes in the aggregated hyperedge embeddings of shape (num_hyperedges, encoder_config.out_channels)
+        # The decoder takes in the aggregated hyperedge embeddings of shape
+        # (num_hyperedges, encoder_config.out_channels)
         # and produces a score for each hyperedge of shape (num_hyperedges, 1).
         decoder = SLP(in_channels=encoder_config.get("out_channels", 1), out_channels=1)
 
@@ -107,14 +114,15 @@ class MLPHlpModule(HlpModule):
                 ...                    [0, 0, 0, 1, 1]]   # hyperedge ids
 
             The forward pass:
-                1. Encoder maps each node to an embedding vector.
-                2. Aggregate embeddings by summing them per hyperedge:
-                    - hyperedge 0: emb[0] + emb[1] + emb[2]
-                    - hyperedge 1: emb[2] + emb[3]
-                3. Sums are divided by the number of nodes per hyperedge (mean pooling):
-                    - hyperedge 0: (emb[0] + emb[1] + emb[2]) / 3
-                    - hyperedge 1: (emb[2] + emb[3]) / 2
-                4. Decoder scores each hyperedge embedding, producing one scalar per hyperedge.
+
+                >>> Encoder maps each node to an embedding vector.
+                >>> Aggregate embeddings by summing them per hyperedge:
+                ...   - hyperedge 0: emb[0] + emb[1] + emb[2]
+                ...   - hyperedge 1: emb[2] + emb[3]
+                >>> Sums are divided by the number of nodes per hyperedge (mean pooling):
+                ...   - hyperedge 0: (emb[0] + emb[1] + emb[2]) / 3
+                ...   - hyperedge 1: (emb[2] + emb[3]) / 2
+                >>> Decoder scores each hyperedge embedding, producing one scalar per hyperedge.
 
         Args:
             x: Node feature matrix of shape ``(num_nodes, in_channels)``.
@@ -137,8 +145,10 @@ class MLPHlpModule(HlpModule):
 
         # Aggregate: for each hyperedge, aggregate the embeddings of its member nodes.
         # Example::
-        # - hyperedge 0 contains node 0, 1, 2 -> aggregate([e00, e01], [e10, e11], [e20, e21]) -> [pooled_0, pooled_1]
-        # - hyperedge 1 contains node 2, 3 -> aggregate([e20, e21], [e30, e31]) -> [pooled_0, pooled_1]
+        # - hyperedge 0 contains node 0, 1, 2 -> aggregate([e00, e01], [e10, e11], [e20, e21])
+        #                                         -> [pooled_0, pooled_1]
+        # - hyperedge 1 contains node 2, 3 -> aggregate([e20, e21], [e30, e31])
+        #                                  -> [pooled_0, pooled_1]
         # shape: (num_hyperedges, out_channels)
         hyperedge_embeddings = HyperedgeAggregator(hyperedge_index, node_embeddings).pool(
             self.aggregation,

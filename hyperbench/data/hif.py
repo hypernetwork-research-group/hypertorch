@@ -25,7 +25,9 @@ GITHUB_COMMIT_SHA = "89ba250151bd5b1b65ba14a98dbe3dbdd72f5e25"
 
 
 class HIFProcessor:
-    """A utility class to process HIF hypergraph data into `HData` format."""
+    """
+    A utility class to process HIF hypergraph data into `HData` format.
+    """
 
     @staticmethod
     def transform_attrs(
@@ -34,11 +36,13 @@ class HIFProcessor:
     ) -> Tensor:
         """
         Extract and encode numeric attributes to tensor.
+
         Non-numeric attributes are discarded. Missing attributes are filled with ``0.0``.
 
         Args:
             attrs: Dictionary of attributes
-            attr_keys: Optional list of attribute keys to encode. If provided, ensures consistent ordering and fill missing with ``0.0``.
+            attr_keys: Optional list of attribute keys to encode. If provided,
+                ensures consistent ordering and fill missing with ``0.0``.
 
         Returns:
             attrs: Tensor of numeric attribute values
@@ -67,7 +71,6 @@ class HIFProcessor:
         Returns:
             hdata: The processed hypergraph data.
         """
-
         num_nodes = len(hypergraph.nodes)
         x = cls.__process_x(hypergraph, num_nodes)
 
@@ -93,7 +96,8 @@ class HIFProcessor:
                 )
 
             if hyperedge_id not in hyperedge_id_to_idx:
-                # Hyperedges start from 0 and are assigned IDs in the order they are first encountered in incidences
+                # Hyperedges start from 0 and are assigned IDs in the order they are
+                # first encountered in incidences
                 hyperedge_id_to_idx[hyperedge_id] = len(hyperedge_id_to_idx)
 
             node_ids.append(node_id_to_idx[node_id])
@@ -244,7 +248,9 @@ class HIFProcessor:
 
 
 class HIFLoader:
-    """A utility class to load hypergraphs from HIF format."""
+    """
+    A utility class to load hypergraphs from HIF format.
+    """
 
     @classmethod
     def load_from_url(cls, url: str, save_on_disk: bool = False) -> HData:
@@ -263,7 +269,8 @@ class HIFLoader:
         response = requests.get(url, timeout=20)
         if response.status_code != 200:
             raise ValueError(
-                f"Failed to download dataset from URL {url!r} with status code {response.status_code}"
+                f"Failed to download dataset from URL {url!r} "
+                f"with status code {response.status_code}"
             )
 
         if not url.endswith((".json.zst", ".json")):
@@ -273,7 +280,9 @@ class HIFLoader:
 
         if os.path.basename(url).count(".") > 2:
             raise ValueError(
-                f"URL {url!r} has an unexpected filename format. Expected at most one dot in the base filename before the extension (e.g., dataset.json or dataset.json.zst)."
+                f"URL {url!r} has an unexpected filename format. "
+                "Expected at most one dot in the base filename before the "
+                "extension (e.g., dataset.json or dataset.json.zst)."
             )
 
         if url.endswith(".json.zst"):
@@ -298,7 +307,8 @@ class HIFLoader:
     @classmethod
     def load_from_path(cls, filepath: str) -> HData:
         """
-        Load a hypergraph from a local file path pointing to a .json or .json.zst file in HIF format.
+        Load a hypergraph from a local file path pointing to a .json or .json.zst file in HIF
+        format.
 
         Args:
             filepath: The local file path to the .json or .json.zst file
@@ -337,7 +347,10 @@ class HIFLoader:
             hif_data = from_zst_file_to_json(zst_filename)
             return cls.__process_hif_data(hif_data, dataset_name)
 
-        github_url = f"https://raw.githubusercontent.com/hypernetwork-research-group/datasets/{GITHUB_COMMIT_SHA}/{dataset_name}.json.zst"
+        github_url = (
+            f"https://raw.githubusercontent.com/hypernetwork-research-group/datasets/"
+            f"{GITHUB_COMMIT_SHA}/{dataset_name}.json.zst"
+        )
         response = requests.get(github_url, timeout=20)
         if response.status_code == 200:
             dataset_bytes = response.content
@@ -348,7 +361,8 @@ class HIFLoader:
             return hdata
 
         warnings.warn(
-            f"GitHub raw download failed for dataset {dataset_name!r} with status code {response.status_code}\n"
+            f"GitHub raw download failed for dataset {dataset_name!r} "
+            f"with status code {response.status_code}\n"
             "Falling back to Hugging Face Hub download for dataset",
             category=UserWarning,
             stacklevel=2,
@@ -356,7 +370,8 @@ class HIFLoader:
 
         if hf_sha is None:
             raise ValueError(
-                f"Failed to download dataset {dataset_name!r} from GitHub with status code {response.status_code} "
+                f"Failed to download dataset {dataset_name!r} from GitHub "
+                f"with status code {response.status_code} "
                 f"and no SHA provided for Hugging Face Hub fallback."
             )
 
@@ -384,7 +399,8 @@ class HIFLoader:
                 shutil.copyfile(downloaded_path, zst_filename)
             except Exception as e:
                 raise ValueError(
-                    f"Failed to save downloaded dataset {dataset_name!r} to disk at {zst_filename!r}: {e!s}."
+                    f"Failed to save downloaded dataset {dataset_name!r} to disk at "
+                    f"{zst_filename!r}: {e!s}."
                 ) from e
 
         if os.path.isdir(hf_cache_dir):
@@ -394,7 +410,8 @@ class HIFLoader:
                 shutil.rmtree(os.path.join(hf_cache_dir, ".locks", path_prefix))
             except Exception as e:
                 warnings.warn(
-                    f"Failed to clean up Hugging Face Hub cache after downloading dataset {dataset_name!r}: {e!s}.",
+                    f"Failed to clean up Hugging Face Hub cache after downloading "
+                    f"dataset {dataset_name!r}: {e!s}.",
                     category=UserWarning,
                     stacklevel=2,
                 )

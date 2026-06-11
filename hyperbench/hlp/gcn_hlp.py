@@ -14,7 +14,7 @@ class GCNEncoderConfig(TypedDict):
     """
     Configuration for the GCN encoder in GCNHlpModule.
 
-    Args:
+    Attributes:
         in_channels: Number of input features per node.
         out_channels: Number of output features (embedding size) per node.
         hidden_channels: Number of hidden units in the intermediate GCN layers.
@@ -25,9 +25,11 @@ class GCNEncoderConfig(TypedDict):
         add_self_loops: Whether to add self-loops before convolution. Defaults to ``True``.
         normalize: Whether to normalize the adjacency matrix in ``GCNConv``. Defaults to ``True``.
         cached: Whether to cache the normalized graph in ``GCNConv``. Defaults to ``False``.
-        graph_reduction_strategy: Strategy for reducing the hypergraph to a graph. Defaults to ``"clique_expansion"``
-        num_nodes: Total number of nodes in the hypergraph. This is useful when setting is transductive
-            but train dataset may not contain all hyperedges where some nodes appear, to ensure consistent encoding across splits.
+        graph_reduction_strategy: Strategy for reducing the hypergraph to a graph.
+            Defaults to ``"clique_expansion"``.
+        num_nodes: Total number of nodes in the hypergraph. This is useful when setting is
+            transductive but train dataset may not contain all hyperedges where some nodes appear,
+            to ensure consistent encoding across splits.
         activation_fn: Activation function to use after each hidden layer. Defaults to ``nn.ReLU``.
         activation_fn_kwargs: Keyword arguments for the activation function. Defaults to empty dict.
     """

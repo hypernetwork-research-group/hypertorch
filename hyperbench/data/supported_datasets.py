@@ -8,12 +8,15 @@ from hyperbench.data.sampler import SamplingStrategy
 class _PreloadedDataset(Dataset):
     """
     Base class for datasets that use default loading.
-    Subclasses should specify the ``DATASET_NAME`` class variable.
-    The dataset will be saved on disk after the first load.
+
+    Subclasses should specify the ``DATASET_NAME`` class variable. The dataset will be saved on
+    disk after the first load.
 
     Args:
-        hdata: Optional HData object. If ``None``, the dataset will be loaded using the ``DATASET_NAME``.
-        sampling_strategy: The sampling strategy to use for this dataset. Default is ``SamplingStrategy.HYPEREDGE``.
+        hdata: Optional HData object. If ``None``, the dataset will be loaded using
+            the ``DATASET_NAME``.
+        sampling_strategy: The sampling strategy to use for this dataset.
+            Default is ``SamplingStrategy.HYPEREDGE``.
     """
 
     DATASET_NAME: ClassVar[str] = ""
@@ -72,8 +75,9 @@ class _PreloadedDataset(Dataset):
 
 
 def list_datasets() -> list[str]:
-    """Return supported preloaded dataset names in deterministic order."""
-
+    """
+    Return supported preloaded dataset names in deterministic order.
+    """
     return sorted(_PreloadedDataset._registry)
 
 

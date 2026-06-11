@@ -14,7 +14,7 @@ class VilLainEncoderConfig(TypedDict):
     """
     Configuration for ``VilLainHlpModule``.
 
-    Args:
+    Attributes:
         num_nodes: Total number of trainable nodes.
         embedding_dim: Returned node and hyperedge embedding dimension. Defaults to ``128``.
         labels_per_subspace: Number of virtual labels per subspace. Defaults to ``2``.
@@ -42,7 +42,8 @@ class VilLainHlpModule(HlpModule):
     Args:
         encoder_config: Configuration for the VilLain encoder.
         embedding_mode: Whether to return node or hyperedge embeddings from the VilLain encoder.
-        aggregation: Aggregation method to pool node embeddings into hyperedge embeddings when ``embedding_mode="node"``.
+        aggregation: Aggregation method to pool node embeddings into hyperedge embeddings
+            when ``embedding_mode="node"``.
             Ignored when ``embedding_mode="hyperedge"``. Defaults to ``maxmin``.
         loss_fn: Loss function for the HLP task. Defaults to ``nn.BCEWithLogitsLoss()``.
         lr: Learning rate for the optimizer. Defaults to ``0.01``.

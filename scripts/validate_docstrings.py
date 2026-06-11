@@ -93,7 +93,7 @@ def validate_docstrings(
 
 def format_issues(issues: Sequence[DocstringIssue]) -> str:
     if not issues:
-        return "No docstring issues found."
+        return "\033[1;32mAll checks passed!\033[0m"
 
     lines = ["Docstring issues:"]
     for issue in issues:

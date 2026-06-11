@@ -6,17 +6,21 @@ class HGNNP(nn.Module):
     """
     HGNN+ performs hypergraph convolution with two-stage mean aggregation using the
     incidence structure directly: nodes -> hyperedges -> nodes.
-    - Proposed in `HGNN+: General Hypergraph Neural Networks <https://ieeexplore.ieee.org/document/9795251>`_ paper (IEEE T-PAMI 2022).
-    - Reference implementation: `source <https://deephypergraph.readthedocs.io/en/latest/_modules/dhg/models/hypergraphs/hgnnp.html#HGNNP>`_.
+
+    References:
+        - Proposed in [HGNN+: General Hypergraph Neural Networks](https://ieeexplore.ieee.org/document/9795251) paper (IEEE T-PAMI 2022).
+        - Reference implementation: [Code](https://deephypergraph.readthedocs.io/en/latest/_modules/dhg/models/hypergraphs/hgnnp.html#HGNNP).
 
     Args:
         in_channels: The number of input channels.
         hidden_channels: The number of hidden channels.
         num_classes: The number of output channels.
-        bias: If set to ``False``, the layer will not learn the bias parameter. Defaults to ``True``.
-        use_batch_normalization: If set to ``True``, layers will use batch normalization. Defaults to ``False``.
+        bias: If set to ``False``, the layer will not learn the bias parameter.
+            Defaults to ``True``.
+        use_batch_normalization: If set to ``True``, layers will use batch normalization.
+            Defaults to ``False``.
         drop_rate: Dropout ratio. Defaults to ``0.5``.
-    """
+    """  # noqa: E501
 
     def __init__(
         self,

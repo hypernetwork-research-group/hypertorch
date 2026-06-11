@@ -48,7 +48,8 @@ class BaseSampler(ABC):
             ids: List of IDs to sample.
 
         Raises:
-            ValueError: If the provided index is invalid (e.g., empty list or list length exceeds number of sampleable items).
+            ValueError: If the provided index is invalid (e.g., empty list or list length exceeds
+                number of sampleable items).
             TypeError: If the index is not an integer or a list of integers.
         """
         if isinstance(index, list):
@@ -56,7 +57,8 @@ class BaseSampler(ABC):
                 raise ValueError("Index list cannot be empty.")
             if len(index) > size:
                 raise ValueError(
-                    f"Index list length ({len(index)}) cannot exceed the number of sampleable items ({size})."
+                    f"Index list length ({len(index)}) cannot exceed the number of "
+                    f"sampleable items ({size})."
                 )
             for id in index:
                 if not isinstance(id, int) or isinstance(id, bool):
@@ -75,14 +77,16 @@ class BaseSampler(ABC):
         sampled_hyperedge_ids: Tensor,
     ) -> Tensor:
         """
-        Sample the hyperedge index to keep only incidences belonging to the specified sampled hyperedge IDs.
+        Sample the hyperedge index to keep only incidences belonging to the specified sampled
+        hyperedge IDs.
 
         Args:
             hyperedge_index: The original hyperedge index tensor of shape ``[2, num_incidences]``.
             sampled_hyperedge_ids: A tensor containing the IDs of hyperedges to sample.
 
         Returns:
-            hyperedge_index: A new hyperedge index tensor containing only the incidences of the sampled hyperedges.
+            hyperedge_index: A new hyperedge index tensor containing only the incidences of the
+                sampled hyperedges.
         """
         hyperedge_ids = hyperedge_index[1]
 
@@ -120,27 +124,30 @@ class BaseSampler(ABC):
 class HyperedgeSampler(BaseSampler):
     def sample(self, index: int | list[int], hdata: HData) -> HData:
         """
-        Sample hyperedges by their IDs and return the sub-hypergraph containing only those hyperedges and their incident nodes.
+        Sample hyperedges by their IDs and return the sub-hypergraph containing only those
+        hyperedges and their incident nodes.
 
         Examples:
-        >>> hyperedge_index = [[0, 0, 1, 2, 3, 4],
-        ...                    [0, 0, 0, 1, 2, 2]]
-        >>> hdata = HData.from_hyperedge_index(hyperedge_index)
-        >>> strategy = HyperedgeSampler()
-        >>> sampled_hdata = strategy.sample([0, 2], hdata)
-        >>> sampled_hdata.hyperedge_index
-        >>> tensor([[0, 0, 1, 3, 4],
-        ...         [0, 0, 0, 2, 2]])
+            >>> hyperedge_index = [[0, 0, 1, 2, 3, 4],
+            ...                    [0, 0, 0, 1, 2, 2]]
+            >>> hdata = HData.from_hyperedge_index(hyperedge_index)
+            >>> strategy = HyperedgeSampler()
+            >>> sampled_hdata = strategy.sample([0, 2], hdata)
+            >>> sampled_hdata.hyperedge_index
+            >>> tensor([[0, 0, 1, 3, 4],
+            ...         [0, 0, 0, 2, 2]])
 
         Args:
             index: An integer or a list of integers representing hyperedge IDs to sample.
             hdata: The original HData to sample from.
 
         Returns:
-            hdata: An HData instance containing only the sampled hyperedges and their incident nodes.
+            hdata: An HData instance containing only the sampled hyperedges and
+                their incident nodes.
 
         Raises:
-            ValueError: If the provided index is invalid (e.g., empty list or list length exceeds number of hyperedges).
+            ValueError: If the provided index is invalid (e.g., empty list or list length exceeds
+                number of hyperedges).
             IndexError: If any hyperedge ID is out of bounds.
         """
         ids = self._normalize_index(index, self.len(hdata))
@@ -182,27 +189,30 @@ class HyperedgeSampler(BaseSampler):
 class NodeSampler(BaseSampler):
     def sample(self, index: int | list[int], hdata: HData) -> HData:
         """
-        Sample nodes by their IDs and return the sub-hypergraph containing only those nodes and their incident hyperedges.
+        Sample nodes by their IDs and return the sub-hypergraph containing only those nodes and
+        their incident hyperedges.
 
         Examples:
-        >>> hyperedge_index = [[0, 0, 1, 2, 3, 4],
-        ...                    [0, 0, 0, 1, 2, 2]]
-        >>> hdata = HData.from_hyperedge_index(hyperedge_index)
-        >>> strategy = NodeSampler()
-        >>> sampled_hdata = strategy.sample([0, 3], hdata)
-        >>> sampled_hdata.hyperedge_index
-        >>> tensor([[0, 0, 1, 3, 4],
-        ...         [0, 0, 0, 2, 2]])
+            >>> hyperedge_index = [[0, 0, 1, 2, 3, 4],
+            ...                    [0, 0, 0, 1, 2, 2]]
+            >>> hdata = HData.from_hyperedge_index(hyperedge_index)
+            >>> strategy = NodeSampler()
+            >>> sampled_hdata = strategy.sample([0, 3], hdata)
+            >>> sampled_hdata.hyperedge_index
+            >>> tensor([[0, 0, 1, 3, 4],
+            ...         [0, 0, 0, 2, 2]])
 
         Args:
             index: An integer or a list of integers representing node IDs to sample.
             hdata: The original HData to sample from.
 
         Returns:
-            hdata: An HData instance containing only the sampled nodes and their incident hyperedges.
+            hdata: An HData instance containing only the sampled nodes and their
+                incident hyperedges.
 
         Raises:
-            ValueError: If the provided index is invalid (e.g., empty list or list length exceeds number of nodes).
+            ValueError: If the provided index is invalid (e.g., empty list or list length exceeds
+                number of nodes).
             IndexError: If any node ID is out of bounds.
         """
         ids = self._normalize_index(index, self.len(hdata))
@@ -220,7 +230,8 @@ class NodeSampler(BaseSampler):
         sampled_nodes_mask = torch.isin(node_ids, sampled_node_ids)
 
         # Get unique hyperedges that have at least one sampled node
-        # Example: hyperedge_ids = [0, 0, 0, 1, 2, 2], sampled_nodes_mask = [True, True, False, False, True, False]
+        # Example: hyperedge_ids = [0, 0, 0, 1, 2, 2],
+        #  sampled_nodes_mask = [True, True, False, False, True, False]
         #          -> sampled_hyperedge_ids = [0, 2] as they connect to sampled nodes
         sampled_hyperedge_ids = hyperedge_ids[sampled_nodes_mask].unique()
 

@@ -232,7 +232,8 @@ def test_to_edge_index_is_contiguous(mock_single_edge_graph):
 
     Examples:
         If edges = [[0, 1]], then edge_index = [[0], [1]] should be contiguous.
-        If edges = [[0, 1], [1, 2], [2, 3]], then edge_index = [[0, 1, 2], [1, 2, 3]] should be contiguous.
+        If edges = [[0, 1], [1, 2], [2, 3]], then edge_index = [[0, 1, 2], [1, 2, 3]]
+            should be contiguous.
     """
     edge_index = mock_single_edge_graph.to_edge_index()
     assert edge_index.is_contiguous()
@@ -281,7 +282,9 @@ def test_bidirectional_edges():
 
 
 def test_star_graph():
-    """Test star graph (all edges connected to central node)."""
+    """
+    Test star graph (all edges connected to central node).
+    """
     graph = Graph([[0, 1], [0, 2], [0, 3], [0, 4]])
     assert graph.num_nodes == 5
     assert graph.num_edges == 4
@@ -292,7 +295,9 @@ def test_star_graph():
 
 
 def test_cyclic_graph():
-    """Test cyclic graph (a closed loop)."""
+    """
+    Test cyclic graph (a closed loop).
+    """
     graph = Graph([[0, 1], [1, 2], [2, 3], [3, 0]])
     assert graph.num_nodes == 4
     assert graph.num_edges == 4
@@ -326,7 +331,9 @@ def test_smoothing_with_laplacian_output_shape_matches_x_shape(num_nodes, num_fe
 
 
 def test_smoothing_with_laplacian_with_identity_laplacian_returns_original_x():
-    """Smoothing with identity laplacian should return the original features."""
+    """
+    Smoothing with identity laplacian should return the original features.
+    """
     num_nodes = 3
     x = torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]], dtype=torch.float)
 
@@ -475,6 +482,7 @@ def test_smoothing_with_laplacian_drop_rate_stochastic():
 def test_smoothing_with_laplacian_influences_connected_nodes():
     """
     Features of connected nodes should be aggregated.
+
     For a connected graph with GCN normalization, smoothing should mix features from neighbors.
     """
     # Two connected nodes with distinct features
@@ -718,7 +726,9 @@ def test_get_sparse_adjacency_matrix_shape(edge_index, num_nodes):
 
 
 def test_get_sparse_adjacency_matrix_empty_edge_index():
-    """Empty edge_index produces all-zero adjacency matrix when converted to dense."""
+    """
+    Empty edge_index produces all-zero adjacency matrix when converted to dense.
+    """
     edge_index = torch.tensor([[], []], dtype=torch.long)
     adj_matrix = EdgeIndex(edge_index).get_sparse_adjacency_matrix(num_nodes=3)
     dense_adj_matrix = adj_matrix.to_dense()
@@ -898,7 +908,9 @@ def test_get_sparse_adjacency_matrix_ignores_stored_edge_weights_by_default():
     ],
 )
 def test_get_sparse_adjacency_matrix_isolated_nodes(edge_index, num_nodes, isolated_nodes):
-    """Nodes not in edge_index have zero rows and columns."""
+    """
+    Nodes not in edge_index have zero rows and columns.
+    """
     adj_matrix = EdgeIndex(edge_index).get_sparse_adjacency_matrix(num_nodes=num_nodes)
     dense_adj_matrix = adj_matrix.to_dense()
 
@@ -997,7 +1009,9 @@ def test_get_sparse_normalized_degree_matrix_isolated_nodes_are_zero():
 
 
 def test_get_sparse_normalized_degree_matrix_empty_edge_index():
-    """Empty edge_index produces all-zero matrix (all nodes isolated)."""
+    """
+    Empty edge_index produces all-zero matrix (all nodes isolated).
+    """
     edge_index = torch.tensor([[], []], dtype=torch.long)
 
     degree_matrix = EdgeIndex(edge_index).get_sparse_normalized_degree_matrix(num_nodes=3)
@@ -1144,7 +1158,8 @@ def test_get_sparse_normalized_laplacian_has_features_for_isolated_nodes():
     # isolated nodes are not in the edge_index
     edge_index = torch.tensor([[0], [1]], dtype=torch.long)
 
-    # we want all nodes in the gcn laplacian, so we specify num_nodes=4 to include nodes 2 and 3 which are isolated
+    # we want all nodes in the gcn laplacian, so we specify num_nodes=4 to include nodes 2 and 3
+    # which are isolated
     gcn_laplacian = EdgeIndex(edge_index).get_sparse_normalized_gcn_laplacian(num_nodes=4)
     dense_gcn_laplacian = gcn_laplacian.to_dense()
 
@@ -1328,7 +1343,9 @@ def test_get_sparse_normalized_laplacian_is_symmetric():
 
 
 def test_get_sparse_normalized_laplacian_diagonal_values():
-    """For a connected graph without self-loops, diagonal of the laplacian should be non-negative."""
+    """
+    For a connected graph without self-loops, diagonal of the laplacian should be non-negative.
+    """
     edge_index = EdgeIndex(torch.tensor([[0, 1], [1, 0]], dtype=torch.long))
     laplacian = edge_index.get_sparse_normalized_laplacian(num_nodes=2)
     dense_laplacian = laplacian.to_dense()

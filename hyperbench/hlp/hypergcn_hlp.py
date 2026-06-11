@@ -14,16 +14,19 @@ class HyperGCNEncoderConfig(TypedDict):
     """
     Configuration for the HyperGCN encoder in HyperGCNHlpModule.
 
-    Args:
+    Attributes:
         in_channels: Number of input features per node.
         hidden_channels: Number of hidden units in the intermediate HyperGCN layer.
         out_channels: Number of output features (embedding size) per node.
         bias: Whether to include bias terms. Defaults to ``True``.
         use_batch_normalization: Whether to use batch normalization. Defaults to ``False``.
         drop_rate: Dropout rate. Defaults to ``0.5``.
-        use_mediator: Whether to use mediator nodes for hyperedge-to-edge conversion. Defaults to ``False``.
-        fast: Whether to cache the graph structure after first computation. Defaults to ``True``.
-        seed: Optional random seed for the random reduction of hyperedges to edges. Defaults to ``None``.
+        use_mediator: Whether to use mediator nodes for hyperedge-to-edge conversion.
+            Defaults to ``False``.
+        fast: Whether to cache the graph structure after first computation.
+            Defaults to ``True``.
+        seed: Optional random seed for the random reduction of hyperedges to edges.
+            Defaults to ``None``.
     """
 
     in_channels: int
@@ -99,19 +102,20 @@ class HyperGCNHlpModule(HlpModule):
             3. Decode: A linear layer scores each hyperedge embedding.
 
         Examples:
-            Given 5 nodes with 3 features and 2 hyperedges::
+            Given 5 nodes with 3 features and 2 hyperedges:
 
                 >>> x.shape  # (5, 3) — all nodes in the hypergraph
                 >>> hyperedge_index = [[0, 1, 2, 3, 4],  # node IDs (global)
                 ...                    [0, 0, 0, 1, 1]]  # hyperedge IDs
 
             The forward pass:
-                1. HyperGCN encodes all 5 nodes using the full graph Laplacian.
-                   ``node_embeddings.shape = (5, out_channels)``
-                2. Aggregate per hyperedge:
-                   - hyperedge 0: pool(emb[0], emb[1], emb[2])
-                   - hyperedge 1: pool(emb[3], emb[4])
-                3. Decode: one scalar score per hyperedge → ``scores.shape = (2,)``
+
+                >>> HyperGCN encodes all 5 nodes using the full graph Laplacian.
+                ...   ``node_embeddings.shape = (5, out_channels)``
+                >>> Aggregate per hyperedge:
+                ...   - hyperedge 0: pool(emb[0], emb[1], emb[2])
+                ...   - hyperedge 1: pool(emb[3], emb[4])
+                >>> Decode: one scalar score per hyperedge → ``scores.shape = (2,)``
 
         Args:
             x: Node feature matrix of shape ``(num_nodes, in_channels)``.

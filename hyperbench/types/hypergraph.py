@@ -21,15 +21,19 @@ Neighborhood: TypeAlias = set[int]
 
 class HIFHypergraph:
     """
-    A hypergraph data structure that supports directed/undirected hyperedges
-    with incidence-based representation.
+    A hypergraph data structure that supports directed/undirected hyperedges with incidence-based
+    representation.
 
     Args:
-        network_type: The type of hypergraph, which can be "asc" (or "directed") for directed hyperedges, or "undirected" for undirected hyperedges.
+        network_type: The type of hypergraph, which can be "asc" (or "directed") for
+            directed hyperedges, or "undirected" for undirected hyperedges.
         metadata: Optional dictionary of metadata about the hypergraph.
-        incidences: A list of incidences, where each incidence is a dictionary with keys "node" and "edge" representing the relationship between a node and a hyperedge.
-        nodes: A list of node dictionaries, where each dictionary contains information about a node (e.g., id, features).
-        hyperedges: A list of edge dictionaries, where each dictionary contains information about a hyperedge (e.g., id, features).
+        incidences: A list of incidences, where each incidence is a dictionary with keys "node"
+            and "edge" representing the relationship between a node and a hyperedge.
+        nodes: A list of node dictionaries, where each dictionary contains information about
+            a node (e.g., id, features).
+        hyperedges: A list of edge dictionaries, where each dictionary contains information
+            about a hyperedge (e.g., id, features).
     """
 
     def __init__(
@@ -83,37 +87,47 @@ class HIFHypergraph:
 
     @property
     def num_nodes(self) -> int:
-        """Return the number of nodes in the hypergraph."""
+        """
+        Return the number of nodes in the hypergraph.
+        """
         return len(self.nodes)
 
     @property
     def num_hyperedges(self) -> int:
-        """Return the number of hyperedges in the hypergraph."""
+        """
+        Return the number of hyperedges in the hypergraph.
+        """
         return len(self.hyperedges)
 
     def stats(self) -> dict[str, Any]:
         """
         Compute statistics for the HIFhypergraph.
-        The fields returned in the dictionary include:
-        - ``num_nodes``: The number of nodes in the hypergraph.
-        - ``num_hyperedges``: The number of hyperedges in the hypergraph.
-        - ``avg_degree_node_raw``: The average degree of nodes, calculated as the mean number of hyperedges each node belongs to.
-        - ``avg_degree_node``: The floored node average degree.
-        - ``avg_degree_hyperedge_raw``: The average size of hyperedges, calculated as the mean number of nodes each hyperedge contains.
-        - ``avg_degree_hyperedge``: The floored hyperedge average size.
-        - ``node_degree_max``: The maximum degree of any node in the hypergraph.
-        - ``hyperedge_degree_max``: The maximum size of any hyperedge in the hypergraph.
-        - ``node_degree_median``: The median degree of nodes in the hypergraph.
-        - ``hyperedge_degree_median``: The median size of hyperedges in the hypergraph.
-        - ``distribution_node_degree``: A list where the value at index ``i`` represents the count of nodes with degree ``i``.
-        - ``distribution_hyperedge_size``: A list where the value at index ``i`` represents the count of hyperedges with size ``i``.
-        - ``distribution_node_degree_hist``: A dictionary where the keys are node degrees and the values are the count of nodes with that degree.
-        - ``distribution_hyperedge_size_hist``: A dictionary where the keys are hyperedge sizes and the values are the count of hyperedges with that size.
+
+        Fields:
+            - ``num_nodes``: The number of nodes in the hypergraph.
+            - ``num_hyperedges``: The number of hyperedges in the hypergraph.
+            - ``avg_degree_node_raw``: The average degree of nodes, calculated as the mean
+                number of hyperedges each node belongs to.
+            - ``avg_degree_node``: The floored node average degree.
+            - ``avg_degree_hyperedge_raw``: The average size of hyperedges, calculated as the
+                mean number of nodes each hyperedge contains.
+            - ``avg_degree_hyperedge``: The floored hyperedge average size.
+            - ``node_degree_max``: The maximum degree of any node in the hypergraph.
+            - ``hyperedge_degree_max``: The maximum size of any hyperedge in the hypergraph.
+            - ``node_degree_median``: The median degree of nodes in the hypergraph.
+            - ``hyperedge_degree_median``: The median size of hyperedges in the hypergraph.
+            - ``distribution_node_degree``: A list where the value at index ``i`` represents
+                the count of nodes with degree ``i``.
+            - ``distribution_hyperedge_size``: A list where the value at index ``i`` represents
+                the count of hyperedges with size ``i``.
+            - ``distribution_node_degree_hist``: A dictionary where the keys are node degrees
+                and the values are the count of nodes with that degree.
+            - ``distribution_hyperedge_size_hist``: A dictionary where the keys are hyperedge
+                sizes and the values are the count of hyperedges with that size.
 
         Returns:
             stats: A dictionary containing various statistics about the hypergraph.
         """
-
         node_degree: dict[Any, int] = {}
         hyperedge_size: dict[Any, int] = {}
 
@@ -206,7 +220,9 @@ class Hypergraph:
 
     @property
     def num_nodes(self) -> int:
-        """Return the number of nodes in the hypergraph."""
+        """
+        Return the number of nodes in the hypergraph.
+        """
         nodes = set()
         for edge in self.hyperedges:
             nodes.update(edge)
@@ -214,7 +230,9 @@ class Hypergraph:
 
     @property
     def num_hyperedges(self) -> int:
-        """Return the number of hyperedges in the hypergraph."""
+        """
+        Return the number of hyperedges in the hypergraph.
+        """
         return len(self.hyperedges)
 
     def neighbors_of(self, node: int) -> Neighborhood:
@@ -261,7 +279,9 @@ class Hypergraph:
         return node_to_neighbors
 
     def stats(self) -> dict[str, Any]:
-        """Return basic statistics about the hypergraph."""
+        """
+        Return basic statistics about the hypergraph.
+        """
         node_degree: dict[int, int] = {}
         distribution_hyperedge_size: list[int] = []
         total_incidences = 0
@@ -339,7 +359,8 @@ class Hypergraph:
         Create a Hypergraph from a hyperedge index representation.
 
         Args:
-            hyperedge_index: Tensor of shape (2, |E|) representing hyperedges, where each column is (node, hyperedge).
+            hyperedge_index: Tensor of shape (2, |E|) representing hyperedges, where each
+                column is (node, hyperedge).
 
         Returns:
             hypergraph: Hypergraph instance
@@ -363,12 +384,14 @@ class Hypergraph:
     ) -> Tensor:
         """
         Return the feature matrix smoothed with a smoothing matrix.
+
         Computes ``M @ X`` where ``M`` is the smoothing matrix and ``X`` is the node feature matrix.
 
         Args:
             x: Node feature matrix. Size ``(num_nodes, C)``.
             matrix: The smoothing matrix. Size ``(num_nodes, num_nodes)``.
-            drop_rate: Randomly dropout the connections in the smoothing matrix with probability ``drop_rate``. Defaults to ``0.0``.
+            drop_rate: Randomly dropout the connections in the smoothing matrix with
+                probability ``drop_rate``. Defaults to ``0.0``.
 
         Returns:
             x: The smoothed feature matrix. Size ``(num_nodes, C)``.
@@ -381,9 +404,10 @@ class Hypergraph:
 class HyperedgeIndex:
     """
     A wrapper for hyperedge index representation.
-    Hyperedge index is a tensor of shape ``(2, num_incidences)`` that encodes the relationships between nodes and hyperedges.
-    Each column in the tensor represents an incidence between a node and a hyperedge, with the first row containing node indices
-    and the second row containing corresponding hyperedge indices.
+    Hyperedge index is a tensor of shape ``(2, num_incidences)`` that encodes the relationships
+    between nodes and hyperedges.
+    Each column in the tensor represents an incidence between a node and a hyperedge, with the
+    first row containing node indices and the second row containing corresponding hyperedge indices.
 
     Examples:
         >>> hyperedge_index = [[0, 1, 2, 0],
@@ -397,7 +421,8 @@ class HyperedgeIndex:
         The number of hyperedges is 2 (hyperedges 0 and 1).
 
     Args:
-        hyperedge_index: A tensor of shape ``(2, num_incidences)`` representing hyperedges, where each column is (node, hyperedge).
+        hyperedge_index: A tensor of shape ``(2, num_incidences)`` representing hyperedges,
+            where each column is (node, hyperedge).
     """
 
     def __init__(self, hyperedge_index: Tensor):
@@ -405,32 +430,44 @@ class HyperedgeIndex:
 
     @property
     def all_node_ids(self) -> Tensor:
-        """Return the tensor of all node IDs in the hyperedge index."""
+        """
+        Return the tensor of all node IDs in the hyperedge index.
+        """
         return self.__hyperedge_index[0]
 
     @property
     def all_hyperedge_ids(self) -> Tensor:
-        """Return the tensor of all hyperedge IDs in the hyperedge index."""
+        """
+        Return the tensor of all hyperedge IDs in the hyperedge index.
+        """
         return self.__hyperedge_index[1]
 
     @property
     def item(self) -> Tensor:
-        """Return the hyperedge index tensor."""
+        """
+        Return the hyperedge index tensor.
+        """
         return self.__hyperedge_index
 
     @property
     def node_ids(self) -> Tensor:
-        """Return the sorted unique node IDs from the hyperedge index."""
+        """
+        Return the sorted unique node IDs from the hyperedge index.
+        """
         return self.__hyperedge_index[0].unique(sorted=True)
 
     @property
     def hyperedge_ids(self) -> Tensor:
-        """Return the sorted unique hyperedge IDs from the hyperedge index."""
+        """
+        Return the sorted unique hyperedge IDs from the hyperedge index.
+        """
         return self.__hyperedge_index[1].unique(sorted=True)
 
     @property
     def num_hyperedges(self) -> int:
-        """Return the number of hyperedges in the hypergraph."""
+        """
+        Return the number of hyperedges in the hypergraph.
+        """
         if self.num_incidences < 1:
             return 0
 
@@ -439,7 +476,9 @@ class HyperedgeIndex:
 
     @property
     def num_nodes(self) -> int:
-        """Return the number of nodes in the hypergraph."""
+        """
+        Return the number of nodes in the hypergraph.
+        """
         if self.num_incidences < 1:
             return 0
 
@@ -448,7 +487,10 @@ class HyperedgeIndex:
 
     @property
     def num_incidences(self) -> int:
-        """Return the number of incidences in the hypergraph, which is the number of columns in the hyperedge index."""
+        """
+        Return the number of incidences in the hypergraph, which is the number of columns in the
+        hyperedge index.
+        """
         return self.__hyperedge_index.size(1)
 
     def nodes_in(self, hyperedge_id: int) -> list[int]:
@@ -466,13 +508,15 @@ class HyperedgeIndex:
 
     def num_nodes_if_isolated_exist(self, num_nodes: int) -> int:
         """
-        Return the number of nodes in the hypergraph, accounting for isolated nodes that may not appear in the hyperedge index.
+        Return the number of nodes in the hypergraph, accounting for isolated nodes that may not
+        appear in the hyperedge index.
 
         Args:
             num_nodes: The total number of nodes in the hypergraph, including isolated nodes.
 
         Returns:
-            num_nodes: The number of nodes in the hypergraph, which is the maximum of the number of unique nodes in the hyperedge index and the provided ``num_nodes``.
+            num_nodes: The number of nodes in the hypergraph, which is the maximum of the number of
+                unique nodes in the hyperedge index and the provided ``num_nodes``.
         """
         return max(self.num_nodes, num_nodes)
 
@@ -488,7 +532,8 @@ class HyperedgeIndex:
                 If ``None``, inferred from the unique node IDs in ``hyperedge_index``.
 
         Returns:
-            adjacency: A list where ``adjacency[node_id]`` is the set of nodes adjacent to ``node_id``.
+            adjacency: A list where ``adjacency[node_id]`` is the set of
+                nodes adjacent to ``node_id``.
         """
         num_nodes = num_nodes if num_nodes is not None else self.num_nodes
         self.__validate_num_nodes(num_nodes)
@@ -500,7 +545,8 @@ class HyperedgeIndex:
                 self.all_node_ids[self.all_hyperedge_ids == hyperedge_id].unique().tolist()
             )
 
-            # Clique expansion: every pair of nodes in the same hyperedge becomes an undirected graph edge
+            # Clique expansion: every pair of nodes in the same hyperedge
+            # becomes an undirected graph edge
             # Example: hyperedge [0, 1, 2] adds (0, 1), (0, 2), and (1, 2):
             #          -> adjacency[0] = {1, 2}
             #          -> adjacency[1] = {0, 2}
@@ -527,7 +573,8 @@ class HyperedgeIndex:
             num_hyperedges: Total number of hyperedges. If ``None``, inferred from hyperedge index.
 
         Returns:
-            incidence_matrix: The sparse incidence matrix H of shape ``(num_nodes, num_hyperedges)``.
+            incidence_matrix: The sparse incidence matrix H of
+                shape ``(num_nodes, num_hyperedges)``.
 
         Raises:
             ValueError: If the provided dimensions cannot contain the raw node or hyperedge IDs.
@@ -559,7 +606,8 @@ class HyperedgeIndex:
         Compute a sparse diagonal node degree matrix from row-sums of the incidence matrix.
 
         Args:
-            incidence_matrix: The sparse incidence matrix H of shape ``(num_nodes, num_hyperedges)``.
+            incidence_matrix: The sparse incidence matrix H of
+                shape ``(num_nodes, num_hyperedges)``.
             power: Exponent applied to node degrees before placing them on the diagonal.
             num_nodes: Total number of nodes. If ``None``, inferred from hyperedge index.
 
@@ -600,16 +648,18 @@ class HyperedgeIndex:
         num_nodes: int | None = None,
     ) -> Tensor:
         """
-        Compute the sparse normalized node degree matrix D_n^-1.
+        Compute the sparse normalized node degree matrix `D_n^-1`.
+
         The node degree ``d_n[i]`` is the number of hyperedges containing node ``i``
         (i.e., the row-sum of the incidence matrix H).
 
         Args:
-            incidence_matrix: The sparse incidence matrix H of shape ``(num_nodes, num_hyperedges)``.
+            incidence_matrix: The sparse incidence matrix H of
+                shape ``(num_nodes, num_hyperedges)``.
             num_nodes: Total number of nodes. If ``None``, inferred from hyperedge index.
 
         Returns:
-            degree_matrix: The sparse diagonal matrix D_n^-1 of shape ``(num_nodes, num_nodes)``.
+            degree_matrix: The sparse diagonal matrix `D_n^-1` of shape ``(num_nodes, num_nodes)``.
         """
         # Example: hyperedge_index = [[0, 1, 2, 0],
         #                             [0, 0, 0, 1]]
@@ -632,16 +682,19 @@ class HyperedgeIndex:
         num_nodes: int | None = None,
     ) -> Tensor:
         """
-        Compute the sparse normalized node degree matrix D_n^-1/2.
+        Compute the sparse normalized node degree matrix `D_n^-1/2`.
+
         The node degree ``d_n[i]`` is the number of hyperedges containing node ``i``
         (i.e., the row-sum of the incidence matrix H).
 
         Args:
-            incidence_matrix: The sparse incidence matrix H of shape ``(num_nodes, num_hyperedges)``.
+            incidence_matrix: The sparse incidence matrix H of
+                shape ``(num_nodes, num_hyperedges)``.
             num_nodes: Total number of nodes. If ``None``, inferred from hyperedge index.
 
         Returns:
-            degree_matrix: The sparse diagonal matrix D_n^-1/2 of shape ``(num_nodes, num_nodes)``.
+            degree_matrix: The sparse diagonal matrix `D_n^-1/2`
+                of shape ``(num_nodes, num_nodes)``.
         """
         # Example: hyperedge_index = [[0, 1, 2, 0],
         #                             [0, 0, 0, 1]]
@@ -664,17 +717,19 @@ class HyperedgeIndex:
         num_hyperedges: int | None = None,
     ) -> Tensor:
         """
-        Compute the sparse normalized hyperedge degree matrix D_e^-1.
+        Compute the sparse normalized hyperedge degree matrix `D_e^-1`.
 
         The hyperedge degree ``d_e[j]`` is the number of nodes in hyperedge ``j``
         (i.e., the column-sum of the incidence matrix H).
 
         Args:
-            incidence_matrix: The sparse incidence matrix H of shape ``(num_nodes, num_hyperedges)``.
+            incidence_matrix: The sparse incidence matrix H of
+                shape ``(num_nodes, num_hyperedges)``.
             num_hyperedges: Total number of hyperedges. If ``None``, inferred from hyperedge index.
 
         Returns:
-            degree_matrix: The sparse diagonal matrix D_e^-1 of shape ``(num_hyperedges, num_hyperedges)``.
+            degree_matrix: The sparse diagonal matrix `D_e^-1` of
+                shape ``(num_hyperedges, num_hyperedges)``.
         """
         num_hyperedges = (
             num_hyperedges if num_hyperedges is not None else int(incidence_matrix.size(1))
@@ -735,8 +790,8 @@ class HyperedgeIndex:
 
         where:
             - H is the incidence matrix of shape ``(num_nodes, num_hyperedges)``
-            - D_n^-1/2 is the normalized node degree matrix
-            - D_e^-1 is the inverse hyperedge degree matrix (with W = I)
+            - `D_n^-1/2` is the normalized node degree matrix
+            - `D_e^-1` is the inverse hyperedge degree matrix (with W = I)
 
         Args:
             num_nodes: Total number of nodes. If ``None``, inferred from hyperedge index.
@@ -817,7 +872,7 @@ class HyperedgeIndex:
         )
         return smoothing_matrix.coalesce()
 
-    def reduce(self, strategy: Literal["clique_expansion"], **kwargs) -> Tensor:
+    def reduce(self, strategy: Literal["clique_expansion"], **kwargs: Any) -> Tensor:
         """
         Reduce the hypergraph to a graph represented by edge index using the specified strategy.
 
@@ -843,12 +898,14 @@ class HyperedgeIndex:
         num_hyperedges: int | None = None,
     ) -> Tensor:
         """
-        Construct a graph from a hypergraph via clique expansion using ``H @ H^T``, where ``H`` is the incidence matrix of the hypergraph.
+        Construct a graph from a hypergraph via clique expansion using ``H @ H^T``,
+        where ``H`` is the incidence matrix of the hypergraph.
         In clique expansion, each hyperedge is replaced by a clique connecting all its member nodes.
 
         For each hyperedge, all pairs of member nodes become edges in the resulting graph.
         This is computed efficiently using the incidence matrix: ``A = H @ H^T``, where ``H`` is
-        the sparse incidence matrix of shape ``[num_nodes, num_hyperedges]`` and ``A`` is the adjacency matrix of the clique-expanded graph.
+        the sparse incidence matrix of shape ``[num_nodes, num_hyperedges]`` and ``A`` is
+        the adjacency matrix of the clique-expanded graph.
 
         Args:
             num_nodes: Total number of nodes. If ``None``, inferred from hyperedge index.
@@ -897,23 +954,26 @@ class HyperedgeIndex:
         seed: int | None = None,
     ) -> tuple[Tensor, Tensor | None]:
         """
-        Construct a graph from a hypergraph with methods proposed in `HyperGCN: A New Method of Training Graph Convolutional Networks on Hypergraphs <https://arxiv.org/pdf/1809.02589.pdf>`_ paper.
-        Reference implementation: `source <https://deephypergraph.readthedocs.io/en/latest/_modules/dhg/structure/graphs/graph.html#Graph.from_hypergraph_hypergcn>`_.
+        References:
+            - Construct a graph from a hypergraph with methods proposed in [HyperGCN: A New Method of Training Graph Convolutional Networks on Hypergraphs](https://arxiv.org/pdf/1809.02589.pdf) paper.
+            - Reference implementation: [source](https://deephypergraph.readthedocs.io/en/latest/_modules/dhg/structure/graphs/graph.html#Graph.from_hypergraph_hypergcn).
 
         Args:
             x: Node feature matrix. Size ``(num_nodes, C)``.
-            with_mediators: Whether to use mediator to transform the hyperedges to edges in the graph. Defaults to ``False``.
+            with_mediators: Whether to use mediator to transform the hyperedges to edges in the
+                graph. Defaults to ``False``.
             remove_selfloops: Whether to remove self-loops. Defaults to ``True``.
-            return_weights: Whether to return the DHG-style reduced-edge weights alongside the edge index. Defaults to ``False``.
+            return_weights: Whether to return the DHG-style reduced-edge weights alongside the
+                edge index. Defaults to ``False``.
 
         Returns:
-            reduced_graph: A tuple ``(edge_index, edge_weights)`` where:
-            - ``edge_index`` has size ``(2, |num_edges|)``.
-            - ``edge_weights`` has size ``(|num_edges|,)`` when ``return_weights=True``, otherwise ``None``.
+            edge_index: The edge index of the reduced graph. Size ``(2, |num_edges|)``.
+            edge_weights: The edge weights of the reduced graph. Size ``(|num_edges|,)`` when
+                ``return_weights=True``, otherwise ``None``.
 
         Raises:
             ValueError: If any hyperedge contains fewer than 2 nodes.
-        """
+        """  # noqa: E501
         device = x.device
         generator = create_seeded_torch_generator(device, seed)
 
@@ -923,7 +983,8 @@ class HyperedgeIndex:
         graph_edge_weights: list[float] = []
 
         # Random direction (feature_dim, 1) for projecting nodes in each hyperedge
-        # Geometrically, we are choosing a random line through the origin in ℝᵈ, where ᵈ = feature_dim
+        # Geometrically, we are choosing a random line through the origin
+        # in ℝᵈ, where ᵈ = feature_dim
         random_direction = torch.rand(
             size=(x.shape[1], 1),
             dtype=x.dtype,
@@ -936,13 +997,15 @@ class HyperedgeIndex:
             if num_nodes_in_edge < 2:
                 raise ValueError("The number of vertices in an hyperedge must be >= 2.")
 
-            # projections (num_nodes_in_edge,) contains a scalar value for each node in the hyperedge,
+            # projections (num_nodes_in_edge,) contains a scalar value for
+            # each node in the hyperedge,
             # indicating its projection on the random vector 'random_direction'.
             # Key idea: If two points are very far apart in ℝᵈ, there is a high probability
             # that a random projection will still separate them
             projections = torch.matmul(x[edge], random_direction).squeeze()
 
-            # The indices of the nodes that the farthest apart in the direction of 'random_direction'
+            # The indices of the nodes that the farthest apart in the
+            # direction of 'random_direction'
             node_max_proj_idx = torch.argmax(projections)
             node_min_proj_idx = torch.argmin(projections)
 
@@ -971,7 +1034,11 @@ class HyperedgeIndex:
         )
 
     def remove_duplicate_edges(self) -> HyperedgeIndex:
-        """Remove duplicate edges from the hyperedge index. Keeps the tensor contiguous in memory."""
+        """
+        Remove duplicate edges from the hyperedge index.
+
+        Keeps the tensor contiguous in memory.
+        """
         # Example: hyperedge_index = [[0, 1, 2, 2, 0, 3, 2],
         #                             [3, 4, 4, 3, 4, 3, 3]], shape (2, 7)
         #          -> after torch.unique(..., dim=1):
@@ -997,7 +1064,8 @@ class HyperedgeIndex:
             >>> k = 3
             >>> unique_hyperedge_ids: [0, 1, 2]
             ... # inverse -> idx_to_hyperedge_id, counts -> num_nodes_per_hyperedge
-            ... inverse           = [0, 0, 1, 1, 2, 1]  # (index into unique_hyperedge_ids per column)
+            ... # (index into unique_hyperedge_ids per column)
+            ... inverse           = [0, 0, 1, 1, 2, 1]
             ... counts            = [2, 3, 1]
             >>> # counts[inverse] is equivalent to:
             ... # for i, inv in enumerate(inverse): keep_mask[i] = counts[inv]
@@ -1012,7 +1080,8 @@ class HyperedgeIndex:
             k: The minimum number of nodes a hyperedge must contain to be kept.
 
         Returns:
-            hyperedge_index: A new `HyperedgeIndex` instance with hyperedges containing fewer than k nodes.
+            hyperedge_index: A new `HyperedgeIndex` instance with hyperedges
+                containing fewer than k nodes.
         """
         validate_is_positive("k", k)
 
@@ -1031,16 +1100,22 @@ class HyperedgeIndex:
         hyperedge_ids_to_rebase: Tensor | None = None,
     ) -> HyperedgeIndex:
         """
-        Convert hyperedge index to the 0-based format by rebasing node IDs to the range ``[0, num_nodes-1]`` and hyperedge IDs ``[0, num_hyperedges-1]``.
+        Convert hyperedge index to the 0-based format by rebasing node IDs to the range ``[0,
+        num_nodes-1]`` and hyperedge IDs ``[0, num_hyperedges-1]``.
 
         Args:
-            node_ids_to_rebase: Tensor of shape ``(num_nodes,)`` containing the original node IDs that need to be rebased to 0-based format.
-                If ``None``, all node IDs in the hyperedge index will be rebased to 0-based format based on their unique sorted order.
-            hyperedge_ids_to_rebase: Tensor of shape ``(num_hyperedges,)`` containing the original hyperedge IDs that need to be rebased to 0-based format.
-                If ``None``, all hyperedge IDs in the hyperedge index will be rebased to 0-based format based on their unique sorted order.
+            node_ids_to_rebase: Tensor of shape ``(num_nodes,)`` containing the original node IDs
+                that need to be rebased to 0-based format.
+                If ``None``, all node IDs in the hyperedge index will be rebased to 0-based format
+                based on their unique sorted order.
+            hyperedge_ids_to_rebase: Tensor of shape ``(num_hyperedges,)`` containing the original
+                hyperedge IDs that need to be rebased to 0-based format.
+                If ``None``, all hyperedge IDs in the hyperedge index will be rebased to
+                0-based format based on their unique sorted order.
 
         Returns:
-            hyperedge_index: A new `HyperedgeIndex` instance with the hyperedge index converted to 0-based format.
+            hyperedge_index: A new `HyperedgeIndex` instance with the hyperedge index
+                converted to 0-based format.
         """
         # Example: hyperedge_index after sorting: [[0, 0, 1, 2, 3, 4],
         #                                          [3, 4, 4, 3, 4, 3]]

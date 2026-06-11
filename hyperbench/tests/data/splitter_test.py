@@ -187,7 +187,7 @@ def test_default_dataset_splitter_rebalances_first_split_to_cover_all_nodes():
     assert torch.equal(split_labels.sort().values, hdata.y)
 
 
-def test_default_dataset_splitter_returns_final_transductive_ratios_when_train_coverage_is_enabled():
+def test_default_dataset_splitter_returns_final_transductive_ratios_when_train_cov_is_enabled():
     hdata = HData(
         x=torch.arange(4, dtype=torch.float).unsqueeze(1),
         hyperedge_index=torch.tensor([[0, 1, 2, 3, 0], [0, 1, 2, 3, 4]], dtype=torch.long),
@@ -253,7 +253,8 @@ def test_default_dataset_splitter_raises_when_node_is_missing_from_all_hyperedge
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "Cannot create a transductive first split covering all nodes because these node ids do not appear in any hyperedge: [3]."
+            "Cannot create a transductive first split covering all nodes because these "
+            "node ids do not appear in any hyperedge: [3]."
         ),
     ):
         DefaultDatasetSplitter().split(
@@ -306,7 +307,7 @@ def test_hyperedge_id_splitter_get_hyperedge_ids_permutation_is_deterministic_wi
     assert torch.equal(permutation_a.sort().values, torch.arange(5, dtype=torch.long))
 
 
-def test_hyperedge_id_splitter_split_uses_cumulative_floor_boundaries_and_last_split_absorbs_remainder(
+def test_hyperedge_id_splitter_split_cumulative_floor_boundaries_and_last_split_absorbs_remainder(
     mock_hdata_five_hyperedges,
 ):
     hyperedge_ids = torch.arange(5, dtype=torch.long)
@@ -357,7 +358,8 @@ def test_split_validates_ratio_values(
             # 3/5 and 2/5 as we ensure splits don't get more then requested,
             # in this way, all later splits get at least what they requested,
             # except the last one that might get slightly more due to rounding.
-            # This effect is mitigated the more hyperedges we have, as the ratios get closer to the requested ones.
+            # This effect is mitigated the more hyperedges we have, as the ratios get closer to the
+            # requested ones.
             [0.6, 0.4],
             id="five_hyperedges_rounds_train_up",
         ),
@@ -368,7 +370,7 @@ def test_split_validates_ratio_values(
                     torch.arange(
                         500,
                         dtype=torch.long,
-                    ),  # 500 hyperedges, 125 per node, so we can split exactly according to the ratios
+                    ),  # 500 hyperedges, 125 per node, so we can split according to the ratios
                 ]
             ),
             [375, 125],
@@ -398,7 +400,7 @@ def test_hyperedge_id_splitter_split_returns_expected_cumulative_ratios(
     assert final_ratios == pytest.approx(expected_final_ratios)
 
 
-def test_hyperedge_id_splitter_ensure_split_covers_all_nodes_moves_best_covering_hyperedge_into_first_split():
+def test_hyperedge_id_splitter_split_covers_all_nodes_moves_best_covering_he_in_first_split():
     x = torch.ones((4, 1), dtype=torch.float32)
     hyperedge_index = torch.tensor(
         [
@@ -459,7 +461,7 @@ def test_hyperedge_id_splitter_ensure_split_covers_all_nodes_rejects_invalid_spl
         )
 
 
-def test_hyperedge_id_splitter_ensure_split_covers_all_nodes_raises_when_node_is_missing_from_hypergraph():
+def test_hyperedge_id_splitter_ensure_split_covers_all_nodes_raises_when_node_is_missing():
     x = torch.ones((4, 1), dtype=torch.float32)
     hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 1]], dtype=torch.long)
     hdata = HData(x=x, hyperedge_index=hyperedge_index)
@@ -472,7 +474,8 @@ def test_hyperedge_id_splitter_ensure_split_covers_all_nodes_raises_when_node_is
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "Cannot create a transductive first split covering all nodes because these node ids do not appear in any hyperedge: [3]."
+            "Cannot create a transductive first split covering all nodes because these "
+            "node ids do not appear in any hyperedge: [3]."
         ),
     ):
         splitter.ensure_split_covers_all_nodes(

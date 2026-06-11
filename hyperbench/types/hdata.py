@@ -44,12 +44,15 @@ class HData:
         ...                                 [0, 1, 2, 3, 4]]) # hyperedge IDs
         >>> data = HData(x=x, hyperedge_index=hyperedge_index)
 
-    Args:
+    Attributes:
         x: Node feature matrix of shape ``[num_nodes, num_features]``.
         hyperedge_index: Hyperedge connectivity in COO format of shape ``[2, num_incidences]``,
-            where ``hyperedge_index[0]`` contains node IDs and ``hyperedge_index[1]`` contains hyperedge IDs.
-        hyperedge_weights: Optional tensor of shape ``[num_hyperedges]`` containing weights for each hyperedge.
-        hyperedge_attr: Hyperedge feature matrix of shape ``[num_hyperedges, num_hyperedge_features]``.
+            where ``hyperedge_index[0]`` contains node IDs and ``hyperedge_index[1]``
+            contains hyperedge IDs.
+        hyperedge_weights: Optional tensor of shape ``[num_hyperedges]`` containing weights
+            for each hyperedge.
+        hyperedge_attr: Hyperedge feature matrix of
+            shape ``[num_hyperedges, num_hyperedge_features]``.
             Features associated with each hyperedge (e.g., weights, timestamps, types).
         num_nodes: Number of nodes in the hypergraph.
             If ``None``, inferred as ``x.size(0)``.
@@ -58,9 +61,11 @@ class HData:
         y: Labels for hyperedges, of shape ``[num_hyperedges]``.
             Used for supervised learning tasks. For unsupervised tasks, this can be ignored.
             Default is a tensor of ones, indicating all hyperedges are positive examples.
-        global_node_ids: Optional stable node IDs of shape ``[num_nodes]`` matching the row order of ``x``.
-            Use this to preserve access to the canonical node space when ``hyperedge_index`` is rebased locally.
-            If ``None``, defaults to ``torch.arange(num_nodes)``, assuming that these are the global node IDs in the same order as the rows of ``x``.
+        global_node_ids: Optional stable node IDs of shape ``[num_nodes]`` matching the
+            row order of ``x``. Use this to preserve access to the canonical node space
+            when ``hyperedge_index`` is rebased locally.
+            If ``None``, defaults to ``torch.arange(num_nodes)``, assuming that these are the
+            global node IDs in the same order as the rows of ``x``.
     """
 
     def __init__(
@@ -115,6 +120,13 @@ class HData:
         self.device = self.get_device_if_all_consistent()
 
     def __repr__(self) -> str:
+        hyperedge_weights_shape = (
+            self.hyperedge_weights.shape if self.hyperedge_weights is not None else None
+        )
+        hyperedge_attr_shape = (
+            self.hyperedge_attr.shape if self.hyperedge_attr is not None else None
+        )
+
         return (
             f"{self.__class__.__name__}(\n"
             f"    num_nodes={self.num_nodes},\n"
@@ -122,8 +134,8 @@ class HData:
             f"    x_shape={self.x.shape},\n"
             f"    global_node_ids_shape={self.global_node_ids.shape},\n"
             f"    hyperedge_index_shape={self.hyperedge_index.shape},\n"
-            f"    hyperedge_weights_shape={self.hyperedge_weights.shape if self.hyperedge_weights is not None else None},\n"
-            f"    hyperedge_attr_shape={self.hyperedge_attr.shape if self.hyperedge_attr is not None else None},\n"
+            f"    hyperedge_weights_shape={hyperedge_weights_shape},\n"
+            f"    hyperedge_attr_shape={hyperedge_attr_shape},\n"
             f"    y_shape={self.y.shape if self.y is not None else None}\n"
             f"    device={self.device}\n"
             f")"
@@ -137,21 +149,29 @@ class HData:
         global_node_ids: Tensor | None = None,
     ) -> HData:
         """
-        Concatenate `HData` instances that share the same node space, meaning nodes with the same ID in different instances are the same node.
-        This is useful when combining positive and negative hyperedges that reference the same set of nodes.
+        Concatenate `HData` instances that share the same node space, meaning nodes with
+        the same ID in different instances are the same node.
+        This is useful when combining positive and negative hyperedges that reference
+        the same set of nodes.
 
         Notes:
-            - ``x`` is derived from the instance with the largest number of nodes, if not provided explicitly.
+            - ``x`` is derived from the instance with the largest number of nodes,
+                if not provided explicitly.
                 If there are conflicting features for the same node ID across instances,
                 the features from the instance with the largest number of nodes will be used.
-                If ``global_node_ids`` is provided explicitly, ``x`` must also be provided to ensure consistency.
+                If ``global_node_ids`` is provided explicitly, ``x`` must also be provided
+                to ensure consistency.
             - ``hyperedge_index`` is the concatenation of all input hyperedge indices.
             - ``hyperedge_weights`` is the concatenation of all input hyperedge weights, if present.
-                If some instances have hyperedge weights and others do not, the resulting ``hyperedge_weights`` will be set to ``None``.
+                If some instances have hyperedge weights and others do not, the resulting
+                ``hyperedge_weights`` will be set to ``None``.
             - ``hyperedge_attr`` is the concatenation of all input hyperedge attributes, if present.
-                If some instances have hyperedge attributes and others do not, the resulting ``hyperedge_attr`` will be set to ``None``.
-            - ``global_node_ids`` is derived from the instance with the largest number of nodes, if not provided explicitly.
-                If ``x`` is provided explicitly, ``global_node_ids`` must be provided explicitly as well to ensure consistency.
+                If some instances have hyperedge attributes and others do not, the resulting
+                ``hyperedge_attr`` will be set to ``None``.
+            - ``global_node_ids`` is derived from the instance with the largest number of nodes,
+                if not provided explicitly.
+                If ``x`` is provided explicitly, ``global_node_ids`` must be provided explicitly
+                as well to ensure consistency.
             - ``y`` is the concatenation of all input labels.
 
         Examples:
@@ -165,21 +185,29 @@ class HData:
         Args:
             hdatas: One or more `HData` instances sharing the same node space.
             x: Optional node feature matrix to use for the resulting `HData`.
-                If ``None``, the node features from the instance with the largest number of nodes will be used.
-                If ``global_node_ids`` is provided explicitly, ``x`` must also be provided to ensure consistency.
+                If ``None``, the node features from the instance with the largest number of
+                nodes will be used.
+                If ``global_node_ids`` is provided explicitly, ``x`` must also be provided
+                to ensure consistency.
             global_node_ids: Optional global node IDs for the resulting `HData`.
-                If ``None``, the global node IDs from the instance with the largest number of nodes will be used.
-                If ``x`` is provided explicitly, ``global_node_ids`` must also be provided to ensure consistency.
-                If ``x`` is provided and there is no need for ``global_node_ids`` to preserve access to the canonical node space,
-                it is recommended to use arbitrary global node IDs that are consistent with the feature rows of ``x``.
+                If ``None``, the global node IDs from the instance with the largest number of
+                nodes will be used.
+                If ``x`` is provided explicitly, ``global_node_ids`` must also be provided
+                to ensure consistency.
+                If ``x`` is provided and there is no need for ``global_node_ids`` to preserve
+                access to the canonical node space,
+                it is recommended to use arbitrary global node IDs that are consistent with
+                the feature rows of ``x``.
                 For example, ``global_node_ids=torch.arange(x.size(0))``).
 
         Returns:
             hdata: A new `HData` with shared nodes and concatenated hyperedges.
 
         Raises:
-            ValueError: If no HData instances are provided, if there are overlapping hyperedge IDs across instances,
-                or if ``x`` and ``global_node_ids`` are not both provided when one of them is provided.
+            ValueError: If no HData instances are provided, if there are overlapping
+                hyperedge IDs across instances,
+                or if ``x`` and ``global_node_ids`` are not both provided when one of
+                them is provided.
         """
         cls.__validate_can_perform_cat_same_node_space(hdatas, x, global_node_ids)
 
@@ -253,7 +281,8 @@ class HData:
     @classmethod
     def from_hyperedge_index(cls, hyperedge_index: Tensor) -> HData:
         """
-        Build an `HData` from a given hyperedge index, with empty node features and hyperedge attributes.
+        Build an `HData` from a given hyperedge index, with empty node features and
+        hyperedge attributes.
 
         - Node features are initialized as an empty tensor of shape ``[0, 0]``.
         - Hyperedge attributes are set to ``None``.
@@ -270,10 +299,12 @@ class HData:
             >>> hyperedge_weights = None
 
         Args:
-            hyperedge_index: Tensor of shape ``[2, num_incidences]`` representing the hypergraph connectivity.
+            hyperedge_index: Tensor of shape ``[2, num_incidences]`` representing
+                the hypergraph connectivity.
 
         Returns:
-            hdata: An `HData` instance with the given hyperedge index and default values for other attributes.
+            hdata: An `HData` instance with the given hyperedge index and default values
+                for other attributes.
         """
         return cls(
             x=empty_nodefeatures(),
@@ -297,7 +328,10 @@ class HData:
 
         Examples:
             Transductive split (default) preserving the full node space:
-            >>> split_hdata = HData.split(hdata, torch.tensor([1]), node_space_setting="transductive")
+            >>> split_hdata = HData.split(
+            ...    hdata,
+            ...    torch.tensor([1]),
+            ...    node_space_setting="transductive")
             >>> split_hdata.x.shape[0] == hdata.x.shape[0]
             >>> split_hdata.hyperedge_index
             ... # node IDs stay in the original row space, hyperedge IDs are rebased
@@ -310,8 +344,10 @@ class HData:
         Args:
             hdata: The original `HData` containing the full hypergraph.
             split_hyperedge_ids: Tensor of hyperedge IDs to include in this split.
-                It is assumed that the provided hyperedge IDs are valid and exist in ``hdata.hyperedge_index[1]``.
-                It is mandatory to provide this argument unless a custom ``splitter`` is provided that owns split materialization.
+                It is assumed that the provided hyperedge IDs are valid and exist
+                in ``hdata.hyperedge_index[1]``.
+                It is mandatory to provide this argument unless a custom ``splitter`` is provided
+                that owns split materialization.
             node_space_setting: Whether to preserve the full node space in the splits.
                 ``transductive`` (default) ensures all node features are present in the split,
                 while ``inductive`` allows splits to have disjoint node spaces.
@@ -348,7 +384,8 @@ class HData:
         Enrich node features using the provided node feature enricher.
 
         Args:
-            enricher: An instance of NodeEnricher to generate structural node features from hypergraph topology.
+            enricher: An instance of NodeEnricher to generate structural node features
+                from hypergraph topology.
             enrichment_mode: How to combine generated features with existing ``hdata.x``.
                 ``concatenate`` appends new features as additional columns.
                 ``replace`` substitutes ``hdata.x`` entirely.
@@ -384,7 +421,8 @@ class HData:
         Copy node features from another `HData` by aligning features by ``global_node_ids``.
 
         Examples:
-            Transductive enrichment (default) expecting the same node space in both source and target:
+            Transductive enrichment (default) expecting the same node space in both
+            source and target:
             >>> target = target.enrich_node_features_from(source, node_space_setting="transductive")
 
             Inductive with a scalar fill value:
@@ -405,8 +443,10 @@ class HData:
             hdata_with_features: Source `HData` providing node features.
             node_space_setting: The setting for the node space, determining how nodes are handled.
                 If ``"transductive"``, every target node is expected to exist in the source.
-                If ``"inductive"``, the target dataset may have a different node space, and missing nodes are filled using ``fill_value``.
-            fill_value: Scalar or vector used to fill missing node features when ``node_space_setting`` is not transductive.
+                If ``"inductive"``, the target dataset may have a different node space, and missing
+                nodes are filled using ``fill_value``.
+            fill_value: Scalar or vector used to fill missing node features when
+                ``node_space_setting`` is not transductive.
 
         Returns:
             hdata: A new `HData` with node features copied from ``hdata_with_features``.
@@ -414,20 +454,24 @@ class HData:
         Raises:
             ValueError: If either instance lacks ``global_node_ids``, if the source feature rows
                 do not align with the source node IDs, if ``fill_value`` is used with
-                ``node_space_setting="transductive"``, or if ``fill_value`` is missing or malformed when ``node_space_setting="inductive"``.
+                ``node_space_setting="transductive"``, or if ``fill_value`` is missing or
+                malformed when ``node_space_setting="inductive"``.
         """
         source_global_node_ids = hdata_with_features.global_node_ids
         source_x = hdata_with_features.x
         if source_x.size(0) != source_global_node_ids.size(0):
             raise ValueError(
-                "Expected 'hdata_with_features.x' rows to align with hdata_with_features.global_node_ids."
+                "Expected 'hdata_with_features.x' rows to align with "
+                "hdata_with_features.global_node_ids."
             )
         self.__validate_node_space_setting(node_space_setting, fill_value)
 
         target_global_node_ids = self.global_node_ids.detach().cpu().tolist()
 
-        # We need the index of the features for each node in the source, as we will use the index to track back
-        # to the node feautures after we match the global node id in the target to the one that is in the source
+        # We need the index of the features for each node in the source, as we will use
+        # the index to track back
+        # to the node feautures after we match the global node id in the target to the one that
+        # is in the source
         source_feature_idx_by_global_node_id = {
             int(global_node_id): feature_idx
             for feature_idx, global_node_id in enumerate(
@@ -448,8 +492,10 @@ class HData:
             source_feature_idx = source_feature_idx_by_global_node_id.get(int(global_node_id))
             if source_feature_idx is None:
                 # Example: global_node_id = 30 is not present in the source
-                #          -> strict transductive mode records it as missing and then raises an error
-                #          -> non-transductive mode fills the features with fill_value and continues enriching the other nodes
+                #          -> strict transductive mode records it as
+                #             missing and then raises an error
+                #          -> non-transductive mode fills the features with
+                #             fill_value and continues enriching the other nodes
                 if is_transductive_setting(node_space_setting):
                     missing_global_node_ids.append(
                         int(global_node_id)
@@ -460,7 +506,8 @@ class HData:
                     )  # fill missing node features with fill_value and
                 continue
 
-            # Match the global node IDs in the target to the corresponding feature indices in the source
+            # Match the global node IDs in the target to the corresponding
+            # feature indices in the source
             # Example: source_global_node_ids = [10, 20, 30], source_x has shape (3, num_features)
             #          target_global_node_ids = [10, 30]
             #          -> source_feature_idx_by_global_node_id = {10: 0, 20: 1, 30: 2}
@@ -494,8 +541,10 @@ class HData:
         Enrich hyperedge weights using the provided hyperedge weight enricher.
 
         Args:
-            enricher: An instance of HyperedgeEnricher to generate hyperedge weights from hypergraph topology.
-            enrichment_mode: How to combine generated weights with existing ``hdata.hyperedge_weights``.
+            enricher: An instance of HyperedgeEnricher to generate hyperedge weights from
+                hypergraph topology.
+            enrichment_mode: How to combine generated weights with
+                existing ``hdata.hyperedge_weights``.
                 ``concatenate`` appends new weights to the existing 1D tensor.
                 ``replace`` substitutes ``hdata.hyperedge_weights`` entirely.
                 Defaults to ``replace`` if not provided.
@@ -536,8 +585,10 @@ class HData:
         Enrich hyperedge features using the provided hyperedge feature enricher.
 
         Args:
-            enricher: An instance of HyperedgeEnricher to generate structural hyperedge features from hypergraph topology.
-            enrichment_mode: How to combine generated features with existing ``hdata.hyperedge_attr``.
+            enricher: An instance of HyperedgeEnricher to generate structural hyperedge
+                features from hypergraph topology.
+            enrichment_mode: How to combine generated features with
+                existing ``hdata.hyperedge_attr``.
                 ``concatenate`` appends new features as additional columns.
                 ``replace`` substitutes ``hdata.hyperedge_attr`` entirely.
                 Defaults to ``replace`` if not provided.
@@ -569,6 +620,7 @@ class HData:
     def get_device_if_all_consistent(self) -> torch.device:
         """
         Check that all tensors are on the same device and return that device.
+
         If there are no tensors or if they are on different devices, return CPU.
 
         Returns:
@@ -604,10 +656,12 @@ class HData:
 
         Args:
             k: The minimum number of nodes a hyperedge must have to be retained.
-            preserve_global_node_ids: Whether to preserve the global node IDs after removing hyperedges. Defaults to ``False``.
-                If ``False``, the global node IDs will be reindexed to be contiguous after removing hyperedges.
-                If ``True``, the global node IDs will be preserved, which may cause some models to raise
-                as they may expect contiguous global node IDs.
+            preserve_global_node_ids: Whether to preserve the global node IDs after
+                removing hyperedges. Defaults to ``False``.
+                If ``False``, the global node IDs will be reindexed to be contiguous after
+                removing hyperedges.
+                If ``True``, the global node IDs will be preserved, which may cause some models
+                to raise as they may expect contiguous global node IDs.
         """
         validate_is_positive("k", k)
 
@@ -649,8 +703,10 @@ class HData:
         """
         Return a new `HData` instance with hyperedge IDs randomly reassigned.
 
-        Each hyperedge keeps its original set of nodes, but is assigned a new ID via a random permutation.
-        ``y`` and ``hyperedge_attr`` are reordered to match, so that ``y[new_id]`` still corresponds to the correct hyperedge.
+        Each hyperedge keeps its original set of nodes, but is assigned a new ID
+        via a random permutation.
+        ``y`` and ``hyperedge_attr`` are reordered to match, so that ``y[new_id]``
+        still corresponds to the correct hyperedge.
         Same for ``hyperedge_attr[new_id]`` if hyperedge attributes are present.
 
         Examples:
@@ -665,10 +721,12 @@ class HData:
             >>> shuffled_hdata.y  # labels are permuted to match new hyperedge IDs, e.g., [0, 1]
 
         Args:
-            seed: Optional random seed for reproducibility. If ``None``, the shuffle will be non-deterministic.
+            seed: Optional random seed for reproducibility. If ``None``, the shuffle
+                will be non-deterministic.
 
         Returns:
-            hdata: A new `HData` instance with hyperedge IDs, ``y``, and ``hyperedge_attr`` permuted.
+            hdata: A new `HData` instance with hyperedge IDs, ``y``, and
+                ``hyperedge_attr`` permuted.
         """
         generator = create_seeded_torch_generator(device=self.device, seed=seed)
         permutation = torch.randperm(
@@ -680,8 +738,10 @@ class HData:
 
         # permutation[new_id] = old_id, so y[permutation] puts old labels into new slots
         # inverse_permutation[old_id] = new_id, used to remap hyperedge IDs in incidences
-        # Example: permutation = [1, 2, 0] means new_id 0 gets old_id 1, new_id 1 gets old_id 2, new_id 2 gets old_id 0
-        #          -> inverse_permutation = [2, 0, 1] means old_id 0 gets new_id 2, old_id 1 gets new_id 0, old_id 2 gets new_id 1
+        # Example: permutation = [1, 2, 0] means new_id 0 gets old_id 1,
+        #                   new_id 1 gets old_id 2, new_id 2 gets old_id 0
+        #                   -> inverse_permutation = [2, 0, 1] means old_id 0 gets new_id 2,
+        #                        old_id 1 gets new_id 0, old_id 2 gets new_id 1
         inverse_permutation = torch.empty_like(
             permutation,
             dtype=permutation.dtype,
@@ -697,14 +757,17 @@ class HData:
 
         # Example: hyperedge_index = [[0, 1, 2, 3, 4],
         #                             [0, 0, 1, 1, 2]],
-        #          inverse_permutation = [2, 0, 1] (new_id 0 -> old_id 2, new_id 1 -> old_id 0, new_id 2 -> old_id 1)
+        #          inverse_permutation = [2, 0, 1] (new_id 0 -> old_id 2, new_id 1 ->
+        #                                           old_id 0, new_id 2 -> old_id 1)
         #          -> new_hyperedge_index = [[0, 1, 2, 3, 4],
         #                                    [2, 2, 0, 0, 1]]
         old_hyperedge_ids = self.hyperedge_index[1]
         new_hyperedge_index[1] = inverse_permutation[old_hyperedge_ids]
 
         # Example: hyperedge_attr = [attr_0, attr_1, attr_2], permutation = [1, 2, 0]
-        #          -> new_hyperedge_attr = [attr_1  (attr of old_id 1), attr_2 (attr of old_id 2), attr_0 (attr of old_id 0)]
+        #          -> new_hyperedge_attr = [attr_1  (attr of old_id 1),
+        #                                   attr_2 (attr of old_id 2),
+        #                                   attr_0 (attr of old_id 0)]
         new_hyperedge_attr = (
             self.hyperedge_attr[permutation] if self.hyperedge_attr is not None else None
         )
@@ -752,7 +815,8 @@ class HData:
 
         Args:
             device: The target device (e.g., 'cpu', 'cuda:0').
-            non_blocking: If ``True`` and the source and destination devices are both CUDA, the copy will be non-blocking.
+            non_blocking: If ``True`` and the source and destination devices are both CUDA,
+                the copy will be non-blocking.
 
         Returns:
             hdata: The `HData` instance with all tensors moved to the specified device.
@@ -782,7 +846,8 @@ class HData:
             value: The value to set for all entries in the y attribute.
 
         Returns:
-            hdata: A new `HData` instance with the same attributes except for y, which is set to a tensor of the given value.
+            hdata: A new `HData` instance with the same attributes except for y,
+                which is set to a tensor of the given value.
         """
         return self.__class__(
             x=self.x.clone(),
@@ -800,7 +865,8 @@ class HData:
         Return a copy of this instance with a y attribute of all ones.
 
         Returns:
-            hdata: A new `HData` instance with the same attributes except for y, which is set to a tensor of ones.
+            hdata: A new `HData` instance with the same attributes except for y, which is
+                set to a tensor of ones.
         """
         return self.with_y_to(1.0)
 
@@ -809,36 +875,45 @@ class HData:
         Return a copy of this instance with a y attribute of all zeros.
 
         Returns:
-            hdata: A new `HData` instance with the same attributes except for y, which is set to a tensor of zeros.
+            hdata: A new `HData` instance with the same attributes except for y, which
+                is set to a tensor of zeros.
         """
         return self.with_y_to(0.0)
 
     def stats(self) -> dict[str, Any]:
         """
         Compute statistics for the hypergraph data.
-        The fields returned in the dictionary include:
-        - ``shape_x``: The shape of the node feature matrix ``x``.
-        - ``shape_hyperedge_weights``: The shape of the hyperedge weights tensor, or ``None`` if hyperedge weights are not present.
-        - ``shape_hyperedge_attr``: The shape of the hyperedge attribute matrix, or ``None`` if hyperedge attributes are not present.
-        - ``num_nodes``: The number of nodes in the hypergraph.
-        - ``num_hyperedges``: The number of hyperedges in the hypergraph.
-        - ``avg_degree_node_raw``: The average degree of nodes, calculated as the mean number of hyperedges each node belongs to.
-        - ``avg_degree_node``: The floored node average degree.
-        - ``avg_degree_hyperedge_raw``: The average size of hyperedges, calculated as the mean number of nodes each hyperedge contains.
-        - ``avg_degree_hyperedge``: The floored hyperedge average size.
-        - ``node_degree_max``: The maximum degree of any node in the hypergraph.
-        - ``hyperedge_degree_max``: The maximum size of any hyperedge in the hypergraph.
-        - ``node_degree_median``: The median degree of nodes in the hypergraph.
-        - ``hyperedge_degree_median``: The median size of hyperedges in the hypergraph.
-        - ``distribution_node_degree``: A list where the value at index ``i`` represents the count of nodes with degree ``i``.
-        - ``distribution_hyperedge_size``: A list where the value at index ``i`` represents the count of hyperedges with size ``i``.
-        - ``distribution_node_degree_hist``: A dictionary where the keys are node degrees and the values are the count of nodes with that degree.
-        - ``distribution_hyperedge_size_hist``: A dictionary where the keys are hyperedge sizes and the values are the count of hyperedges with that size.
+
+        Fields:
+            - ``shape_x``: The shape of the node feature matrix ``x``.
+            - ``shape_hyperedge_weights``: The shape of the hyperedge weights tensor, or
+                ``None`` if hyperedge weights are not present.
+            - ``shape_hyperedge_attr``: The shape of the hyperedge attribute matrix, or ``None``
+                if hyperedge attributes are not present.
+            - ``num_nodes``: The number of nodes in the hypergraph.
+            - ``num_hyperedges``: The number of hyperedges in the hypergraph.
+            - ``avg_degree_node_raw``: The average degree of nodes, calculated as the mean
+                number of hyperedges each node belongs to.
+            - ``avg_degree_node``: The floored node average degree.
+            - ``avg_degree_hyperedge_raw``: The average size of hyperedges, calculated as
+                the mean number of nodes each hyperedge contains.
+            - ``avg_degree_hyperedge``: The floored hyperedge average size.
+            - ``node_degree_max``: The maximum degree of any node in the hypergraph.
+            - ``hyperedge_degree_max``: The maximum size of any hyperedge in the hypergraph.
+            - ``node_degree_median``: The median degree of nodes in the hypergraph.
+            - ``hyperedge_degree_median``: The median size of hyperedges in the hypergraph.
+            - ``distribution_node_degree``: A list where the value at index ``i`` represents
+                the count of nodes with degree ``i``.
+            - ``distribution_hyperedge_size``: A list where the value at index ``i`` represents
+                the count of hyperedges with size ``i``.
+            - ``distribution_node_degree_hist``: A dictionary where the keys are node degrees and
+                the values are the count of nodes with that degree.
+            - ``distribution_hyperedge_size_hist``: A dictionary where the keys are hyperedge
+                sizes and the values are the count of hyperedges with that size.
 
         Returns:
             stats: A dictionary containing various statistics about the hypergraph.
         """
-
         node_ids = self.hyperedge_index[0]
         hyperedge_ids = self.hyperedge_index[1]
 
@@ -937,7 +1012,8 @@ class HData:
         unique_joint_hyperedge_ids = joint_hyperedge_ids.unique()
         if unique_joint_hyperedge_ids.size(0) != joint_hyperedge_ids.size(0):
             raise ValueError(
-                "Overlapping hyperedge IDs found across instances. Ensure each instance uses distinct hyperedge IDs."
+                "Overlapping hyperedge IDs found across instances. Ensure each "
+                "instance uses distinct hyperedge IDs."
             )
 
     def __to_fill_features(
@@ -961,7 +1037,8 @@ class HData:
 
         # This can happen when fill_value is:
         # - A scalar tensor, e.g., tensor(0.0), which should be broadcasted to all features
-        # - A list with a single value, e.g., [0.0], which should also be broadcasted to all features
+        # - A list with a single value, e.g., [0.0], which should
+        #   also be broadcasted to all features
         if fill_features.numel() == 1:
             fill_features = fill_features.repeat(num_features)
 
@@ -985,7 +1062,8 @@ class HData:
             return
 
         raise ValueError(
-            f"'enrichment_mode' must be one of 'replace', 'concatenate', or None, got {enrichment_mode!r}."
+            f"'enrichment_mode' must be one of 'replace', 'concatenate', "
+            f"or None, got {enrichment_mode!r}."
         )
 
     def __validate_hyperedge_attr(self) -> None:
@@ -995,12 +1073,14 @@ class HData:
         validate_floating_tensor_dtype("hyperedge_attr", self.hyperedge_attr)
         if self.hyperedge_attr.dim() != 2:
             raise ValueError(
-                f"'hyperedge_attr' must be a 2D tensor, got shape {tuple(self.hyperedge_attr.shape)}."
+                f"'hyperedge_attr' must be a 2D tensor, got shape "
+                f"{tuple(self.hyperedge_attr.shape)}."
             )
         if self.hyperedge_attr.size(0) != self.num_hyperedges:
             raise ValueError(
-                f"'hyperedge_attr' must have one row per hyperedge. "
-                f"Got size={self.hyperedge_attr.size(0)} but num_hyperedges={self.num_hyperedges}."
+                "'hyperedge_attr' must have one row per hyperedge. "
+                f"Got size={self.hyperedge_attr.size(0)} but "
+                f"num_hyperedges={self.num_hyperedges}."
             )
 
     def __validate_hyperedge_index(self) -> None:
@@ -1031,19 +1111,22 @@ class HData:
 
         if self.hyperedge_weights.dim() != 1:
             raise ValueError(
-                f"'hyperedge_weights' must be a 1D tensor, got shape {tuple(self.hyperedge_weights.shape)}."
+                f"'hyperedge_weights' must be a 1D tensor, "
+                f"got shape {tuple(self.hyperedge_weights.shape)}."
             )
         if self.hyperedge_weights.size(0) != self.num_hyperedges:
             raise ValueError(
                 f"'hyperedge_weights' must have one entry per hyperedge. "
-                f"Got size={self.hyperedge_weights.size(0)} but num_hyperedges={self.num_hyperedges}."
+                f"Got size={self.hyperedge_weights.size(0)} but "
+                f"num_hyperedges={self.num_hyperedges}."
             )
 
     def __validate_global_node_ids(self) -> None:
         validate_long_tensor_dtype("global_node_ids", self.global_node_ids)
         if self.global_node_ids.dim() != 1:
             raise ValueError(
-                f"'global_node_ids' must be a 1D tensor, got shape {tuple(self.global_node_ids.shape)}."
+                f"'global_node_ids' must be a 1D tensor, got "
+                f"shape {tuple(self.global_node_ids.shape)}."
             )
         if self.global_node_ids.size(0) != self.num_nodes:
             raise ValueError(
@@ -1064,7 +1147,8 @@ class HData:
     def __validate_x(self) -> None:
         if self.x.size(0) not in (0, self.num_nodes):
             raise ValueError(
-                f"'x' must have one feature row per node, or be 'torch.empty((0, 0))' if there are no nodes. "
+                f"'x' must have one feature row per node, or be 'torch.empty((0, 0))' "
+                f"if there are no nodes. "
                 f"Got x.shape={tuple(self.x.shape)} but num_nodes={self.num_nodes}."
             )
 

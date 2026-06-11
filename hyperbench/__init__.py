@@ -10,5 +10,8 @@ warnings.filterwarnings("ignore", message="Sparse invariant checks are implicitl
 
 warnings.filterwarnings(
     "ignore",
-    message="ignore:Failing to pass a value to the 'type_params' parameter of 'typing._eval_type' is deprecated.*",
+    message=(
+        "ignore:Failing to pass a value to the 'type_params' parameter of "
+        "'typing._eval_type' is deprecated.*"
+    ),
 )

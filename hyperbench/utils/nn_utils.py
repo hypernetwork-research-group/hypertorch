@@ -35,7 +35,8 @@ def maxmin_scatter(
     dim_size: int | None = None,
 ) -> Tensor:
     """
-    Performs a scatter reduction that computes the channel-wise range (max - min) for each index group.
+    Performs a scatter reduction that computes the channel-wise range (max - min) for each
+    index group.
 
     Args:
         src: The source tensor containing the values to scatter.

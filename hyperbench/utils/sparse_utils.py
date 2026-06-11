@@ -8,7 +8,8 @@ def sparse_dropout(
     dropout_prob: float,
     fill_value: float = 0.0,
 ) -> Tensor:
-    """Dropout function for sparse matrix.
+    """
+    Dropout function for sparse matrix.
 
     Returns a new sparse matrix with the same shape as the input sparse matrix,
     but with some elements dropped out.
@@ -19,7 +20,8 @@ def sparse_dropout(
         fill_value: The fill value for dropped elements. Defaults to ``0.0``.
 
     Returns:
-        matrix: A new sparse matrix with the same shape as the input sparse matrix, but with some elements dropped out.
+        matrix: A new sparse matrix with the same shape as the input sparse matrix,
+            but with some elements dropped out.
     """
     device = sparse_tensor.device
 
@@ -41,9 +43,10 @@ def sparse_dropout(
 
     # Generate a binary mask matching the shape of values for elements to keep
     # 'torch.bernoulli()' samples 1 with probability keep_prob and 0 with probability dropout_prob
-    # Example: values = [0.5, 1.2, 3.4], keep_prob = 0.8
-    #          -> keep_mask might be [1, 0, 1], meaning we keep the 1st and 3rd elements, drop the 2nd
-    keep_mask = torch.bernoulli(torch.full_like(values, keep_prob, dtype=values.dtype)).to(device)
+    # Example:
+    #   values = [0.5, 1.2, 3.4], keep_prob = 0.8
+    #   -> keep_mask might be [1, 0, 1], meaning we keep the 1st and 3rd elements, drop the 2nd
+    keep_mask = torch.bernoulli(torch.full_like(values, keep_prob)).to(device)
 
     if fill_value == 0.0:
         # If fill_value is 0, just zero out the dropped elements,
@@ -52,7 +55,8 @@ def sparse_dropout(
         #          -> new_values = [0.5*1, 1.2*0, 3.4*1] = [0.5, 0.0, 3.4]
         new_values = values * keep_mask
     else:
-        # If fill_value is non-zero, we must fill the dropped elements with the specified fill_value instead of zero
+        # If fill_value is non-zero, we must fill the dropped elements with the
+        # specified fill_value instead of zero
         # 'torch.logical_not(keep_mask)' identifies dropped elements where mask is 0 and
         # Example: values = [0.5, 1.2, 3.4], keep_mask = [1, 0, 1], fill_value = 9.9
         #          -> values_to_fill_mask = [0, 1, 0]

@@ -65,8 +65,8 @@ def validate_is_between(
 ) -> None:
     if min_value > max_value:
         raise ValueError(
-            f"Invalid bounds for {name!r}: 'min_value' ({min_value}) "
-            f"cannot be greater than 'max_value' ({max_value})."
+            f"Invalid bounds for {name!r}: 'min_value' ({min_value}) cannot "
+            f"be greater than 'max_value' ({max_value})."
         )
     if not math.isfinite(value) or value < min_value or value > max_value:
         raise ValueError(
@@ -109,7 +109,8 @@ def validate_ratios(ratios: list[int | float]) -> None:
     # Allow small imprecision in sum of ratios, but raise error if it's significant
     # Example: ratios = [0.8, 0.1, 0.1] -> sum = 1.0 (valid)
     #          ratios = [0.8, 0.1, 0.05] -> sum = 0.95 (invalid, raises ValueError)
-    #          ratios = [0.8, 0.1, 0.1, 0.0000001] -> sum = 1.0000001 (valid, allows small imprecision)
+    #          (valid, allows small imprecision)
+    #          ratios = [0.8, 0.1, 0.1, 0.0000001] -> sum = 1.0000001
     ratio_sum = float(sum(ratios))
     if abs(ratio_sum - 1.0) > 1e-6:
         raise ValueError(f"'ratios' must sum to 1.0, got {ratio_sum}.")

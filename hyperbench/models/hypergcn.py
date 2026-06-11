@@ -5,24 +5,33 @@ from hyperbench.types import EdgeIndex, HyperedgeIndex
 
 class HyperGCN(nn.Module):
     """
-    HyperGCN approximates each hyperedge of the hypergraph by a set of pairwise edges connecting the vertices of the hyperedge
-    and treats the learning problem as a graph learning problem on the approximation.
-    - Proposed in `HyperGCN: A New Method of Training Graph Convolutional Networks on Hypergraphs <https://dl.acm.org/doi/10.5555/3454287.3454422>`_ paper (NeurIPS 2019).
-    - Code of the paper: `source <https://github.com/malllabiisc/HyperGCN>`_.
-    - Reference implementation: `source <https://deephypergraph.readthedocs.io/en/latest/_modules/dhg/models/hypergraphs/hypergcn.html#HyperGCN>`_.
+    HyperGCN approximates each hyperedge of the hypergraph by a set of pairwise edges connecting the
+    vertices of the hyperedge and treats the learning problem as a graph learning problem on the
+    approximation.
+
+    References:
+        - Proposed in [HyperGCN: A New Method of Training Graph Convolutional Networks on Hypergraphs](https://dl.acm.org/doi/10.5555/3454287.3454422) paper (NeurIPS 2019).
+        - Code of the paper: [source](https://github.com/malllabiisc/HyperGCN).
+        - Reference implementation: [source](https://deephypergraph.readthedocs.io/en/latest/_modules/dhg/models/hypergraphs/hypergcn.html#HyperGCN).
 
     Args:
         in_channels: The number of input channels.
         hidden_channels: The number of hidden channels.
-        num_classes: The number of classes of the classification task as HyperGCB is a node classification model.
-        bias: If set to ``False``, the layer will not learn the bias parameter. Defaults to ``True``.
-        use_batch_normalization: If set to ``True``, layers will use batch normalization. Defaults to ``False``.
+        num_classes: The number of classes of the classification task as HyperGCB is a
+            node classification model.
+        bias: If set to ``False``, the layer will not learn the bias parameter.
+            Defaults to ``True``.
+        use_batch_normalization: If set to ``True``, layers will use batch normalization.
+            Defaults to ``False``.
         drop_rate: Dropout ratio. Defaults to ``0.5``.
-        use_mediator: Whether to use mediator to transform the hyperedges to edges in the graph. Defaults to ``False``.
-        fast: If set to ``True``, the transformed graph structure will be computed once from the input hypergraph
-            and vertex features, and cached for future use. Defaults to ``True``.
-        seed: Optional random seed for the random reduction of hyperedges to edges. Defaults to ``None``.
-    """
+        use_mediator: Whether to use mediator to transform the hyperedges to edges in the graph.
+            Defaults to ``False``.
+        fast: If set to ``True``, the transformed graph structure will be computed once from
+            the input hypergraph and vertex features, and cached for future use.
+            Defaults to ``True``.
+        seed: Optional random seed for the random reduction of hyperedges to edges.
+            Defaults to ``None``.
+    """  # noqa: E501
 
     def __init__(
         self,
@@ -82,7 +91,8 @@ class HyperGCN(nn.Module):
             return x
 
         # If the GCN Laplacian is cached, we need to check if the node feature size has changed
-        # with cached_gcn_laplacian_matrix.size(0) != x.size(0), this can happen, for example, due to:
+        # with cached_gcn_laplacian_matrix.size(0) != x.size(0), this can happen,
+        # for example, due to:
         # adding new negative samples or having validation/test sets with different node features
         should_not_use_cached_gcn_laplacian_matrix = (
             self.cached_gcn_laplacian_matrix is None  # Not cached yet
