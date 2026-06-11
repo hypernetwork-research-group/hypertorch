@@ -83,17 +83,17 @@ class HGNNHlpModule(HlpModule):
         Run the full HGNN-based hyperedge link prediction pipeline.
 
         The pipeline has three stages:
-        1. Encode: HGNN applies two rounds of ``D_n^{-1/2} H D_e^{-1} H^T D_n^{-1/2}``
-           smoothing to propagate information through the hypergraph topology (nodes ->
-           hyperedges -> nodes). The output is a structure-aware node embedding matrix of
-           shape ``(num_nodes, out_channels)``.
-        2. Aggregate: For each hyperedge being scored, pool the embeddings of its member
-           nodes using the configured strategy (mean/max/min/sum). This produces a hyperedge
-           embedding that summarizes the collective representation of the hyperedge's nodes.
-           Shape: ``(num_hyperedges, out_channels)``.
-        3. Decode: A single linear layer (SLP) projects each hyperedge embedding to a
-           scalar score representing the likelihood that the hyperedge is a real (positive)
-           hyperedge. Shape: ``(num_hyperedges,)``.
+            1. Encode: HGNN applies two rounds of ``D_n^{-1/2} H D_e^{-1} H^T D_n^{-1/2}``
+            smoothing to propagate information through the hypergraph topology (nodes ->
+            hyperedges -> nodes). The output is a structure-aware node embedding matrix of
+            shape ``(num_nodes, out_channels)``.
+            2. Aggregate: For each hyperedge being scored, pool the embeddings of its member
+            nodes using the configured strategy (mean/max/min/sum). This produces a hyperedge
+            embedding that summarizes the collective representation of the hyperedge's nodes.
+            Shape: ``(num_hyperedges, out_channels)``.
+            3. Decode: A single linear layer (SLP) projects each hyperedge embedding to a
+            scalar score representing the likelihood that the hyperedge is a real (positive)
+            hyperedge. Shape: ``(num_hyperedges,)``.
 
         Examples:
             Given 5 nodes with 8 features and 2 hyperedges::
@@ -102,7 +102,8 @@ class HGNNHlpModule(HlpModule):
                 >>> hyperedge_index = [[0, 1, 2, 3, 4],  # node IDs
                 ...                    [0, 0, 0, 1, 1]]  # hyperedge IDs
 
-            The forward pass:
+            The forward pass::
+
                 >>> HGNN encodes all 5 nodes using the hypergraph Laplacian.
                 ...   ``node_embeddings.shape = (5, out_channels)``
                 >>> Aggregate per hyperedge:

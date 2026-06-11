@@ -109,7 +109,8 @@ class HyperGCNHlpModule(HlpModule):
                 >>> hyperedge_index = [[0, 1, 2, 3, 4],  # node IDs (global)
                 ...                    [0, 0, 0, 1, 1]]  # hyperedge IDs
 
-            The forward pass:
+            The forward pass::
+
                 >>> HyperGCN encodes all 5 nodes using the full graph Laplacian.
                 ...   ``node_embeddings.shape = (5, out_channels)``
                 >>> Aggregate per hyperedge:

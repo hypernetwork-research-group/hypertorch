@@ -489,7 +489,7 @@ class EdgeIndex:
         num_nodes: int | None = None,
     ) -> Tensor:
         """
-        Compute the sparse symmetric normalized Laplacian matrix: L = I - D^{-1/2} A D^{-1/2}.
+        Compute the sparse symmetric normalized Laplacian matrix: `L = I - D^{-1/2} A D^{-1/2}`.
 
         Unlike ``get_sparse_normalized_gcn_laplacian``, this method does not add self-loops
         and computes the standard Laplacian (not the GCN propagation matrix).
@@ -528,8 +528,9 @@ class EdgeIndex:
         """
         Compute the sparse Laplacian matrix from a graph edge index.
 
-        The GCN Laplacian is defined as: L_GCN = D_hat^-1/2 * A_hat * D_hat^-1/2,
-        where A_hat = A + I (adjacency with self-loops) and D_hat is the degree matrix of A_hat.
+        The GCN Laplacian is defined as: `L_GCN = D_hat^-1/2 * A_hat * D_hat^-1/2`,
+        where `A_hat = A + I` (adjacency with self-loops) and `D_hat` is the degree matrix
+        of `A_hat`.
 
         Args:
             num_nodes: The number of nodes in the graph. If ``None``,

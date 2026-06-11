@@ -251,7 +251,7 @@ class FillValueHyperedgeAttrsEnricher(HyperedgeAttrsEnricher):
 
         Returns:
             hyperedge_attr: Tensor of shape ``(num_hyperedges, 1)`` containing
-            the generated attribute for each hyperedge.
+                the generated attribute for each hyperedge.
         """
         num_hyperedges = HyperedgeIndex(hyperedge_index).num_hyperedges
         hyperedge_attrs = torch.full(
@@ -383,7 +383,7 @@ class ABHyperedgeWeightsEnricher(HyperedgeWeightsEnricher):
 
         Returns:
             hyperedge_weight: Tensor of shape ``(num_hyperedges,)`` containing
-            the weight of each hyperedge.
+                the weight of each hyperedge.
         """
         # Count the number of nodes in each hyperedge by counting occurrences of
         # each hyperedge index.

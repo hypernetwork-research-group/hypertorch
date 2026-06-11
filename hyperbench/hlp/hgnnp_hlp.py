@@ -83,15 +83,15 @@ class HGNNPHlpModule(HlpModule):
         Run the full HGNN+-based hyperedge link prediction pipeline.
 
         The pipeline has three stages:
-        1. Encode: HGNN+ applies two rounds of ``D_v^{-1} H D_e^{-1} H^T``
-           smoothing to propagate information through the hypergraph topology with
-           two-stage mean aggregation. The output is a structure-aware node
-           embedding matrix of shape ``(num_nodes, out_channels)``.
-        2. Aggregate: For each hyperedge being scored, pool the embeddings of its member
-           nodes using the configured strategy (mean/max/min/sum). This produces a hyperedge
-           embedding of shape ``(num_hyperedges, out_channels)``.
-        3. Decode: A single linear layer projects each hyperedge embedding to a
-           scalar score. Shape: ``(num_hyperedges,)``.
+            1. Encode: HGNN+ applies two rounds of ``D_v^{-1} H D_e^{-1} H^T``
+            smoothing to propagate information through the hypergraph topology with
+            two-stage mean aggregation. The output is a structure-aware node
+            embedding matrix of shape ``(num_nodes, out_channels)``.
+            2. Aggregate: For each hyperedge being scored, pool the embeddings of its member
+            nodes using the configured strategy (mean/max/min/sum). This produces a hyperedge
+            embedding of shape ``(num_hyperedges, out_channels)``.
+            3. Decode: A single linear layer projects each hyperedge embedding to a
+            scalar score. Shape: ``(num_hyperedges,)``.
 
         Args:
             x: Node feature matrix of shape ``(num_nodes, in_channels)``.
