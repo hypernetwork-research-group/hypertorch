@@ -41,7 +41,6 @@ class Node2VecGCNHlpConfig(TypedDict):
             Defaults to ``nn.ReLU``.
         activation_fn_kwargs: Keyword arguments for the activation function.
             Defaults to empty dict.
-
     """
 
     out_channels: int
@@ -101,7 +100,6 @@ class Node2VecHlpConfig(TypedDict):
             good node embeddings, or a lower value to prioritize the HLP loss.
             Ignored in precomputed mode.
         sparse: Whether to use sparse gradients in the Node2Vec encoder. Defaults to ``False``.
-
     """
 
     context_size: NotRequired[int]
@@ -127,7 +125,6 @@ class Node2VecWalkLoaderState:
             during joint training. Initialized lazily when first needed.
         cached_walk_loader_iterator: An iterator over the walk_loader, cached to allow
             fetching the next batch of walks at each training step without reinitializing.
-
     """
 
     walk_loader: DataLoader | None = None

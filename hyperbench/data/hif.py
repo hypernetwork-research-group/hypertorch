@@ -46,7 +46,6 @@ class HIFProcessor:
 
         Returns:
             attrs: Tensor of numeric attribute values
-
         """
         numeric_attrs = {
             key: value
@@ -71,7 +70,6 @@ class HIFProcessor:
 
         Returns:
             hdata: The processed hypergraph data.
-
         """
         num_nodes = len(hypergraph.nodes)
         x = cls.__process_x(hypergraph, num_nodes)
@@ -149,7 +147,6 @@ class HIFProcessor:
 
         Returns:
             attr_keys: List of unique numeric attribute keys.
-
         """
         unique_keys = []
         for attrs in attr_keys:
@@ -266,7 +263,6 @@ class HIFLoader:
 
         Returns:
             hdata: The loaded hypergraph object.
-
         """
         url = validate_http_url(url)
 
@@ -320,7 +316,6 @@ class HIFLoader:
 
         Returns:
             hdata: The loaded hypergraph object.
-
         """
         if not os.path.exists(filepath):
             raise ValueError(f"File {filepath!r} does not exist.")

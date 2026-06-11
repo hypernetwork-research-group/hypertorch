@@ -16,7 +16,6 @@ class Graph:
             (source_node, destination_node).
         edge_weights: Optional list of edge weights corresponding to each edge in ``edges``.
             If provided, must have the same length as ``edges``.
-
     """
 
     def __init__(self, edges: list[list[int]], edge_weights: list[float] | None = None):
@@ -63,7 +62,6 @@ class Graph:
 
         Returns:
             edges: List of edges without self-loops.
-
         """
         if self.num_edges == 0:
             return self
@@ -98,7 +96,6 @@ class Graph:
 
         Returns:
             edge_index: Tensor of shape (2, |E|) representing edges.
-
         """
         if self.num_edges == 0:
             return torch.empty((2, 0), dtype=torch.long)
@@ -138,7 +135,6 @@ class Graph:
 
         Returns:
             x: The smoothed feature matrix. Size ``(num_nodes, C)``.
-
         """
         if laplacian_matrix.dtype != x.dtype or laplacian_matrix.device != x.device:
             laplacian_matrix = laplacian_matrix.to(dtype=x.dtype, device=x.device)
@@ -444,7 +440,6 @@ class EdgeIndex:
         Returns:
             degree_matrix: The sparse normalized degree matrix D^-1/2 of
                 shape ``(num_nodes, num_nodes)``.
-
         """
         num_nodes = self.num_nodes if num_nodes is None else num_nodes
         self.__validate_num_nodes(num_nodes)
@@ -602,7 +597,6 @@ class EdgeIndex:
 
                 Returns:
                     edge_index: This `EdgeIndex` instance with duplicate edges removed.
-
         """
         num_nodes = self.num_nodes if num_nodes is None else num_nodes
         self.__validate_num_nodes(num_nodes)
@@ -667,7 +661,6 @@ class EdgeIndex:
 
         Returns:
             edge_index: This `EdgeIndex` instance converted to undirected.
-
         """
         num_nodes = self.num_nodes if num_nodes is None else num_nodes
         self.__validate_num_nodes(num_nodes)

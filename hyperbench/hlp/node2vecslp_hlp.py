@@ -31,7 +31,6 @@ class Node2VecSLPEncoderConfig(TypedDict):
         num_features: Dimension of the node embeddings consumed by the decoder.
         node2vec_config: Shared Node2Vec configuration used in joint mode, or metadata for
             validating precomputed embeddings.
-
     """
 
     mode: NotRequired[Node2VecMode]
@@ -55,7 +54,6 @@ class Node2VecSLPHlpModule(HlpModule):
         weight_decay: Weight decay (L2 regularization) for the optimizer.
             Defaults to ``0.0`` (no weight decay).
         metrics: Optional dictionary of metric functions.
-
     """
 
     def __init__(

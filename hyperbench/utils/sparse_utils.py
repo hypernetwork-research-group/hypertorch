@@ -22,7 +22,6 @@ def sparse_dropout(
     Returns:
         matrix: A new sparse matrix with the same shape as the input sparse matrix,
             but with some elements dropped out.
-
     """
     device = sparse_tensor.device
 

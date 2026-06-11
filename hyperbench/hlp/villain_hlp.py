@@ -23,7 +23,6 @@ class VilLainEncoderConfig(TypedDict):
         tau: Gumbel-Softmax temperature. Defaults to ``1.0``.
         eps: Numerical stability constant. Defaults to ``1e-10``.
         villain_loss_weight: Weight applied to VilLain self-supervision. Defaults to ``1.0``.
-
     """
 
     num_nodes: int
@@ -50,7 +49,6 @@ class VilLainHlpModule(HlpModule):
         lr: Learning rate for the optimizer. Defaults to ``0.01``.
         weight_decay: Weight decay for the optimizer. Defaults to ``0.0``.
         metrics: Metrics to compute during training and evaluation. Defaults to ``None``.
-
     """
 
     def __init__(

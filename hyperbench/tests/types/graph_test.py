@@ -484,7 +484,6 @@ def test_smoothing_with_laplacian_influences_connected_nodes():
     Features of connected nodes should be aggregated.
 
     For a connected graph with GCN normalization, smoothing should mix features from neighbors.
-
     """
     # Two connected nodes with distinct features
     x = torch.tensor([[1.0, 0.0], [0.0, 1.0]], dtype=torch.float)
@@ -1489,7 +1488,6 @@ def test_to_undirected_edge_index_triangle_directed():
     Examples:
         Directed cycle: 0 -> 1 -> 2 -> 0
         Bidirectional traingle: 0 <-> 1 <-> 2 <-> 0
-
     """
     edge_index = EdgeIndex(torch.tensor([[0, 1, 2], [1, 2, 0]], dtype=torch.long))
     edge_index.to_undirected()

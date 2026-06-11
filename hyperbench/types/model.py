@@ -29,7 +29,6 @@ class ModelConfig:
             uses this instead of the shared ``val_dataloader`` argument.
         test_dataloader: Optional per-model test dataloader. When set, ``test_all``
             uses this instead of the shared ``dataloader`` argument.
-
     """
 
     def __init__(

@@ -71,7 +71,6 @@ class HyperGCNConv(nn.Module):
 
         Returns:
             x: The output node feature matrix. Size ``(num_nodes, out_channels)``.
-
         """
         x = self.theta(x)
 
@@ -300,7 +299,6 @@ class HNHNConv(nn.Module):
 
         Returns:
             x: The output node feature matrix of size ``(num_nodes, out_channels)``.
-
         """
         x = self.theta_v2e(x)
 

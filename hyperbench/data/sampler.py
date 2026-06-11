@@ -23,7 +23,6 @@ class BaseSampler(ABC):
 
         Returns:
             hdata: A new HData instance containing only the sampled items and their associated data.
-
         """
         raise NotImplementedError("Subclasses must implement the sample method.")
 
@@ -34,7 +33,6 @@ class BaseSampler(ABC):
 
         Args:
             hdata: The HData to query for the number of sampleable items.
-
         """
         raise NotImplementedError("Subclasses must implement the len method.")
 
@@ -53,7 +51,6 @@ class BaseSampler(ABC):
             ValueError: If the provided index is invalid (e.g., empty list or list length exceeds
                 number of sampleable items).
             TypeError: If the index is not an integer or a list of integers.
-
         """
         if isinstance(index, list):
             if len(index) < 1:
@@ -90,7 +87,6 @@ class BaseSampler(ABC):
         Returns:
             hyperedge_index: A new hyperedge index tensor containing only the incidences of the
                 sampled hyperedges.
-
         """
         hyperedge_ids = hyperedge_index[1]
 
@@ -119,7 +115,6 @@ class BaseSampler(ABC):
 
         Raises:
             IndexError: If any ID is out of bounds.
-
         """
         for id in ids:
             if id < 0 or id >= size:
@@ -187,7 +182,6 @@ class HyperedgeSampler(BaseSampler):
 
         Returns:
             num_hyperedges: The number of hyperedges in the HData.
-
         """
         return hdata.num_hyperedges
 
@@ -262,7 +256,6 @@ class NodeSampler(BaseSampler):
 
         Returns:
             num_nodes: The number of nodes in the HData.
-
         """
         return hdata.num_nodes
 
@@ -279,7 +272,6 @@ def create_sampler_from_strategy(strategy: SamplingStrategy) -> BaseSampler:
 
     Raises:
         ValueError: If ``strategy`` is not a supported `SamplingStrategy`.
-
     """
     match strategy:
         case SamplingStrategy.NODE:

@@ -29,7 +29,6 @@ class CommonNeighbors(nn.Module):
 
         Returns:
             scores: A 1-D tensor of shape (num_hyperedges,) with CN scores.
-
         """
         scores = self.scorer.score_batch(hyperedge_index, node_to_neighbors)
         torch.log1p(scores, out=scores)

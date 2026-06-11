@@ -183,7 +183,6 @@ class MarkdownTableLogger(Logger):
 
         Args:
             experiment_name: The experiment name whose data should be cleared.
-
         """
         self.__shared_stores.pop(experiment_name, None)
 
@@ -220,8 +219,6 @@ class MarkdownTableLogger(Logger):
 
         Returns:
             table: Markdown table string. Returns an empty string if ``results`` is empty.
-
-
         """
         if not results:
             return ""

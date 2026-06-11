@@ -20,7 +20,6 @@ class CommonNeighborsHlpModule(HlpModule):
         decoder: An optional decoder module. Defaults to `CommonNeighbors`.
         loss_fn: An optional loss function. Defaults to ``BCEWithLogitsLoss``.
         metrics: An optional dictionary of metric functions.
-
     """
 
     def __init__(
@@ -52,7 +51,6 @@ class CommonNeighborsHlpModule(HlpModule):
 
         Args:
             hyperedge_index: Tensor containing incidence information for the hyperedges to score.
-
         """
         return self.decoder(hyperedge_index, self.node_to_neighbors)
 
@@ -95,7 +93,6 @@ class CommonNeighborsHlpModule(HlpModule):
 
         Returns:
             loss: The computed loss.
-
         """
         scores = self.forward(batch.hyperedge_index)
         labels = batch.y

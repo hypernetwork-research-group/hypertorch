@@ -17,7 +17,6 @@ class _PreloadedDataset(Dataset):
             the ``DATASET_NAME``.
         sampling_strategy: The sampling strategy to use for this dataset.
             Default is ``SamplingStrategy.HYPEREDGE``.
-
     """
 
     DATASET_NAME: ClassVar[str] = ""

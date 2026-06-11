@@ -33,7 +33,6 @@ class Dataset(TorchDataset):
         sampling_strategy: The strategy used for sampling sub-hypergraphs
             (e.g., by node IDs or hyperedge IDs).
             If not provided, defaults to ``SamplingStrategy.HYPEREDGE``.
-
     """
 
     def __init__(
@@ -50,7 +49,6 @@ class Dataset(TorchDataset):
                 processing from HIF. Must be provided if prepare is set to ``False``.
             sampling_strategy: The sampling strategy to use for the dataset. If not provided,
                 defaults to ``SamplingStrategy.HYPEREDGE``.
-
         """
         self.__sampler = create_sampler_from_strategy(sampling_strategy)
         self.sampling_strategy = sampling_strategy
@@ -80,7 +78,6 @@ class Dataset(TorchDataset):
             ValueError: If the provided index is invalid (e.g., empty list or list length exceeds
                 number of nodes/hyperedges).
             IndexError: If any node/hyperedge ID is out of bounds.
-
         """
         return self.__sampler.sample(index, self.hdata)
 
@@ -100,7 +97,6 @@ class Dataset(TorchDataset):
 
         Returns:
             dataset: The `Dataset` instance with the provided `HData`.
-
         """
         return cls(hdata=hdata, sampling_strategy=sampling_strategy)
 
@@ -123,7 +119,6 @@ class Dataset(TorchDataset):
 
         Returns:
             dataset: The `Dataset` instance with the loaded hypergraph data.
-
         """
         hdata = HIFLoader.load_from_url(url=url, save_on_disk=save_on_disk)
         dataset = cls.from_hdata(hdata=hdata, sampling_strategy=sampling_strategy)
@@ -147,7 +142,6 @@ class Dataset(TorchDataset):
 
         Returns:
             dataset: The `Dataset` instance with the loaded hypergraph data.
-
         """
         hypergraph = HIFLoader.load_from_path(filepath=filepath)
         dataset = cls.from_hdata(hdata=hypergraph, sampling_strategy=sampling_strategy)
@@ -168,7 +162,6 @@ class Dataset(TorchDataset):
                 ``concatenate`` appends new features to the existing ones as additional columns.
                 ``replace`` substitutes ``hdata.x`` entirely.
                 Defaults to ``replace`` if not provided.
-
         """
         self.hdata = self.hdata.enrich_node_features(enricher, enrichment_mode)
 
@@ -205,7 +198,6 @@ class Dataset(TorchDataset):
         Raises:
             ValueError: If the source dataset's node features cannot be aligned with the target
                 dataset's nodes.
-
         """
         self.hdata = self.hdata.enrich_node_features_from(
             hdata_with_features=dataset_with_features.hdata,
@@ -229,7 +221,6 @@ class Dataset(TorchDataset):
                 ``concatenate`` appends new attributes to the existing ones as additional columns.
                 ``replace`` substitutes ``hdata.hyperedge_attr`` entirely.
                 Defaults to ``replace`` if not provided.
-
         """
         self.hdata = self.hdata.enrich_hyperedge_attr(enricher, enrichment_mode)
 
@@ -249,7 +240,6 @@ class Dataset(TorchDataset):
                 ``concatenate`` appends new weights to the existing ones as additional columns.
                 ``replace`` substitutes ``hdata.hyperedge_weights`` entirely.
                 Defaults to ``replace`` if not provided.
-
         """
         self.hdata = self.hdata.enrich_hyperedge_weights(enricher, enrichment_mode)
 
@@ -262,7 +252,6 @@ class Dataset(TorchDataset):
 
         Returns:
             dataset: The `Dataset` instance with the provided `HData`.
-
         """
         return self.__class__(hdata=hdata, sampling_strategy=self.sampling_strategy)
 
@@ -281,7 +270,6 @@ class Dataset(TorchDataset):
 
         Returns:
             dataset: A new `Dataset` instance with positives and sampled negatives.
-
         """
         hdata_with_negatives = self.hdata.clone()
         hdata_with_negatives = hdata_with_negatives.add_negative_samples(
@@ -473,7 +461,6 @@ class Dataset(TorchDataset):
 
         Returns:
             dataset: The Dataset instance moved to the specified device.
-
         """
         self.hdata = self.hdata.to(device)
         return self
@@ -525,6 +512,5 @@ class Dataset(TorchDataset):
 
         Returns:
             stats: A dictionary containing various statistics about the hypergraph.
-
         """
         return self.hdata.stats()

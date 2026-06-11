@@ -44,7 +44,6 @@ class Node2Vec(nn.Module):
             the hyperedge_index. This is only needed if the hyperedge_index does not include all
             nodes (e.g., some isolated nodes are missing).
         sparse: Whether Node2Vec embeddings should use sparse gradients.
-
     """
 
     def __init__(
@@ -133,7 +132,6 @@ class Node2VecConfig(TypedDict):
             This is only needed if the hyperedge_index does not include all nodes
             (e.g., some isolated nodes are missing).
         sparse: Whether Node2Vec embeddings should use sparse gradients.
-
     """
 
     edge_index: Tensor
@@ -155,7 +153,6 @@ class Node2VecGCN(nn.Module):
     Args:
         node2vec_config: Model-side configuration for the internal ``Node2Vec`` encoder.
         gcn_config: Model-side configuration for the GCN stack applied to the Node2Vec embeddings.
-
     """
 
     def __init__(

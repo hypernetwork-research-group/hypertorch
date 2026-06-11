@@ -21,7 +21,6 @@ class HNHNEncoderConfig(TypedDict):
         bias: Whether to include bias terms. Defaults to ``True``.
         use_batch_normalization: Whether to use batch normalization. Defaults to ``False``.
         drop_rate: Dropout rate. Defaults to ``0.5``.
-
     """
 
     in_channels: int
@@ -49,7 +48,6 @@ class HNHNHlpModule(HlpModule):
         scheduler_step_size: Step size for learning rate scheduler. Defaults to ``100``.
         scheduler_gamma: Multiplicative factor for learning rate decay. Defaults to ``0.51``.
         metrics: Optional metric collection for evaluation.
-
     """
 
     def __init__(
@@ -96,7 +94,6 @@ class HNHNHlpModule(HlpModule):
 
         Returns:
             scores: Logit scores of shape ``(num_hyperedges,)``.
-
         """
         if self.encoder is None:
             raise ValueError("Encoder is not defined for this HLP module.")

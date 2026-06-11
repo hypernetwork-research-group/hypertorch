@@ -31,7 +31,6 @@ class HyperGCN(nn.Module):
             Defaults to ``True``.
         seed: Optional random seed for the random reduction of hyperedges to edges.
             Defaults to ``None``.
-
     """  # noqa: E501
 
     def __init__(
@@ -85,7 +84,6 @@ class HyperGCN(nn.Module):
 
         Returns:
             x: The output node feature matrix. Size ``(num_nodes, num_classes)``.
-
         """
         if not self.fast:
             for layer in self.layers:

@@ -25,7 +25,6 @@ class HlpModule(L.LightningModule):
             Defaults to ``"every_epoch"``.
         negative_sampling_every_n: If using ``"every_n_epochs"`` schedule, how many epochs between
             negative sampling runs. Defaults to ``1``.
-
     """
 
     def __init__(
@@ -84,7 +83,6 @@ class HlpModule(L.LightningModule):
 
         Returns:
             loss: The computed loss tensor.
-
         """
         loss = self.loss_fn(scores, labels)
         self.log(name=f"{stage.value}_loss", value=loss, prog_bar=True, batch_size=batch_size)
@@ -110,7 +108,6 @@ class HlpModule(L.LightningModule):
             labels: The true labels corresponding to the scores.
             batch_size: The size of the current batch, used for logging.
             stage: The current stage (train/val/test) for logging purposes.
-
         """
         stage_metrics = self._get_stage_metrics(stage)
         if stage_metrics is None:
@@ -142,7 +139,6 @@ class HlpModule(L.LightningModule):
         Returns:
             metrics: The metric collection corresponding to the given stage, or ``None``
                 if no metrics are configured.
-
         """
         match stage:
             case Stage.TRAIN:
@@ -173,7 +169,6 @@ class HlpModule(L.LightningModule):
 
         Returns:
             negatives: A batch of negative samples, either freshly sampled or from cache.
-
         """
         if self.__negative_sampling_scheduler is None:
             raise ValueError("Asked to sample negatives but no negative sampler is not configured.")

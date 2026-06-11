@@ -20,7 +20,6 @@ class NHPEncoderConfig(TypedDict):
         aggregation: Hyperedge scoring aggregation. ``"maxmin"`` uses the paper's
             element-wise range representation; ``"mean"`` uses mean pooling.
         bias: Whether to include bias terms. Defaults to ``True``.
-
     """
 
     in_channels: int
@@ -45,7 +44,6 @@ class NHPHlpModule(HlpModule):
         lr: Learning rate for the optimizer. Defaults to ``0.001``.
         weight_decay: L2 regularization. Defaults to ``5e-4``.
         metrics: Optional metric collection for evaluation.
-
     """
 
     def __init__(
@@ -85,7 +83,6 @@ class NHPHlpModule(HlpModule):
 
         Returns:
             scores: Scores of shape ``(num_hyperedges,)``.
-
         """
         if self.encoder is None:
             raise ValueError("Encoder is not defined for this HLP module.")

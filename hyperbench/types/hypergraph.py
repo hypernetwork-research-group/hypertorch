@@ -34,7 +34,6 @@ class HIFHypergraph:
             a node (e.g., id, features).
         hyperedges: A list of edge dictionaries, where each dictionary contains information
             about a hyperedge (e.g., id, features).
-
     """
 
     def __init__(
@@ -71,7 +70,6 @@ class HIFHypergraph:
 
         Returns:
             hypergraph: Hypergraph instance
-
         """
         network_type = data.get("network-type") or data.get("network_type")
         metadata = data.get("metadata", {})
@@ -129,7 +127,6 @@ class HIFHypergraph:
 
         Returns:
             stats: A dictionary containing various statistics about the hypergraph.
-
         """
         node_degree: dict[Any, int] = {}
         hyperedge_size: dict[Any, int] = {}
@@ -216,7 +213,6 @@ class Hypergraph:
 
     Args:
         hyperedges: A list of hyperedges, where each hyperedge is represented as a list of node IDs.
-
     """
 
     def __init__(self, hyperedges: list[list[int]]):
@@ -251,7 +247,6 @@ class Hypergraph:
 
         Returns:
             neighbors: A set of neighbor node IDs (excluding the node itself).
-
         """
         validate_is_non_negative("node", node)
 
@@ -272,7 +267,6 @@ class Hypergraph:
 
         Returns:
             neighbors: A dictionary mapping each node ID to its set of neighbors.
-
         """
         nodes: set[int] = set()
         for hyperedge in self.hyperedges:
@@ -370,7 +364,6 @@ class Hypergraph:
 
         Returns:
             hypergraph: Hypergraph instance
-
         """
         if hyperedge_index.size(1) < 1:
             return cls(hyperedges=[])
@@ -402,7 +395,6 @@ class Hypergraph:
 
         Returns:
             x: The smoothed feature matrix. Size ``(num_nodes, C)``.
-
         """
         if drop_rate > 0.0:
             matrix = sparse_dropout(matrix, drop_rate)
@@ -510,7 +502,6 @@ class HyperedgeIndex:
 
         Returns:
             node_ids: A list of node IDs that belong to the specified hyperedge.
-
         """
         validate_is_non_negative("hyperedge_id", hyperedge_id)
         return self.__hyperedge_index[0, self.__hyperedge_index[1] == hyperedge_id].tolist()
@@ -526,7 +517,6 @@ class HyperedgeIndex:
         Returns:
             num_nodes: The number of nodes in the hypergraph, which is the maximum of the number of
                 unique nodes in the hyperedge index and the provided ``num_nodes``.
-
         """
         return max(self.num_nodes, num_nodes)
 
@@ -544,7 +534,6 @@ class HyperedgeIndex:
         Returns:
             adjacency: A list where ``adjacency[node_id]`` is the set of
                 nodes adjacent to ``node_id``.
-
         """
         num_nodes = num_nodes if num_nodes is not None else self.num_nodes
         self.__validate_num_nodes(num_nodes)
@@ -624,7 +613,6 @@ class HyperedgeIndex:
 
         Returns:
             degree_matrix: The sparse diagonal matrix of shape ``(num_nodes, num_nodes)``.
-
         """
         num_nodes = num_nodes if num_nodes is not None else int(incidence_matrix.size(0))
         self.__validate_num_nodes(num_nodes)
@@ -672,7 +660,6 @@ class HyperedgeIndex:
 
         Returns:
             degree_matrix: The sparse diagonal matrix D_n^-1 of shape ``(num_nodes, num_nodes)``.
-
         """
         # Example: hyperedge_index = [[0, 1, 2, 0],
         #                             [0, 0, 0, 1]]
@@ -707,7 +694,6 @@ class HyperedgeIndex:
 
         Returns:
             degree_matrix: The sparse diagonal matrix D_n^-1/2 of shape ``(num_nodes, num_nodes)``.
-
         """
         # Example: hyperedge_index = [[0, 1, 2, 0],
         #                             [0, 0, 0, 1]]
@@ -743,7 +729,6 @@ class HyperedgeIndex:
         Returns:
             degree_matrix: The sparse diagonal matrix D_e^-1 of
                 shape ``(num_hyperedges, num_hyperedges)``.
-
         """
         num_hyperedges = (
             num_hyperedges if num_hyperedges is not None else int(incidence_matrix.size(1))
@@ -896,7 +881,6 @@ class HyperedgeIndex:
 
         Returns:
             edge_index: The edge index of the reduced graph. Size ``(2, num_edges)``.
-
         """
         match strategy:
             case "clique_expansion":
@@ -1054,7 +1038,6 @@ class HyperedgeIndex:
         Remove duplicate edges from the hyperedge index.
 
         Keeps the tensor contiguous in memory.
-
         """
         # Example: hyperedge_index = [[0, 1, 2, 2, 0, 3, 2],
         #                             [3, 4, 4, 3, 4, 3, 3]], shape (2, 7)
@@ -1133,7 +1116,6 @@ class HyperedgeIndex:
         Returns:
             hyperedge_index: A new `HyperedgeIndex` instance with the hyperedge index
                 converted to 0-based format.
-
         """
         # Example: hyperedge_index after sorting: [[0, 0, 1, 2, 3, 4],
         #                                          [3, 4, 4, 3, 4, 3]]

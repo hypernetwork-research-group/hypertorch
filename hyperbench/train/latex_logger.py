@@ -82,7 +82,6 @@ class LaTexTableConfig(TypedDict):
 
 class LaTexTableLogger(Logger):
     # TODO: settings has to be configurable in Trainer
-
     """A Lightning Logger that accumulates metrics and writes a LaTex comparison table.
 
     Multiple instances (one per model) share a class-level store keyed by experiment_name.

@@ -63,7 +63,6 @@ class HGNNP(nn.Module):
 
         Returns:
             x: The output node feature matrix. Size ``(num_nodes, num_classes)``.
-
         """
         for layer in self.layers:
             x = layer(x, hyperedge_index)

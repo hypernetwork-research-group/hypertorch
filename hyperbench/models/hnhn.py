@@ -21,7 +21,6 @@ class HNHN(nn.Module):
         use_batch_normalization: If set to ``True``, layers will use batch normalization.
             Defaults to ``False``.
         drop_rate: Dropout ratio. Defaults to ``0.5``.
-
     """  # noqa: E501
 
     def __init__(
@@ -64,7 +63,6 @@ class HNHN(nn.Module):
 
         Returns:
             x: The output node feature matrix of size ``(num_nodes, num_classes)``.
-
         """
         for layer in self.layers:
             x = layer(x, hyperedge_index)

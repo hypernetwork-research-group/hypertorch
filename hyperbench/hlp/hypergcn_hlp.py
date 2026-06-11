@@ -27,7 +27,6 @@ class HyperGCNEncoderConfig(TypedDict):
             Defaults to ``True``.
         seed: Optional random seed for the random reduction of hyperedges to edges.
             Defaults to ``None``.
-
     """
 
     in_channels: int
@@ -56,7 +55,6 @@ class HyperGCNHlpModule(HlpModule):
         lr: Learning rate for the optimizer. Defaults to ``0.01``.
         weight_decay: L2 regularization. Defaults to ``5e-4``.
         metrics: Optional metric collection for evaluation.
-
     """
 
     def __init__(

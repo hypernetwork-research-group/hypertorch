@@ -102,7 +102,6 @@ class VilLain(nn.Module):
 
         Returns:
             node_embeddings: Node embeddings of shape ``(num_local_nodes, embedding_dim)``.
-
         """
         return self.loss(
             hyperedge_index=hyperedge_index,
@@ -133,7 +132,6 @@ class VilLain(nn.Module):
         Returns:
             loss: A tuple ``(total_loss, loss_parts)`` where ``loss_parts`` contains ``local_loss``
                 and ``global_loss`` scalar tensors.
-
         """
         node_embeddings = self.__get_initial_virtual_node_features(node_ids=node_ids)
         actual_num_hyperedges = self.__num_hyperedges(hyperedge_index, num_hyperedges)
@@ -181,7 +179,6 @@ class VilLain(nn.Module):
 
         Returns:
             hyperedge_embeddings: Hyperedge embeddings of shape ``(num_hyperedges, embedding_dim)``.
-
         """
         return self.__embeddings(
             hyperedge_index=hyperedge_index,
@@ -212,7 +209,6 @@ class VilLain(nn.Module):
 
         Returns:
             node_embeddings: Node embeddings of shape ``(num_local_nodes, embedding_dim)``.
-
         """
         return self.__embeddings(
             hyperedge_index=hyperedge_index,
@@ -247,7 +243,6 @@ class VilLain(nn.Module):
 
         Returns:
             embeddings: Averaged embeddings truncated to ``embedding_dim``.
-
         """
         with torch.no_grad():
             x = self.__get_initial_virtual_node_features(node_ids=node_ids)
@@ -294,7 +289,6 @@ class VilLain(nn.Module):
 
         Returns:
             x: A tensor of shape ``(num_selected_nodes, raw_embedding_dim)``.
-
         """
         logits = self.node_embedding if node_ids is None else self.node_embedding[node_ids]
 
@@ -338,7 +332,6 @@ class VilLain(nn.Module):
         Returns:
             embeddings: The updated node and hyperedge embeddings after one round
                 of message passing.
-
         """
         hyperedge_embeddings = HyperedgeAggregator(
             hyperedge_index=hyperedge_index,
@@ -364,7 +357,6 @@ class VilLain(nn.Module):
         provided.
 
         Explicit counts are required when empty hyperedges must remain in the hypergraph.
-
         """
         if num_hyperedges is not None:
             return num_hyperedges

@@ -38,7 +38,6 @@ def validate_node_space_setting(node_space_setting: NodeSpaceSetting) -> None:
 
     Raises:
         ValueError: If the node space setting is not one of the supported values.
-
     """
     if is_transductive_setting(node_space_setting) or is_inductive_setting(node_space_setting):
         return
