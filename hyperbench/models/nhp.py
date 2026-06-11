@@ -152,8 +152,8 @@ class NHP(nn.Module):
         # shape (num_incidences, hidden_channels)
         selfloop_embeddings = self.self_loop(incidence_node_features)
 
-        # incidence_embeddings[0] = activation_fn(selfloop_embeddings[0] +
-        # neighbor_aware_hyperedge_embeddings[0])
+        # incidence_embeddings[0] =
+        # activation_fn(selfloop_embeddings[0] + neighbor_aware_hyperedge_embeddings[0])
         # is the embedding of the first incidence (i.e., node 0 in hyperedge 0)
         # after one local message-passing step inside that candidate hyperedge.
         incidence_embeddings = self.activation_fn(
@@ -187,7 +187,7 @@ class NHP(nn.Module):
         #          -> hyperedge_embeddings =
         #           [[max(1, 3) - min(1, 3), max(2, 4) - min(2, 4)],                # hyperedge 0
         #           [max(5, 7, 9) - min(5, 7, 9), max(6, 8, 10) - min(6, 8, 10)]]  # hyperedge 1
-        #                                    shape: (num_hyperedges, hidden_channels)
+        #           shape: (num_hyperedges, hidden_channels)
         #         if aggregation == "mean":
         #         -> hyperedge_embeddings = [[mean(1, 3), mean(2, 4)],         # hyperedge 0
         #                                    [mean(5, 7, 9), mean(6, 8, 10)]]  # hyperedge 1

@@ -44,7 +44,7 @@ class HData:
         ...                                 [0, 1, 2, 3, 4]]) # hyperedge IDs
         >>> data = HData(x=x, hyperedge_index=hyperedge_index)
 
-    Args:
+    Attributes:
         x: Node feature matrix of shape ``[num_nodes, num_features]``.
         hyperedge_index: Hyperedge connectivity in COO format of shape ``[2, num_incidences]``,
             where ``hyperedge_index[0]`` contains node IDs and ``hyperedge_index[1]``
@@ -126,7 +126,7 @@ class HData:
             f"    num_hyperedges={self.num_hyperedges},\n"
             f"    x_shape={self.x.shape},\n"
             f"    global_node_ids_shape="
-            f"{self.global_node_ids.shape if self.global_node_ids is not None else None},\n"
+            f"    global_node_ids_shape={self.global_node_ids.shape},\n"
             f"    hyperedge_index_shape={self.hyperedge_index.shape},\n"
             f"    hyperedge_weights_shape="
             f"{self.hyperedge_weights.shape if self.hyperedge_weights is not None else None},\n"
@@ -325,9 +325,9 @@ class HData:
         Examples:
             Transductive split (default) preserving the full node space:
             >>> split_hdata = HData.split(
-            >>>    hdata,
-            >>>    torch.tensor([1]),
-            >>>    node_space_setting="transductive")
+            ...    hdata,
+            ...    torch.tensor([1]),
+            ...    node_space_setting="transductive")
             >>> split_hdata.x.shape[0] == hdata.x.shape[0]
             >>> split_hdata.hyperedge_index
             ... # node IDs stay in the original row space, hyperedge IDs are rebased
@@ -489,9 +489,9 @@ class HData:
             if source_feature_idx is None:
                 # Example: global_node_id = 30 is not present in the source
                 #          -> strict transductive mode records it as
-                #          ... missing and then raises an error
+                #             missing and then raises an error
                 #          -> non-transductive mode fills the features with
-                #          ... fill_value and continues enriching the other nodes
+                #             fill_value and continues enriching the other nodes
                 if is_transductive_setting(node_space_setting):
                     missing_global_node_ids.append(
                         int(global_node_id)
@@ -734,10 +734,10 @@ class HData:
 
         # permutation[new_id] = old_id, so y[permutation] puts old labels into new slots
         # inverse_permutation[old_id] = new_id, used to remap hyperedge IDs in incidences
-        # Example: permutation = [1, 2, 0] means new_id 0 gets old_id 1, new_id 1 gets
-        #  old_id 2, new_id 2 gets old_id 0
-        #          -> inverse_permutation = [2, 0, 1] means old_id 0 gets new_id 2, old_id 1 gets
-        # new_id 0, old_id 2 gets new_id 1
+        # Example: permutation = [1, 2, 0] means new_id 0 gets old_id 1,
+        #                   new_id 1 gets old_id 2, new_id 2 gets old_id 0
+        #                   -> inverse_permutation = [2, 0, 1] means old_id 0 gets new_id 2,
+        #                        old_id 1 gets new_id 0, old_id 2 gets new_id 1
         inverse_permutation = torch.empty_like(
             permutation,
             dtype=permutation.dtype,
@@ -761,8 +761,9 @@ class HData:
         new_hyperedge_index[1] = inverse_permutation[old_hyperedge_ids]
 
         # Example: hyperedge_attr = [attr_0, attr_1, attr_2], permutation = [1, 2, 0]
-        #          -> new_hyperedge_attr = [attr_1  (attr of old_id 1), attr_2 (attr of old_id 2),
-        #                                                    attr_0 (attr of old_id 0)]
+        #          -> new_hyperedge_attr = [attr_1  (attr of old_id 1),
+        #                                   attr_2 (attr of old_id 2),
+        #                                   attr_0 (attr of old_id 0)]
         new_hyperedge_attr = (
             self.hyperedge_attr[permutation] if self.hyperedge_attr is not None else None
         )
@@ -1033,7 +1034,7 @@ class HData:
         # This can happen when fill_value is:
         # - A scalar tensor, e.g., tensor(0.0), which should be broadcasted to all features
         # - A list with a single value, e.g., [0.0], which should
-        # also be broadcasted to all features
+        #   also be broadcasted to all features
         if fill_features.numel() == 1:
             fill_features = fill_features.repeat(num_features)
 

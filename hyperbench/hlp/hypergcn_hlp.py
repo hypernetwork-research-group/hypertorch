@@ -96,11 +96,11 @@ class HyperGCNHlpModule(HlpModule):
         Encode node features via HyperGCN, aggregate per hyperedge, and score.
 
         Steps:
-            1. Encode: HyperGCN builds a GCN Laplacian from ``hyperedge_index``
+            - Encode: HyperGCN builds a GCN Laplacian from ``hyperedge_index``
                and applies message passing to produce structure-aware node embeddings.
-            2. Aggregate: For each hyperedge, aggregate its member nodes' embeddings
+            - Aggregate: For each hyperedge, aggregate its member nodes' embeddings
                using the configured pooling method (mean/max/min/sum).
-            3. Decode: A linear layer scores each hyperedge embedding.
+            - Decode: A linear layer scores each hyperedge embedding.
 
         Examples:
             Given 5 nodes with 3 features and 2 hyperedges::
@@ -110,12 +110,12 @@ class HyperGCNHlpModule(HlpModule):
                 ...                    [0, 0, 0, 1, 1]]  # hyperedge IDs
 
             The forward pass:
-                1. HyperGCN encodes all 5 nodes using the full graph Laplacian.
-                   ``node_embeddings.shape = (5, out_channels)``
-                2. Aggregate per hyperedge:
-                   - hyperedge 0: pool(emb[0], emb[1], emb[2])
-                   - hyperedge 1: pool(emb[3], emb[4])
-                3. Decode: one scalar score per hyperedge → ``scores.shape = (2,)``
+                >>> HyperGCN encodes all 5 nodes using the full graph Laplacian.
+                ...   ``node_embeddings.shape = (5, out_channels)``
+                >>> Aggregate per hyperedge:
+                ...   - hyperedge 0: pool(emb[0], emb[1], emb[2])
+                ...   - hyperedge 1: pool(emb[3], emb[4])
+                >>> Decode: one scalar score per hyperedge → ``scores.shape = (2,)``
 
         Args:
             x: Node feature matrix of shape ``(num_nodes, in_channels)``.

@@ -192,7 +192,7 @@ class VilLainLoss:
 
         # Negative entropy to maximize global label diversity and prevents collapse.
         # Example: mean_probs[0] = [0.50, 0.50] has higher entropy
-        # than mean_probs[0] = [0.99, 0.01].
+        #                   than mean_probs[0] = [0.99, 0.01].
         entropy = -(mean_probs * torch.log(mean_probs + self.eps)).sum(dim=1, dtype=torch.float)
         return -entropy.mean(dtype=torch.float)
 

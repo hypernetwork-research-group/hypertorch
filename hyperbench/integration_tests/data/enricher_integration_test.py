@@ -33,7 +33,7 @@ NUM_FEATURES = 8
 # reasonable amount of time, we limit the number of nodes and hyperedges to 75000
 # for the enrichment tests. This allows us to test the functionality of the
 # enrichers without running into excessively long test times, while still providing
-#  a meaningful test of their behavior on reasonably sized datasets.
+# a meaningful test of their behavior on reasonably sized datasets.
 # With the threshold of 75000 nodes and hyperedges, we cover ~75% of the datasets.
 # The datasets.py in the scripts folder contains a function that calculates the node count
 # cutoff to cover 75% of the datasets.

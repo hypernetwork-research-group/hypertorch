@@ -114,14 +114,14 @@ class MLPHlpModule(HlpModule):
                 ...                    [0, 0, 0, 1, 1]]   # hyperedge ids
 
             The forward pass:
-                1. Encoder maps each node to an embedding vector.
-                2. Aggregate embeddings by summing them per hyperedge:
-                    - hyperedge 0: emb[0] + emb[1] + emb[2]
-                    - hyperedge 1: emb[2] + emb[3]
-                3. Sums are divided by the number of nodes per hyperedge (mean pooling):
-                    - hyperedge 0: (emb[0] + emb[1] + emb[2]) / 3
-                    - hyperedge 1: (emb[2] + emb[3]) / 2
-                4. Decoder scores each hyperedge embedding, producing one scalar per hyperedge.
+                >>> Encoder maps each node to an embedding vector.
+                >>> Aggregate embeddings by summing them per hyperedge:
+                ...   - hyperedge 0: emb[0] + emb[1] + emb[2]
+                ...   - hyperedge 1: emb[2] + emb[3]
+                >>> Sums are divided by the number of nodes per hyperedge (mean pooling):
+                ...   - hyperedge 0: (emb[0] + emb[1] + emb[2]) / 3
+                ...   - hyperedge 1: (emb[2] + emb[3]) / 2
+                >>> Decoder scores each hyperedge embedding, producing one scalar per hyperedge.
 
         Args:
             x: Node feature matrix of shape ``(num_nodes, in_channels)``.
@@ -145,9 +145,9 @@ class MLPHlpModule(HlpModule):
         # Aggregate: for each hyperedge, aggregate the embeddings of its member nodes.
         # Example::
         # - hyperedge 0 contains node 0, 1, 2 -> aggregate([e00, e01], [e10, e11], [e20, e21])
-        #                                   -> [pooled_0, pooled_1]
+        #                                         -> [pooled_0, pooled_1]
         # - hyperedge 1 contains node 2, 3 -> aggregate([e20, e21], [e30, e31])
-        #                                   -> [pooled_0, pooled_1]
+        #                                  -> [pooled_0, pooled_1]
         # shape: (num_hyperedges, out_channels)
         hyperedge_embeddings = HyperedgeAggregator(hyperedge_index, node_embeddings).pool(
             self.aggregation,

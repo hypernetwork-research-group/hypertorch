@@ -103,13 +103,13 @@ class HGNNHlpModule(HlpModule):
                 ...                    [0, 0, 0, 1, 1]]  # hyperedge IDs
 
             The forward pass:
-                1. HGNN encodes all 5 nodes using the hypergraph Laplacian.
-                   ``node_embeddings.shape = (5, out_channels)``
-                2. Aggregate per hyperedge:
-                   - hyperedge 0: pool(emb[0], emb[1], emb[2])
-                   - hyperedge 1: pool(emb[3], emb[4])
-                   ``hyperedge_embeddings.shape = (2, out_channels)``
-                3. Decode: one scalar per hyperedge -> ``scores.shape = (2,)``
+                >>> HGNN encodes all 5 nodes using the hypergraph Laplacian.
+                ...   ``node_embeddings.shape = (5, out_channels)``
+                >>> Aggregate per hyperedge:
+                ...   - hyperedge 0: pool(emb[0], emb[1], emb[2])
+                ...   - hyperedge 1: pool(emb[3], emb[4])
+                ...   ``hyperedge_embeddings.shape = (2, out_channels)``
+                >>> Decode: one scalar per hyperedge -> ``scores.shape = (2,)``
 
         Args:
             x: Node feature matrix of shape ``(num_nodes, in_channels)``.

@@ -177,7 +177,7 @@ class NegativeSampler(ABC):
             negative_node_ids: Tensor of negative node IDs.
 
         Returns:
-            x: The node feature matrix for the negative samples
+            x: The node feature matrix for the negative samples.
             num_negative_nodes: The number of negative nodes.
         """
         return x[negative_node_ids], len(negative_node_ids)
@@ -936,7 +936,7 @@ class CliqueNegativeSampler(SameNodeSpaceNegativeSampler):
         #                               (0, 2, 3),   # index 1
         #                               (1, 2, 3)],  # index 2
         #          -> shuffled_clique_candidate_indexes = [2, 0, 1]
-        #           # as we only need 2 samples
+        #          as we only need 2 samples
         #          -> sampled_clique_candidate_indexes = [2, 0] if num_negative_samples=2
         #          -> sampled_clique_candidates = [(1, 2, 3),  # index 2 in clique_candidates
         #                                          (0, 1, 3)]  # index 0 in clique_candidates

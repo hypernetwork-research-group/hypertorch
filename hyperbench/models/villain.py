@@ -136,7 +136,6 @@ class VilLain(nn.Module):
             total_loss: The combined loss scalar tensor to optimize.
             loss_parts: A dictionary containing the individual loss components. It contains
                 ``local_loss`` and ``global_loss`` scalar tensors.
-
         """
         node_embeddings = self.__get_initial_virtual_node_features(node_ids=node_ids)
         actual_num_hyperedges = self.__num_hyperedges(hyperedge_index, num_hyperedges)
@@ -277,7 +276,7 @@ class VilLain(nn.Module):
             final_embeddings = final_embeddings / self.generation_steps
 
             # Example: final_embeddings.shape = (num_nodes/num_hyperedges, 8)
-            # with raw_embedding_dim=8
+            #                   with raw_embedding_dim=8
             #          -> returned shape = (num_nodes/num_hyperedges, 4) with embedding_dim=4
             #             as it takes the first 4 channels of the raw embedding
             #               as the final embedding.

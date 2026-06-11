@@ -230,8 +230,8 @@ class NodeSampler(BaseSampler):
         sampled_nodes_mask = torch.isin(node_ids, sampled_node_ids)
 
         # Get unique hyperedges that have at least one sampled node
-        # Example: hyperedge_ids = [0, 0, 0, 1, 2, 2], sampled_nodes_mask =
-        #           [True, True, False, False, True, False]
+        # Example: hyperedge_ids = [0, 0, 0, 1, 2, 2],
+        #  sampled_nodes_mask = [True, True, False, False, True, False]
         #          -> sampled_hyperedge_ids = [0, 2] as they connect to sampled nodes
         sampled_hyperedge_ids = hyperedge_ids[sampled_nodes_mask].unique()
 

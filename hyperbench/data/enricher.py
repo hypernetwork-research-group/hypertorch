@@ -327,7 +327,7 @@ class VilLainHyperedgeAttrsEnricher(_VilLainTrainer, HyperedgeAttrsEnricher):
 
         Returns:
             hyperedge_embeddings: Tensor of shape ``(num_hyperedges, num_features)``
-            containing VilLain hyperedge embeddings.
+                containing VilLain hyperedge embeddings.
         """
         num_hyperedges = self._num_hyperedges(hyperedge_index)
         if num_hyperedges == 0:
@@ -491,8 +491,7 @@ class Node2VecEnricher(NodeEnricher):
         Compute Node2Vec embeddings from the clique expansion of the hypergraph.
 
         The hypergraph is converted to a regular graph via clique expansion, where each hyperedge
-        of size k
-        contributes a k x k block of edges between its member nodes.
+        of size k contributes a k x k block of edges between its member nodes.
         The resulting ``edge_index`` is then used to train a Node2Vec model using random walks
         and the skip-gram objective.
 
@@ -501,7 +500,7 @@ class Node2VecEnricher(NodeEnricher):
 
         Returns:
             x: Tensor of shape ``(num_nodes, embedding_dim)`` containing the Node2Vec embeddings
-            for each node.
+                for each node.
         """
         device = hyperedge_index.device
 
@@ -526,9 +525,7 @@ class Node2VecEnricher(NodeEnricher):
         if edge_index_wrapper.num_edges == 0:
             warnings.warn(
                 """
-                Clique expansion produced no non-self-loop edges.
-
-                Returning zero node features.
+                Clique expansion produced no non-self-loop edges. Returning zero node features.
                 """,
                 category=UserWarning,
                 stacklevel=2,
