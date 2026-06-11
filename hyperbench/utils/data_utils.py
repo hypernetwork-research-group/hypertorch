@@ -5,6 +5,51 @@ from collections.abc import Sequence
 from torch import Tensor
 
 
+LATEX_CHARACTER_ESCAPE_TABLE: dict[str, str] = {
+    "\\": r"\textbackslash{}",
+    "&": r"\&",
+    "%": r"\%",
+    "$": r"\$",
+    "#": r"\#",
+    "_": r"\_",
+    "{": r"\{",
+    "}": r"\}",
+    "~": r"\textasciitilde{}",
+    "^": r"\textasciicircum{}",
+    "\r": " ",
+    "\n": " ",
+    "\t": " ",
+}
+
+MARKDOWN_CHARACTER_ESCAPE_TABLE: dict[str, str] = {
+    "\\": r"\\",
+    "|": r"\|",
+    "`": r"\`",
+    "*": r"\*",
+    "=": r"\=",
+    "_": r"\_",
+    "{": r"\{",
+    "}": r"\}",
+    "[": r"\[",
+    "]": r"\]",
+    "(": r"\(",
+    ")": r"\)",
+    "#": r"\#",
+    "+": r"\+",
+    "-": r"\-",
+    ".": r"\.",
+    "!": r"\!",
+    "~": r"\~",
+    "$": r"\$",
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "\r": " ",
+    "\n": " ",
+    "\t": " ",
+}
+
+
 def clone_optional_tensor(tensor: Tensor | None) -> Tensor | None:
     return tensor.clone() if tensor is not None else None
 
@@ -19,6 +64,20 @@ def empty_hyperedgeindex() -> Tensor:
 
 def empty_edgeattr(num_edges: int) -> Tensor:
     return torch.empty((num_edges, 0), dtype=torch.float)
+
+
+def escape(text: str, escaped_characters_table: dict[str, str]) -> str:
+    """
+    Escape characters in text according to the provided escape table.
+
+    Args:
+        text: The input string to escape.
+        escaped_characters_table: A dictionary mapping characters to their escaped versions.
+
+    Returns:
+        escaped_text: The escaped string based on the escape table.
+    """
+    return text.translate(str.maketrans(escaped_characters_table))
 
 
 def to_non_empty_edgeattr(edge_attr: Tensor | None) -> Tensor:

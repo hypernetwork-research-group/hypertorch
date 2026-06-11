@@ -1,8 +1,11 @@
 from .data_utils import (
+    LATEX_CHARACTER_ESCAPE_TABLE,
+    MARKDOWN_CHARACTER_ESCAPE_TABLE,
     clone_optional_tensor,
     empty_edgeattr,
     empty_hyperedgeindex,
     empty_nodefeatures,
+    escape,
     to_non_empty_edgeattr,
     to_0based_ids,
     validate_is_between,
@@ -64,6 +67,8 @@ from .file_utils import (
 
 __all__ = [
     "INPUT_LAYER",
+    "LATEX_CHARACTER_ESCAPE_TABLE",
+    "MARKDOWN_CHARACTER_ESCAPE_TABLE",
     "ActivationFn",
     "NodeSpaceFiller",
     "NodeSpaceSetting",
@@ -76,6 +81,7 @@ __all__ = [
     "empty_edgeattr",
     "empty_hyperedgeindex",
     "empty_nodefeatures",
+    "escape",
     "find_project_root",
     "from_bytes_to_json",
     "from_file_to_json",

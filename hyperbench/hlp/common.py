@@ -43,9 +43,9 @@ class HlpModule(L.LightningModule):
         self.loss_fn = loss_fn
 
         if metrics is not None:
-            self.train_metrics = metrics.clone(prefix=f"{Stage.TRAIN.value}_")
-            self.val_metrics = metrics.clone(prefix=f"{Stage.VAL.value}_")
-            self.test_metrics = metrics.clone(prefix=f"{Stage.TEST.value}_")
+            self.train_metrics = metrics.clone(prefix=stage_metric_prefix(Stage.TRAIN))
+            self.val_metrics = metrics.clone(prefix=stage_metric_prefix(Stage.VAL))
+            self.test_metrics = metrics.clone(prefix=stage_metric_prefix(Stage.TEST))
         else:
             self.train_metrics = None
             self.val_metrics = None
@@ -85,7 +85,12 @@ class HlpModule(L.LightningModule):
             loss: The computed loss tensor.
         """
         loss = self.loss_fn(scores, labels)
-        self.log(name=f"{stage.value}_loss", value=loss, prog_bar=True, batch_size=batch_size)
+        self.log(
+            name=stage_metric_name(stage, "loss"),
+            value=loss,
+            prog_bar=True,
+            batch_size=batch_size,
+        )
         return loss
 
     def _compute_metrics(
@@ -173,3 +178,11 @@ class HlpModule(L.LightningModule):
         if self.__negative_sampling_scheduler is None:
             raise ValueError("Asked to sample negatives but no negative sampler is not configured.")
         return self.__negative_sampling_scheduler.sample(batch, self.current_epoch)
+
+
+def stage_metric_name(stage: Stage, metric_name: str) -> str:
+    return f"{stage_metric_prefix(stage)}{metric_name}"
+
+
+def stage_metric_prefix(stage: Stage) -> str:
+    return f"{stage.value}/"

@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any, ClassVar
 from lightning.pytorch.loggers import Logger
 from collections.abc import Mapping
-from hyperbench.utils import validate_is_non_negative
+from hyperbench.utils import MARKDOWN_CHARACTER_ESCAPE_TABLE, escape, validate_is_non_negative
 
 
 class MarkdownTableLogger(Logger):
@@ -67,6 +67,17 @@ class MarkdownTableLogger(Logger):
     def experiment_name(self) -> str | Path:
         return self.__experiment_name
 
+    def clear(self, experiment_name: str) -> None:
+        """Remove accumulated data for an experiment.
+
+        Args:
+            experiment_name: The experiment name whose data should be cleared.
+        """
+        self.__shared_stores.pop(experiment_name, None)
+
+    def log_hyperparams(self, params: Any) -> None:
+        pass
+
     def log_metrics(self, metrics: dict[str, float], step: int | None = None) -> None:
         """Accumulate metrics for this model. Called by Lightning on every log step.
 
@@ -77,9 +88,6 @@ class MarkdownTableLogger(Logger):
         if self.__model_name not in store:
             store[self.__model_name] = {}
         store[self.__model_name].update(metrics)
-
-    def log_hyperparams(self, params: Any) -> None:
-        pass
 
     def finalize(self, status: str) -> None:
         """Write the markdown comparison table with all accumulated metrics so far.
@@ -133,62 +141,6 @@ class MarkdownTableLogger(Logger):
             filename="val.md",
         )
 
-    def __split_results(
-        self,
-    ) -> tuple[
-        dict[str, dict[str, float]], dict[str, dict[str, float]], dict[str, dict[str, float]]
-    ]:
-        """Split all accumulated metrics into test vs train/val groups.
-
-        Metrics are classified by their name prefix:
-        - "test*"  --> test_results
-        - "train*" --> train_results
-        - "val*" --> val_results
-        - anything else (e.g., "epoch") --> ignored
-        Models with no metrics in a category are excluded from that category's dict.
-
-        Returns:
-            results: Tuple of (test_results, train_results, val_results), where each is a dict
-            mapping model names to their respective metric dicts.
-            test_results: Dict mapping model names to their test metric dicts.
-            train_results: Dict mapping model names to their train metric dicts.
-            val_results: Dict mapping model names to their val metric dicts.
-        """
-        store = self.__shared_stores.get(self.__experiment_name, {})
-        test_results: dict[str, dict[str, float]] = {}
-        train_results: dict[str, dict[str, float]] = {}
-        val_results: dict[str, dict[str, float]] = {}
-
-        for model_name, metrics in store.items():
-            test_metrics: dict[str, float] = {}
-            train_metrics: dict[str, float] = {}
-            val_metrics: dict[str, float] = {}
-
-            for metric_name, value in metrics.items():
-                if metric_name.startswith("test"):
-                    test_metrics[metric_name] = value
-                elif metric_name.startswith("train"):
-                    train_metrics[metric_name] = value
-                elif metric_name.startswith("val"):
-                    val_metrics[metric_name] = value
-
-            if test_metrics:
-                test_results[model_name] = test_metrics
-            if train_metrics:
-                train_results[model_name] = train_metrics
-            if val_metrics:
-                val_results[model_name] = val_metrics
-
-        return test_results, train_results, val_results
-
-    def clear(self, experiment_name: str) -> None:
-        """Remove accumulated data for an experiment.
-
-        Args:
-            experiment_name: The experiment name whose data should be cleared.
-        """
-        self.__shared_stores.pop(experiment_name, None)
-
     def __build_comparison_table(
         self,
         results: Mapping[str, Mapping[str, float]],
@@ -232,7 +184,10 @@ class MarkdownTableLogger(Logger):
         )
 
         # Build header row
-        header = "| Model | " + " | ".join(all_metrics) + " |"
+        escaped_metrics = [
+            escape(metric, MARKDOWN_CHARACTER_ESCAPE_TABLE) for metric in all_metrics
+        ]
+        header = "| Model | " + " | ".join(escaped_metrics) + " |"
         separator = "| --- | " + " | ".join("---" for _ in all_metrics) + " |"
 
         # Build one row per model, sorted by model name for determinism
@@ -246,7 +201,11 @@ class MarkdownTableLogger(Logger):
                     cells.append(f"{value:.{precision}f}")
                 else:
                     cells.append("-")
-            rows.append(f"| {model_name} | " + " | ".join(cells) + " |")
+            rows.append(
+                f"| {escape(model_name, MARKDOWN_CHARACTER_ESCAPE_TABLE)} | "
+                + " | ".join(cells)
+                + " |"
+            )
 
         return "\n".join([header, separator, *rows])
 
@@ -301,3 +260,48 @@ class MarkdownTableLogger(Logger):
         file_path.write_text(content)
 
         return file_path
+
+    def __split_results(
+        self,
+    ) -> tuple[
+        dict[str, dict[str, float]], dict[str, dict[str, float]], dict[str, dict[str, float]]
+    ]:
+        """Split all accumulated metrics into test vs train/val groups.
+
+        Metrics are classified by their name prefix:
+        - "test/*"  -> test_results
+        - "train/*" -> train_results
+        - "val/*"   -> val_results
+        - anything else (e.g., "epoch") -> ignored
+
+        Returns:
+            results: Tuple of (test_results, train_results, val_results), where each is a dict
+            mapping model names to their respective metric dicts. Models with no metrics
+            in a category are excluded from that category's dict.
+        """
+        store = self.__shared_stores.get(self.__experiment_name, {})
+        test_results: dict[str, dict[str, float]] = {}
+        train_results: dict[str, dict[str, float]] = {}
+        val_results: dict[str, dict[str, float]] = {}
+
+        for model_name, metrics in store.items():
+            test_metrics: dict[str, float] = {}
+            train_metrics: dict[str, float] = {}
+            val_metrics: dict[str, float] = {}
+
+            for metric_name, value in metrics.items():
+                if metric_name.startswith("test/"):
+                    test_metrics[metric_name] = value
+                elif metric_name.startswith("train/"):
+                    train_metrics[metric_name] = value
+                elif metric_name.startswith("val/"):
+                    val_metrics[metric_name] = value
+
+            if test_metrics:
+                test_results[model_name] = test_metrics
+            if train_metrics:
+                train_results[model_name] = train_metrics
+            if val_metrics:
+                val_results[model_name] = val_metrics
+
+        return test_results, train_results, val_results

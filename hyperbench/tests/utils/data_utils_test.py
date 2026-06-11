@@ -3,10 +3,13 @@ import torch
 import re
 
 from hyperbench.utils import (
+    LATEX_CHARACTER_ESCAPE_TABLE,
+    MARKDOWN_CHARACTER_ESCAPE_TABLE,
     clone_optional_tensor,
     empty_nodefeatures,
     empty_hyperedgeindex,
     empty_edgeattr,
+    escape,
     to_non_empty_edgeattr,
     to_0based_ids,
     validate_is_between,
@@ -71,6 +74,55 @@ def test_empty_edgeattr_with_edges():
 
     assert result.shape == (5, 0)
     assert result.dtype == torch.float
+
+
+@pytest.mark.parametrize(
+    "text, table, expected_escaped_text",
+    [
+        pytest.param(
+            r"Special characters: \ & % $ # _ { } ~ ^",
+            LATEX_CHARACTER_ESCAPE_TABLE,
+            r"Special characters: \textbackslash{} \& \% \$ \# \_ \{ \} "
+            r"\textasciitilde{} \textasciicircum{}",
+            id="with_special_characters_latex",
+        ),
+        pytest.param(
+            "Newlines and tabs:\nLine 2\tTabbed",
+            LATEX_CHARACTER_ESCAPE_TABLE,
+            "Newlines and tabs: Line 2 Tabbed",
+            id="with_newlines_and_tabs_latex",
+        ),
+        pytest.param(
+            "No special characters here",
+            LATEX_CHARACTER_ESCAPE_TABLE,
+            "No special characters here",
+            id="without_special_characters_latex",
+        ),
+        pytest.param(
+            r"Special characters: \ | ` * = _ { } [ ] ( ) # + - . ! ~ $ & < >",
+            MARKDOWN_CHARACTER_ESCAPE_TABLE,
+            r"Special characters: \\ \| \` \* \= \_ \{ \} \[ \] \( \) "
+            r"\# \+ \- \. \! \~ \$ &amp; &lt; &gt;",
+            id="with_special_characters_markdown",
+        ),
+        pytest.param(
+            "No special characters here",
+            MARKDOWN_CHARACTER_ESCAPE_TABLE,
+            "No special characters here",
+            id="without_special_characters_markdown",
+        ),
+        pytest.param(
+            "Newlines and tabs:\nLine 2\tTabbed",
+            MARKDOWN_CHARACTER_ESCAPE_TABLE,
+            "Newlines and tabs: Line 2 Tabbed",
+            id="with_newlines_and_tabs_markdown",
+        ),
+    ],
+)
+def test_escape_with_provided_table(text, table, expected_escaped_text):
+    escaped_text = escape(text, table)
+
+    assert escaped_text == expected_escaped_text
 
 
 def test_to_non_empty_edgeattr_with_none():

@@ -51,12 +51,12 @@ def test_markdown_table_logger_log_metrics_accumulates_metrics(tmp_path):
         experiment_name="exp2",
     )
 
-    logger.log_metrics({"test_auc": 0.80, "train_loss": 0.50})
-    logger.log_metrics({"val_loss": 0.40})
+    logger.log_metrics({"test/auc": 0.80, "train/loss": 0.50})
+    logger.log_metrics({"val/loss": 0.40})
 
     logger.finalize("success")
     store = logger.store
-    assert store == {"model_a": {"test_auc": 0.80, "train_loss": 0.50, "val_loss": 0.40}}
+    assert store == {"model_a": {"test/auc": 0.80, "train/loss": 0.50, "val/loss": 0.40}}
 
 
 def test_markdown_table_logger_finalize_does_not_save_when_no_results(tmp_path):
@@ -80,15 +80,15 @@ def test_save_comparison_tables_no_test_results(tmp_path):
         precision=3,
     )
 
-    logger.log_metrics({"train_loss": 0.254, "val_loss": 0.312})
+    logger.log_metrics({"train/loss": 0.254, "val/loss": 0.312})
     logger.finalize("success")
 
     content = (tmp_path / "comparison" / "overall.md").read_text()
     assert "## Test Results" not in content
     assert "## Train Results" in content
     assert "## Val Results" in content
-    assert "| model_a | 0.312 |" in content
-    assert "| model_a | 0.254 |" in content
+    assert r"| model\_a | 0.312 |" in content
+    assert r"| model\_a | 0.254 |" in content
 
 
 def test_save_comparison_tables_no_train_results(tmp_path):
@@ -99,7 +99,7 @@ def test_save_comparison_tables_no_train_results(tmp_path):
         precision=3,
     )
 
-    logger.log_metrics({"test_auc": 0.254, "val_loss": 0.312})
+    logger.log_metrics({"test/auc": 0.254, "val/loss": 0.312})
     logger.finalize("success")
 
     content = (tmp_path / "comparison" / "overall.md").read_text()
@@ -123,8 +123,8 @@ def test_build_comparison_table_correct_trail(tmp_path):
     )
 
     results = {
-        "model_a": {"test_auc": 0.9123, "test_loss": 0.123, "train_loss": 0.254},
-        "model_b": {"test_auc": 0.8821, "val_f1": 0.88},
+        "model_a": {"test/auc": 0.9123, "test/loss": 0.123, "train/loss": 0.254},
+        "model_b": {"test/auc": 0.8821, "val/f1": 0.88},
     }
 
     logger_a.log_metrics(results["model_a"])
@@ -133,25 +133,25 @@ def test_build_comparison_table_correct_trail(tmp_path):
     logger_a.finalize("success")
     logger_b.finalize("success")
     expected_table = dedent(
-        """
+        r"""
         ## Test Results
 
-        | Model | test_auc | test_loss |
+        | Model | test/auc | test/loss |
         | --- | --- | --- |
-        | model_a | 0.91 | 0.12 |
-        | model_b | 0.88 | - |
+        | model\_a | 0.91 | 0.12 |
+        | model\_b | 0.88 | - |
 
         ## Train Results
 
-        | Model | train_loss |
+        | Model | train/loss |
         | --- | --- |
-        | model_a | 0.25 |
+        | model\_a | 0.25 |
 
         ## Val Results
 
-        | Model | val_f1 |
+        | Model | val/f1 |
         | --- | --- |
-        | model_b | 0.88 |
+        | model\_b | 0.88 |
         """
     ).lstrip()
 
@@ -162,10 +162,10 @@ def test_build_comparison_table_correct_trail(tmp_path):
 @pytest.mark.parametrize(
     "metrics, expect_train, expect_val",
     [
-        ({"test_auc": 0.91}, None, None),  # neither train nor val
-        ({"test_auc": 0.91, "train_loss": 0.25}, True, None),  # train only
-        ({"test_auc": 0.91, "val_f1": 0.88}, None, True),  # val only
-        ({"test_auc": 0.91, "train_loss": 0.25, "val_f1": 0.88}, True, True),  # both
+        ({"test/auc": 0.91}, None, None),  # neither train nor val
+        ({"test/auc": 0.91, "train/loss": 0.25}, True, None),  # train only
+        ({"test/auc": 0.91, "val/f1": 0.88}, None, True),  # val only
+        ({"test/auc": 0.91, "train/loss": 0.25, "val/f1": 0.88}, True, True),  # both
     ],
 )
 def test_finalize_train_val_section_branches(tmp_path, metrics, expect_train, expect_val):
@@ -219,7 +219,7 @@ def test_finalize_writes_train_and_val_sections_and_file(tmp_path):
         precision=3,
     )
 
-    logger.log_metrics({"test_auc": 0.91, "train_loss": 0.25, "val_f1": 0.88})
+    logger.log_metrics({"test/auc": 0.91, "train/loss": 0.25, "val/f1": 0.88})
     logger.finalize("success")
 
     result_path = tmp_path / "comparison" / "overall.md"
@@ -240,7 +240,7 @@ def test_finalize_writes_val_section_when_train_missing(tmp_path):
         precision=3,
     )
 
-    logger.log_metrics({"test_auc": 0.91, "val_f1": 0.88})
+    logger.log_metrics({"test/auc": 0.91, "val/f1": 0.88})
     logger.finalize("success")
 
     result_path = tmp_path / "comparison" / "overall.md"
@@ -260,7 +260,7 @@ def test_all_md_files_written_to_comparison_subdir(tmp_path):
         precision=3,
     )
 
-    logger.log_metrics({"test_auc": 0.91, "train_loss": 0.25, "val_f1": 0.88})
+    logger.log_metrics({"test/auc": 0.91, "train/loss": 0.25, "val/f1": 0.88})
     logger.finalize("success")
 
     comparison_dir = tmp_path / "comparison"
@@ -275,3 +275,45 @@ def test_all_md_files_written_to_comparison_subdir(tmp_path):
     assert train_md.exists()
     assert val_md.exists()
     assert test_md.exists()
+
+
+def test_markdown_table_escapes_model_and_metric_labels(tmp_path):
+    logger = MarkdownTableLogger(
+        save_dir=str(tmp_path),
+        model_name=r"model\|`*_{}[]()#+-.!~$&<>",
+        experiment_name="exp_markdown_escape_labels",
+        precision=2,
+    )
+
+    logger.log_metrics({r"test/metric\|`*_{}[]()#+-.!~$&<>": 1.23})
+    logger.finalize("success")
+
+    content = (tmp_path / "comparison" / "test.md").read_text()
+    expected_table = dedent(
+        r"""
+        ## Test Results
+
+        | Model | test/metric\\\|\`\*\_\{\}\[\]\(\)\#\+\-\.\!\~\$&amp;&lt;&gt; |
+        | --- | --- |
+        | model\\\|\`\*\_\{\}\[\]\(\)\#\+\-\.\!\~\$&amp;&lt;&gt; | 1.23 |
+        """
+    ).lstrip()
+
+    assert content == expected_table
+
+
+def test_markdown_table_escapes_label_control_characters(tmp_path):
+    logger = MarkdownTableLogger(
+        save_dir=str(tmp_path),
+        model_name="model\nnext\tend\rcarriage",
+        experiment_name="exp_markdown_escape_control_chars",
+        precision=2,
+    )
+
+    logger.log_metrics({"test/metric\nnext\tend\rcarriage": 1.23})
+    logger.finalize("success")
+
+    content = (tmp_path / "comparison" / "test.md").read_text()
+
+    assert "| Model | test/metric next end carriage |" in content
+    assert "| model next end carriage | 1.23 |" in content

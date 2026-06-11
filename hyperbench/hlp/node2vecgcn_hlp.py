@@ -7,7 +7,7 @@ from hyperbench.types import EdgeIndex, HData, HyperedgeIndex
 from hyperbench.nn import HyperedgeAggregator
 from hyperbench.utils import Stage
 
-from hyperbench.hlp.common import HlpModule
+from hyperbench.hlp.common import HlpModule, stage_metric_name
 from hyperbench.hlp.node2vec_common import (
     NODE2VEC_JOINT_MODE,
     NODE2VEC_PRECOMPUTED_MODE,
@@ -160,9 +160,24 @@ class Node2VecGCNHlpModule(HlpModule):
             )
             loss = hlp_loss + (self.node2vec_loss_weight * node2vec_loss)
 
-            self.log("train_hlp_loss", hlp_loss, prog_bar=True, batch_size=batch_size)
-            self.log("train_node2vec_loss", node2vec_loss, prog_bar=True, batch_size=batch_size)
-            self.log("train_loss", loss, prog_bar=True, batch_size=batch_size)
+            self.log(
+                stage_metric_name(Stage.TRAIN, "hlp_loss"),
+                hlp_loss,
+                prog_bar=True,
+                batch_size=batch_size,
+            )
+            self.log(
+                stage_metric_name(Stage.TRAIN, "node2vec_loss"),
+                node2vec_loss,
+                prog_bar=True,
+                batch_size=batch_size,
+            )
+            self.log(
+                stage_metric_name(Stage.TRAIN, "loss"),
+                loss,
+                prog_bar=True,
+                batch_size=batch_size,
+            )
         else:
             loss = self._compute_loss(scores, labels, batch_size, Stage.TRAIN)
 

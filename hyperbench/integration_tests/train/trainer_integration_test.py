@@ -32,18 +32,18 @@ class TinyBinaryClassifier(L.LightningModule):
         x, y = batch
         logits = self(x)
         loss = self.loss(logits, y)
-        self.log("train_loss", loss)
+        self.log("train/loss", loss)
         return loss
 
     def validation_step(self, batch: tuple[Tensor, Tensor], _: int) -> None:
         x, y = batch
         loss = self.loss(self(x), y)
-        self.log("val_loss", loss)
+        self.log("val/loss", loss)
 
     def test_step(self, batch: tuple[Tensor, Tensor], _: int) -> None:
         x, y = batch
         loss = self.loss(self(x), y)
-        self.log("test_loss", loss)
+        self.log("test/loss", loss)
 
     def configure_optimizers(self) -> optim.Optimizer:
         return optim.SGD(self.parameters(), lr=0.01)
@@ -106,7 +106,7 @@ def test_fit_and_test_all_trains_and_evaluates_models(
 
     expected_result_keys = {config.full_model_name() for config in model_configs}
     assert set(results) == expected_result_keys
-    assert all("test_loss" in result for result in results.values())
+    assert all("test/loss" in result for result in results.values())
 
     for config, initial_state_dict in zip(model_configs, initial_state_dicts, strict=True):
         state_dict_after_train = extract_state_dict(config.model)
@@ -158,9 +158,9 @@ def test_custom_logger_is_used_instead_of_default_loggers(
     assert custom_metrics_csv.exists()
 
     custom_metrics_content = custom_metrics_csv.read_text()
-    assert "train_loss" in custom_metrics_content
-    assert "val_loss" in custom_metrics_content
-    assert "test_loss" in custom_metrics_content
+    assert "train/loss" in custom_metrics_content
+    assert "val/loss" in custom_metrics_content
+    assert "test/loss" in custom_metrics_content
 
     assert not (tmp_path / EXPERIMENT_NAME / "comparison").exists()
     assert not (tmp_path / EXPERIMENT_NAME / "tiny" / "version_0" / "metrics.csv").exists()
@@ -232,8 +232,8 @@ def test_best_checkpoints_can_be_loaded_and_used(
         enable_progress_bar=False,
         enable_model_summary=False,
         log_every_n_steps=1,
-        # save_top_k=1 to ensure that only the checkpoint with the best val_loss is saved
-        callbacks=[ModelCheckpoint(monitor="val_loss", mode="min", save_top_k=1)],
+        # save_top_k=1 to ensure that only the checkpoint with the best val/loss is saved
+        callbacks=[ModelCheckpoint(monitor="val/loss", mode="min", save_top_k=1)],
     )
 
     trainer.fit_all(
@@ -438,9 +438,9 @@ def __assert_default_logger_outputs(experiment_dir: Path, model_configs: list[Mo
         assert metrics_csv.exists()
 
         metrics_content = metrics_csv.read_text()
-        assert "train_loss" in metrics_content
-        assert "val_loss" in metrics_content
-        assert "test_loss" in metrics_content
+        assert "train/loss" in metrics_content
+        assert "val/loss" in metrics_content
+        assert "test/loss" in metrics_content
 
     comparison_dir = experiment_dir / "comparison"
     for result_file in [
@@ -452,7 +452,7 @@ def __assert_default_logger_outputs(experiment_dir: Path, model_configs: list[Mo
         assert result_file.exists()
 
         content = result_file.read_text()
-        assert "test_loss" in content or "test\\_loss" in content
+        assert "test/loss" in content
 
         for config in model_configs:
             assert config.full_model_name() in content
@@ -466,7 +466,7 @@ def __assert_default_logger_outputs(experiment_dir: Path, model_configs: list[Mo
         assert result_file.exists()
 
         content = result_file.read_text()
-        assert "train_loss" in content or "train\\_loss" in content
+        assert "train/loss" in content
 
         for config in model_configs:
             assert config.full_model_name() in content
@@ -480,7 +480,7 @@ def __assert_default_logger_outputs(experiment_dir: Path, model_configs: list[Mo
         assert result_file.exists()
 
         content = result_file.read_text()
-        assert "val_loss" in content or "val\\_loss" in content
+        assert "val/loss" in content
 
         for config in model_configs:
             assert config.full_model_name() in content

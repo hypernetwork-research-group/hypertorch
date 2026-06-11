@@ -7,7 +7,7 @@ from hyperbench.nn import HyperedgeAggregator
 from hyperbench.types import HData
 from hyperbench.utils import Stage
 
-from hyperbench.hlp.common import HlpModule
+from hyperbench.hlp.common import HlpModule, stage_metric_name
 
 
 class VilLainEncoderConfig(TypedDict):
@@ -134,27 +134,36 @@ class VilLainHlpModule(HlpModule):
         )
         loss = hlp_loss + (self.villain_loss_weight * villain_loss)
 
-        loss_prefix = Stage.TRAIN.value
-        self.log(f"{loss_prefix}_hlp_loss", hlp_loss, prog_bar=True, batch_size=batch_size)
         self.log(
-            f"{loss_prefix}_villain_loss",
+            stage_metric_name(Stage.TRAIN, "hlp_loss"),
+            hlp_loss,
+            prog_bar=True,
+            batch_size=batch_size,
+        )
+        self.log(
+            stage_metric_name(Stage.TRAIN, "villain_loss"),
             villain_loss,
             prog_bar=True,
             batch_size=batch_size,
         )
         self.log(
-            f"{loss_prefix}_local_loss",
+            stage_metric_name(Stage.TRAIN, "local_loss"),
             villain_loss_parts["local_loss"],
             prog_bar=False,
             batch_size=batch_size,
         )
         self.log(
-            f"{loss_prefix}_global_loss",
+            stage_metric_name(Stage.TRAIN, "global_loss"),
             villain_loss_parts["global_loss"],
             prog_bar=False,
             batch_size=batch_size,
         )
-        self.log(f"{loss_prefix}_loss", loss, prog_bar=True, batch_size=batch_size)
+        self.log(
+            stage_metric_name(Stage.TRAIN, "loss"),
+            loss,
+            prog_bar=True,
+            batch_size=batch_size,
+        )
 
         self._compute_metrics(scores, labels, batch_size, Stage.TRAIN)
         return loss
