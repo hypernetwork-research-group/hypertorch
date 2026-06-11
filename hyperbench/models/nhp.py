@@ -185,9 +185,9 @@ class NHP(nn.Module):
         #                features (2, 3, 4) for hyperedge 1
         #          if aggregation == "maxmin":
         #          -> hyperedge_embeddings =
-        #           [[max(1, 3) - min(1, 3), max(2, 4) - min(2, 4)],                # hyperedge 0
-        #           [max(5, 7, 9) - min(5, 7, 9), max(6, 8, 10) - min(6, 8, 10)]]  # hyperedge 1
-        #           shape: (num_hyperedges, hidden_channels)
+        #               [[max(1, 3) - min(1, 3), max(2, 4) - min(2, 4)],               # hyperedge 0
+        #               [max(5, 7, 9) - min(5, 7, 9), max(6, 8, 10) - min(6, 8, 10)]]  # hyperedge 1
+        #               shape: (num_hyperedges, hidden_channels)
         #         if aggregation == "mean":
         #         -> hyperedge_embeddings = [[mean(1, 3), mean(2, 4)],         # hyperedge 0
         #                                    [mean(5, 7, 9), mean(6, 8, 10)]]  # hyperedge 1

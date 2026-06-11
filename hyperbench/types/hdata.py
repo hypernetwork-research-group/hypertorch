@@ -120,18 +120,22 @@ class HData:
         self.device = self.get_device_if_all_consistent()
 
     def __repr__(self) -> str:
+        hyperedge_weights_shape = (
+            self.hyperedge_weights.shape if self.hyperedge_weights is not None else None
+        )
+        hyperedge_attr_shape = (
+            self.hyperedge_attr.shape if self.hyperedge_attr is not None else None
+        )
+
         return (
             f"{self.__class__.__name__}(\n"
             f"    num_nodes={self.num_nodes},\n"
             f"    num_hyperedges={self.num_hyperedges},\n"
             f"    x_shape={self.x.shape},\n"
-            f"    global_node_ids_shape="
             f"    global_node_ids_shape={self.global_node_ids.shape},\n"
             f"    hyperedge_index_shape={self.hyperedge_index.shape},\n"
-            f"    hyperedge_weights_shape="
-            f"{self.hyperedge_weights.shape if self.hyperedge_weights is not None else None},\n"
-            f"    hyperedge_attr_shape="
-            f"{self.hyperedge_attr.shape if self.hyperedge_attr is not None else None},\n"
+            f"    hyperedge_weights_shape={hyperedge_weights_shape},\n"
+            f"    hyperedge_attr_shape={hyperedge_attr_shape},\n"
             f"    y_shape={self.y.shape if self.y is not None else None}\n"
             f"    device={self.device}\n"
             f")"

@@ -90,17 +90,16 @@ class HyperGCNHlpModule(HlpModule):
         self.lr = lr
         self.weight_decay = weight_decay
 
-    # TODO format forward pass
     def forward(self, x: Tensor, hyperedge_index: Tensor) -> Tensor:
         """
         Encode node features via HyperGCN, aggregate per hyperedge, and score.
 
         Steps:
-            - Encode: HyperGCN builds a GCN Laplacian from ``hyperedge_index``
+            1. Encode: HyperGCN builds a GCN Laplacian from ``hyperedge_index``
                and applies message passing to produce structure-aware node embeddings.
-            - Aggregate: For each hyperedge, aggregate its member nodes' embeddings
+            2. Aggregate: For each hyperedge, aggregate its member nodes' embeddings
                using the configured pooling method (mean/max/min/sum).
-            - Decode: A linear layer scores each hyperedge embedding.
+            3. Decode: A linear layer scores each hyperedge embedding.
 
         Examples:
             Given 5 nodes with 3 features and 2 hyperedges::

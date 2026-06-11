@@ -219,13 +219,13 @@ def test_getitem_index_list_empty(mock_hdata, strategy):
         pytest.param(
             SamplingStrategy.NODE,
             [0, 1, 2, 3, 4],
-            r"Index list length \(5\) cannot exceed the number of sampleable items \(4\)\.",
+            re.escape("Index list length (5) cannot exceed the number of sampleable items (4)."),
             id="node_strategy",
         ),
         pytest.param(
             SamplingStrategy.HYPEREDGE,
             [0, 1, 2],
-            r"Index list length \(3\) cannot exceed the number of sampleable items \(2\)\.",
+            re.escape("Index list length (3) cannot exceed the number of sampleable items (2)."),
             id="hyperedge_strategy",
         ),
     ],
@@ -244,12 +244,15 @@ def test_getitem_raises_when_index_list_larger_than_max(
     "strategy, index, expected_message",
     [
         pytest.param(
-            SamplingStrategy.NODE, 4, r"Node ID 4 is out of bounds \(0, 3\)\.", id="node_strategy"
+            SamplingStrategy.NODE,
+            4,
+            re.escape("Node ID 4 is out of bounds (0, 3)."),
+            id="node_strategy",
         ),
         pytest.param(
             SamplingStrategy.HYPEREDGE,
             2,
-            r"Hyperedge ID 2 is out of bounds \(0, 1\)\.",
+            re.escape("Hyperedge ID 2 is out of bounds (0, 1)."),
             id="hyperedge_strategy",
         ),
     ],
