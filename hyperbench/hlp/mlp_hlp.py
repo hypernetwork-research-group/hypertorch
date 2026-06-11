@@ -103,7 +103,7 @@ class MLPHlpModule(HlpModule):
 
         Examples:
             Given 4 nodes with 3 features each and 2 hyperedges:
-                >>> x = [[0.1, 0.2, 0.3],   # node 0
+                >>> x = [[0.1, 0.2, 0.3],   # node 0pi
                 ...      [0.4, 0.5, 0.6],   # node 1
                 ...      [0.7, 0.8, 0.9],   # node 2
                 ...      [1.0, 1.1, 1.2]]   # node 3

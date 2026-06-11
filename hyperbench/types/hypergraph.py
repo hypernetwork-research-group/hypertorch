@@ -648,7 +648,7 @@ class HyperedgeIndex:
         num_nodes: int | None = None,
     ) -> Tensor:
         """
-        Compute the sparse normalized node degree matrix D_n^-1.
+        Compute the sparse normalized node degree matrix `D_n^-1`.
 
         The node degree ``d_n[i]`` is the number of hyperedges containing node ``i``
         (i.e., the row-sum of the incidence matrix H).
@@ -659,7 +659,7 @@ class HyperedgeIndex:
             num_nodes: Total number of nodes. If ``None``, inferred from hyperedge index.
 
         Returns:
-            degree_matrix: The sparse diagonal matrix D_n^-1 of shape ``(num_nodes, num_nodes)``.
+            degree_matrix: The sparse diagonal matrix `D_n^-1` of shape ``(num_nodes, num_nodes)``.
         """
         # Example: hyperedge_index = [[0, 1, 2, 0],
         #                             [0, 0, 0, 1]]
@@ -682,7 +682,7 @@ class HyperedgeIndex:
         num_nodes: int | None = None,
     ) -> Tensor:
         """
-        Compute the sparse normalized node degree matrix D_n^-1/2.
+        Compute the sparse normalized node degree matrix `D_n^-1/2`.
 
         The node degree ``d_n[i]`` is the number of hyperedges containing node ``i``
         (i.e., the row-sum of the incidence matrix H).
@@ -693,7 +693,8 @@ class HyperedgeIndex:
             num_nodes: Total number of nodes. If ``None``, inferred from hyperedge index.
 
         Returns:
-            degree_matrix: The sparse diagonal matrix D_n^-1/2 of shape ``(num_nodes, num_nodes)``.
+            degree_matrix: The sparse diagonal matrix `D_n^-1/2`
+                of shape ``(num_nodes, num_nodes)``.
         """
         # Example: hyperedge_index = [[0, 1, 2, 0],
         #                             [0, 0, 0, 1]]
@@ -716,7 +717,7 @@ class HyperedgeIndex:
         num_hyperedges: int | None = None,
     ) -> Tensor:
         """
-        Compute the sparse normalized hyperedge degree matrix D_e^-1.
+        Compute the sparse normalized hyperedge degree matrix `D_e^-1`.
 
         The hyperedge degree ``d_e[j]`` is the number of nodes in hyperedge ``j``
         (i.e., the column-sum of the incidence matrix H).
@@ -727,7 +728,7 @@ class HyperedgeIndex:
             num_hyperedges: Total number of hyperedges. If ``None``, inferred from hyperedge index.
 
         Returns:
-            degree_matrix: The sparse diagonal matrix D_e^-1 of
+            degree_matrix: The sparse diagonal matrix `D_e^-1` of
                 shape ``(num_hyperedges, num_hyperedges)``.
         """
         num_hyperedges = (
@@ -789,8 +790,8 @@ class HyperedgeIndex:
 
         where:
             - H is the incidence matrix of shape ``(num_nodes, num_hyperedges)``
-            - D_n^-1/2 is the normalized node degree matrix
-            - D_e^-1 is the inverse hyperedge degree matrix (with W = I)
+            - `D_n^-1/2` is the normalized node degree matrix
+            - `D_e^-1` is the inverse hyperedge degree matrix (with W = I)
 
         Args:
             num_nodes: Total number of nodes. If ``None``, inferred from hyperedge index.
