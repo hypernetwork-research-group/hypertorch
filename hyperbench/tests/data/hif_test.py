@@ -977,8 +977,8 @@ def test_hifloader_download_failure_when_hf_fallback_fails(tmp_path):
             ValueError,
             match=re.escape(
                 "Failed to download dataset 'algebra' from GitHub and Hugging Face Hub. "
-            )
-            + re.escape("GitHub error: 404 | Hugging Face error: HFHub failed"),
+                "GitHub error: 404 | Hugging Face error: HFHub failed"
+            ),
         ),
         patch("hyperbench.data.hif.os.getenv", return_value=None),
     ):
@@ -1011,8 +1011,10 @@ def test_hifloader_download_failure_when_hf_token_is_invalid(tmp_path):
         pytest.raises(
             ValueError,
             match=(
-                re.escape("Failed to download dataset 'algebra' from GitHub and Hugging Face Hub. ")
-                + re.escape("GitHub error: 404 | Hugging Face error: HFHub failed")
+                re.escape(
+                    "Failed to download dataset 'algebra' from GitHub and Hugging Face Hub. "
+                    "GitHub error: 404 | Hugging Face error: HFHub failed"
+                )
             ),
         ),
         patch("hyperbench.data.hif.os.getenv", return_value="invalid_token"),

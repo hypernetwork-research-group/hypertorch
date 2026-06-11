@@ -96,13 +96,13 @@ class HGNNHlpModule(HlpModule):
             hyperedge. Shape: ``(num_hyperedges,)``.
 
         Examples:
-            Given 5 nodes with 8 features and 2 hyperedges::
+            Given 5 nodes with 8 features and 2 hyperedges:
 
                 >>> x.shape  # (5, 8) - all nodes in the hypergraph
                 >>> hyperedge_index = [[0, 1, 2, 3, 4],  # node IDs
                 ...                    [0, 0, 0, 1, 1]]  # hyperedge IDs
 
-            The forward pass::
+            The forward pass:
 
                 >>> HGNN encodes all 5 nodes using the hypergraph Laplacian.
                 ...   ``node_embeddings.shape = (5, out_channels)``

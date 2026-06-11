@@ -113,7 +113,7 @@ class MLPHlpModule(HlpModule):
                 >>> hyperedge_index = [[0, 1, 2, 2, 3],   # node ids
                 ...                    [0, 0, 0, 1, 1]]   # hyperedge ids
 
-            The forward pass::
+            The forward pass:
 
                 >>> Encoder maps each node to an embedding vector.
                 >>> Aggregate embeddings by summing them per hyperedge:

@@ -102,13 +102,13 @@ class HyperGCNHlpModule(HlpModule):
             3. Decode: A linear layer scores each hyperedge embedding.
 
         Examples:
-            Given 5 nodes with 3 features and 2 hyperedges::
+            Given 5 nodes with 3 features and 2 hyperedges:
 
                 >>> x.shape  # (5, 3) — all nodes in the hypergraph
                 >>> hyperedge_index = [[0, 1, 2, 3, 4],  # node IDs (global)
                 ...                    [0, 0, 0, 1, 1]]  # hyperedge IDs
 
-            The forward pass::
+            The forward pass:
 
                 >>> HyperGCN encodes all 5 nodes using the full graph Laplacian.
                 ...   ``node_embeddings.shape = (5, out_channels)``
