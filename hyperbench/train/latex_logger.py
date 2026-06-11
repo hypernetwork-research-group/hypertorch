@@ -66,15 +66,16 @@ def colorize_metric_value(
 
 
 class LaTexTableConfig(TypedDict):
-    """
-    Configuration for the LaTex table logger.
+    """Configuration for the LaTex table logger.
 
     Attributes:
+        precision: Decimal places for metric values in the table.
         table_caption: Caption for the LaTex table.
         sort_by: Per-column sorting criteria ("asc" or "des").
         border: Whether to include borders in the LaTex table.
     """
 
+    precision: NotRequired[int]
     table_caption: NotRequired[str]
     sort_by: NotRequired[list[str]]
     border: NotRequired[bool]

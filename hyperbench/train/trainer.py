@@ -19,8 +19,8 @@ from hyperbench.data import DataLoader
 from hyperbench.types import CkptStrategy, ModelConfig, TestResult
 from hyperbench.utils import validate_is_non_empty, validate_is_non_negative
 
-from hyperbench.train.markdown_logger import MarkdownTableLogger
-from hyperbench.train.latex_logger import LaTexTableLogger
+from hyperbench.train.markdown_logger import MarkdownTableConfig, MarkdownTableLogger
+from hyperbench.train.latex_logger import LaTexTableConfig, LaTexTableLogger
 
 
 class MultiModelTrainer:
@@ -138,6 +138,17 @@ class MultiModelTrainer:
             :meth:`wait` inside `finalize` before terminating the server, so the user
             can inspect results before the process is stopped.
             Defaults to ``False``.
+
+        markdown_logger_config: Configuration for the default ``MarkdownTableLogger``.
+            Accepts a ``MarkdownTableConfig`` dict with optional keys such as ``precision``.
+            Only used when ``logger`` is not provided.
+            Defaults to ``None``.
+
+        latex_logger_config: Configuration for the default ``LaTexTableLogger``.
+            Accepts a ``LaTexTableConfig`` dict with optional keys such as ``precision``,
+            ``table_caption``, ``sort_by``, and ``border``.
+            Only used when ``logger`` is not provided.
+            Defaults to ``None``.
     """
 
     DEFAULT_BASE_LOG_DIR = "hyperbench_logs"
@@ -180,6 +191,8 @@ class MultiModelTrainer:
         auto_start_tensorboard: bool = False,
         tensorboard_port: int = 6006,
         auto_wait: bool = False,
+        markdown_logger_config: MarkdownTableConfig | None = None,
+        latex_logger_config: LaTexTableConfig | None = None,
         **kwargs,
     ) -> None:
         self.auto_wait = auto_wait
@@ -195,6 +208,12 @@ class MultiModelTrainer:
         self.tensorboard_port = tensorboard_port
         self.__checkpoint_callback_kwargs = (
             checkpoint_callback_kwargs if checkpoint_callback_kwargs is not None else {}
+        )
+        self.__markdown_logger_config: MarkdownTableConfig = (
+            markdown_logger_config if markdown_logger_config is not None else {}
+        )
+        self.__latex_logger_config: LaTexTableConfig = (
+            latex_logger_config if latex_logger_config is not None else {}
         )
 
         full_model_name_counts = self.__full_model_name_counts(model_configs)
@@ -515,15 +534,19 @@ class MultiModelTrainer:
                 save_dir=self.log_dir,
                 model_name=model_config.full_model_name(),
                 experiment_name=experiment_name,
+                precision=self.__markdown_logger_config.get("precision", 4),
             ),
             LaTexTableLogger(
                 save_dir=self.log_dir,
                 model_name=model_config.full_model_name(),
                 experiment_name=experiment_name,
+                precision=self.__latex_logger_config.get("precision", 4),
                 options={
-                    "table_caption": "Results for Experiments",
-                    "sort_by": ["des", "asc"],
-                    "border": False,
+                    "table_caption": self.__latex_logger_config.get(
+                        "table_caption", "Results for Experiments"
+                    ),
+                    "sort_by": self.__latex_logger_config.get("sort_by", ["des", "asc"]),
+                    "border": self.__latex_logger_config.get("border", False),
                 },
             ),
         ]

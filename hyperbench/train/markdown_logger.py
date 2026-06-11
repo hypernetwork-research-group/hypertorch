@@ -1,10 +1,21 @@
 import copy
 
 from pathlib import Path
-from typing import Any, ClassVar
+from typing import Any, ClassVar, TypedDict
 from lightning.pytorch.loggers import Logger
 from collections.abc import Mapping
+from typing_extensions import NotRequired
 from hyperbench.utils import validate_is_non_negative
+
+
+class MarkdownTableConfig(TypedDict):
+    """Configuration for the Markdown table logger.
+
+    Attributes:
+        precision: Decimal places for metric values in the table.
+    """
+
+    precision: NotRequired[int]
 
 
 class MarkdownTableLogger(Logger):

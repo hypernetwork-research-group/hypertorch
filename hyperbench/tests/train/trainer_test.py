@@ -1412,3 +1412,153 @@ def test_init_always_create_default_markdown_logger_per_model(
     for call in mock_markdown_logger_cls.call_args_list:
         assert call.kwargs["model_name"] in full_model_names
         assert call.kwargs["experiment_name"] == "experiment_0"
+
+
+@patch("hyperbench.train.trainer.L.Trainer")
+@patch("hyperbench.train.trainer.CSVLogger")
+@patch("hyperbench.train.trainer.MarkdownTableLogger")
+@patch("hyperbench.train.trainer.LaTexTableLogger")
+def test_init_passes_default_precision_to_markdown_logger(
+    mock_latex_logger_cls,
+    mock_md_logger_cls,
+    mock_csv_logger_cls,
+    mock_trainer_cls,
+    mock_model_configs,
+    tmp_path,
+):
+    MultiModelTrainer(
+        mock_model_configs,
+        default_root_dir=str(tmp_path),
+        experiment_name="experiment_0",
+    )
+
+    for call in mock_md_logger_cls.call_args_list:
+        assert call.kwargs["precision"] == 4
+
+
+@patch("hyperbench.train.trainer.L.Trainer")
+@patch("hyperbench.train.trainer.CSVLogger")
+@patch("hyperbench.train.trainer.MarkdownTableLogger")
+@patch("hyperbench.train.trainer.LaTexTableLogger")
+def test_init_passes_custom_precision_to_markdown_logger(
+    mock_latex_logger_cls,
+    mock_md_logger_cls,
+    mock_csv_logger_cls,
+    mock_trainer_cls,
+    mock_model_configs,
+    tmp_path,
+):
+    MultiModelTrainer(
+        mock_model_configs,
+        default_root_dir=str(tmp_path),
+        experiment_name="experiment_0",
+        markdown_logger_config={"precision": 6},
+    )
+
+    for call in mock_md_logger_cls.call_args_list:
+        assert call.kwargs["precision"] == 6
+
+
+@patch("hyperbench.train.trainer.L.Trainer")
+@patch("hyperbench.train.trainer.CSVLogger")
+@patch("hyperbench.train.trainer.MarkdownTableLogger")
+@patch("hyperbench.train.trainer.LaTexTableLogger")
+def test_init_passes_default_options_to_latex_logger(
+    mock_latex_logger_cls,
+    mock_md_logger_cls,
+    mock_csv_logger_cls,
+    mock_trainer_cls,
+    mock_model_configs,
+    tmp_path,
+):
+    MultiModelTrainer(
+        mock_model_configs,
+        default_root_dir=str(tmp_path),
+        experiment_name="experiment_0",
+    )
+
+    for call in mock_latex_logger_cls.call_args_list:
+        assert call.kwargs["precision"] == 4
+        assert call.kwargs["options"] == {
+            "table_caption": "Results for Experiments",
+            "sort_by": ["des", "asc"],
+            "border": False,
+        }
+
+
+@patch("hyperbench.train.trainer.L.Trainer")
+@patch("hyperbench.train.trainer.CSVLogger")
+@patch("hyperbench.train.trainer.MarkdownTableLogger")
+@patch("hyperbench.train.trainer.LaTexTableLogger")
+def test_init_passes_custom_config_to_latex_logger(
+    mock_latex_logger_cls,
+    mock_md_logger_cls,
+    mock_csv_logger_cls,
+    mock_trainer_cls,
+    mock_model_configs,
+    tmp_path,
+):
+    MultiModelTrainer(
+        mock_model_configs,
+        default_root_dir=str(tmp_path),
+        experiment_name="experiment_0",
+        latex_logger_config={
+            "precision": 2,
+            "table_caption": "Custom Caption",
+            "sort_by": ["asc", "asc"],
+            "border": True,
+        },
+    )
+
+    for call in mock_latex_logger_cls.call_args_list:
+        assert call.kwargs["precision"] == 2
+        assert call.kwargs["options"] == {
+            "table_caption": "Custom Caption",
+            "sort_by": ["asc", "asc"],
+            "border": True,
+        }
+
+
+@patch("hyperbench.train.trainer.L.Trainer")
+@patch("hyperbench.train.trainer.CSVLogger")
+@patch("hyperbench.train.trainer.MarkdownTableLogger")
+@patch("hyperbench.train.trainer.LaTexTableLogger")
+def test_init_latex_logger_config_partial_override_keeps_defaults(
+    mock_latex_logger_cls,
+    mock_md_logger_cls,
+    mock_csv_logger_cls,
+    mock_trainer_cls,
+    mock_model_configs,
+    tmp_path,
+):
+    MultiModelTrainer(
+        mock_model_configs,
+        default_root_dir=str(tmp_path),
+        experiment_name="experiment_0",
+        latex_logger_config={"border": True},
+    )
+
+    for call in mock_latex_logger_cls.call_args_list:
+        assert call.kwargs["precision"] == 4
+        assert call.kwargs["options"] == {
+            "table_caption": "Results for Experiments",
+            "sort_by": ["des", "asc"],
+            "border": True,
+        }
+
+
+@patch("hyperbench.train.trainer.L.Trainer")
+def test_init_logger_configs_ignored_when_custom_logger_provided(
+    mock_trainer_cls,
+    mock_model_configs,
+):
+    custom_logger = MagicMock()
+    MultiModelTrainer(
+        mock_model_configs,
+        logger=custom_logger,
+        markdown_logger_config={"precision": 10},
+        latex_logger_config={"precision": 10, "border": True},
+    )
+
+    for call_args in mock_trainer_cls.call_args_list:
+        assert call_args.kwargs["logger"] is custom_logger
