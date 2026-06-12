@@ -542,6 +542,207 @@ def test_test_all_uses_auto_created_test_trainer_even_if_trainer_is_set(
     assert all(config.trainer is mock_trainer for config in multi_model_trainer.model_configs)
 
 
+def test_test_all_skips_single_process_test_trainer_on_nonzero_rank(mock_model_configs):
+    for config in mock_model_configs:
+        config.trainer = new_mock_trainer()
+        config.trainer.is_global_zero = False
+        config.trainer.global_rank = 1
+        config.trainer.world_size = 2
+        config.test_trainer = new_mock_trainer()
+        config.test_trainer.world_size = 1
+        config.test_trainer.is_global_zero = False
+        config.test_trainer.global_rank = 1
+
+    mock_model_configs[0].trainer.is_global_zero = True
+    mock_model_configs[0].trainer.global_rank = 0  # only config 0 has global zero trainer
+    mock_model_configs[0].test_trainer.is_global_zero = True
+    mock_model_configs[0].test_trainer.global_rank = 0
+
+    multi_model_trainer = MultiModelTrainer(mock_model_configs)
+
+    results = multi_model_trainer.test_all(verbose=False)
+
+    assert results["model1:1"] == {}
+    for config in mock_model_configs[1:]:
+        config.trainer.test.assert_not_called()
+        config.test_trainer.test.assert_not_called()
+
+    assert "acc" in results["model0:0"]
+    mock_model_configs[0].test_trainer.test.assert_called_once()
+
+
+def test_test_all_runs_single_process_test_trainer_on_global_zero_rank(mock_model_configs):
+    for config in mock_model_configs:
+        config.trainer = new_mock_trainer()
+        config.trainer.is_global_zero = True
+        config.trainer.global_rank = 0  # global zero rank in all trainers
+        config.trainer.world_size = 2
+        config.test_trainer = new_mock_trainer()
+        config.test_trainer.world_size = 1
+
+    multi_model_trainer = MultiModelTrainer(mock_model_configs)
+
+    results = multi_model_trainer.test_all(verbose=False)
+
+    assert all("acc" in result for result in results.values())
+    for config in mock_model_configs:
+        config.trainer.test.assert_not_called()
+        config.test_trainer.test.assert_called_once()
+
+
+def test_test_all_does_not_skip_shared_distributed_trainer_on_nonzero_rank(mock_model_configs):
+    for config in mock_model_configs:
+        config.trainer = new_mock_trainer()
+        config.trainer.is_global_zero = False
+        config.trainer.global_rank = 1
+        config.trainer.world_size = 2  # world size > 1 means it's a distributed training
+
+    multi_model_trainer = MultiModelTrainer(mock_model_configs)
+
+    results = multi_model_trainer.test_all(verbose=False)
+
+    assert all("acc" in result for result in results.values())
+    for config in mock_model_configs:
+        config.trainer.test.assert_called_once()
+
+
+def test_test_all_does_not_skip_distributed_test_trainer_on_nonzero_rank(mock_model_configs):
+    for config in mock_model_configs:
+        config.trainer = new_mock_trainer()
+        config.trainer.is_global_zero = False
+        config.trainer.global_rank = 1
+        config.trainer.world_size = 2
+        config.test_trainer = new_mock_trainer()
+        config.test_trainer.world_size = 2  # world size > 1, so it's a distributed test trainer
+
+    multi_model_trainer = MultiModelTrainer(mock_model_configs)
+
+    results = multi_model_trainer.test_all(verbose=False)
+
+    assert all("acc" in result for result in results.values())
+    for config in mock_model_configs:
+        config.trainer.test.assert_not_called()
+        config.test_trainer.test.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    "is_global_zero, expected",
+    [
+        pytest.param(False, False, id="non-global-zero-trainer"),
+        pytest.param(True, True, id="global-zero-trainer"),
+    ],
+)
+def test_is_global_zero(
+    is_global_zero,
+    expected,
+    mock_model_configs,
+):
+    for config in mock_model_configs:
+        config.trainer = new_mock_trainer()
+        config.trainer.is_global_zero = is_global_zero
+
+    multi_model_trainer = MultiModelTrainer(mock_model_configs)
+
+    assert multi_model_trainer.is_global_zero is expected
+
+
+@pytest.mark.parametrize(
+    "rank, expected",
+    [
+        pytest.param(0, True, id="fallback-rank-zero"),
+        pytest.param(1, False, id="fallback-nonzero-rank"),
+    ],
+)
+@patch("hyperbench.train.trainer.torch.distributed.get_rank")
+@patch("hyperbench.train.trainer.torch.distributed.is_initialized", return_value=True)
+@patch("hyperbench.train.trainer.torch.distributed.is_available", return_value=True)
+def test_is_global_zero_falls_back_to_distributed_global_rank(
+    mock_is_available,
+    mock_is_initialized,
+    mock_get_rank,
+    rank,
+    expected,
+    mock_model_configs,
+):
+    for config in mock_model_configs:
+        config.trainer = new_mock_trainer()
+
+    multi_model_trainer = MultiModelTrainer(mock_model_configs)
+    mock_model_configs[0].trainer = None
+    mock_model_configs[0].test_trainer = None
+    mock_get_rank.return_value = rank
+
+    assert multi_model_trainer.is_global_zero is expected
+    mock_is_available.assert_called_once_with()
+    mock_is_initialized.assert_called_once_with()
+    mock_get_rank.assert_called_once_with()
+
+
+@pytest.mark.parametrize(
+    "is_available, is_initialized, rank, expected",
+    [
+        pytest.param(False, False, 3, 0, id="distributed-unavailable"),
+        pytest.param(True, False, 3, 0, id="distributed-uninitialized"),
+        pytest.param(True, True, 3, 3, id="distributed-initialized"),
+    ],
+)
+@patch("hyperbench.train.trainer.torch.distributed.get_rank")
+@patch("hyperbench.train.trainer.torch.distributed.is_initialized")
+@patch("hyperbench.train.trainer.torch.distributed.is_available")
+def test_distributed_global_rank(
+    mock_is_available,
+    mock_is_initialized,
+    mock_get_rank,
+    is_available,
+    is_initialized,
+    rank,
+    expected,
+    mock_model_configs,
+):
+    for config in mock_model_configs:
+        config.trainer = new_mock_trainer()
+
+    mock_is_available.return_value = is_available
+    mock_is_initialized.return_value = is_initialized
+    mock_get_rank.return_value = rank
+
+    multi_model_trainer = MultiModelTrainer(mock_model_configs)
+
+    assert multi_model_trainer.distributed_global_rank == expected
+    if is_available and is_initialized:
+        mock_get_rank.assert_called_once_with()
+    else:
+        mock_get_rank.assert_not_called()
+
+
+@patch("hyperbench.train.trainer.torch.distributed.get_rank", return_value=1)
+@patch("hyperbench.train.trainer.torch.distributed.is_initialized", return_value=True)
+@patch("hyperbench.train.trainer.torch.distributed.is_available", return_value=True)
+def test_test_all_skips_test_trainer_without_train_trainer_on_nonzero_rank(
+    mock_is_available,
+    mock_is_initialized,
+    mock_get_rank,
+    mock_model_configs,
+):
+    for config in mock_model_configs:
+        config.trainer = new_mock_trainer()
+        config.test_trainer = new_mock_trainer()
+        config.test_trainer.world_size = 1
+
+    multi_model_trainer = MultiModelTrainer(mock_model_configs)
+    for config in mock_model_configs:
+        config.trainer = None
+
+    results = multi_model_trainer.test_all(verbose=False)
+
+    assert all(result == {} for result in results.values())
+    for config in mock_model_configs:
+        config.test_trainer.test.assert_not_called()
+    assert mock_is_available.call_count == len(mock_model_configs)
+    assert mock_is_initialized.call_count == len(mock_model_configs)
+    assert mock_get_rank.call_count == len(mock_model_configs)
+
+
 @patch("hyperbench.train.trainer.L.Trainer", return_value=None)
 @patch("hyperbench.train.trainer.CSVLogger")
 @patch("hyperbench.train.trainer.MarkdownTableLogger")

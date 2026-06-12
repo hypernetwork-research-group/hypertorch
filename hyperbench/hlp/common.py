@@ -20,6 +20,8 @@ class HlpModule(L.LightningModule):
         loss_fn: Loss function.
         metrics: Optional ``MetricCollection`` of torchmetrics to compute during evaluation.
             Cloned per stage (train, val, test) for independent state accumulation.
+            Metric distributed synchronization follows the active Lightning trainer's world size,
+            so single-device evaluation does not sync against a stale process group.
         negative_sampler: Optional negative sampler. If ``None``, no negative sampling is performed.
         negative_sampling_schedule: When to perform negative sampling during training.
             Defaults to ``"every_epoch"``.
@@ -117,6 +119,7 @@ class HlpModule(L.LightningModule):
         stage_metrics = self._get_stage_metrics(stage)
         if stage_metrics is None:
             return  # No metrics to compute
+        self._configure_metric_distributed_available(stage_metrics)
 
         # Apply sigmoid to convert logits to probabilities as BinaryAUROC
         # and BinaryAveragePrecision expect probabilities in [0, 1]
@@ -154,6 +157,44 @@ class HlpModule(L.LightningModule):
                 return self.test_metrics
             case _:
                 raise ValueError(f"Unrecognized stage: {stage}")
+
+    def _configure_metric_distributed_available(self, metrics: MetricCollection) -> None:
+        """
+        Make torchmetrics sync decisions follow the active Lightning trainer.
+
+        TorchMetrics checks ``jit_distributed_available()`` by default. After DDP
+        training, the process group can still be alive while a separate test trainer is
+        intentionally single-device. In that case metric states must not all-gather.
+
+        Args:
+            metrics: The metric collection to configure.
+        """
+        for metric in metrics.values(copy_state=False):
+            metric.distributed_available_fn = self._distributed_available_fn
+
+    def _distributed_available_fn(self) -> bool:
+        """
+        Return whether metrics should synchronize for the current trainer.
+
+        This is needed as ``distributed_available_fn`` defaults to a check of
+        ``torch.distributed.is_available()`` and ``torch.distributed.is_initialized()``.
+        In our case, we can have a single-device test trainer after DDP training,
+        so we want to disable metric synchronization if the trainer is not multi-process, not
+        only if ``torch.distributed`` is not initialized.
+        The issue is that without ``trainer.world_size > 1``, the single-device trainer
+        tries to sync across DDP process group and hangs because it's the only one in that group.
+
+        Returns:
+            True when the attached trainer is multi-process and torch.distributed is initialized.
+        """
+        trainer = self._trainer
+        if trainer is None:
+            return False
+        return (
+            trainer.world_size > 1
+            and torch.distributed.is_available()
+            and torch.distributed.is_initialized()
+        )
 
     def _should_sample_negatives(self) -> bool:
         """
