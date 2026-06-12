@@ -23,6 +23,7 @@ def mock_model_configs():
         model_config.version = f"{i}"
         model_config.model = model
         model_config.trainer = None
+        model_config.test_trainer = None
         model_config.is_trainable = True
         model_config.full_model_name = lambda self=model_config: f"{self.name}:{self.version}"
         model_config.train_dataloader = None
@@ -445,6 +446,100 @@ def test_test_all_calls_test_and_returns_results(
 
     for config in mock_model_configs:
         config.trainer.test.assert_called_once()
+
+
+def test_test_all_uses_model_config_test_trainer(mock_model_configs):
+    for config in mock_model_configs:
+        config.trainer = new_mock_trainer()
+        config.test_trainer = new_mock_trainer()
+
+    multi_model_trainer = MultiModelTrainer(mock_model_configs)
+
+    results = multi_model_trainer.test_all(verbose=False)
+
+    assert all("acc" in v for v in results.values())
+    for config in mock_model_configs:
+        config.trainer.test.assert_not_called()
+        config.test_trainer.test.assert_called_once()
+
+
+@patch(
+    "hyperbench.train.trainer.L.Trainer",
+    side_effect=lambda *args, **kwargs: new_mock_trainer(),
+)
+@patch("hyperbench.train.trainer.CSVLogger")
+@patch("hyperbench.train.trainer.MarkdownTableLogger")
+@patch("hyperbench.train.trainer.LaTexTableLogger")
+def test_init_creates_test_trainers_with_test_devices(
+    mock_latex_logger_cls,
+    mock_md_logger_cls,
+    mock_csv_logger_cls,
+    mock_trainer_cls,
+    mock_model_configs,
+):
+    MultiModelTrainer(mock_model_configs, devices="auto", test_devices=1)
+
+    assert mock_trainer_cls.call_count == len(mock_model_configs) * 2
+    train_calls = mock_trainer_cls.call_args_list[::2]
+    test_calls = mock_trainer_cls.call_args_list[1::2]
+
+    assert all(call.kwargs["devices"] == "auto" for call in train_calls)
+    assert all(call.kwargs["devices"] == 1 for call in test_calls)
+    assert all(config.test_trainer is not None for config in mock_model_configs)
+
+
+@patch(
+    "hyperbench.train.trainer.L.Trainer",
+    side_effect=lambda *args, **kwargs: new_mock_trainer(),
+)
+@patch("hyperbench.train.trainer.CSVLogger")
+@patch("hyperbench.train.trainer.MarkdownTableLogger")
+@patch("hyperbench.train.trainer.LaTexTableLogger")
+def test_test_all_uses_auto_created_test_trainer_when_test_devices_is_set(
+    mock_latex_logger_cls,
+    mock_md_logger_cls,
+    mock_csv_logger_cls,
+    mock_trainer_cls,
+    mock_model_configs,
+):
+    multi_model_trainer = MultiModelTrainer(mock_model_configs, test_devices=1)
+
+    multi_model_trainer.test_all(verbose=False)
+
+    for config in mock_model_configs:
+        config.trainer.test.assert_not_called()
+        config.test_trainer.test.assert_called_once()
+
+
+@patch(
+    "hyperbench.train.trainer.L.Trainer",
+    side_effect=lambda *args, **kwargs: new_mock_trainer(),
+)
+@patch("hyperbench.train.trainer.CSVLogger")
+@patch("hyperbench.train.trainer.MarkdownTableLogger")
+@patch("hyperbench.train.trainer.LaTexTableLogger")
+def test_test_all_uses_auto_created_test_trainer_even_if_trainer_is_set(
+    mock_latex_logger_cls,
+    mock_md_logger_cls,
+    mock_csv_logger_cls,
+    mock_trainer_cls,
+    mock_model_configs,
+):
+    mock_trainer = new_mock_trainer()
+    for config in mock_model_configs:
+        config.trainer = mock_trainer
+
+    multi_model_trainer = MultiModelTrainer(mock_model_configs, test_devices=1)
+
+    assert mock_trainer_cls.call_count == len(mock_model_configs)  # No call for fit trainers
+
+    test_calls = mock_trainer_cls.call_args_list[::2]
+    assert all(call.kwargs["devices"] == 1 for call in test_calls)
+    assert all(
+        config.test_trainer is not None and config.test_trainer is not config.trainer
+        for config in multi_model_trainer.model_configs
+    )
+    assert all(config.trainer is mock_trainer for config in multi_model_trainer.model_configs)
 
 
 @patch("hyperbench.train.trainer.L.Trainer", return_value=None)

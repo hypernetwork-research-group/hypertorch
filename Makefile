@@ -7,6 +7,8 @@
 PROJECT_NAME=hyperbench
 UV=uv
 PYTEST=pytest
+PYTEST_WORKERS?=auto
+PYTEST_INTEGRATION_WORKERS?=auto
 LINTER=ruff
 TYPECHECKER=ty
 ZENSICAL_CONFIG=zensical.toml
@@ -59,19 +61,19 @@ lint-rule-fix:
 
 test:
 	@echo '=== Running unit tests in parallel ==='
-	$(UV) run $(PYTEST) -n auto --cov=$(PROJECT_NAME) --cov-report=term-missing -m "not integration"
+	$(UV) run $(PYTEST) -n $(PYTEST_WORKERS) --cov=$(PROJECT_NAME) --cov-report=term-missing -m "not integration"
 
 stest:
 	@echo '=== Running single unit test for $(T) ==='
-	$(UV) run $(PYTEST) -n auto -s $(PROJECT_NAME)/tests/$(T)
+	$(UV) run $(PYTEST) -n $(PYTEST_WORKERS) -s $(PROJECT_NAME)/tests/$(T)
 
 i-test:
 	@echo '=== Running integration tests in parallel ==='
-	$(UV) run $(PYTEST) -n auto -m "integration"
+	$(UV) run $(PYTEST) -n $(PYTEST_INTEGRATION_WORKERS) -m "integration"
 
 si-test:
 	@echo '=== Running single integration test for $(T) ==='
-	$(UV) run $(PYTEST) -n auto -s $(PROJECT_NAME)/integration_tests/$(T) -m "integration"
+	$(UV) run $(PYTEST) -n $(PYTEST_INTEGRATION_WORKERS) -s $(PROJECT_NAME)/integration_tests/$(T) -m "integration"
 
 # If the first argument is run...
 ifeq ($(firstword $(MAKECMDGOALS)),run)

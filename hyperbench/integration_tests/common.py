@@ -259,6 +259,7 @@ def train_test_loop(
         auto_wait=auto_wait,
         default_root_dir=path,
         experiment_name=experiment_name,
+        devices=1,  # Force single-device training as pytest-xdist has issues with multiple devices
     ) as trainer:
         trainer.fit_all(
             train_dataloader=train_loader or configs[0].train_dataloader,

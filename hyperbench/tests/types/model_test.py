@@ -22,6 +22,18 @@ def test_model_config_initialization_with_trainer(mock_model, mock_trainer):
     assert model_config.model is mock_model
     assert model_config.is_trainable is True
     assert model_config.trainer is mock_trainer
+    assert model_config.test_trainer is None
+
+
+def test_model_config_initialization_with_test_trainer(mock_model, mock_trainer):
+    model_config = ModelConfig(
+        name="model",
+        model=mock_model,
+        version="0",
+        test_trainer=mock_trainer,
+    )
+
+    assert model_config.test_trainer is mock_trainer
 
 
 def test_model_config_initialization_without_trainer(mock_model):
@@ -32,6 +44,7 @@ def test_model_config_initialization_without_trainer(mock_model):
     assert mock_config.model is mock_model
     assert mock_config.is_trainable is True
     assert mock_config.trainer is None
+    assert mock_config.test_trainer is None
 
 
 def test_full_model_name(mock_model):
