@@ -376,7 +376,8 @@ class HIFLoader:
             )
 
         try:
-            token = os.getenv("HF_DOWNLOAD_TOKEN")
+            token: str | None = os.getenv("HF_DOWNLOAD_TOKEN")
+            token = token.strip() if token and token.strip() else None
             downloaded_path = hf_hub_download(
                 repo_id=f"HypernetworkRG/{dataset_name}",
                 filename=f"{dataset_name}.json.zst",
