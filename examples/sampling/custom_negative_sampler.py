@@ -1,7 +1,6 @@
 import torch
 
 from hyperbench.data import (
-    CliqueNegativeSampler,
     Dataset,
     NegativeSampler,
     SamplingStrategy,
@@ -27,24 +26,33 @@ class CustomNegativeSampler(NegativeSampler):
         self.num_nodes_per_sample = num_nodes_per_sample
 
     def sample(self, hdata: HData, seed: int | None = None) -> HData:
-        # pick one sample of the negative hyperedges (the last one) and duplicate it num_negative_samples times
-        negative_hyperedge_index = (
-            hdata.hyperedge_index[:, -1].unsqueeze(1).repeat(1, self.num_negative_samples)
-        )
-        negative_labels = torch.zeros(
-            self.num_negative_samples, dtype=torch.long
-        )  # label for negative samples is 0
+        if seed is not None:
+            torch.manual_seed(seed)
 
-        new_hyperedge_index = torch.cat([hdata.hyperedge_index, negative_hyperedge_index], dim=1)
-        new_labels = torch.cat(
-            [torch.ones(hdata.num_hyperedges, dtype=torch.long), negative_labels], dim=0
+        node_ids = torch.randint(
+            low=0,
+            high=hdata.num_nodes,
+            size=(self.num_nodes_per_sample, self.num_negative_samples),
+            dtype=torch.long,
         )
+
+        hyperedge_ids = torch.arange(
+            hdata.num_hyperedges,
+            hdata.num_hyperedges + self.num_negative_samples,
+            dtype=torch.long,
+        ).repeat_interleave(self.num_nodes_per_sample)
+
+        negative_hyperedge_index = torch.stack(
+            [node_ids.reshape(-1), hyperedge_ids],
+            dim=0,
+        )
+
         return HData(
             x=hdata.x,
-            hyperedge_index=new_hyperedge_index,
-            y=new_labels,
+            hyperedge_index=negative_hyperedge_index,
+            y=torch.zeros(self.num_negative_samples, dtype=torch.float),
             num_nodes=hdata.num_nodes,
-            num_hyperedges=hdata.num_hyperedges + self.num_negative_samples,
+            num_hyperedges=self.num_negative_samples,
         )
 
 
@@ -66,24 +74,13 @@ if __name__ == "__main__":
     print("Add negative samples to the dataset using CustomNegativeSampler...\n")
 
     custom_negative_sampler = CustomNegativeSampler(
-        num_negative_samples=4,
-        num_nodes_per_sample=4,
+        num_negative_samples=2,
+        num_nodes_per_sample=2,
     )
     dataset_with_custom_negatives = dataset.add_negative_samples(
         custom_negative_sampler,
         seed=42,
     )
 
-    print("Add negative samples to the dataset using CliqueNegativeSampler...\n")
-
-    clique_negative_sampler = CliqueNegativeSampler(
-        num_negative_samples=3,
-        num_nodes_per_sample=3,
-    )
-    dataset_with_clique_negatives = dataset.add_negative_samples(
-        clique_negative_sampler,
-        seed=42,
-    )
-
-    print(f"Original dataset has {dataset.hdata.num_hyperedges} positive hyperedges\n")
-    describe_negative_dataset("CliqueNegativeSampler", dataset_with_clique_negatives)
+    print("Dataset after adding custom negative samples:")
+    describe_negative_dataset("Custom Negative Sampler", dataset_with_custom_negatives)
