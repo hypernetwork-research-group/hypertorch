@@ -305,7 +305,7 @@ class MultiModelTrainer:
         """
         Return whether the current process is the global zero process.
 
-        Ccheck first if any of the trainers is the global zero, which covers the case where
+        Check first if any of the trainers is the global zero, which covers the case where
         a custom strategy that handles distributed differently was provided.
         If no trainer is available, fall back to checking the global rank.
 
