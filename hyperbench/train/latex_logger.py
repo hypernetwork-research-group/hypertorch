@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Any, ClassVar, TypedDict
 from collections.abc import Mapping
 from typing_extensions import NotRequired
-from hyperbench.utils import validate_is_non_negative
+from hyperbench.utils import LATEX_CHARACTER_ESCAPE_TABLE, escape, validate_is_non_negative
 from lightning.pytorch.loggers import Logger
 
 
@@ -144,6 +144,13 @@ class LaTexTableLogger(Logger):
     def experiment_name(self) -> str | Path:
         return self.__experiment_name
 
+    def clear(self, experiment_name: str) -> None:
+        """Remove accumulated data for an experiment."""
+        self.__shared_stores.pop(experiment_name, None)
+
+    def log_hyperparams(self, params: Any) -> None:
+        pass
+
     def log_metrics(self, metrics: dict[str, Any], step: int | None = None) -> None:
         """Accumulate metrics for this model. Called by Lightning on every log step.
 
@@ -154,9 +161,6 @@ class LaTexTableLogger(Logger):
         if self.__model_name not in store:
             store[self.__model_name] = {}
         store[self.__model_name].update(metrics)
-
-    def log_hyperparams(self, params: Any) -> None:
-        pass
 
     def finalize(self, status: str) -> None:
         """Write the LaTex comparison table with all accumulated metrics so far.
@@ -225,49 +229,6 @@ class LaTexTableLogger(Logger):
             border=border,
         )
 
-    def __split_results(
-        self,
-    ) -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, Any]], dict[str, dict[str, Any]]]:
-        """
-        Split all accumulated metrics into test vs train/val groups.
-
-        Metrics are classified by their name prefix:
-        - "test_*"  --> test_results
-        - "train_*" --> train_results
-        - "val_*" --> val_results
-        - anything else (e.g., "epoch") --> ignored
-        """
-        store = self.__shared_stores.get(self.__experiment_name, {})
-        test_results: dict[str, dict[str, Any]] = {}
-        train_results: dict[str, dict[str, Any]] = {}
-        val_results: dict[str, dict[str, Any]] = {}
-
-        for model_name, metrics in store.items():
-            test_metrics: dict[str, Any] = {}
-            train_metrics: dict[str, Any] = {}
-            val_metrics: dict[str, Any] = {}
-
-            for metric_name, value in metrics.items():
-                if metric_name.startswith("test"):
-                    test_metrics[metric_name] = value
-                elif metric_name.startswith("train"):
-                    train_metrics[metric_name] = value
-                elif metric_name.startswith("val"):
-                    val_metrics[metric_name] = value
-
-            if test_metrics:
-                test_results[model_name] = test_metrics
-            if train_metrics:
-                train_results[model_name] = train_metrics
-            if val_metrics:
-                val_results[model_name] = val_metrics
-
-        return test_results, train_results, val_results
-
-    def clear(self, experiment_name: str) -> None:
-        """Remove accumulated data for an experiment."""
-        self.__shared_stores.pop(experiment_name, None)
-
     def __build_comparison_table(
         self,
         sections_data: list[tuple[str, Mapping[str, Mapping[str, Any]]]],
@@ -307,7 +268,8 @@ class LaTexTableLogger(Logger):
         table_lines: list[str] = [r"\begin{table}[htbp]", r"\centering"]
 
         if table_caption:
-            table_lines.append(rf"\caption{{{self.__escape(table_caption)}}}")
+            escaped_caption = escape(table_caption, LATEX_CHARACTER_ESCAPE_TABLE)
+            table_lines.append(rf"\caption{{{escaped_caption}}}")
 
         table_lines.extend(lines)
         table_lines.append(r"\end{table}")
@@ -354,20 +316,24 @@ class LaTexTableLogger(Logger):
                     min(vals) if metric_sort.get(metric, "asc") == "asc" else max(vals)
                 )
 
-        header_cells = ["Model", *[self.__escape(metric) for metric in metrics]]
+        header_cells = [
+            "Model",
+            *[escape(metric, LATEX_CHARACTER_ESCAPE_TABLE) for metric in metrics],
+        ]
         while len(header_cells) < total_cols:
             header_cells.append("")
 
+        escaped_title = escape(title, LATEX_CHARACTER_ESCAPE_TABLE)
         lines = [
             r"\addlinespace[3pt]",
-            rf"\multicolumn{{{total_cols}}}{{c}}{{\textbf{{{self.__escape(title)}}}}} \\",
+            rf"\multicolumn{{{total_cols}}}{{c}}{{\textbf{{{escaped_title}}}}} \\",
             r"\midrule",
             " & ".join(header_cells) + r" \\",
         ]
 
         for model_name in sorted(results):
             model_metrics = results[model_name]
-            row = [self.__escape(model_name)]
+            row = [escape(model_name, LATEX_CHARACTER_ESCAPE_TABLE)]
 
             for metric in metrics:
                 value = model_metrics.get(metric)
@@ -395,20 +361,6 @@ class LaTexTableLogger(Logger):
 
         lines.append(r"\hline" if border else r"\midrule")
         return lines
-
-    def __escape(self, value: str) -> str:
-        return (
-            value.replace("\\", "\\textbackslash{}")
-            .replace("&", "\\&")
-            .replace("%", "\\%")
-            .replace("$", "\\$")
-            .replace("#", "\\#")
-            .replace("_", "\\_")
-            .replace("{", "\\{")
-            .replace("}", "\\}")
-            .replace("~", "\\textasciitilde{}")
-            .replace("^", "\\textasciicircum{}")
-        )
 
     def __save_comparison_tables(
         self,
@@ -449,3 +401,42 @@ class LaTexTableLogger(Logger):
             )
         file_path.write_text(content)
         return file_path
+
+    def __split_results(
+        self,
+    ) -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, Any]], dict[str, dict[str, Any]]]:
+        """
+        Split all accumulated metrics into test vs train/val groups.
+
+        Metrics are classified by their name prefix:
+        - "test/*"  -> test_results
+        - "train/*" -> train_results
+        - "val/*"   -> val_results
+        - anything else (e.g., "epoch") -> ignored
+        """
+        store = self.__shared_stores.get(self.__experiment_name, {})
+        test_results: dict[str, dict[str, Any]] = {}
+        train_results: dict[str, dict[str, Any]] = {}
+        val_results: dict[str, dict[str, Any]] = {}
+
+        for model_name, metrics in store.items():
+            test_metrics: dict[str, Any] = {}
+            train_metrics: dict[str, Any] = {}
+            val_metrics: dict[str, Any] = {}
+
+            for metric_name, value in metrics.items():
+                if metric_name.startswith("test/"):
+                    test_metrics[metric_name] = value
+                elif metric_name.startswith("train/"):
+                    train_metrics[metric_name] = value
+                elif metric_name.startswith("val/"):
+                    val_metrics[metric_name] = value
+
+            if test_metrics:
+                test_results[model_name] = test_metrics
+            if train_metrics:
+                train_results[model_name] = train_metrics
+            if val_metrics:
+                val_results[model_name] = val_metrics
+
+        return test_results, train_results, val_results

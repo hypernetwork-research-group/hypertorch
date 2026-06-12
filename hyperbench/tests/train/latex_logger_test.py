@@ -67,12 +67,12 @@ def test_latex_logger_log_metrics_accumulates_metrics(tmp_path, mock_option_conf
         options=mock_option_configs,
     )
 
-    logger.log_metrics({"test_auc": 0.80, "train_loss": 0.50})
-    logger.log_metrics({"val_loss": 0.40})
+    logger.log_metrics({"test/auc": 0.80, "train/loss": 0.50})
+    logger.log_metrics({"val/loss": 0.40})
 
     logger.finalize("success")
     store = logger.store
-    assert store == {"model_a": {"test_auc": 0.80, "train_loss": 0.50, "val_loss": 0.40}}
+    assert store == {"model_a": {"test/auc": 0.80, "train/loss": 0.50, "val/loss": 0.40}}
 
 
 def test_markdown_table_logger_finalize_does_not_save_when_no_results(
@@ -98,7 +98,7 @@ def test_save_comparison_tables_no_test_results(tmp_path, mock_option_configs):
         options=mock_option_configs,
     )
 
-    logger.log_metrics({"train_loss": 0.50, "val_loss": 0.40})
+    logger.log_metrics({"train/loss": 0.50, "val/loss": 0.40})
     logger.finalize("success")
 
     assert (tmp_path / "comparison" / "overall.tex").exists()
@@ -116,10 +116,10 @@ def test_save_comparison_tables_no_val_results(tmp_path, mock_option_configs):
         options=mock_option_configs,
     )
 
-    logger.log_metrics({"test_auc": 0.80, "train_loss": 0.50})
+    logger.log_metrics({"test/auc": 0.80, "train/loss": 0.50})
     assert (
         colorize_metric_value(
-            metric="test_auc",
+            metric="test/auc",
             value=0.80,
             text="0.8000",
             metric_bounds=None,
@@ -136,10 +136,10 @@ def test_save_comparison_tables_no_val_results(tmp_path, mock_option_configs):
 def test_colorize_metric_value_rejects_invalid_sort_order():
     with pytest.raises(ValueError, match="'sort_order' must be 'asc' or 'des'"):
         colorize_metric_value(
-            metric="test_auc",
+            metric="test/auc",
             value=0.8,
             text="0.8000",
-            metric_bounds={"test_auc": (0.1, 0.9)},
+            metric_bounds={"test/auc": (0.1, 0.9)},
             sort_order="invalid",
         )
 
@@ -152,7 +152,7 @@ def test_save_comparison_tables_only_val_results(tmp_path, mock_option_configs):
         options=mock_option_configs,
     )
 
-    logger.log_metrics({"val_loss": 0.80})
+    logger.log_metrics({"val/loss": 0.80})
     logger.finalize("success")
 
     assert (tmp_path / "comparison" / "overall.tex").exists()
@@ -182,7 +182,7 @@ def test_clear_removes_metrics_for_experiment(tmp_path, mock_option_configs):
         options=mock_option_configs,
     )
 
-    logger.log_metrics({"test_auc": 0.80, "train_loss": 0.50})
+    logger.log_metrics({"test/auc": 0.80, "train/loss": 0.50})
     logger.clear("exp_clear")
 
     assert logger.store == {}
@@ -196,7 +196,7 @@ def test_finalize_writes_section_spacing_and_midrule_lines(tmp_path, mock_option
         options=mock_option_configs,
     )
 
-    logger.log_metrics({"test_auc": 0.90, "train_loss": 0.40})
+    logger.log_metrics({"test/auc": 0.90, "train/loss": 0.40})
     logger.finalize("success")
 
     content = (tmp_path / "comparison" / "overall.tex").read_text()
@@ -235,8 +235,8 @@ def test_finalize_writes_comprehensive_overall_table_trail(tmp_path, mock_option
         options=mock_option_configs,
     )
 
-    logger_a.log_metrics({"test_auc": 0.9123, "test_loss": 0.123, "train_loss": 0.254})
-    logger_b.log_metrics({"test_auc": 0.8821, "val_f1": 0.88})
+    logger_a.log_metrics({"test/auc": 0.9123, "test/loss": 0.123, "train/loss": 0.254})
+    logger_b.log_metrics({"test/auc": 0.8821, "val/f1": 0.88})
 
     logger_a.finalize("success")
     logger_b.finalize("success")
@@ -253,7 +253,7 @@ def test_finalize_writes_comprehensive_overall_table_trail(tmp_path, mock_option
         \addlinespace[3pt]
         \multicolumn{3}{c}{\textbf{Test Results}} \\
         \midrule
-        Model & test\_auc & test\_loss \\
+        Model & test/auc & test/loss \\
         model\_a & \cellcolor[HTML]{59FF59}\underline{0.9123} & """
         r"""\cellcolor[HTML]{59FF59}\underline{0.1230} \\
         model\_b & \cellcolor[HTML]{FF5959}0.8821 & - \\
@@ -261,13 +261,13 @@ def test_finalize_writes_comprehensive_overall_table_trail(tmp_path, mock_option
         \addlinespace[3pt]
         \multicolumn{3}{c}{\textbf{Train Results}} \\
         \midrule
-        Model & train\_loss &  \\
+        Model & train/loss &  \\
         model\_a & \cellcolor[HTML]{59FF59}\underline{0.2540} &  \\
         \hline
         \addlinespace[3pt]
         \multicolumn{3}{c}{\textbf{Val Results}} \\
         \midrule
-        Model & val\_f1 &  \\
+        Model & val/f1 &  \\
         model\_b & \cellcolor[HTML]{59FF59}\underline{0.8800} &  \\
         \hline
         \end{tabular}
@@ -293,8 +293,8 @@ def test_finalize_writes_comprehensive_test_table_trail(tmp_path, mock_option_co
         options=mock_option_configs,
     )
 
-    logger_a.log_metrics({"test_auc": 0.9123, "test_loss": 0.1234})
-    logger_b.log_metrics({"test_auc": 0.8821})
+    logger_a.log_metrics({"test/auc": 0.9123, "test/loss": 0.1234})
+    logger_b.log_metrics({"test/auc": 0.8821})
     logger_a.finalize("success")
     logger_b.finalize("success")
 
@@ -310,7 +310,7 @@ def test_finalize_writes_comprehensive_test_table_trail(tmp_path, mock_option_co
         \addlinespace[3pt]
         \multicolumn{3}{c}{\textbf{Test Results}} \\
         \midrule
-        Model & test\_auc & test\_loss \\
+        Model & test/auc & test/loss \\
         model\_a & \cellcolor[HTML]{59FF59}\underline{0.9123} & """
         r"""\cellcolor[HTML]{59FF59}\underline{0.1234} \\
         model\_b & \cellcolor[HTML]{FF5959}0.8821 & - \\
@@ -344,8 +344,8 @@ def test_finalize_applies_per_column_sort_order(tmp_path):
         options=options,
     )
 
-    logger_a.log_metrics({"test_auc": 0.90, "test_loss": 0.50})
-    logger_b.log_metrics({"test_auc": 0.80, "test_loss": 0.20})
+    logger_a.log_metrics({"test/auc": 0.90, "test/loss": 0.50})
+    logger_b.log_metrics({"test/auc": 0.80, "test/loss": 0.20})
     logger_a.finalize("success")
     logger_b.finalize("success")
 
@@ -374,7 +374,7 @@ def test_finalize_raises_on_invalid_sort_order(tmp_path):
         options=options,
     )
 
-    logger.log_metrics({"test_auc": 0.90})
+    logger.log_metrics({"test/auc": 0.90})
 
     with pytest.raises(ValueError, match=re.escape("Invalid 'sort_by' value")):
         logger.finalize("success")
@@ -394,7 +394,7 @@ def test_finalize_border_false_uses_non_bordered_tabular(tmp_path):
         options=options,
     )
 
-    logger.log_metrics({"test_auc": 0.90, "test_loss": 0.40})
+    logger.log_metrics({"test/auc": 0.90, "test/loss": 0.40})
     logger.finalize("success")
 
     content = (tmp_path / "comparison" / "test.tex").read_text()
@@ -423,13 +423,13 @@ def test_table_construction_with_sparse_metrics(tmp_path):
         options=options,
     )
 
-    logger_a.log_metrics({"test_auc": 0.91, "test_loss": 0.12})
-    logger_b.log_metrics({"test_auc": 0.88})
+    logger_a.log_metrics({"test/auc": 0.91, "test/loss": 0.12})
+    logger_b.log_metrics({"test/auc": 0.88})
     logger_a.finalize("success")
     logger_b.finalize("success")
 
     content = (tmp_path / "comparison" / "test.tex").read_text()
-    assert r"Model & test\_auc & test\_loss \\" in content
+    assert r"Model & test/auc & test/loss \\" in content
     assert r"model\_b & " in content
     assert r" & - \\" in content
 
@@ -454,13 +454,13 @@ def test_best_value_underline_only_numeric(tmp_path):
         options=options,
     )
 
-    logger_a.log_metrics({"test_note": "x", "test_auc": 0.91})
-    logger_b.log_metrics({"test_note": "y", "test_auc": 0.88})
+    logger_a.log_metrics({"test/note": "x", "test/auc": 0.91})
+    logger_b.log_metrics({"test/note": "y", "test/auc": 0.88})
     logger_a.finalize("success")
     logger_b.finalize("success")
 
     content = (tmp_path / "comparison" / "test.tex").read_text()
-    assert r"test\_note" in content
+    assert r"test/note" in content
     assert r"\underline{0.9100}" in content
     assert r" & - \\" in content
 
@@ -479,7 +479,7 @@ def test_final_rule_converts_section_rule_for_non_bordered(tmp_path):
         options=options,
     )
 
-    logger.log_metrics({"test_auc": 0.90})
+    logger.log_metrics({"test/auc": 0.90})
     logger.finalize("success")
 
     content = (tmp_path / "comparison" / "test.tex").read_text()
@@ -501,7 +501,7 @@ def test_empty_caption_string_omits_caption_command(tmp_path):
         options=options,
     )
 
-    logger.log_metrics({"test_auc": 0.90})
+    logger.log_metrics({"test/auc": 0.90})
     logger.finalize("success")
 
     content = (tmp_path / "comparison" / "test.tex").read_text()
@@ -524,7 +524,7 @@ def test_non_bordered_wraps_with_table_environment(tmp_path):
         options=options,
     )
 
-    logger.log_metrics({"test_auc": 0.90})
+    logger.log_metrics({"test/auc": 0.90})
     logger.finalize("success")
 
     content = (tmp_path / "comparison" / "test.tex").read_text()
@@ -548,7 +548,7 @@ def test_finalize_bordered_table_ends_with_hline_before_tabular_close(tmp_path):
         options=options,
     )
 
-    logger.log_metrics({"test_auc": 0.90, "test_loss": 0.40})
+    logger.log_metrics({"test/auc": 0.90, "test/loss": 0.40})
     logger.finalize("success")
 
     content = (tmp_path / "comparison" / "test.tex").read_text()
@@ -566,7 +566,7 @@ def test_all_tex_files_written_to_comparison_subdir(tmp_path):
         options={"table_caption": "Comparison Table", "sort_by": ["asc"], "border": True},
     )
 
-    logger.log_metrics({"test_auc": 0.91, "train_loss": 0.25, "val_f1": 0.88})
+    logger.log_metrics({"test/auc": 0.91, "train/loss": 0.25, "val/f1": 0.88})
     logger.finalize("success")
 
     comparison_dir = tmp_path / "comparison"
@@ -581,3 +581,36 @@ def test_all_tex_files_written_to_comparison_subdir(tmp_path):
     assert train_tex.exists()
     assert val_tex.exists()
     assert test_tex.exists()
+
+
+def test_finalize_escapes_latex_labels_without_reescaping_inserted_commands(tmp_path):
+    options: LaTexTableConfig = {
+        "table_caption": r"caption\ / & % $ # _ { } ~ ^" + "\nnext\tend\rcarriage",
+        "sort_by": ["asc"],
+        "border": True,
+    }
+    logger = LaTexTableLogger(
+        save_dir=str(tmp_path),
+        model_name=r"model\ / & % $ # _ { } ~ ^" + "\nnext\tend\rcarriage",
+        experiment_name="exp_latex_escape_labels",
+        options=options,
+    )
+
+    logger.log_metrics({r"test/\&%$#_{}~^" + "\nnext\tend\rcarriage": 0.42})
+    logger.finalize("success")
+
+    content = (tmp_path / "comparison" / "test.tex").read_text()
+
+    assert (
+        r"\caption{caption\textbackslash{} / \& \% \$ \# \_ \{ \} "
+        r"\textasciitilde{} \textasciicircum{} next end carriage}"
+    ) in content
+    assert (
+        r"Model & test/\textbackslash{}\&\%\$\#\_\{\}\textasciitilde{}"
+        r"\textasciicircum{} next end carriage \\"
+    ) in content
+    assert (
+        r"model\textbackslash{} / \& \% \$ \# \_ \{ \} "
+        r"\textasciitilde{} \textasciicircum{} next end carriage & "
+    ) in content
+    assert r"\slash\{\}" not in content
