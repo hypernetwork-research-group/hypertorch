@@ -276,7 +276,7 @@ class MultiModelTrainer:
 
                 if should_create_test_trainer:
                     model_config.test_trainer = __trainer_for(
-                        trainer_devices=test_devices if test_devices is not None else devices,
+                        trainer_devices=test_devices,
                         model_logger=model_logger,
                         model_callbacks=model_callbacks,
                     )
