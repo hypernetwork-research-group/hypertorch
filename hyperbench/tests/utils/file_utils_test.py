@@ -2,6 +2,7 @@ import json
 from unittest.mock import patch
 
 import pytest
+import re
 import zstandard as zstd
 
 from hyperbench.utils import (
@@ -39,7 +40,7 @@ def test_compress_json_bytes_as_zst_raises_on_compression_error():
             "hyperbench.utils.file_utils.zstd.ZstdCompressor.compress",
             side_effect=RuntimeError("boom"),
         ),
-        pytest.raises(ValueError, match=r"Failed to compress JSON content: boom\."),
+        pytest.raises(ValueError, match=re.escape("Failed to compress JSON content: boom.")),
     ):
         compress_json_bytes_as_zst(b"{}")
 
@@ -63,7 +64,7 @@ def test_read_json_bytes_returns_parsed_data(input_bytes, expected):
 
 
 def test_read_json_bytes_raises_on_invalid_json():
-    with pytest.raises(ValueError, match="Failed to read JSON content:"):
+    with pytest.raises(ValueError, match=re.escape("Failed to read JSON content:")):
         from_bytes_to_json(b"{not valid json")
 
 
@@ -77,7 +78,7 @@ def test_read_json_file_returns_parsed_data(tmp_path):
 
 
 def test_read_json_file_raises_on_missing_file(tmp_path):
-    with pytest.raises(ValueError, match=r"Failed to read JSON file '.*missing\.json'"):
+    with pytest.raises(ValueError, match=re.compile("Failed to read JSON file '.*missing.json'")):
         from_file_to_json(str(tmp_path / "missing.json"))
 
 
@@ -91,7 +92,7 @@ def test_from_zst_bytes_to_json_returns_parsed_data():
 
 
 def test_from_zst_bytes_to_json_raises_on_invalid_compressed_content():
-    with pytest.raises(ValueError, match="Failed to read compressed JSON byte data:"):
+    with pytest.raises(ValueError, match=re.escape("Failed to read compressed JSON byte data:")):
         from_zst_bytes_to_json(b"not-a-zst-stream")
 
 
@@ -109,7 +110,9 @@ def test_from_zst_file_to_json_raises_on_invalid_compressed_file(tmp_path):
     zst_path = tmp_path / "bad.json.zst"
     zst_path.write_bytes(b"not-zst")
 
-    with pytest.raises(ValueError, match=r"Failed to read compressed JSON file '.*bad\.json\.zst'"):
+    with pytest.raises(
+        ValueError, match=re.compile("Failed to read compressed JSON file '.*bad.json.zst'")
+    ):
         from_zst_file_to_json(str(zst_path))
 
 
@@ -126,7 +129,9 @@ def test_write_zst_file_to_disk_raises_on_write_failure(tmp_path):
 
     with (
         patch("builtins.open", side_effect=OSError("disk full")),
-        pytest.raises(ValueError, match=r"Failed to save downloaded '.*sample\.json\.zst'"),
+        pytest.raises(
+            ValueError, match=re.compile("Failed to save downloaded '.*sample.json.zst'")
+        ),
     ):
         write_zst_file_to_disk(str(zst_path), b"content")
 
@@ -165,7 +170,7 @@ def test_write_dataset_to_disk_as_zst_raises_on_write_failure(tmp_path):
         patch("builtins.open", side_effect=OSError("disk full")),
         pytest.raises(
             ValueError,
-            match=r"Failed to write file '.*algebra_tmp\.json\.zst' to disk '.*datasets'",
+            match=re.compile("Failed to write file '.*algebra_tmp.json.zst' to disk '.*datasets'"),
         ),
     ):
         write_dataset_to_disk_as_zst("algebra_tmp", b"content", output_dir=str(output_dir))

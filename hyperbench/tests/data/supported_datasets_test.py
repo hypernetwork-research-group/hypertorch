@@ -1,4 +1,5 @@
 import pytest
+import re
 from hyperbench.data import AlgebraDataset, get_dataset_by_name, list_datasets
 from hyperbench.types import HData
 from unittest.mock import patch
@@ -23,7 +24,7 @@ def test_list_datasets_ignores_empty_name():
 def test_list_datasets_rejects_duplicate_name():
     names_before = list_datasets()
 
-    with pytest.raises(ValueError, match=r"Duplicate preloaded dataset name 'algebra'"):
+    with pytest.raises(ValueError, match=re.compile("Duplicate preloaded dataset name 'algebra'")):
 
         class DuplicateAlgebraDataset(AlgebraDataset):
             DATASET_NAME = AlgebraDataset.DATASET_NAME
@@ -33,7 +34,7 @@ def test_list_datasets_rejects_duplicate_name():
 
 def test_load_dataset_rejects_invalid_name():
     with (
-        pytest.raises(ValueError, match=r"Invalid dataset name None"),
+        pytest.raises(ValueError, match=re.compile("Invalid dataset name None")),
         patch.object(AlgebraDataset, "DATASET_NAME", None),
     ):
         AlgebraDataset()
@@ -41,7 +42,7 @@ def test_load_dataset_rejects_invalid_name():
 
 def test_load_dataset_rejects_invalid_hf_sha():
     with (
-        pytest.raises(ValueError, match=r"Invalid HF_SHA ''"),
+        pytest.raises(ValueError, match=re.compile("Invalid HF_SHA ''")),
         patch.object(AlgebraDataset, "HF_SHA", ""),
     ):
         AlgebraDataset()
@@ -62,5 +63,5 @@ def test_get_dataset_by_name_returns_dataset_instance():
 
 
 def test_get_dataset_by_name_rejects_unknown_name():
-    with pytest.raises(ValueError, match=r"Dataset not found: missing-dataset"):
+    with pytest.raises(ValueError, match=re.compile("Dataset not found: missing-dataset")):
         get_dataset_by_name("missing-dataset")

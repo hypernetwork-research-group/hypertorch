@@ -134,7 +134,7 @@ def test_save_comparison_tables_no_val_results(tmp_path, mock_option_configs):
 
 
 def test_colorize_metric_value_rejects_invalid_sort_order():
-    with pytest.raises(ValueError, match="'sort_order' must be 'asc' or 'des'"):
+    with pytest.raises(ValueError, match=re.compile("'sort_order' must be 'asc' or 'des'")):
         colorize_metric_value(
             metric="test/auc",
             value=0.8,
