@@ -19,6 +19,7 @@ def new_mock_trainer() -> MagicMock:
     trainer.test = MagicMock(return_value=[{"acc": 0.9}])
     trainer.strategy = MagicMock()
     trainer.strategy.root_device = "cpu"
+    trainer.world_size = 1
     return trainer
 
 

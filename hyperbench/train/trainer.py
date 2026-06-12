@@ -6,6 +6,7 @@ import shutil
 import subprocess
 import warnings
 import lightning as L
+import torch
 
 from pathlib import Path
 from typing import Any, cast
@@ -288,6 +289,39 @@ class MultiModelTrainer:
             )
 
     @property
+    def distributed_global_rank(self) -> int:
+        """
+        Return the global rank of the current process.
+
+        Returns:
+            The global rank of the current process.
+        """
+        if torch.distributed.is_available() and torch.distributed.is_initialized():
+            return torch.distributed.get_rank()
+        return 0  # if distributed not available or not initialized, we are in single-process setup
+
+    @property
+    def is_global_zero(self) -> bool:
+        """
+        Return whether the current process is the global zero process.
+
+        Check first if any of the trainers is the global zero, which covers the case where
+        a custom strategy that handles distributed differently was provided.
+        If no trainer is available, fall back to checking the global rank.
+
+        Returns:
+            is_global_zero: ``True`` if the current process is the global zero process,
+                ``False`` otherwise.
+        """
+        model_config = self.model_configs[0]  # It's a process-level property, so we can check any
+        trainer = (
+            model_config.trainer if model_config.trainer is not None else model_config.test_trainer
+        )
+        if trainer is not None:
+            return trainer.is_global_zero
+        return self.distributed_global_rank == 0
+
+    @property
     def models(self) -> list[L.LightningModule]:
         return [config.model for config in self.model_configs]
 
@@ -356,6 +390,10 @@ class MultiModelTrainer:
             if test_trainer is None:
                 raise ValueError(f"Trainer not defined for model {config.full_model_name()}.")
 
+            if self.__should_skip_test_on_current_rank(config, test_trainer):
+                test_results[config.full_model_name()] = {}
+                continue
+
             if verbose:
                 print(
                     f"Test model {config.full_model_name()} "
@@ -422,6 +460,17 @@ class MultiModelTrainer:
                     category=UserWarning,
                     stacklevel=2,
                 )
+
+    def __is_separate_single_process_test_trainer(
+        self,
+        model_config: ModelConfig,
+        test_trainer: L.Trainer,
+    ) -> bool:
+        return (
+            model_config.test_trainer is not None
+            and test_trainer is not model_config.trainer
+            and test_trainer.world_size <= 1
+        )
 
     def __is_tensorboard_available(self) -> bool:
         return importlib.util.find_spec("tensorboard") is not None
@@ -608,6 +657,19 @@ class MultiModelTrainer:
             if callback.dirpath is None:
                 callback.dirpath = str(checkpoint_dir)
         return callback_list
+
+    def __should_skip_test_on_current_rank(
+        self,
+        model_config: ModelConfig,
+        test_trainer: L.Trainer,
+    ) -> bool:
+        if not self.__is_separate_single_process_test_trainer(model_config, test_trainer):
+            return False
+
+        if model_config.trainer is not None:
+            return not model_config.trainer.is_global_zero
+
+        return self.distributed_global_rank != 0
 
     def __to_callback_list(self, callbacks: list[Callback] | Callback | None) -> list[Callback]:
         if callbacks is None:
