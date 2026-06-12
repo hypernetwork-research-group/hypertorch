@@ -9,21 +9,21 @@ training models, evaluating them under comparable settings, and reporting result
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [
-    { name = "Tiziano Citro", email = "tcitro@unisa.it" },
-    { name = "Daniele De Vinco", email = "ddevinco@unisa.it" },
+  { name = "Tiziano Citro", email = "tcitro@unisa.it" },
+  { name = "Daniele De Vinco", email = "ddevinco@unisa.it" },
 ]
 dependencies = [
-    "fastjsonschema>=2.21.2,<3.0.0",
-    "huggingface-hub>=1.16.4,<2.0.0",
-    "lightning>=2.6.1,<3.0.0",
-    "numpy>=2.2.6,<3.0.0 ; python_full_version < '3.11'",
-    "numpy>=2.4.4,<3.0.0 ; python_full_version >= '3.11'",
-    "pyg-lib>=0.6.0,<1.0.0 ; (sys_platform == 'linux' and platform_machine == 'x86_64') or (sys_platform == 'win32' and platform_machine == 'AMD64')",
-    "requests>=2.34.2,<3.0.0",
-    "torch>=2.12.0,<3.0.0",
-    "torch-geometric>=2.7.0,<2.8.0",
-    "torch-cluster>=1.6.3,<2.0.0 ; (sys_platform == 'linux' and platform_machine == 'aarch64') or (sys_platform == 'darwin' and platform_machine == 'arm64')",
-    "zstandard>=0.25.0,<1.0.0",
+  "fastjsonschema>=2.21.2,<3.0.0",
+  "huggingface-hub>=1.16.4,<2.0.0",
+  "lightning>=2.6.1,<3.0.0",
+  "numpy>=2.2.6,<3.0.0 ; python_full_version < '3.11'",
+  "numpy>=2.4.4,<3.0.0 ; python_full_version >= '3.11'",
+  "pyg-lib>=0.6.0,<1.0.0 ; (sys_platform == 'linux' and platform_machine == 'x86_64') or (sys_platform == 'win32' and platform_machine == 'AMD64')",
+  "requests>=2.34.2,<3.0.0",
+  "torch>=2.12.0,<3.0.0",
+  "torch-geometric>=2.7.0,<2.8.0",
+  "torch-cluster>=1.6.3,<2.0.0 ; (sys_platform == 'linux' and platform_machine == 'aarch64') or (sys_platform == 'darwin' and platform_machine == 'arm64')",
+  "zstandard>=0.25.0,<1.0.0",
 ]
 
 [project.optional-dependencies]
@@ -32,10 +32,10 @@ tensorboard = ["tensorboard>=2.20.0,<3.0.0"]
 [tool.uv]
 add-bounds = "major"
 required-environments = [
-    "sys_platform == 'linux' and platform_machine == 'aarch64'",
-    "sys_platform == 'linux' and platform_machine == 'x86_64'",
-    "sys_platform == 'darwin' and platform_machine == 'arm64'",
-    "sys_platform == 'win32' and platform_machine == 'AMD64'",
+  "sys_platform == 'linux' and platform_machine == 'aarch64'",
+  "sys_platform == 'linux' and platform_machine == 'x86_64'",
+  "sys_platform == 'darwin' and platform_machine == 'arm64'",
+  "sys_platform == 'win32' and platform_machine == 'AMD64'",
 ]
 
 [tool.uv.sources]
@@ -56,21 +56,18 @@ explicit = true
 
 [dependency-groups]
 dev = [
-    "pre-commit>=4.5.1,<5.0.0",
-    "ruff>=0.15.11,<1.0.0",
-    "ty>=0.0.34,<1.0.0",
-    {include-group = "docs"},
-    {include-group = "test"},
+  "pre-commit>=4.5.1,<5.0.0",
+  "ruff>=0.15.11,<1.0.0",
+  "ty>=0.0.34,<1.0.0",
+  { include-group = "docs" },
+  { include-group = "test" },
 ]
-docs = [
-    "mkdocstrings[python]>=1.0.4,<2.0.0",
-    "zensical>=0.0.44,<1.0.0",
-]
+docs = ["mkdocstrings[python]>=1.0.4,<2.0.0", "zensical>=0.0.44,<1.0.0"]
 test = [
-    "pytest>=9.0.3,<10.0.0",
-    "pytest-cov>=7.1.0,<8.0.0",
-    "pytest-rerunfailures>=16.3,<17.0.0",
-    "pytest-xdist>=2.5.0,<3.0.0",
+  "pytest>=9.0.3,<10.0.0",
+  "pytest-cov>=7.1.0,<8.0.0",
+  "pytest-rerunfailures>=16.3,<17.0.0",
+  "pytest-xdist>=3.0.0,<4.0.0",
 ]
 
 [tool.setuptools.packages.find]
@@ -82,26 +79,26 @@ addopts = ["--color=yes", "--verbose", "--tb=short", "--strict-markers"]
 testpaths = ["hyperbench/tests", "hyperbench/integration_tests"]
 markers = ["integration: tests that use real workflows"]
 filterwarnings = [
-    "ignore:.*torch.jit.script.*deprecated.*",
-    "ignore:.*torch.jit.script.*is not supported in Python 3.14.*",
-    "ignore:`torch_geometric.distributed` has been deprecated",
-    "ignore:.*isinstance.*LeafSpec.*is deprecated.*",
-    "ignore:Sparse CSR tensor support is in beta state",
-    "ignore:Sparse invariant checks are implicitly disabled",
-    "ignore:Failing to pass a value to the 'type_params' parameter of 'typing._eval_type' is deprecated.*",
-    "ignore:The '(test|train|val)_dataloader' does not have many workers which may be a bottleneck.*",
-    "ignore:.*hf_xet\\.download_files\\(\\) is deprecated.*",
+  "ignore:.*torch.jit.script.*deprecated.*",
+  "ignore:.*torch.jit.script.*is not supported in Python 3.14.*",
+  "ignore:`torch_geometric.distributed` has been deprecated",
+  "ignore:.*isinstance.*LeafSpec.*is deprecated.*",
+  "ignore:Sparse CSR tensor support is in beta state",
+  "ignore:Sparse invariant checks are implicitly disabled",
+  "ignore:Failing to pass a value to the 'type_params' parameter of 'typing._eval_type' is deprecated.*",
+  "ignore:The '(test|train|val)_dataloader' does not have many workers which may be a bottleneck.*",
+  "ignore:.*hf_xet\\.download_files\\(\\) is deprecated.*",
 ]
 
 [tool.coverage.run]
 source = ["hyperbench"]
 branch = true
 omit = [
-    "hyperbench/integration_tests/*",
-    "hyperbench/tests/*",
-    "hyperbench/nn/*",
-    "hyperbench/models/*",
-    "hyperbench/hlp/*",
+  "hyperbench/integration_tests/*",
+  "hyperbench/tests/*",
+  "hyperbench/nn/*",
+  "hyperbench/models/*",
+  "hyperbench/hlp/*",
 ]
 
 [tool.coverage.report]
@@ -109,11 +106,11 @@ precision = 2
 show_missing = true
 skip_covered = false
 exclude_lines = [
-    "pragma: no cover",
-    "def __repr__",
-    "if __name__ == .__main__.:",
-    "if TYPE_CHECKING:",
-    "@abstractmethod",
+  "pragma: no cover",
+  "def __repr__",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+  "@abstractmethod",
 ]
 
 [tool.coverage.html]
@@ -124,28 +121,28 @@ line-length = 100
 
 [tool.ruff.lint]
 select = [
-    "B",    # flake8-bugbear: bugs / bad practices (https://docs.astral.sh/ruff/rules/#flake8-bugbear-b)
-    "C4",   # flake8-comprehensions (https://docs.astral.sh/ruff/rules/#flake8-comprehensions-c4)
-    "E",    # pycodestyle (https://docs.astral.sh/ruff/rules/#pycodestyle-e-w)
-    "F",    # pyflakes: undefined names, unused imports, etc. (https://docs.astral.sh/ruff/rules/#pyflakes-f)
-    "FURB", # refurb: modern/simpler code improvements (https://docs.astral.sh/ruff/rules/#refurb-furb)
-    "I",    # isort (https://docs.astral.sh/ruff/rules/#isort-i)
-    "N",    # pep8-naming (https://docs.astral.sh/ruff/rules/#pep8-naming-n)
-    "PERF", # perflint: performance suggestions (https://docs.astral.sh/ruff/rules/#perflint-perf)
-    "PL",   # pylint-inspired rules (https://docs.astral.sh/ruff/rules/#pylint-pl)
-    "Q",    # flake8-quotes: string quote normalization (https://docs.astral.sh/ruff/rules/#flake8-quotes-q)
-    "RET",  # flake8-return: return statement simplifications (https://docs.astral.sh/ruff/rules/#flake8-return-ret)
-    "RSE",  # flake8-raise: raise statement improvements (https://docs.astral.sh/ruff/rules/#flake8-raise-rse)
-    "RUF",  # Ruff-specific rules (https://docs.astral.sh/ruff/rules/#ruff-specific-rules-ruf)
-    "SIM",  # flake8-simplify: simplify code (https://docs.astral.sh/ruff/rules/#flake8-simplify-sim)
-    "T10",  # flake8-debugger (https://docs.astral.sh/ruff/rules/#flake8-debugger-t10)
-    "UP",   # pyupgrade: modern Python syntax (https://docs.astral.sh/ruff/rules/#pyupgrade-up)
+  "B",    # flake8-bugbear: bugs / bad practices (https://docs.astral.sh/ruff/rules/#flake8-bugbear-b)
+  "C4",   # flake8-comprehensions (https://docs.astral.sh/ruff/rules/#flake8-comprehensions-c4)
+  "E",    # pycodestyle (https://docs.astral.sh/ruff/rules/#pycodestyle-e-w)
+  "F",    # pyflakes: undefined names, unused imports, etc. (https://docs.astral.sh/ruff/rules/#pyflakes-f)
+  "FURB", # refurb: modern/simpler code improvements (https://docs.astral.sh/ruff/rules/#refurb-furb)
+  "I",    # isort (https://docs.astral.sh/ruff/rules/#isort-i)
+  "N",    # pep8-naming (https://docs.astral.sh/ruff/rules/#pep8-naming-n)
+  "PERF", # perflint: performance suggestions (https://docs.astral.sh/ruff/rules/#perflint-perf)
+  "PL",   # pylint-inspired rules (https://docs.astral.sh/ruff/rules/#pylint-pl)
+  "Q",    # flake8-quotes: string quote normalization (https://docs.astral.sh/ruff/rules/#flake8-quotes-q)
+  "RET",  # flake8-return: return statement simplifications (https://docs.astral.sh/ruff/rules/#flake8-return-ret)
+  "RSE",  # flake8-raise: raise statement improvements (https://docs.astral.sh/ruff/rules/#flake8-raise-rse)
+  "RUF",  # Ruff-specific rules (https://docs.astral.sh/ruff/rules/#ruff-specific-rules-ruf)
+  "SIM",  # flake8-simplify: simplify code (https://docs.astral.sh/ruff/rules/#flake8-simplify-sim)
+  "T10",  # flake8-debugger (https://docs.astral.sh/ruff/rules/#flake8-debugger-t10)
+  "UP",   # pyupgrade: modern Python syntax (https://docs.astral.sh/ruff/rules/#pyupgrade-up)
 ]
 ignore = [
-    "I001",    # unsorted imports (https://docs.astral.sh/ruff/rules/unsorted-imports)
-    "N812",    # lowercase imported as non lowercase (https://docs.astral.sh/ruff/rules/lowercase-imported-as-non-lowercase)
-    "PLC0415", # import outside top-level (https://docs.astral.sh/ruff/rules/import-outside-top-level)
-    "PLR0913", # too many arguments (https://docs.astral.sh/ruff/rules/too-many-arguments)
-    "PLR2004", # magic numbers (https://docs.astral.sh/ruff/rules/magic-value-comparison)
-    "RET504",  # unnecessary assignment (https://docs.astral.sh/ruff/rules/unnecessary-assign)
+  "I001",    # unsorted imports (https://docs.astral.sh/ruff/rules/unsorted-imports)
+  "N812",    # lowercase imported as non lowercase (https://docs.astral.sh/ruff/rules/lowercase-imported-as-non-lowercase)
+  "PLC0415", # import outside top-level (https://docs.astral.sh/ruff/rules/import-outside-top-level)
+  "PLR0913", # too many arguments (https://docs.astral.sh/ruff/rules/too-many-arguments)
+  "PLR2004", # magic numbers (https://docs.astral.sh/ruff/rules/magic-value-comparison)
+  "RET504",  # unnecessary assignment (https://docs.astral.sh/ruff/rules/unnecessary-assign)
 ]

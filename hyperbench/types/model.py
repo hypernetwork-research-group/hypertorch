@@ -22,7 +22,9 @@ class ModelConfig:
         version: The version of the model.
         model: a LightningModule instance.
         is_trainable: Whether the model is trainable.
-        trainer: a Trainer instance.
+        trainer: A Trainer instance used for `fit_all` and, by default, `test_all`.
+        test_trainer: Optional Trainer instance used by ``test_all``. When omitted,
+            ``test_all`` falls back to ``trainer``.
         train_dataloader: Optional per-model train dataloader. When set, ``fit_all``
             uses this instead of the shared ``train_dataloader`` argument.
         val_dataloader: Optional per-model validation dataloader. When set, ``fit_all``
@@ -38,6 +40,7 @@ class ModelConfig:
         version: str = "default",
         is_trainable: bool = True,
         trainer: L.Trainer | None = None,
+        test_trainer: L.Trainer | None = None,
         train_dataloader: DataLoader | None = None,
         val_dataloader: DataLoader | None = None,
         test_dataloader: DataLoader | None = None,
@@ -47,6 +50,7 @@ class ModelConfig:
         self.model = model
         self.is_trainable = is_trainable
         self.trainer = trainer
+        self.test_trainer = test_trainer
         self.train_dataloader = train_dataloader
         self.val_dataloader = val_dataloader
         self.test_dataloader = test_dataloader

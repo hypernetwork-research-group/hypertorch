@@ -8,7 +8,7 @@ import warnings
 import lightning as L
 
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 from collections.abc import Iterable, Mapping
 from lightning.pytorch.accelerators import Accelerator
 from lightning.pytorch.callbacks import Callback, ModelCheckpoint
@@ -43,6 +43,12 @@ class MultiModelTrainer:
             sequence of device indices (list or str), the value ``-1`` to indicate all available
             devices should be used, or ``"auto"`` for automatic selection based on the chosen
             accelerator. Defaults to ``"auto"``.
+
+        test_devices: Optional device configuration for automatically-created test trainers.
+            When set, ``test_all`` uses a separate Trainer with the same Trainer parameters as
+            training except for ``devices``. This is useful for running distributed training
+            but single-device testing, e.g. ``test_devices=1``. Defaults to ``None``, which makes
+            testing use the fit trainer unless a ``ModelConfig.test_trainer`` is provided.
 
         strategy: Supports different training strategies with aliases as well custom strategies.
             Defaults to ``"auto"``.
@@ -157,6 +163,7 @@ class MultiModelTrainer:
         # args to pass to each Trainer
         accelerator: str | Accelerator = "auto",
         devices: list[int] | str | int = "auto",
+        test_devices: list[int] | str | int | None = None,
         strategy: str | Strategy = "auto",
         num_nodes: int = 1,
         precision: Any
@@ -180,7 +187,7 @@ class MultiModelTrainer:
         auto_start_tensorboard: bool = False,
         tensorboard_port: int = 6006,
         auto_wait: bool = False,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         self.auto_wait = auto_wait
         self.__tensorboard_process: subprocess.Popen | None = None
@@ -199,12 +206,17 @@ class MultiModelTrainer:
 
         full_model_name_counts = self.__full_model_name_counts(model_configs)
         for model_index, model_config in enumerate(model_configs):
-            if model_config.trainer is None:
-                model_logger = self.__setup_logger(model_config, logger)
+            should_create_trainer = model_config.trainer is None
+            should_create_test_trainer = (
+                model_config.test_trainer is None and test_devices is not None
+            )
+            should_create_at_least_one_trainer = should_create_trainer or should_create_test_trainer
 
+            if should_create_at_least_one_trainer:
                 has_duplicate_full_model_name = (
                     full_model_name_counts[model_config.full_model_name()] > 1
                 )
+                model_logger = self.__setup_logger(model_config, logger)
                 model_callbacks = self.__setup_callbacks(
                     model_config=model_config,
                     model_index=model_index,
@@ -213,29 +225,48 @@ class MultiModelTrainer:
                     enable_checkpointing=enable_checkpointing,
                 )
 
-                model_config.trainer = L.Trainer(
-                    accelerator=accelerator,
-                    devices=devices,
-                    strategy=strategy,
-                    num_nodes=num_nodes,
-                    precision=precision,
-                    max_epochs=max_epochs,
-                    min_epochs=min_epochs,
-                    max_steps=max_steps,
-                    min_steps=min_steps,
-                    check_val_every_n_epoch=check_val_every_n_epoch,
-                    logger=model_logger,
-                    default_root_dir=default_root_dir,
-                    enable_autolog_hparams=enable_autolog_hparams,
-                    log_every_n_steps=log_every_n_steps,
-                    profiler=profiler,
-                    fast_dev_run=fast_dev_run,
-                    enable_checkpointing=enable_checkpointing,
-                    enable_progress_bar=enable_progress_bar,
-                    enable_model_summary=enable_model_summary,
-                    callbacks=model_callbacks,
-                    **kwargs,
-                )
+                def __trainer_for(
+                    trainer_devices: list[int] | str | int,
+                    model_logger: Logger | Iterable[Logger] | bool | None,
+                    model_callbacks: list[Callback] | Callback | None,
+                ) -> L.Trainer:
+                    return L.Trainer(
+                        accelerator=accelerator,
+                        devices=trainer_devices,
+                        strategy=strategy,
+                        num_nodes=num_nodes,
+                        precision=precision,
+                        max_epochs=max_epochs,
+                        min_epochs=min_epochs,
+                        max_steps=max_steps,
+                        min_steps=min_steps,
+                        check_val_every_n_epoch=check_val_every_n_epoch,
+                        logger=model_logger,
+                        default_root_dir=default_root_dir,
+                        enable_autolog_hparams=enable_autolog_hparams,
+                        log_every_n_steps=log_every_n_steps,
+                        profiler=profiler,
+                        fast_dev_run=fast_dev_run,
+                        enable_checkpointing=enable_checkpointing,
+                        enable_progress_bar=enable_progress_bar,
+                        enable_model_summary=enable_model_summary,
+                        callbacks=copy.deepcopy(model_callbacks),
+                        **kwargs,
+                    )
+
+                if should_create_trainer:
+                    model_config.trainer = __trainer_for(
+                        trainer_devices=devices,
+                        model_logger=model_logger,
+                        model_callbacks=model_callbacks,
+                    )
+
+                if should_create_test_trainer:
+                    model_config.test_trainer = __trainer_for(
+                        trainer_devices=cast(list[int] | str | int, test_devices),
+                        model_logger=model_logger,
+                        model_callbacks=model_callbacks,
+                    )
 
         print(f"Initialized trainer(models: {len(model_configs)}, log_dir: {self.log_dir})")
         self.__auto_start_tensorboard_if_enabled()
@@ -319,22 +350,25 @@ class MultiModelTrainer:
     ) -> Mapping[str, TestResult]:
         test_results: dict[str, TestResult] = {}
         for i, config in enumerate(self.model_configs):
-            if config.trainer is None:
+            test_trainer = (
+                config.test_trainer if config.test_trainer is not None else config.trainer
+            )
+            if test_trainer is None:
                 raise ValueError(f"Trainer not defined for model {config.full_model_name()}.")
 
             if verbose:
                 print(
                     f"Test model {config.full_model_name()} "
                     f"[{i + 1}/{len(self.model_configs)} models] "
-                    f"(device: {self.__device(config.trainer)}, "
-                    f"log_dir: {config.trainer.log_dir}, "
+                    f"(device: {self.__device(test_trainer)}, "
+                    f"log_dir: {test_trainer.log_dir}, "
                     f"ckpt_path: {ckpt_path if ckpt_path is not None else 'None'})"
                 )
 
             test_dataloaders = (
                 config.test_dataloader if config.test_dataloader is not None else dataloader
             )
-            trainer_test_results: list[TestResult] = config.trainer.test(
+            trainer_test_results: list[TestResult] = test_trainer.test(
                 model=config.model,
                 dataloaders=test_dataloaders,
                 datamodule=datamodule,
