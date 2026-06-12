@@ -106,7 +106,7 @@ if __name__ == "__main__":
         seed=42,
         node_space_setting="transductive",
         cover_all_nodes_in_train_split=False,
-        splitter=custom_splitter,
+        splitter=custom_splitter,  # pass the custom splitter to the split function
     )
     train_dataset, val_dataset, test_dataset = split_datasets
 

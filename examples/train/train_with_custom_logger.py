@@ -107,7 +107,6 @@ class CustomLogger(Logger):
         train_results: dict[str, dict[str, Any]],
         val_results: dict[str, dict[str, Any]],
     ) -> dict[str, Any]:
-        # build json with test, train and val results for all models in the experiment
         comparison_table = {
             "experiment_name": self.__experiment_name,
             "models": {},
@@ -132,7 +131,6 @@ class CustomLogger(Logger):
         comparison_table = self.__build_comparison_table(
             test_results=test_results, train_results=train_results, val_results=val_results
         )
-        # save json to file
         self.__save_dir.mkdir(parents=True, exist_ok=True)
         save_path = self.__save_dir / "comparison_table.json"
         with open(save_path, "w") as f:
@@ -260,6 +258,7 @@ if __name__ == "__main__":
 
     print("Starting training and evaluation...")
     json_looger = CustomLogger(experiment_name="custom_logger_example", model_name="mlp")
+
     with MultiModelTrainer(
         model_configs=configs,
         max_epochs=100,
@@ -268,7 +267,7 @@ if __name__ == "__main__":
         enable_checkpointing=False,
         auto_start_tensorboard=True,
         auto_wait=True,
-        logger=json_looger,
+        logger=json_looger,  # here you can pass the custom logger to the trainer
     ) as trainer:
         trainer.fit_all(train_dataloader=train_loader, val_dataloader=val_loader, verbose=True)
         trainer.test_all(dataloader=test_loader, verbose=True)
