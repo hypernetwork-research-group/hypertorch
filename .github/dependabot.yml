@@ -9,10 +9,10 @@ updates:
     interval: "weekly"
   open-pull-requests-limit: 2
   cooldown:
-  default-days: 7
-  semver-major-days: 14
-  semver-minor-days: 7
-  semver-patch-days: 3
+    default-days: 7
+    semver-major-days: 14
+    semver-minor-days: 7
+    semver-patch-days: 3
   groups:
     python-minor-patch:
       applies-to: version-updates
@@ -30,10 +30,10 @@ updates:
     interval: "weekly"
   open-pull-requests-limit: 2
   cooldown:
-  default-days: 7
-  semver-major-days: 14
-  semver-minor-days: 7
-  semver-patch-days: 3
+    default-days: 7
+    semver-major-days: 14
+    semver-minor-days: 7
+    semver-patch-days: 3
   groups:
     actions-minor-patch:
       applies-to: version-updates
