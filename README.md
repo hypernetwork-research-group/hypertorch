@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | Repo | [![Forks][forks-shield]][forks-url] [![Stargazers][stars-shield]][stars-url] [![Contributors][contributors-shield]][contributors-url] [![Issues][issues-shield]][issues-url] |
-| Package | [![License: MIT][license-shield]][license-url] [![uv][uv-shield]][uv-url] [![Ruff][ruff-shield]][ruff-url] [![Ty][ty-shield]][ty-url] [![Python][python-shield]][python-url] [![Documentation][docs-shield]][docs-url] |
+| Package | [![License: MIT][license-shield]][license-url] [![Python][python-shield]][python-url] [![Documentation][docs-shield]][docs-url] |
 | Testing | ![Daily CI][daily-ci-shield] [![codecov][codecov-shield]][codecov-url] [![CodeFactor][codefactor-shield]][codefactor-url] |
 | Contact | ![Discord](https://badgen.net/discord/members/4krTXCWRzD) |
 
@@ -132,12 +132,6 @@ Most development discussions take place on GitHub in this repo, via the [GitHub 
 [license-url]: https://opensource.org/licenses/MIT
 [docs]: https://hypernetwork-research-group.github.io/hyperbench/
 [issues]: https://github.com/hypernetwork-research-group/hyperbench/issues
-[uv-shield]: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json
-[uv-url]: https://github.com/astral-sh/uv
-[ruff-shield]: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json
-[ruff-url]: https://github.com/astral-sh/ruff
-[ty-shield]: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ty/main/assets/badge/v0.json
-[ty-url]: https://github.com/astral-sh/ty
 [python-shield]: https://img.shields.io/badge/python-3.10%2B-blue.svg
 [python-url]: https://www.python.org/downloads/
 [docs-shield]: https://img.shields.io/badge/docs-latest-blue.svg
