@@ -7,7 +7,7 @@ updates:
   directory: "/"
   schedule:
     interval: "weekly"
-  open-pull-requests-limit: 2
+  open-pull-requests-limit: 10
   cooldown:
     default-days: 7
     semver-major-days: 14
@@ -20,20 +20,19 @@ updates:
       - "minor"
       - "patch"
   labels:
-  - "chore(deps)"
+  - "dependencies"
+  - "python"
   commit-message:
-    prefix: "chore: python deps"
+    prefix: "chore(deps)"
 
+  # GitHub Actions workflow dependencies
 - package-ecosystem: "github-actions"
   directory: "/"
   schedule:
     interval: "weekly"
-  open-pull-requests-limit: 2
+  open-pull-requests-limit: 10
   cooldown:
     default-days: 7
-    semver-major-days: 14
-    semver-minor-days: 7
-    semver-patch-days: 3
   groups:
     actions-minor-patch:
       applies-to: version-updates
@@ -41,6 +40,7 @@ updates:
       - "minor"
       - "patch"
   labels:
-  - "ci(deps)"
+  - "dependencies"
+  - "github-actions"
   commit-message:
-    prefix: "chore: actions deps"
+    prefix: "chore(ci)"
