@@ -32,7 +32,7 @@ jobs:
           uv run pytest -n auto --cov --cov-branch --cov-report=xml -m "not integration"
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
@@ -41,7 +41,7 @@ jobs:
           uv run pytest -n auto --cov --junitxml=junit.xml -m "not integration"
 
       - name: Upload test results to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           report_type: test_results
