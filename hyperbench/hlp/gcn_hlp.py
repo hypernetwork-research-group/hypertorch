@@ -1,5 +1,5 @@
 from torch import Tensor, nn, optim
-from typing import Literal, TypedDict
+from typing import Any, Literal, TypedDict
 from typing_extensions import NotRequired
 from torchmetrics import MetricCollection
 from hyperbench.models import GCN, SLP
@@ -64,6 +64,9 @@ class GCNHlpModule(HlpModule):
         lr: Learning rate for the optimizer. Defaults to ``0.001``.
         weight_decay: L2 regularization. Defaults to ``0.0``.
         metrics: Optional metric collection for evaluation.
+        metrics_log_kwargs: Additional keyword arguments to pass to all ``self.log`` calls
+            for metrics. Useful for configuring distributed synchronization behavior of
+            torchmetrics. Defaults to ``None``.
     """
 
     def __init__(
@@ -74,6 +77,7 @@ class GCNHlpModule(HlpModule):
         lr: float = 0.001,
         weight_decay: float = 0.0,
         metrics: MetricCollection | None = None,
+        metrics_log_kwargs: dict[str, Any] | None = None,
     ):
         encoder = GCN(
             in_channels=encoder_config["in_channels"],
@@ -96,6 +100,7 @@ class GCNHlpModule(HlpModule):
             decoder=decoder,
             loss_fn=loss_fn if loss_fn is not None else nn.BCEWithLogitsLoss(),
             metrics=metrics,
+            metrics_log_kwargs=metrics_log_kwargs,
         )
 
         self.encoder_config = encoder_config

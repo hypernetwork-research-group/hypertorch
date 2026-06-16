@@ -1,4 +1,4 @@
-from typing import Literal, TypedDict
+from typing import Any, Literal, TypedDict
 from torch import Tensor, nn, optim
 from torchmetrics import MetricCollection
 from typing_extensions import NotRequired
@@ -48,6 +48,9 @@ class HNHNHlpModule(HlpModule):
         scheduler_step_size: Step size for learning rate scheduler. Defaults to ``100``.
         scheduler_gamma: Multiplicative factor for learning rate decay. Defaults to ``0.51``.
         metrics: Optional metric collection for evaluation.
+        metrics_log_kwargs: Additional keyword arguments to pass to all ``self.log`` calls
+            for metrics. Useful for configuring distributed synchronization behavior of
+            torchmetrics. Defaults to ``None``.
     """
 
     def __init__(
@@ -60,6 +63,7 @@ class HNHNHlpModule(HlpModule):
         scheduler_step_size: int = 100,
         scheduler_gamma: float = 0.51,
         metrics: MetricCollection | None = None,
+        metrics_log_kwargs: dict[str, Any] | None = None,
     ):
         encoder = HNHN(
             in_channels=encoder_config["in_channels"],
@@ -76,6 +80,7 @@ class HNHNHlpModule(HlpModule):
             decoder=decoder,
             loss_fn=loss_fn if loss_fn is not None else nn.BCEWithLogitsLoss(),
             metrics=metrics,
+            metrics_log_kwargs=metrics_log_kwargs,
         )
 
         self.aggregation = aggregation

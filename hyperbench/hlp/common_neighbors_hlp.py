@@ -2,7 +2,7 @@ import torch
 import warnings
 
 from torch import Tensor, nn
-from typing import Literal
+from typing import Any, Literal
 from torchmetrics import MetricCollection
 from hyperbench.models import CommonNeighbors
 from hyperbench.types import HData, Hypergraph
@@ -20,6 +20,9 @@ class CommonNeighborsHlpModule(HlpModule):
         decoder: An optional decoder module. Defaults to `CommonNeighbors`.
         loss_fn: An optional loss function. Defaults to ``BCEWithLogitsLoss``.
         metrics: An optional dictionary of metric functions.
+        metrics_log_kwargs: Additional keyword arguments to pass to all ``self.log`` calls
+            for metrics. Useful for configuring distributed synchronization behavior of
+            torchmetrics. Defaults to ``None``.
     """
 
     def __init__(
@@ -29,11 +32,13 @@ class CommonNeighborsHlpModule(HlpModule):
         decoder: nn.Module | None = None,
         loss_fn: nn.Module | None = None,
         metrics: MetricCollection | None = None,
+        metrics_log_kwargs: dict[str, Any] | None = None,
     ):
         super().__init__(
             decoder=decoder if decoder is not None else CommonNeighbors(aggregation),
             loss_fn=loss_fn if loss_fn is not None else nn.BCEWithLogitsLoss(),
             metrics=metrics,
+            metrics_log_kwargs=metrics_log_kwargs,
         )
 
         # Pre-compute neighbors of training nodes based on training edges only

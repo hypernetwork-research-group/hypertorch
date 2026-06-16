@@ -1,5 +1,5 @@
 from torch import Tensor, nn, optim
-from typing import Literal, TypedDict
+from typing import Any, Literal, TypedDict
 from typing_extensions import NotRequired
 from hyperbench.models import HyperGCN, SLP
 from hyperbench.nn import HyperedgeAggregator
@@ -55,6 +55,9 @@ class HyperGCNHlpModule(HlpModule):
         lr: Learning rate for the optimizer. Defaults to ``0.01``.
         weight_decay: L2 regularization. Defaults to ``5e-4``.
         metrics: Optional metric collection for evaluation.
+        metrics_log_kwargs: Additional keyword arguments to pass to all ``self.log`` calls
+            for metrics. Useful for configuring distributed synchronization behavior of
+            torchmetrics. Defaults to ``None``.
     """
 
     def __init__(
@@ -65,6 +68,7 @@ class HyperGCNHlpModule(HlpModule):
         lr: float = 0.01,
         weight_decay: float = 5e-4,
         metrics: MetricCollection | None = None,
+        metrics_log_kwargs: dict[str, Any] | None = None,
     ):
         encoder = HyperGCN(
             in_channels=encoder_config["in_channels"],
@@ -84,6 +88,7 @@ class HyperGCNHlpModule(HlpModule):
             decoder=decoder,
             loss_fn=loss_fn if loss_fn is not None else nn.BCEWithLogitsLoss(),
             metrics=metrics,
+            metrics_log_kwargs=metrics_log_kwargs,
         )
 
         self.aggregation = aggregation
