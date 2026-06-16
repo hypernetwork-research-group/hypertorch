@@ -1,38 +1,15 @@
 version: 2
 
 updates:
-  # Python dependencies (works for both pip-based requirements files
-  # and pyproject.toml / uv-managed projects)
-- package-ecosystem: "pip"
-  directory: "/"
-  schedule:
-    interval: "weekly"
-  open-pull-requests-limit: 10
-  cooldown:
-    default-days: 7
-    semver-major-days: 14
-    semver-minor-days: 7
-    semver-patch-days: 3
-  groups:
-    python-minor-patch:
-      applies-to: version-updates
-      update-types:
-      - "minor"
-      - "patch"
-  labels:
-  - "dependencies"
-  - "python"
-  commit-message:
-    prefix: "chore(deps)"
-
-  # GitHub Actions workflow dependencies
 - package-ecosystem: "github-actions"
   directory: "/"
   schedule:
     interval: "weekly"
-  open-pull-requests-limit: 10
+  open-pull-requests-limit: 5
   cooldown:
-    default-days: 7
+    semver-major-days: 31
+    semver-minor-days: 14
+    semver-patch-days: 7
   groups:
     actions-minor-patch:
       applies-to: version-updates
