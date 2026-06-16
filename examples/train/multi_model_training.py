@@ -6,7 +6,7 @@ from torchmetrics.classification import (
     BinaryPrecision,
     BinaryRecall,
 )
-from hyperbench.hlp import MLPHlpModule
+from hyperbench.hlp import VilLainHlpModule, NHPHlpModule
 from hyperbench.train import MultiModelTrainer
 from hyperbench.types import ModelConfig
 from hyperbench.data import (
@@ -111,43 +111,49 @@ if __name__ == "__main__":
         persistent_workers=True,
     )
 
-    mean_mlp_module = MLPHlpModule(
+    node_villain_module = VilLainHlpModule(
         encoder_config={
-            "in_channels": num_features,
-            "out_channels": num_features,
-            "hidden_channels": 64,
-            "num_layers": 3,
-            "drop_rate": 0.3,
+            "embedding_dim": 128,
+            "labels_per_subspace": 8,
+            "training_steps": 4,
+            "generation_steps": 128,
+            "tau": 1.0,
+            "eps": 1e-10,
+            "villain_loss_weight": 1.0,
+            # We are using transductive with all nodes coverage in the train split
+            "num_nodes": dataset.hdata.num_nodes,
         },
-        aggregation="mean",
+        embedding_mode="node",
+        aggregation="maxmin",
+        lr=0.01,
+        weight_decay=0.0,
         metrics=metrics,
     )
 
-    max_mlp_module = MLPHlpModule(
+    maxmin_nhp_module = NHPHlpModule(
         encoder_config={
             "in_channels": num_features,
-            "out_channels": num_features,
-            "hidden_channels": 64,
-            "num_layers": 3,
-            "drop_rate": 0.3,
+            "hidden_channels": 512,
+            "aggregation": "maxmin",
         },
-        aggregation="max",
+        lr=0.001,
+        weight_decay=5e-4,
         metrics=metrics,
     )
 
     configs = [
         ModelConfig(
-            name="mlp",
-            version="mean",
-            model=mean_mlp_module,
+            name="nhp",
+            version="maxmin",
+            model=maxmin_nhp_module,
             train_dataloader=train_loader,
             val_dataloader=val_loader,
             test_dataloader=test_loader,
         ),
         ModelConfig(
-            name="mlp",
-            version="max",
-            model=max_mlp_module,
+            name="villain",
+            version="node_maxmin",
+            model=node_villain_module,
             train_dataloader=train_loader,
             val_dataloader=val_loader,
             test_dataloader=test_loader,

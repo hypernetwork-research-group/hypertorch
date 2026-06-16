@@ -26,7 +26,9 @@ from lightning.pytorch.loggers import Logger
 class CustomLogger(Logger):
     __shared_stores: ClassVar[dict[str, dict[str, dict[str, Any]]]] = {}
 
-    def __init__(self, experiment_name: str, model_name: str, save_dir: str | Path = "custom_logs"):
+    def __init__(
+        self, experiment_name: str, model_name: str, save_dir: str | Path = "hyperbench_logs"
+    ):
         super().__init__()
         self.__experiment_name = experiment_name
         self.__model_name = model_name
@@ -67,77 +69,18 @@ class CustomLogger(Logger):
         store[self.__model_name].update(metrics)
 
     def finalize(self, status: str) -> None:
-        test, train, val = self.__split_results()
-        print(f"Finalized experiment '{self.__experiment_name}' with status '{status}'.")
-        self.__save_comparison_table(test_results=test, train_results=train, val_results=val)
+        """Save accumulated metrics to a JSON file."""
+        import json
 
-    def __split_results(
-        self,
-    ) -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, Any]], dict[str, dict[str, Any]]]:
         store = self.__shared_stores.get(self.__experiment_name, {})
-        test_results: dict[str, dict[str, Any]] = {}
-        train_results: dict[str, dict[str, Any]] = {}
-        val_results: dict[str, dict[str, Any]] = {}
-
-        for model_name, metrics in store.items():
-            test_metrics: dict[str, Any] = {}
-            train_metrics: dict[str, Any] = {}
-            val_metrics: dict[str, Any] = {}
-
-            for metric_name, value in metrics.items():
-                if metric_name.startswith("test"):
-                    test_metrics[metric_name] = value
-                elif metric_name.startswith("train"):
-                    train_metrics[metric_name] = value
-                elif metric_name.startswith("val"):
-                    val_metrics[metric_name] = value
-
-            if test_metrics:
-                test_results[model_name] = test_metrics
-            if train_metrics:
-                train_results[model_name] = train_metrics
-            if val_metrics:
-                val_results[model_name] = val_metrics
-
-        return test_results, train_results, val_results
-
-    def __build_comparison_table(
-        self,
-        test_results: dict[str, dict[str, Any]],
-        train_results: dict[str, dict[str, Any]],
-        val_results: dict[str, dict[str, Any]],
-    ) -> dict[str, Any]:
-        comparison_table = {
-            "experiment_name": self.__experiment_name,
-            "models": {},
-        }
-        for model_name in (
-            set(test_results.keys()) | set(train_results.keys()) | set(val_results.keys())
-        ):
-            comparison_table["models"][model_name] = {
-                "test": test_results.get(model_name, {}),
-                "train": train_results.get(model_name, {}),
-                "val": val_results.get(model_name, {}),
-            }
-
-        return comparison_table
-
-    def __save_comparison_table(
-        self,
-        test_results: dict[str, dict[str, Any]],
-        train_results: dict[str, dict[str, Any]],
-        val_results: dict[str, dict[str, Any]],
-    ) -> None:
-        comparison_table = self.__build_comparison_table(
-            test_results=test_results, train_results=train_results, val_results=val_results
-        )
         self.__save_dir.mkdir(parents=True, exist_ok=True)
-        save_path = self.__save_dir / "comparison_table.json"
-        with open(save_path, "w") as f:
-            import json
+        save_path = self.__save_dir / "results.json"
 
-            json.dump(comparison_table, f, indent=4)
-        print(f"Saved comparison table to {save_path}")
+        with open(save_path, "w") as f:
+            json.dump(store, f, indent=4)
+
+        print(f"Finalized experiment '{self.__experiment_name}' with status '{status}'.")
+        print(f"Saved results to {save_path}")
 
 
 if __name__ == "__main__":
@@ -257,7 +200,7 @@ if __name__ == "__main__":
     ]
 
     print("Starting training and evaluation...")
-    json_looger = CustomLogger(experiment_name="custom_logger_example", model_name="mlp")
+    json_logger = CustomLogger(experiment_name="custom_logger_example", model_name="mlp")
 
     with MultiModelTrainer(
         model_configs=configs,
@@ -267,7 +210,7 @@ if __name__ == "__main__":
         enable_checkpointing=False,
         auto_start_tensorboard=True,
         auto_wait=True,
-        logger=json_looger,  # here you can pass the custom logger to the trainer
+        logger=json_logger,  # here you can pass the custom logger to the trainer
     ) as trainer:
         trainer.fit_all(train_dataloader=train_loader, val_dataloader=val_loader, verbose=True)
         trainer.test_all(dataloader=test_loader, verbose=True)

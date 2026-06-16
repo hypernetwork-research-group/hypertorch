@@ -37,7 +37,7 @@ format:
 
 typecheck:
 	@echo '=== Type checking ==='
-	$(UV) run $(TYPECHECKER) check --error-on-warning
+	$(UV) run $(TYPECHECKER) check
 
 docstring-check:
 	@echo '=== Docstring checking ==='

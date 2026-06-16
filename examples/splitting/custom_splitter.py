@@ -8,7 +8,7 @@ from torchmetrics.classification import (
 )
 from hyperbench.data import (
     Dataset,
-    DefaultDatasetSplitter,
+    Splitter,
     AlgebraDataset,
     SamplingStrategy,
     HyperedgeIDSplitter,
@@ -18,63 +18,54 @@ from hyperbench.utils import (
     NodeSpaceSetting,
     is_transductive_setting,
 )
-import random
 
 
-class CustomSplitter(DefaultDatasetSplitter):
-    def __init__(self, seed: int = 42):
-        super().__init__(node_space_setting="transductive")
-        self.seed = seed
+class CustomSplitter(Splitter["Dataset", list["Dataset"]]):
+    def __init__(self):
+        super().__init__()
 
-    def split(self, to_split: Dataset, **kwargs) -> tuple[list[Dataset], list[float]]:
-        train_split_idx = 0
-        cover_all_nodes_in_train_split: bool = kwargs.get("cover_all_nodes_in_train_split", False)
-
-        random_ratios_train = random.Random(43).random()
-        random_ratios_val = random.Random(42).random()
-        random_ratios_test = 1 - random_ratios_train - random_ratios_val
-        random_ratios = [random_ratios_train, random_ratios_val, random_ratios_test]
+    def split(self, to_split: Dataset, **kwargs) -> list[Dataset]:
         hdata = to_split.hdata
         hyperedge_splitter = HyperedgeIDSplitter(
             hyperedge_index=hdata.hyperedge_index,
             num_nodes=hdata.num_nodes,
             num_hyperedges=hdata.num_hyperedges,
         )
-        hyperedge_ids_permutation = hyperedge_splitter.get_hyperedge_ids_permutation(
-            shuffle=self.shuffle,
-            seed=self.seed,
+        print("Using CustomSplitter to split the dataset...")
+        perm = hyperedge_splitter.get_hyperedge_ids_permutation(
+            shuffle=False,
+            seed=None,
         )
-        hyperedge_ids_by_split, final_ratios = hyperedge_splitter.split(
-            to_split=hyperedge_ids_permutation,
-            ratios=random_ratios,
-        )
-        if is_transductive_setting(self.node_space_setting) and cover_all_nodes_in_train_split:
-            hyperedge_ids_by_split, final_ratios = hyperedge_splitter.ensure_split_covers_all_nodes(
-                hyperedge_ids_by_split=hyperedge_ids_by_split,
-                split_idx=train_split_idx,
-            )
-        hyperedge_splitter.validate_splits_have_hyperedges(hyperedge_ids_by_split)
+
+        num_hes = int(perm.size(0))
+        if num_hes == 0:
+            return []
+
+        mid = num_hes // 2
+        first_ids = perm[:mid]
+        second_ids = perm[mid:]
+
+        split_ids_list = [first_ids, second_ids]
 
         split_datasets: list[Dataset] = []
-        for split_num, split_hyperedge_ids in enumerate(hyperedge_ids_by_split):
-            split_node_space_setting: NodeSpaceSetting = (
+        for idx, split_ids in enumerate(split_ids_list):
+            node_space_setting: NodeSpaceSetting = (
                 "transductive"
-                if is_transductive_setting(self.node_space_setting) and split_num == train_split_idx
+                if idx == 0
+                and is_transductive_setting(kwargs.get("node_space_setting", "transductive"))
                 else "inductive"
             )
-            split_hdata = DefaultHDataSplitter(node_space_setting=split_node_space_setting).split(
-                to_split=hdata,
-                split_hyperedge_ids=split_hyperedge_ids,
+            split_hdata = DefaultHDataSplitter(node_space_setting=node_space_setting).split(
+                to_split=hdata, split_hyperedge_ids=split_ids
             )
             split_hdata = split_hdata.to(device=hdata.device)
 
             split_dataset = to_split.__class__(
-                hdata=split_hdata,
-                sampling_strategy=to_split.sampling_strategy,
+                hdata=split_hdata, sampling_strategy=to_split.sampling_strategy
             )
             split_datasets.append(split_dataset)
 
-        return split_datasets, final_ratios
+        return split_datasets
 
 
 if __name__ == "__main__":
@@ -94,27 +85,24 @@ if __name__ == "__main__":
     print("Loading and preparing dataset...")
 
     dataset = AlgebraDataset(sampling_strategy=SamplingStrategy.HYPEREDGE)
-
     if verbose:
         print(f"Dataset:\n {dataset.hdata}\n")
 
-    custom_splitter = CustomSplitter(seed=123)
+    custom_splitter = CustomSplitter()
 
     # Split dataset into train, val and test using ratios generated inside CustomSplitter.
-    split_datasets, split_ratios = dataset.split(
+    split_datasets = dataset.split(
         shuffle=True,
         seed=42,
         node_space_setting="transductive",
         cover_all_nodes_in_train_split=False,
         splitter=custom_splitter,  # pass the custom splitter to the split function
     )
-    train_dataset, val_dataset, test_dataset = split_datasets
-
-    print(f"Custom split ratios: {split_ratios}")
+    first_half, second_half = split_datasets
 
     if verbose:
-        print(f"Train dataset:\n {train_dataset.hdata}\n")
-        print(f"Val dataset:\n {val_dataset.hdata}\n")
-        print(f"Test dataset:\n {test_dataset.hdata}\n")
+        print(f"Original dataset:\n {dataset.hdata}\n")
+        print(f"First half dataset:\n {first_half.hdata}\n")
+        print(f"Second half dataset:\n {second_half.hdata}\n")
 
     print("Complete!")
