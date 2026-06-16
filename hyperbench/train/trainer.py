@@ -390,6 +390,11 @@ class MultiModelTrainer:
             if test_trainer is None:
                 raise ValueError(f"Trainer not defined for model {config.full_model_name()}.")
 
+            if self.__is_separate_single_process_test_trainer(config, test_trainer):
+                # Ensure all processes have finished training before testing
+                # to avoid warning about sync_dist=True when no distributed is happening in test
+                self.__wait_for_distributed()
+
             if self.__should_skip_test_on_current_rank(config, test_trainer):
                 test_results[config.full_model_name()] = {}
                 continue
@@ -677,3 +682,8 @@ class MultiModelTrainer:
         if isinstance(callbacks, Callback):
             return [callbacks]
         return callbacks
+
+    def __wait_for_distributed(self) -> None:
+        if torch.distributed.is_available() and torch.distributed.is_initialized():
+            torch.distributed.barrier()
+            torch.distributed.destroy_process_group()

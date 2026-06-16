@@ -6,6 +6,8 @@ from .loss import NHPRankingLoss, VilLainLoss, VilLainLossParts
 
 from .scorer import CommonNeighborsScorer, NeighborScorer
 
+from torch_geometric.nn import HypergraphConv
+
 __all__ = [
     "CommonNeighborsScorer",
     "HGNNConv",
@@ -13,6 +15,7 @@ __all__ = [
     "HNHNConv",
     "HyperGCNConv",
     "HyperedgeAggregator",
+    "HypergraphConv",
     "NHPRankingLoss",
     "NeighborScorer",
     "NodeAggregator",
