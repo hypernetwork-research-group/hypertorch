@@ -10,28 +10,28 @@ jobs:
     permissions:
       issues: write
     steps:
-      - uses: actions/github-script@v8
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const requiredLabels = ["chore", "docs", "tests", "feature", "bug", "refactoring"];
+    - uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const requiredLabels = ["chore", "docs", "tests", "feature", "bug", "refactoring"];
 
-            const labels = (context.payload.issue.labels || []).map((l) => l.name);
-            const hasType = labels.some((name) => requiredLabels.includes(name));
+          const labels = (context.payload.issue.labels || []).map((l) => l.name);
+          const hasType = labels.some((name) => requiredLabels.includes(name));
 
-            if (!hasType) {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.payload.issue.number,
-                body: [
-                  "This issue is missing a required label.",
-                  "",
-                  "Please add at least one of:",
-                  `- ${requiredLabels.join("\n- ")}`,
-                  "",
-                  `Current labels: ${labels.length ? labels.join(", ") : "(none)"}`,
-                ].join("\n"),
-              });
-              core.notice("Missing required issue labels. A comment was posted on the issue.");
-            }
+          if (!hasType) {
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.issue.number,
+              body: [
+                "This issue is missing a required label.",
+                "",
+                "Please add at least one of:",
+                `- ${requiredLabels.join("\n- ")}`,
+                "",
+                `Current labels: ${labels.length ? labels.join(", ") : "(none)"}`,
+              ].join("\n"),
+            });
+            core.notice("Missing required issue labels. A comment was posted on the issue.");
+          }
