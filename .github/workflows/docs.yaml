@@ -3,7 +3,7 @@ name: Documentation
 on:
   push:
     branches:
-      - main
+    - main
   workflow_dispatch:
 
 permissions:
@@ -18,24 +18,24 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/configure-pages@v6
-      - uses: actions/checkout@v6
+    - uses: actions/configure-pages@v6
+    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10v6
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v7
-        with:
-          python-version: "3.14"
+    - name: Install uv
+      uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
+      with:
+        python-version: "3.14"
 
-      - name: Install dependencies
-        run: |
-          uv venv
-          uv pip install -e .
-          uv pip install zensical mkdocstrings[python]
-          uv run zensical build --clean
+    - name: Install dependencies
+      run: |
+        uv venv
+        uv pip install -e .
+        uv pip install zensical mkdocstrings[python]
+        uv run zensical build --clean
 
-      - uses: actions/upload-pages-artifact@v5
-        with:
-          path: docs/site
+    - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9
+      with:
+        path: docs/site
 
-      - uses: actions/deploy-pages@v5
-        id: deployment
+    - uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128
+      id: deployment
