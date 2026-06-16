@@ -13,36 +13,36 @@ jobs:
     name: Run tests and collect coverage
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 2
+    - name: Checkout
+      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+      with:
+        fetch-depth: 2
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v7
-        with:
-          python-version: "3.14"
+    - name: Install uv
+      uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
+      with:
+        python-version: "3.14"
 
-      - name: Install dependencies
-        run: |
-          make build
+    - name: Install dependencies
+      run: |
+        make build
 
-      - name: Run unit tests with coverage
-        run: |
-          uv run pytest -n auto --cov --cov-branch --cov-report=xml -m "not integration"
+    - name: Run unit tests with coverage
+      run: |
+        uv run pytest -n auto --cov --cov-branch --cov-report=xml -m "not integration"
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
 
-      - name: Run unit tests for Codecov
-        run: |
-          uv run pytest -n auto --cov --junitxml=junit.xml -m "not integration"
+    - name: Run unit tests for Codecov
+      run: |
+        uv run pytest -n auto --cov --junitxml=junit.xml -m "not integration"
 
-      - name: Upload test results to Codecov
-        uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          report_type: test_results
-          files: junit.xml
+    - name: Upload test results to Codecov
+      uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        report_type: test_results
+        files: junit.xml

@@ -11,11 +11,11 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - uses: actions/labeler@v6
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          configuration-path: .github/labeler.yaml
-          sync-labels: true
+    - uses: actions/labeler@f1a63e87db0c6baf19c5713083f8d00d789ca184
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        configuration-path: .github/labeler.yaml
+        sync-labels: true
 
   assignees:
     runs-on: ubuntu-latest
@@ -24,13 +24,19 @@ jobs:
       pull-requests: write
       issues: write
     steps:
-      - uses: actions/github-script@v8
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            await github.rest.issues.addAssignees({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.payload.pull_request.number,
-              assignees: [context.payload.pull_request.user.login]
-            })
+    - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const author = context.payload.pull_request.user;
+
+          if (author.type === 'Bot') {
+            console.log(`Skipping assignment for bot user: ${author.login}`);
+            return;
+          }
+          await github.rest.issues.addAssignees({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.payload.pull_request.number,
+            assignees: [context.payload.pull_request.user.login]
+          })
