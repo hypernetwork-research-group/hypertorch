@@ -1,5 +1,5 @@
 from torch import Tensor, nn, optim
-from typing import Literal, TypedDict
+from typing import Any, Literal, TypedDict
 from typing_extensions import NotRequired
 from torchmetrics import MetricCollection
 from hyperbench.models import SLP, VilLain
@@ -49,6 +49,9 @@ class VilLainHlpModule(HlpModule):
         lr: Learning rate for the optimizer. Defaults to ``0.01``.
         weight_decay: Weight decay for the optimizer. Defaults to ``0.0``.
         metrics: Metrics to compute during training and evaluation. Defaults to ``None``.
+        metrics_log_kwargs: Additional keyword arguments to pass to all ``self.log`` calls
+            for metrics. Useful for configuring distributed synchronization behavior of
+            torchmetrics. Defaults to ``None``.
     """
 
     def __init__(
@@ -60,6 +63,7 @@ class VilLainHlpModule(HlpModule):
         lr: float = 0.01,
         weight_decay: float = 0.0,
         metrics: MetricCollection | None = None,
+        metrics_log_kwargs: dict[str, Any] | None = None,
     ):
         self.embedding_dim = encoder_config.get("embedding_dim", 128)
         self.aggregation = aggregation
@@ -84,6 +88,7 @@ class VilLainHlpModule(HlpModule):
             decoder=decoder,
             loss_fn=loss_fn if loss_fn is not None else nn.BCEWithLogitsLoss(),
             metrics=metrics,
+            metrics_log_kwargs=metrics_log_kwargs,
         )
 
     def forward(
@@ -139,30 +144,35 @@ class VilLainHlpModule(HlpModule):
             hlp_loss,
             prog_bar=True,
             batch_size=batch_size,
+            **self.metrics_log_kwargs,
         )
         self.log(
             stage_metric_name(Stage.TRAIN, "villain_loss"),
             villain_loss,
             prog_bar=True,
             batch_size=batch_size,
+            **self.metrics_log_kwargs,
         )
         self.log(
             stage_metric_name(Stage.TRAIN, "local_loss"),
             villain_loss_parts["local_loss"],
             prog_bar=False,
             batch_size=batch_size,
+            **self.metrics_log_kwargs,
         )
         self.log(
             stage_metric_name(Stage.TRAIN, "global_loss"),
             villain_loss_parts["global_loss"],
             prog_bar=False,
             batch_size=batch_size,
+            **self.metrics_log_kwargs,
         )
         self.log(
             stage_metric_name(Stage.TRAIN, "loss"),
             loss,
             prog_bar=True,
             batch_size=batch_size,
+            **self.metrics_log_kwargs,
         )
 
         self._compute_metrics(scores, labels, batch_size, Stage.TRAIN)

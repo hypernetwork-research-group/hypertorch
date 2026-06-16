@@ -1,5 +1,5 @@
 from torch import Tensor, nn, optim
-from typing import Literal, TypedDict
+from typing import Any, Literal, TypedDict
 from typing_extensions import NotRequired
 from torchmetrics import MetricCollection
 from hyperbench.models import Node2Vec, SLP
@@ -54,6 +54,9 @@ class Node2VecSLPHlpModule(HlpModule):
         weight_decay: Weight decay (L2 regularization) for the optimizer.
             Defaults to ``0.0`` (no weight decay).
         metrics: Optional dictionary of metric functions.
+        metrics_log_kwargs: Additional keyword arguments to pass to all ``self.log`` calls
+            for metrics. Useful for configuring distributed synchronization behavior of
+            torchmetrics. Defaults to ``None``.
     """
 
     def __init__(
@@ -64,6 +67,7 @@ class Node2VecSLPHlpModule(HlpModule):
         lr: float = 0.001,
         weight_decay: float = 0.0,
         metrics: MetricCollection | None = None,
+        metrics_log_kwargs: dict[str, Any] | None = None,
     ):
         self.mode = encoder_config.get("mode", NODE2VEC_JOINT_MODE)
         self.embedding_dim = encoder_config["num_features"]
@@ -82,6 +86,7 @@ class Node2VecSLPHlpModule(HlpModule):
             decoder=decoder,
             loss_fn=loss_fn if loss_fn is not None else nn.BCEWithLogitsLoss(),
             metrics=metrics,
+            metrics_log_kwargs=metrics_log_kwargs,
         )
 
         self.aggregation = aggregation
@@ -153,18 +158,21 @@ class Node2VecSLPHlpModule(HlpModule):
                 hlp_loss,
                 prog_bar=True,
                 batch_size=batch_size,
+                **self.metrics_log_kwargs,
             )
             self.log(
                 stage_metric_name(Stage.TRAIN, "node2vec_loss"),
                 node2vec_loss,
                 prog_bar=True,
                 batch_size=batch_size,
+                **self.metrics_log_kwargs,
             )
             self.log(
                 stage_metric_name(Stage.TRAIN, "loss"),
                 loss,
                 prog_bar=True,
                 batch_size=batch_size,
+                **self.metrics_log_kwargs,
             )
         else:
             loss = self._compute_loss(scores, labels, batch_size, Stage.TRAIN)

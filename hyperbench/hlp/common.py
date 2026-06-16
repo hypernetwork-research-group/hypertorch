@@ -22,6 +22,9 @@ class HlpModule(L.LightningModule):
             Cloned per stage (train, val, test) for independent state accumulation.
             Metric distributed synchronization follows the active Lightning trainer's world size,
             so single-device evaluation does not sync against a stale process group.
+        metrics_log_kwargs: Additional keyword arguments to pass to all ``self.log`` calls
+            for metrics. Useful for configuring distributed synchronization behavior of
+            torchmetrics. Defaults to ``None``.
         negative_sampler: Optional negative sampler. If ``None``, no negative sampling is performed.
         negative_sampling_schedule: When to perform negative sampling during training.
             Defaults to ``"every_epoch"``.
@@ -35,6 +38,7 @@ class HlpModule(L.LightningModule):
         loss_fn: nn.Module,
         encoder: nn.Module | None = None,
         metrics: MetricCollection | None = None,
+        metrics_log_kwargs: dict[str, Any] | None = None,
         negative_sampler: NegativeSampler | None = None,
         negative_sampling_schedule: NegativeSamplingSchedule = "every_epoch",
         negative_sampling_every_n: int = 1,
@@ -43,6 +47,7 @@ class HlpModule(L.LightningModule):
         self.encoder = encoder
         self.decoder = decoder
         self.loss_fn = loss_fn
+        self.metrics_log_kwargs = metrics_log_kwargs or {}
 
         if metrics is not None:
             self.train_metrics = metrics.clone(prefix=stage_metric_prefix(Stage.TRAIN))
@@ -92,6 +97,7 @@ class HlpModule(L.LightningModule):
             value=loss,
             prog_bar=True,
             batch_size=batch_size,
+            **self.metrics_log_kwargs,
         )
         return loss
 
@@ -135,6 +141,7 @@ class HlpModule(L.LightningModule):
             on_step=False,
             on_epoch=True,  # Compute and log metrics at epoch end for proper accumulation
             batch_size=batch_size,
+            **self.metrics_log_kwargs,
         )
 
     def _get_stage_metrics(self, stage: Stage) -> MetricCollection | None:
