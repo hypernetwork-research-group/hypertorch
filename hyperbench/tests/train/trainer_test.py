@@ -718,7 +718,16 @@ def test_distributed_global_rank(
 @patch("hyperbench.train.trainer.torch.distributed.get_rank", return_value=1)
 @patch("hyperbench.train.trainer.torch.distributed.is_initialized", return_value=True)
 @patch("hyperbench.train.trainer.torch.distributed.is_available", return_value=True)
+@patch(
+    "hyperbench.train.trainer.torch.distributed.barrier", side_effect=lambda *args, **kwargs: None
+)
+@patch(
+    "hyperbench.train.trainer.torch.distributed.destroy_process_group",
+    side_effect=lambda *args, **kwargs: None,
+)
 def test_test_all_skips_test_trainer_without_train_trainer_on_nonzero_rank(
+    mock_destroy_process_group,
+    mock_barrier,
     mock_is_available,
     mock_is_initialized,
     mock_get_rank,
@@ -738,9 +747,11 @@ def test_test_all_skips_test_trainer_without_train_trainer_on_nonzero_rank(
     assert all(result == {} for result in results.values())
     for config in mock_model_configs:
         config.test_trainer.test.assert_not_called()
-    assert mock_is_available.call_count == len(mock_model_configs)
-    assert mock_is_initialized.call_count == len(mock_model_configs)
+    assert mock_is_available.call_count == len(mock_model_configs) * 2
+    assert mock_is_initialized.call_count == len(mock_model_configs) * 2
     assert mock_get_rank.call_count == len(mock_model_configs)
+    assert mock_barrier.call_count == len(mock_model_configs)
+    assert mock_destroy_process_group.call_count == len(mock_model_configs)
 
 
 @patch("hyperbench.train.trainer.L.Trainer", return_value=None)
