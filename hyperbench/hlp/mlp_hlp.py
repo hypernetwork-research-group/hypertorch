@@ -1,5 +1,5 @@
 from torch import Tensor, nn, optim
-from typing import Literal, TypedDict
+from typing import Any, Literal, TypedDict
 from typing_extensions import NotRequired
 from hyperbench.models import MLP, SLP
 from hyperbench.nn import HyperedgeAggregator
@@ -58,6 +58,9 @@ class MLPHlpModule(HlpModule):
         loss_fn: Loss function. Defaults to ``BCEWithLogitsLoss``.
         lr: Learning rate for the optimizer. Defaults to ``0.001``.
         metrics: Optional dictionary of metric functions.
+        metrics_log_kwargs: Additional keyword arguments to pass to all ``self.log`` calls
+            for metrics. Useful for configuring distributed synchronization behavior of
+            torchmetrics. Defaults to ``None``.
     """
 
     def __init__(
@@ -67,6 +70,7 @@ class MLPHlpModule(HlpModule):
         loss_fn: nn.Module | None = None,
         lr: float = 0.001,
         metrics: MetricCollection | None = None,
+        metrics_log_kwargs: dict[str, Any] | None = None,
     ):
         # The encoder outputs node embeddings of shape (num_nodes, out_channels).
         encoder = MLP(
@@ -92,6 +96,7 @@ class MLPHlpModule(HlpModule):
             decoder=decoder,
             loss_fn=loss_fn if loss_fn is not None else nn.BCEWithLogitsLoss(),
             metrics=metrics,
+            metrics_log_kwargs=metrics_log_kwargs,
         )
 
         self.aggregation = aggregation

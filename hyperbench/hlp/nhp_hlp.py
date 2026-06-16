@@ -1,5 +1,5 @@
 from torch import Tensor, nn, optim
-from typing import Literal, TypedDict
+from typing import Any, Literal, TypedDict
 from torchmetrics import MetricCollection
 from typing_extensions import NotRequired
 from hyperbench.models import NHP
@@ -44,6 +44,9 @@ class NHPHlpModule(HlpModule):
         lr: Learning rate for the optimizer. Defaults to ``0.001``.
         weight_decay: L2 regularization. Defaults to ``5e-4``.
         metrics: Optional metric collection for evaluation.
+        metrics_log_kwargs: Additional keyword arguments to pass to all ``self.log`` calls
+            for metrics. Useful for configuring distributed synchronization behavior of
+            torchmetrics. Defaults to ``None``.
     """
 
     def __init__(
@@ -53,6 +56,7 @@ class NHPHlpModule(HlpModule):
         lr: float = 0.001,
         weight_decay: float = 5e-4,
         metrics: MetricCollection | None = None,
+        metrics_log_kwargs: dict[str, Any] | None = None,
     ):
         encoder = NHP(
             in_channels=encoder_config["in_channels"],
@@ -68,6 +72,7 @@ class NHPHlpModule(HlpModule):
             decoder=nn.Identity(),
             loss_fn=loss_fn if loss_fn is not None else NHPRankingLoss(),
             metrics=metrics,
+            metrics_log_kwargs=metrics_log_kwargs,
         )
 
         self.lr = lr
