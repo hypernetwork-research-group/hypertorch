@@ -1,0 +1,21 @@
+version: 2
+
+updates:
+- package-ecosystem: "github-actions"
+  directory: "/"
+  schedule:
+    interval: "weekly"
+  open-pull-requests-limit: 5
+  cooldown:
+    default-days: 7
+  groups:
+    actions-minor-patch:
+      applies-to: version-updates
+      update-types:
+      - "minor"
+      - "patch"
+  labels:
+  - "dependencies"
+  - "github-actions"
+  commit-message:
+    prefix: "chore(deps):"
