@@ -9,7 +9,7 @@ import lightning as L
 import torch
 
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 from collections.abc import Iterable, Mapping
 from lightning.pytorch.accelerators import Accelerator
 from lightning.pytorch.callbacks import Callback, ModelCheckpoint
@@ -28,54 +28,41 @@ class MultiModelTrainer:
     """
     A trainer class to handle training multiple models with individual trainers.
 
-    Args:
+    Attributes:
         model_configs: A list of ModelConfig objects, each containing a model and its
             associated trainer (if any).
-
         experiment_name: Name for this experiment run's log directory. When ``None`` (default),
             auto-increments as ``experiment_0``, ``experiment_1``, etc. under
             the log root directory. Only used when ``logger`` is not provided.
-
         accelerator: Supports passing different accelerator types
-            ("cpu", "gpu", "tpu", "hpu", "mps", "auto")
-            as well as custom accelerator instances.
-
+            ("cpu", "gpu", "tpu", "hpu", "mps", "auto") as well as custom accelerator instances.
         devices: The devices to use. Can be set to a positive number (int or str), a
             sequence of device indices (list or str), the value ``-1`` to indicate all available
             devices should be used, or ``"auto"`` for automatic selection based on the chosen
             accelerator. Defaults to ``"auto"``.
-
         test_devices: Optional device configuration for automatically-created test trainers.
             When set, ``test_all`` uses a separate Trainer with the same Trainer parameters as
             training except for ``devices``. This is useful for running distributed training
             but single-device testing, e.g. ``test_devices=1``. Defaults to ``None``, which makes
             testing use the fit trainer unless a ``ModelConfig.test_trainer`` is provided.
-
         strategy: Supports different training strategies with aliases as well custom strategies.
             Defaults to ``"auto"``.
-
         num_nodes: Number of GPU nodes for distributed training.
             Defaults to ``1``.
-
         precision: Double precision (64, '64' or '64-true'),
             full precision (32, '32' or '32-true'), 16bit mixed precision (16, '16', '16-mixed') or
             bfloat16 mixed precision ('bf16', 'bf16-mixed').
             Can be used on CPU, GPU, TPUs, or HPUs.
             Defaults to ``'32-true'``.
-
         max_epochs: Stop training once this number of epochs is reached. Disabled by default (None).
             If both max_epochs and max_steps are not specified, defaults to ``max_epochs = 1000``.
             To enable infinite training, set ``max_epochs = -1``.
-
         min_epochs: Force training for at least these many epochs. Disabled by default (None).
-
         max_steps: Stop training after this number of steps. Disabled by default (-1).
             If ``max_steps = -1`` and ``max_epochs = None``, will default to ``max_epochs = 1000``.
             To enable infinite training, set ``max_epochs`` to ``-1``.
-
         min_steps: Force training for at least these number of steps.
             Disabled by default (``None``).
-
         check_val_every_n_epoch: Perform a validation loop after every `N` training epochs.
             If ``None``, validation will be done solely based on the number of training batches,
             requiring ``val_check_interval`` to be an integer value. When used together with a
@@ -85,50 +72,38 @@ class MultiModelTrainer:
             if it elapses during a multiple-N epoch, validation runs after the current batch.
             For ``None`` or ``1`` cases, the time-based behavior of ``val_check_interval``
             applies without additional alignment. Defaults to ``1``.
-
         logger: Logger (or iterable collection of loggers) for experiment tracking. A ``True``
             value uses the default ``TensorBoardLogger`` if it is installed,
             otherwise ``CSVLogger``. ``False`` will disable logging. If multiple loggers are
             provided, local files (checkpoints, profiler traces, etc.) are saved in the ``log_dir``
             of the first logger. Defaults to ``True``.
-
         default_root_dir: Default path for logs and weights when no logger/ckpt_callback passed.
             Defaults to ``os.getcwd()``.
             Can be remote file paths such as `s3://mybucket/path` or 'hdfs://path/'
-
         enable_autolog_hparams: Whether to log hyperparameters at the start of a run.
             Defaults to ``True``.
-
         log_every_n_steps: How often to log within steps.
             Defaults to ``50``.
-
         profiler: To profile individual steps during training and assist in identifying bottlenecks.
             Defaults to ``None``.
-
         fast_dev_run: Runs n if set to ``n`` (int) else 1 if set to ``True`` batch(es)
             of train, val and test to find any bugs (ie: a sort of unit test).
             Defaults to ``False``.
-
         enable_checkpointing: If ``True``, enable checkpointing.
             It will configure a default ModelCheckpoint callback if there is no user-defined
                 ModelCheckpoint in :paramref:`~hyperbench.train.MultiModelTrainer.callbacks`.
             Defaults to ``True``.
-
         enable_progress_bar: Whether to enable the progress bar by default.
             Defaults to ``True``.
-
         enable_model_summary: Whether to enable model summarization by default.
             Defaults to ``True``.
-
         callbacks: Add a callback or list of callbacks.
             Defaults to ``None``.
-
         checkpoint_callback_kwargs: Keyword arguments passed to the default
             ``ModelCheckpoint`` callback when checkpointing is enabled and no
             user-defined ``ModelCheckpoint`` is provided. Pass ``dirpath`` to
             override the default checkpoint directory.
             Defaults to ``None``.
-
         auto_start_tensorboard: When ``True`` and tensorboard is installed, automatically starts
             a TensorBoard server pointing at the experiment log directory.
             Using this option requires that TensorBoard is installed in the environment and moves
@@ -137,14 +112,38 @@ class MultiModelTrainer:
             or when the object is garbage collected). Enable `auto_wait` to keep the server alive
             after training completes so you can inspect results before the trainer is finalized.
             Defaults to ``False``.
-
         tensorboard_port: Port for the auto-launched TensorBoard server.
             Defaults to ``6006``.
-
         auto_wait: When ``True`` and a TensorBoard server is running, automatically calls
-            :meth:`wait` inside `finalize` before terminating the server, so the user
+            ``wait`` inside `finalize` before terminating the server, so the user
             can inspect results before the process is stopped.
             Defaults to ``False``.
+
+        kwargs:
+            max_time: Maximum wall-clock training time. Passed to Lightning's ``Trainer``.
+            limit_train_batches: Fraction or number of training batches to use.
+            limit_val_batches: Fraction or number of validation batches to use.
+            limit_test_batches: Fraction or number of test batches to use.
+            limit_predict_batches: Fraction or number of prediction batches to use.
+            overfit_batches: Fraction or number of batches to use for overfitting checks.
+            val_check_interval: How often to run validation within a training epoch.
+            num_sanity_val_steps: Number of validation batches to run before training starts.
+            accumulate_grad_batches: Number of batches over which to accumulate gradients.
+            gradient_clip_val: Value used for gradient clipping.
+            gradient_clip_algorithm: Gradient clipping algorithm to use.
+            deterministic: Whether to enable deterministic operations, or ``"warn"``
+                to warn when deterministic execution is not available.
+            benchmark: Whether to enable cuDNN benchmarking.
+            inference_mode: Whether validation, test, and prediction loops should use
+                ``torch.inference_mode``.
+            use_distributed_sampler: Whether Lightning should inject distributed samplers for
+                distributed training.
+            detect_anomaly: Whether to enable PyTorch autograd anomaly detection.
+            barebones: Whether to disable features that may affect raw training-loop speed.
+            plugins: Lightning plugins or list of plugins to use.
+            sync_batchnorm: Whether to synchronize batch normalization across devices.
+            reload_dataloaders_every_n_epochs: How often to recreate dataloaders.
+            model_registry: Name of the Lightning model registry to use.
     """
 
     DEFAULT_BASE_LOG_DIR = "hyperbench_logs"
@@ -264,7 +263,7 @@ class MultiModelTrainer:
 
                 if should_create_test_trainer:
                     model_config.test_trainer = __trainer_for(
-                        trainer_devices=cast(list[int] | str | int, test_devices),
+                        trainer_devices=test_devices if test_devices is not None else devices,
                         model_logger=model_logger,
                         model_callbacks=model_callbacks,
                     )

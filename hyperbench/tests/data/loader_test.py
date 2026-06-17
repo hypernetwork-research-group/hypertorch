@@ -85,13 +85,42 @@ def test_initialization_with_default_params(mock_dataset_single_sample):
 
 
 def test_initialization_with_custom_params(mock_dataset_single_sample):
-    loader = DataLoader(mock_dataset_single_sample, batch_size=4, shuffle=True, num_workers=0)
+    loader = DataLoader(
+        mock_dataset_single_sample,
+        batch_size=4,
+        shuffle=True,
+        drop_last=True,
+        num_workers=0,
+        persistent_workers=False,
+        in_order=False,
+    )
 
     assert loader.batch_size == 4
     assert loader.dataset == mock_dataset_single_sample
-
-    # num_workers is used to test that kwargs are passed correctly
     assert loader.num_workers == 0
+    assert loader.persistent_workers is False
+    assert loader.drop_last is True
+
+    # in_order is used to test that kwargs are passed correctly
+    assert loader.in_order is False
+
+
+@pytest.mark.parametrize(
+    "sample_full_hypergraph, expected_batch_size",
+    [
+        pytest.param(True, 3, id="sample_full_hypergraph=True"),
+        pytest.param(False, 1, id="sample_full_hypergraph=False"),
+    ],
+)
+def test_initialization_with_sample_full_hypergraph(
+    sample_full_hypergraph,
+    expected_batch_size,
+    mock_dataset_single_sample,
+):
+    loader = DataLoader(mock_dataset_single_sample, sample_full_hypergraph=sample_full_hypergraph)
+
+    assert loader.batch_size == expected_batch_size
+    assert loader.dataset == mock_dataset_single_sample
 
 
 def test_initialization_uses_collate_fn_arg_when_provided(mock_dataset_single_sample):
