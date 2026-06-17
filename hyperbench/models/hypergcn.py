@@ -14,7 +14,7 @@ class HyperGCN(nn.Module):
         - Code of the paper: [source](https://github.com/malllabiisc/HyperGCN).
         - Reference implementation: [source](https://deephypergraph.readthedocs.io/en/latest/_modules/dhg/models/hypergraphs/hypergcn.html#HyperGCN).
 
-    Args:
+    Attributes:
         in_channels: The number of input channels.
         hidden_channels: The number of hidden channels.
         num_classes: The number of classes of the classification task as HyperGCB is a

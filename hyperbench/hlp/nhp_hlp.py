@@ -38,7 +38,7 @@ class NHPHlpModule(HlpModule):
     Unlike encoder wrappers that produce reusable global node embeddings,
     NHP builds candidate-specific incidence embeddings before pooling and scoring each hyperedge.
 
-    Args:
+    Attributes:
         encoder_config: Configuration for the NHP encoder/scorer.
         loss_fn: Loss function. Defaults to `NHPRankingLoss`.
         lr: Learning rate for the optimizer. Defaults to ``0.001``.

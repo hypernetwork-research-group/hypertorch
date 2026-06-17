@@ -27,7 +27,7 @@ class _VilLainTrainer:
     The helper owns the common configuration, node and hyperedge count resolution,
     model construction, and training loop used by node feature and hyperedge attribute enrichers.
 
-    Args:
+    Attributes:
         num_features: Dimensionality of the embeddings to generate.
         num_nodes: Total number of nodes, including isolated nodes missing from ``hyperedge_index``.
         num_hyperedges: Total number of hyperedges, including empty hyperedges missing

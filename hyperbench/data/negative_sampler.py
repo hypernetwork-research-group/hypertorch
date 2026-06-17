@@ -16,7 +16,7 @@ class NegativeSampler(ABC):
     """
     Abstract base class for negative samplers.
 
-    Args:
+    Attributes:
         return_0based_negatives:
             - If ``True``, the negative samples returned by the ``sample`` method
                 will have 0-based node and hyperedge IDs.

@@ -48,7 +48,7 @@ class HyperGCNHlpModule(HlpModule):
     graph convolution on the full hypergraph, aggregates them per hyperedge,
     and scores each hyperedge with a linear decoder.
 
-    Args:
+    Attributes:
         encoder_config: Configuration for the HyperGCN encoder.
         aggregation: Method to aggregate node embeddings per hyperedge. Defaults to ``"mean"``.
         loss_fn: Loss function. Defaults to ``BCEWithLogitsLoss``.

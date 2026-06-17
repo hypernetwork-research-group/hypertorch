@@ -8,7 +8,8 @@ from hyperbench.utils import MARKDOWN_CHARACTER_ESCAPE_TABLE, escape, validate_i
 
 
 class MarkdownTableLogger(Logger):
-    """A Lightning Logger that accumulates metrics and writes a markdown comparison table.
+    """
+    A Lightning Logger that accumulates metrics and writes a markdown comparison table.
 
     Multiple instances (one per model) share a class-level store keyed by experiment_name.
     Every time finalize() is called (after fit() or test() for each model), the current
@@ -18,7 +19,7 @@ class MarkdownTableLogger(Logger):
     This means the file is progressively updated as models finish training/testing,
     so partial results are available while running.
 
-    Args:
+    Attributes:
         save_dir: Base directory where the comparison/ subfolder will be created.
         model_name: The model's full name (e.g., "mlp:mean").
         experiment_name: Shared key that groups all models in the same experiment.

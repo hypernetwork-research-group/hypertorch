@@ -17,7 +17,7 @@ class ModelConfig:
     """
     A class representing the configuration of a model for training.
 
-    Args:
+    Attributes:
         name: The name of the model.
         version: The version of the model.
         model: a LightningModule instance.

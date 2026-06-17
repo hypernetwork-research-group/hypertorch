@@ -51,7 +51,7 @@ class Node2VecGCNHlpModule(HlpModule):
         - ``precomputed``: use node embeddings already stored in ``batch.x``.
         - ``joint``: train a Node2Vec encoder jointly with the GCN layers and hyperedge decoder.
 
-    Args:
+    Attributes:
         encoder_config: Configuration for the Node2Vec encoder and GCN layers.
         aggregation: Method to aggregate node embeddings per hyperedge.
         loss_fn: Loss function. Defaults to ``BCEWithLogitsLoss``.

@@ -52,7 +52,7 @@ class MLPHlpModule(HlpModule):
     Uses an MLP encoder to produce node embeddings, aggregates them per hyperedge
     via mean pooling, and scores each hyperedge with a linear decoder.
 
-    Args:
+    Attributes:
         encoder_config: Configuration for the MLP encoder.
         aggregation: Method to aggregate node embeddings per hyperedge.
         loss_fn: Loss function. Defaults to ``BCEWithLogitsLoss``.

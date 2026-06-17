@@ -12,7 +12,7 @@ class HNHN(nn.Module):
         - Proposed in [HNHN: Hypergraph Networks with Hyperedge Neurons](https://arxiv.org/abs/2006.12278) paper.
         - Reference implementation: [Code](https://deephypergraph.readthedocs.io/en/latest/_modules/dhg/models/hypergraphs/hnhn.html#HNHN).
 
-    Args:
+    Attributes:
         in_channels: The number of input channels.
         hidden_channels: The number of hidden channels.
         num_classes: The number of output channels.

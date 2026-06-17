@@ -11,7 +11,7 @@ class Graph:
     """
     A simple graph data structure using edge list representation.
 
-    Args:
+    Attributes:
         edges: A list of edges, where each edge is represented as a list of two integers
             (source_node, destination_node).
         edge_weights: Optional list of edge weights corresponding to each edge in ``edges``.
@@ -157,7 +157,7 @@ class EdgeIndex:
         This represents a graph with edges (0, 1), (1, 0), and (2, 3).
         The number of nodes in this graph is 4 (nodes 0, 1, 2, and 3) and the number of edges is 3.
 
-    Args:
+    Attributes:
         edge_index: A tensor of shape ``(2, num_edges)`` representing the edges in the graph.
         edge_weights: Optional tensor of shape ``(num_edges,)`` containing a weight for each edge.
     """
@@ -586,18 +586,18 @@ class EdgeIndex:
     def remove_duplicate_edges(self, num_nodes: int | None = None) -> EdgeIndex:
         """
         Remove duplicate edges from the edge index.
-
         Keeps the tensor contiguous in memory.
-                Args:
-                    num_nodes: The number of nodes in the graph. If ``None``, it will be
-                        inferred from ``self.num_nodes``.
-                        This parameter is important when ``edge_index`` does not contain all nodes
-                        (e.g., some nodes are isolated and have no edges or have been removed),
-                        as it ensures that the resulting Laplacian matrix has the correct size
-                        and includes all nodes. For instance, for self-loops.
 
-                Returns:
-                    edge_index: This `EdgeIndex` instance with duplicate edges removed.
+        Args:
+            num_nodes: The number of nodes in the graph. If ``None``, it will be
+                inferred from ``self.num_nodes``.
+                This parameter is important when ``edge_index`` does not contain all nodes
+                (e.g., some nodes are isolated and have no edges or have been removed),
+                as it ensures that the resulting Laplacian matrix has the correct size
+                and includes all nodes. For instance, for self-loops.
+
+        Returns:
+            edge_index: This `EdgeIndex` instance with duplicate edges removed.
         """
         num_nodes = self.num_nodes if num_nodes is None else num_nodes
         self.__validate_num_nodes(num_nodes)

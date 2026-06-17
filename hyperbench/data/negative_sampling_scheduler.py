@@ -21,7 +21,7 @@ class NegativeSamplingScheduler:
     unnecessary sampling when the schedule dictates that negatives should only be generated at
     certain intervals.
 
-    Args:
+    Attributes:
         negative_sampler: An instance of a ``NegativeSampler`` that defines how to sample negatives.
         negative_sampling_schedule: Literal string specifying the schedule for sampling negatives.
         negative_sampling_every_n: An integer specifying the interval for sampling negatives

@@ -14,7 +14,7 @@ class HGNN(nn.Module):
         - Proposed in [Hypergraph Neural Networks](https://arxiv.org/pdf/1809.09401) (AAAI 2019).
         - Reference implementation: [Code](https://deephypergraph.readthedocs.io/en/latest/_modules/dhg/models/hypergraphs/hgnn.html#HGNN).
 
-    Args:
+    Attributes:
         in_channels: The number of input channels.
         hidden_channels: The number of hidden channels.
         num_classes: The number of output channels.
