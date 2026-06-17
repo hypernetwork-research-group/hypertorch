@@ -147,6 +147,8 @@ if __name__ == "__main__":
         enable_checkpointing=False,
         auto_start_tensorboard=True,
         auto_wait=True,
+        devices=1,
+        test_devices=1,
     ) as trainer:
         trainer.fit_all(
             train_dataloader=train_loader_full_hypergraph,
