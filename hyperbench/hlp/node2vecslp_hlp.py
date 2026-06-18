@@ -47,16 +47,15 @@ class Node2VecSLPHlpModule(HlpModule):
         - ``joint``: train a Node2Vec encoder jointly with the hyperedge decoder.
 
     Attributes:
-        encoder_config: Configuration for the Node2Vec encoder.
+        mode: Whether to use precomputed or joint Node2Vec embeddings.
+        embedding_dim: Node embedding dimension consumed by the decoder.
         aggregation: Method to aggregate node embeddings per hyperedge.
-        loss_fn: Loss function. Defaults to ``BCEWithLogitsLoss``.
+            Defaults to ``mean``.
         lr: Learning rate for the optimizer. Defaults to ``0.001``.
-        weight_decay: Weight decay (L2 regularization) for the optimizer.
-            Defaults to ``0.0`` (no weight decay).
-        metrics: Optional dictionary of metric functions.
-        metrics_log_kwargs: Additional keyword arguments to pass to all ``self.log`` calls
-            for metrics. Useful for configuring distributed synchronization behavior of
-            torchmetrics. Defaults to ``None``.
+        weight_decay: Weight decay for the optimizer. Defaults to ``0.0``.
+        random_walk_batch_size: Batch size used for Node2Vec walk loss in joint mode.
+        node2vec_loss_weight: Weight applied to Node2Vec walk loss in joint mode.
+        __walk_loader_state: Cached random-walk loader state for joint mode.
     """
 
     def __init__(
@@ -69,6 +68,21 @@ class Node2VecSLPHlpModule(HlpModule):
         metrics: MetricCollection | None = None,
         metrics_log_kwargs: dict[str, Any] | None = None,
     ):
+        """
+        Initialize the Node2Vec-SLP HLP module.
+
+        Args:
+            encoder_config: Configuration for Node2Vec embeddings.
+            aggregation: Method used to aggregate node embeddings per hyperedge.
+                Defaults to ``mean``.
+            loss_fn: Optional HLP loss function. Defaults to ``BCEWithLogitsLoss``.
+            lr: Learning rate for the optimizer. Defaults to ``0.001``.
+            weight_decay: Weight decay for the optimizer. Defaults to ``0.0``.
+            metrics: Optional metric collection for evaluation.
+            metrics_log_kwargs: Additional keyword arguments passed to metric log calls.
+                Useful for configuring distributed synchronization behavior of
+                ``torchmetrics``. Defaults to ``None``.
+        """
         self.mode = encoder_config.get("mode", NODE2VEC_JOINT_MODE)
         self.embedding_dim = encoder_config["num_features"]
         node2vec_config = encoder_config["node2vec_config"]
@@ -103,6 +117,20 @@ class Node2VecSLPHlpModule(HlpModule):
         hyperedge_index: Tensor,
         global_node_ids: Tensor | None = None,
     ) -> Tensor:
+        """
+        Score hyperedges from precomputed or jointly trained Node2Vec embeddings.
+
+        Args:
+            x: Node feature or precomputed embedding matrix.
+            hyperedge_index: Hyperedge incidence tensor.
+            global_node_ids: Optional global node IDs for joint Node2Vec lookup.
+
+        Returns:
+            scores: Predicted hyperedge scores.
+
+        Raises:
+            ValueError: If the configured mode cannot supply node embeddings.
+        """
         # Encode: get node embeddings from precomputation or joint encoder
         if self.mode == NODE2VEC_JOINT_MODE:
             encoder = _to_node2vec_encoder(self.encoder, self.mode)
@@ -128,6 +156,17 @@ class Node2VecSLPHlpModule(HlpModule):
         return scores
 
     def training_step(self, batch: HData, batch_idx: int) -> Tensor:
+        """
+        Run a training step.
+        In joint mode this combines HLP loss with one stochastic Node2Vec walk loss batch.
+
+        Args:
+            batch: Training batch.
+            batch_idx: Batch index, unused.
+
+        Returns:
+            loss: Training loss.
+        """
         scores = self.forward(batch.x, batch.hyperedge_index, batch.global_node_ids)
         labels = batch.y
         batch_size = batch.num_hyperedges
@@ -181,15 +220,51 @@ class Node2VecSLPHlpModule(HlpModule):
         return loss
 
     def validation_step(self, batch: HData, batch_idx: int) -> Tensor:
+        """
+        Run a validation step.
+
+        Args:
+            batch: Validation batch.
+            batch_idx: Batch index, unused.
+
+        Returns:
+            loss: Validation loss.
+        """
         return self.__eval_step(batch, Stage.VAL)
 
     def test_step(self, batch: HData, batch_idx: int) -> Tensor:
+        """
+        Run a test step.
+
+        Args:
+            batch: Test batch.
+            batch_idx: Batch index, unused.
+
+        Returns:
+            loss: Test loss.
+        """
         return self.__eval_step(batch, Stage.TEST)
 
     def predict_step(self, batch: HData, batch_idx: int) -> Tensor:
+        """
+        Predict hyperedge scores for a batch.
+
+        Args:
+            batch: Prediction batch.
+            batch_idx: Batch index, unused.
+
+        Returns:
+            scores: Predicted hyperedge scores.
+        """
         return self.forward(batch.x, batch.hyperedge_index, batch.global_node_ids)
 
-    def configure_optimizers(self):
+    def configure_optimizers(self) -> optim.Adam:
+        """
+        Configure the optimizer.
+
+        Returns:
+            optimizer: Adam optimizer.
+        """
         return optim.Adam(self.parameters(), lr=self.lr, weight_decay=self.weight_decay)
 
     def __build_node2vec_encoder(
@@ -198,6 +273,17 @@ class Node2VecSLPHlpModule(HlpModule):
         node2vec_config: Node2VecHlpConfig,
         mode: Node2VecMode,
     ) -> Node2Vec:
+        """
+        Build the joint-mode Node2Vec encoder.
+
+        Args:
+            embedding_dim: Node2Vec embedding dimension.
+            node2vec_config: Node2Vec HLP configuration.
+            mode: Node2Vec training mode used in validation errors.
+
+        Returns:
+            encoder: Node2Vec encoder.
+        """
         _validate_walk_length_and_context_size(
             walk_length=node2vec_config.get("walk_length", 20),
             context_size=node2vec_config.get("context_size", 10),
@@ -219,6 +305,16 @@ class Node2VecSLPHlpModule(HlpModule):
         )
 
     def __eval_step(self, batch: HData, stage: Stage) -> Tensor:
+        """
+        Run shared evaluation logic for a stage.
+
+        Args:
+            batch: Input batch.
+            stage: Current evaluation stage.
+
+        Returns:
+            loss: Computed loss.
+        """
         scores = self.forward(batch.x, batch.hyperedge_index, batch.global_node_ids)
         labels = batch.y
         batch_size = batch.num_hyperedges

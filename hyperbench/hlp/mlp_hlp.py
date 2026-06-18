@@ -53,14 +53,8 @@ class MLPHlpModule(HlpModule):
     via mean pooling, and scores each hyperedge with a linear decoder.
 
     Attributes:
-        encoder_config: Configuration for the MLP encoder.
         aggregation: Method to aggregate node embeddings per hyperedge.
-        loss_fn: Loss function. Defaults to ``BCEWithLogitsLoss``.
         lr: Learning rate for the optimizer. Defaults to ``0.001``.
-        metrics: Optional dictionary of metric functions.
-        metrics_log_kwargs: Additional keyword arguments to pass to all ``self.log`` calls
-            for metrics. Useful for configuring distributed synchronization behavior of
-            torchmetrics. Defaults to ``None``.
     """
 
     def __init__(
@@ -72,6 +66,19 @@ class MLPHlpModule(HlpModule):
         metrics: MetricCollection | None = None,
         metrics_log_kwargs: dict[str, Any] | None = None,
     ):
+        """
+        Initialize the MLP HLP module.
+
+        Args:
+            encoder_config: Configuration for the MLP encoder.
+            aggregation: Method used to aggregate node embeddings per hyperedge.
+            loss_fn: Optional loss function. Defaults to ``BCEWithLogitsLoss``.
+            lr: Learning rate for the optimizer. Defaults to ``0.001``.
+            metrics: Optional metric collection for evaluation.
+            metrics_log_kwargs: Additional keyword arguments passed to metric log calls.
+                Useful for configuring distributed synchronization behavior
+                of ``torchmetrics``. Defaults to ``None``.
+        """
         # The encoder outputs node embeddings of shape (num_nodes, out_channels).
         encoder = MLP(
             in_channels=encoder_config["in_channels"],
@@ -168,6 +175,16 @@ class MLPHlpModule(HlpModule):
         return scores
 
     def training_step(self, batch: HData, batch_idx: int) -> Tensor:
+        """
+        Run a training step.
+
+        Args:
+            batch: Training batch.
+            batch_idx: Batch index, unused.
+
+        Returns:
+            loss: Training loss.
+        """
         scores = self.forward(batch.x, batch.hyperedge_index)
         labels = batch.y
         batch_size = batch.num_hyperedges
@@ -177,18 +194,64 @@ class MLPHlpModule(HlpModule):
         return loss
 
     def validation_step(self, batch: HData, batch_idx: int) -> Tensor:
+        """
+        Run a validation step.
+
+        Args:
+            batch: Validation batch.
+            batch_idx: Batch index, unused.
+
+        Returns:
+            loss: Validation loss.
+        """
         return self.__eval_step(batch, Stage.VAL)
 
     def test_step(self, batch: HData, batch_idx: int) -> Tensor:
+        """
+        Run a test step.
+
+        Args:
+            batch: Test batch.
+            batch_idx: Batch index, unused.
+
+        Returns:
+            loss: Test loss.
+        """
         return self.__eval_step(batch, Stage.TEST)
 
     def predict_step(self, batch: HData, batch_idx: int) -> Tensor:
+        """
+        Predict hyperedge scores for a batch.
+
+        Args:
+            batch: Prediction batch.
+            batch_idx: Batch index, unused.
+
+        Returns:
+            scores: Predicted hyperedge scores.
+        """
         return self.forward(batch.x, batch.hyperedge_index)
 
-    def configure_optimizers(self):
+    def configure_optimizers(self) -> optim.Adam:
+        """
+        Configure the optimizer.
+
+        Returns:
+            optimizer: Adam optimizer.
+        """
         return optim.Adam(self.parameters(), lr=self.lr)
 
     def __eval_step(self, batch: HData, stage: Stage) -> Tensor:
+        """
+        Run shared evaluation logic for a stage.
+
+        Args:
+            batch: Input batch.
+            stage: Current evaluation stage.
+
+        Returns:
+            loss: Computed loss.
+        """
         scores = self.forward(batch.x, batch.hyperedge_index)
         labels = batch.y
         batch_size = batch.num_hyperedges

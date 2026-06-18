@@ -40,18 +40,13 @@ class VilLainHlpModule(HlpModule):
     Feature-free VilLain Hyperedge Link Prediction module.
 
     Attributes:
-        encoder_config: Configuration for the VilLain encoder.
+        embedding_dim: VilLain embedding dimension.
         embedding_mode: Whether to return node or hyperedge embeddings from the VilLain encoder.
         aggregation: Aggregation method to pool node embeddings into hyperedge embeddings
-            when ``embedding_mode="node"``.
-            Ignored when ``embedding_mode="hyperedge"``. Defaults to ``maxmin``.
-        loss_fn: Loss function for the HLP task. Defaults to ``nn.BCEWithLogitsLoss()``.
+            when ``embedding_mode="node"``. Ignored when ``embedding_mode="hyperedge"``.
         lr: Learning rate for the optimizer. Defaults to ``0.01``.
         weight_decay: Weight decay for the optimizer. Defaults to ``0.0``.
-        metrics: Metrics to compute during training and evaluation. Defaults to ``None``.
-        metrics_log_kwargs: Additional keyword arguments to pass to all ``self.log`` calls
-            for metrics. Useful for configuring distributed synchronization behavior of
-            torchmetrics. Defaults to ``None``.
+        villain_loss_weight: Weight applied to VilLain self-supervision. Defaults to ``1.0``.
     """
 
     def __init__(
@@ -65,6 +60,21 @@ class VilLainHlpModule(HlpModule):
         metrics: MetricCollection | None = None,
         metrics_log_kwargs: dict[str, Any] | None = None,
     ):
+        """
+        Initialize the VilLain HLP module.
+
+        Args:
+            encoder_config: Configuration for the VilLain encoder.
+            embedding_mode: Whether to score from node-derived or hyperedge embeddings.
+            aggregation: Aggregation method used when ``embedding_mode="node"``.
+            loss_fn: Optional HLP loss function. Defaults to ``BCEWithLogitsLoss``.
+            lr: Learning rate for the optimizer. Defaults to ``0.01``.
+            weight_decay: Weight decay for the optimizer. Defaults to ``0.0``.
+            metrics: Optional metric collection for evaluation.
+            metrics_log_kwargs: Additional keyword arguments passed to metric log calls.
+                Useful for configuring distributed synchronization behavior of
+                ``torchmetrics``. Defaults to ``None``.
+        """
         self.embedding_dim = encoder_config.get("embedding_dim", 128)
         self.aggregation = aggregation
         self.lr = lr
@@ -97,6 +107,18 @@ class VilLainHlpModule(HlpModule):
         global_node_ids: Tensor | None = None,
         num_hyperedges: int | None = None,
     ) -> Tensor:
+        """
+        Score hyperedges with VilLain-generated embeddings.
+
+        Args:
+            hyperedge_index: Hyperedge incidence tensor.
+            global_node_ids: Optional global node IDs for transductive embedding lookup.
+                Defaults to ``None``.
+            num_hyperedges: Optional explicit number of hyperedges. Defaults to ``None``.
+
+        Returns:
+            scores: Predicted hyperedge scores.
+        """
         encoder = self.__to_villain_encoder()
 
         match self.embedding_mode:
@@ -122,6 +144,16 @@ class VilLainHlpModule(HlpModule):
         return scores
 
     def training_step(self, batch: HData, batch_idx: int) -> Tensor:
+        """
+        Run a training step with HLP and VilLain self-supervised losses.
+
+        Args:
+            batch: Training batch.
+            batch_idx: Batch index, unused.
+
+        Returns:
+            loss: Combined training loss.
+        """
         scores = self.forward(
             hyperedge_index=batch.hyperedge_index,
             global_node_ids=batch.global_node_ids,
@@ -179,22 +211,68 @@ class VilLainHlpModule(HlpModule):
         return loss
 
     def validation_step(self, batch: HData, batch_idx: int) -> Tensor:
+        """
+        Run a validation step.
+
+        Args:
+            batch: Validation batch.
+            batch_idx: Batch index, unused.
+
+        Returns:
+            loss: Validation loss.
+        """
         return self.__eval_step(batch, Stage.VAL)
 
     def test_step(self, batch: HData, batch_idx: int) -> Tensor:
+        """
+        Run a test step.
+
+        Args:
+            batch: Test batch.
+            batch_idx: Batch index, unused.
+
+        Returns:
+            loss: Test loss.
+        """
         return self.__eval_step(batch, Stage.TEST)
 
     def predict_step(self, batch: HData, batch_idx: int) -> Tensor:
+        """
+        Predict hyperedge scores for a batch.
+
+        Args:
+            batch: Prediction batch.
+            batch_idx: Batch index, unused.
+
+        Returns:
+            scores: Predicted hyperedge scores.
+        """
         return self.forward(
             hyperedge_index=batch.hyperedge_index,
             global_node_ids=batch.global_node_ids,
             num_hyperedges=batch.num_hyperedges,
         )
 
-    def configure_optimizers(self):
+    def configure_optimizers(self) -> optim.Adam:
+        """
+        Configure the optimizer.
+
+        Returns:
+            optimizer: Adam optimizer.
+        """
         return optim.Adam(self.parameters(), lr=self.lr, weight_decay=self.weight_decay)
 
     def __eval_step(self, batch: HData, stage: Stage) -> Tensor:
+        """
+        Run shared evaluation logic for a stage.
+
+        Args:
+            batch: Input batch.
+            stage: Current evaluation stage.
+
+        Returns:
+            loss: Computed loss.
+        """
         scores = self.forward(
             hyperedge_index=batch.hyperedge_index,
             global_node_ids=batch.global_node_ids,
@@ -208,6 +286,15 @@ class VilLainHlpModule(HlpModule):
         return loss
 
     def __to_villain_encoder(self) -> VilLain:
+        """
+        Return the configured VilLain encoder.
+
+        Returns:
+            encoder: VilLain encoder instance.
+
+        Raises:
+            ValueError: If the configured encoder is missing or has the wrong type.
+        """
         if self.encoder is None or not isinstance(self.encoder, VilLain):
             raise ValueError("VilLain requires a VilLain encoder, but none was provided.")
         return self.encoder

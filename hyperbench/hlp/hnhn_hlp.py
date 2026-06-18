@@ -40,17 +40,11 @@ class HNHNHlpModule(HlpModule):
     hyperedge with a linear decoder.
 
     Attributes:
-        encoder_config: Configuration for the HNHN encoder.
         aggregation: Method to aggregate node embeddings per hyperedge. Defaults to ``"mean"``.
-        loss_fn: Loss function. Defaults to ``BCEWithLogitsLoss``.
         lr: Learning rate for the optimizer. Defaults to ``0.01``.
         weight_decay: L2 regularization. Defaults to ``5e-4``.
         scheduler_step_size: Step size for learning rate scheduler. Defaults to ``100``.
         scheduler_gamma: Multiplicative factor for learning rate decay. Defaults to ``0.51``.
-        metrics: Optional metric collection for evaluation.
-        metrics_log_kwargs: Additional keyword arguments to pass to all ``self.log`` calls
-            for metrics. Useful for configuring distributed synchronization behavior of
-            torchmetrics. Defaults to ``None``.
     """
 
     def __init__(
@@ -65,6 +59,22 @@ class HNHNHlpModule(HlpModule):
         metrics: MetricCollection | None = None,
         metrics_log_kwargs: dict[str, Any] | None = None,
     ):
+        """
+        Initialize the HNHN HLP module.
+
+        Args:
+            encoder_config: Configuration for the HNHN encoder.
+            aggregation: Method used to aggregate node embeddings per hyperedge.
+            loss_fn: Optional loss function. Defaults to ``BCEWithLogitsLoss``.
+            lr: Learning rate for the optimizer. Defaults to ``0.01``.
+            weight_decay: L2 regularization. Defaults to ``5e-4``.
+            scheduler_step_size: Step size for the learning rate scheduler. Defaults to ``100``.
+            scheduler_gamma: Multiplicative factor for learning rate decay. Defaults to ``0.51``.
+            metrics: Optional metric collection for evaluation.
+            metrics_log_kwargs: Additional keyword arguments passed to metric log calls.
+                Useful for configuring distributed synchronization behavior
+                of ``torchmetrics``. Defaults to ``None``.
+        """
         encoder = HNHN(
             in_channels=encoder_config["in_channels"],
             hidden_channels=encoder_config["hidden_channels"],
@@ -111,18 +121,64 @@ class HNHNHlpModule(HlpModule):
         return scores
 
     def training_step(self, batch: HData, batch_idx: int) -> Tensor:
+        """
+        Run a training step.
+
+        Args:
+            batch: Training batch.
+            batch_idx: Batch index, unused.
+
+        Returns:
+            loss: Training loss.
+        """
         return self.__eval_step(batch, Stage.TRAIN)
 
     def validation_step(self, batch: HData, batch_idx: int) -> Tensor:
+        """
+        Run a validation step.
+
+        Args:
+            batch: Validation batch.
+            batch_idx: Batch index, unused.
+
+        Returns:
+            loss: Validation loss.
+        """
         return self.__eval_step(batch, Stage.VAL)
 
     def test_step(self, batch: HData, batch_idx: int) -> Tensor:
+        """
+        Run a test step.
+
+        Args:
+            batch: Test batch.
+            batch_idx: Batch index, unused.
+
+        Returns:
+            loss: Test loss.
+        """
         return self.__eval_step(batch, Stage.TEST)
 
     def predict_step(self, batch: HData, batch_idx: int) -> Tensor:
+        """
+        Predict hyperedge scores for a batch.
+
+        Args:
+            batch: Prediction batch.
+            batch_idx: Batch index, unused.
+
+        Returns:
+            scores: Predicted hyperedge scores.
+        """
         return self.forward(batch.x, batch.hyperedge_index)
 
-    def configure_optimizers(self):
+    def configure_optimizers(self) -> tuple[list[optim.Adam], list[optim.lr_scheduler.StepLR]]:
+        """
+        Configure the optimizer and scheduler.
+
+        Returns:
+            optimizers_and_schedulers: Optimizer and scheduler lists.
+        """
         optimizer = optim.Adam(self.parameters(), lr=self.lr, weight_decay=self.weight_decay)
         scheduler = optim.lr_scheduler.StepLR(
             optimizer, step_size=self.scheduler_step_size, gamma=self.scheduler_gamma
@@ -130,6 +186,16 @@ class HNHNHlpModule(HlpModule):
         return [optimizer], [scheduler]
 
     def __eval_step(self, batch: HData, stage: Stage) -> Tensor:
+        """
+        Run shared evaluation logic for a stage.
+
+        Args:
+            batch: Input batch.
+            stage: Current evaluation stage.
+
+        Returns:
+            loss: Computed loss.
+        """
         scores = self.forward(batch.x, batch.hyperedge_index)
         labels = batch.y
         batch_size = batch.num_hyperedges

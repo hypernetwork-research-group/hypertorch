@@ -15,21 +15,16 @@ class HlpModule(L.LightningModule):
 
     Attributes:
         encoder: Optional encoder module. Defaults to ``None`` as not
-            all HLP model will use an encoder.
+            all HLP model use an encoder.
         decoder: Decoder module to use to predict whether hyperedges are positive or negative.
         loss_fn: Loss function.
-        metrics: Optional ``MetricCollection`` of torchmetrics to compute during evaluation.
-            Cloned per stage (train, val, test) for independent state accumulation.
-            Metric distributed synchronization follows the active Lightning trainer's world size,
-            so single-device evaluation does not sync against a stale process group.
         metrics_log_kwargs: Additional keyword arguments to pass to all ``self.log`` calls
             for metrics. Useful for configuring distributed synchronization behavior of
-            torchmetrics. Defaults to ``None``.
-        negative_sampler: Optional negative sampler. If ``None``, no negative sampling is performed.
-        negative_sampling_schedule: When to perform negative sampling during training.
-            Defaults to ``"every_epoch"``.
-        negative_sampling_every_n: If using ``"every_n_epochs"`` schedule, how many epochs between
-            negative sampling runs. Defaults to ``1``.
+            ``torchmetrics``. Defaults to ``None``.
+        train_metrics: Optional metric collection for training.
+        val_metrics: Optional metric collection for validation.
+        test_metrics: Optional metric collection for testing.
+        __negative_sampling_scheduler: Optional negative-sampling scheduler.
     """
 
     def __init__(
@@ -43,6 +38,19 @@ class HlpModule(L.LightningModule):
         negative_sampling_schedule: NegativeSamplingSchedule = "every_epoch",
         negative_sampling_every_n: int = 1,
     ):
+        """
+        Initialize the HLP Lightning module.
+
+        Args:
+            decoder: Decoder module used to score hyperedges.
+            loss_fn: Loss function.
+            encoder: Optional encoder module.
+            metrics: Optional metric collection cloned independently per stage.
+            metrics_log_kwargs: Additional keyword arguments passed to metric log calls.
+            negative_sampler: Optional negative sampler.
+            negative_sampling_schedule: Schedule controlling when negatives are sampled.
+            negative_sampling_every_n: Epoch interval for ``"every_n_epochs"`` scheduling.
+        """
         super().__init__()
         self.encoder = encoder
         self.decoder = decoder
@@ -68,6 +76,12 @@ class HlpModule(L.LightningModule):
 
     @property
     def negative_sampling_config(self) -> dict[str, Any]:
+        """
+        Return the configured negative-sampling options.
+
+        Returns:
+            config: Scheduler configuration, or an empty dictionary when negative sampling is off.
+        """
         if self.__negative_sampling_scheduler is None:
             return {}
         return self.__negative_sampling_scheduler.config
@@ -229,8 +243,27 @@ class HlpModule(L.LightningModule):
 
 
 def stage_metric_name(stage: Stage, metric_name: str) -> str:
+    """
+    Build a metric name with its stage prefix.
+
+    Args:
+        stage: Metric stage.
+        metric_name: Metric name without a stage prefix.
+
+    Returns:
+        metric_name: Stage-prefixed metric name.
+    """
     return f"{stage_metric_prefix(stage)}{metric_name}"
 
 
 def stage_metric_prefix(stage: Stage) -> str:
+    """
+    Build the metric prefix for a stage.
+
+    Args:
+        stage: Metric stage.
+
+    Returns:
+        prefix: Stage prefix ending with ``"/"``.
+    """
     return f"{stage.value}/"
