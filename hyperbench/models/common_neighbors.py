@@ -7,6 +7,15 @@ from hyperbench.types import Neighborhood
 
 
 class CommonNeighbors(nn.Module):
+    """
+    Computes Common Neighbors scores for hyperedges.
+
+    Attributes:
+        aggregation: Method to aggregate node embeddings per hyperedge. Can be one of
+            ``"mean"``, ``"min"``, or ``"sum"``.
+        scorer: An instance of a NeighborScorer that computes the scores for hyperedges.
+    """
+
     def __init__(
         self,
         aggregation: Literal["mean", "min", "sum"],

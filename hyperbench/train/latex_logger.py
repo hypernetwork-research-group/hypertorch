@@ -91,7 +91,7 @@ class LaTexTableLogger(Logger):
     This means the file is progressively updated as models finish training/testing,
     so you can open it mid-run to see partial results.
 
-    Args:
+    Attributes:
         save_dir: Base directory where the comparison/ subfolder will be created.
         model_name: The model's full name (e.g., "mlp:mean").
         experiment_name: Shared key that groups all models in the same experiment.

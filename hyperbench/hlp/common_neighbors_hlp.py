@@ -15,7 +15,7 @@ class CommonNeighborsHlpModule(HlpModule):
     """
     A LightningModule for the CommonNeighbors model with optional negative sampling.
 
-    Args:
+    Attributes:
         aggregation: The aggregation method for common neighbors ("mean", "min", or "sum").
         decoder: An optional decoder module. Defaults to `CommonNeighbors`.
         loss_fn: An optional loss function. Defaults to ``BCEWithLogitsLoss``.

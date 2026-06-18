@@ -46,7 +46,7 @@ class Node2VecSLPHlpModule(HlpModule):
         - ``precomputed``: use node embeddings already stored in ``batch.x``.
         - ``joint``: train a Node2Vec encoder jointly with the hyperedge decoder.
 
-    Args:
+    Attributes:
         encoder_config: Configuration for the Node2Vec encoder.
         aggregation: Method to aggregate node embeddings per hyperedge.
         loss_fn: Loss function. Defaults to ``BCEWithLogitsLoss``.

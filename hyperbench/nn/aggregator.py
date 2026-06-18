@@ -12,12 +12,12 @@ class HyperedgeAggregator:
     Each node-hyperedge incidence selects one node embedding row, then reduces
     those rows per hyperedge with the requested scatter aggregation.
 
-    Args:
+    Attributes:
         hyperedge_index: Hyperedge incidence in COO format of size ``(2, num_incidences)``.
         node_embeddings: Node embedding matrix of size ``(num_nodes, num_channels)``.
         num_hyperedges: Optional explicit hyperedge count.
-            When provided, the pooled output preserves empty hyperedges that do not appear
-            in ``hyperedge_index``.
+            When provided, the pooled output preserves empty hyperedges that
+            do not appear in ``hyperedge_index``.
     """
 
     def __init__(

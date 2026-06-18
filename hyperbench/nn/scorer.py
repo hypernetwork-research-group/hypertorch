@@ -7,6 +7,10 @@ from hyperbench.types import Neighborhood, Hypergraph, HyperedgeIndex
 
 
 class NeighborScorer(ABC):
+    """
+    Abstract base class for neighbor scorers.
+    """
+
     @abstractmethod
     def score(
         self,
@@ -25,6 +29,14 @@ class NeighborScorer(ABC):
 
 
 class CommonNeighborsScorer(NeighborScorer):
+    """
+    Scorer for computing the Common Neighbors (CN) score for hyperedges.
+
+    Attributes:
+        aggregation: Method to aggregate node embeddings per hyperedge. Can be one of
+            ``"mean"``, ``"min"``, or ``"sum"``.
+    """
+
     __DEFAULT_SCORE = 0.0
 
     def __init__(self, aggregation: Literal["mean", "min", "sum"]) -> None:

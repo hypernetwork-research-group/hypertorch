@@ -12,6 +12,10 @@ class SamplingStrategy(Enum):
 
 
 class BaseSampler(ABC):
+    """
+    Abstract base class for sampling from an HData instance.
+    """
+
     @abstractmethod
     def sample(self, index: int | list[int], hdata: HData) -> HData:
         """

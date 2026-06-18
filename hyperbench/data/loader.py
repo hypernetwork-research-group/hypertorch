@@ -8,12 +8,68 @@ from hyperbench.types import HData, HyperedgeIndex
 
 
 class DataLoader(TorchDataLoader):
+    """
+    DataLoader combines a dataset and a sampler, and provides an iterable
+    over the given dataset. It extends ``torch.utils.data.DataLoader``.
+
+    Attributes:
+        dataset: Dataset that provides sampled `HData` objects.
+        batch_size: Number of samples per batch. Ignored when
+            ``sample_full_hypergraph`` is ``True`` because the full dataset
+            is loaded as one batch.
+        shuffle: Whether to reshuffle sample indices at every epoch.
+        sample_full_hypergraph: Whether each batch should contain the dataset's full
+            hypergraph instead of the sampled items.
+        drop_last: Whether to drop the final incomplete batch when the dataset size
+            is not divisible by the batch size. If ``True``, drop the last incomplete batch.
+            If ``False``, the last batch will be kept and will be smaller.
+            Defaults to ``False``.
+        num_workers: Optional number of subprocesses to use for data loading.
+            For instance, ``0`` means loading happens in the main process. Defaults to ``0``.
+        persistent_workers: Whether worker processes should stay alive after a dataset has
+            been consumed once. If ``True``, the data loader will not shut down
+            the worker processes after a dataset has been consumed once. This allows to
+            maintain the workers `Dataset` instances alive. Defaults to ``False``.
+        collate_fn: Optional custom collate function. When ``None``, uses
+            the default `collate` method.
+        generator: Optional random generator used by the underlying Torch data loader.
+        kwargs:
+            sampler: Defines the strategy to draw samples from the dataset.
+                Can be any ``Iterable`` with ``__len__`` implemented.
+                Mutually exclusive with ``shuffle``. Defaults to ``None``.
+            batch_sampler: Defines the strategy to draw batches of indices. Mutually exclusive
+                with ``batch_size``, ``shuffle``, ``sampler``, and ``drop_last``.
+                Defaults to ``None``.
+            pin_memory: Whether to copy tensors into pinned memory before returning them.
+                If ``True``, the data loader will copy tensors into device/CUDA pinned memory
+                before returning them. If your data elements are a custom type, or `collate_fn`
+                returns a batch that is a custom type, look at ``torch.utils.data.DataLoader``
+                for examples. Defaults to ``False``.
+            timeout: Timeout, in seconds, for collecting a batch from worker processes.
+                Should always be non-negative and defaults to ``0``.
+            worker_init_fn: If not ``None``, this will be called on each worker subprocess
+                with the worker id (an int in ``[0, num_workers - 1]``) as input, after seeding
+                and before data loading. Defaults to ``None``.
+            multiprocessing_context: Multiprocessing context or context name used to create
+                worker processes.
+            prefetch_factor: Number of batches loaded in advance by each worker.
+                For example, ``2`` means there will be a total of ``2 * num_workers`` batches
+                prefetched across all workers. The default value depends on the set value
+                for num_workers. If ``num_workers=0``, defaults to ``None``.
+                If ``num_workers > 0``, defaults to ``2``.
+            in_order: If ``True``, batches are returned in first-in, first-out order when
+                ``num_workers > 0``. Defaults to ``True``.
+    """
+
     def __init__(
         self,
         dataset: Dataset,
         batch_size: int = 1,
         shuffle: bool | None = False,
         sample_full_hypergraph: bool = False,
+        drop_last: bool = False,
+        num_workers: int = 0,
+        persistent_workers: bool = False,
         collate_fn: Callable[[list[HData]], HData] | None = None,
         generator: Generator | None = None,
         **kwargs,
@@ -26,6 +82,9 @@ class DataLoader(TorchDataLoader):
             shuffle=shuffle,
             collate_fn=self.collate if collate_fn is None else collate_fn,
             generator=generator,
+            num_workers=num_workers,
+            persistent_workers=persistent_workers,
+            drop_last=drop_last,
             **kwargs,
         )
 

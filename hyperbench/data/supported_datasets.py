@@ -12,7 +12,7 @@ class _PreloadedDataset(Dataset):
     Subclasses should specify the ``DATASET_NAME`` class variable. The dataset will be saved on
     disk after the first load.
 
-    Args:
+    Attributes:
         hdata: Optional HData object. If ``None``, the dataset will be loaded using
             the ``DATASET_NAME``.
         sampling_strategy: The sampling strategy to use for this dataset.

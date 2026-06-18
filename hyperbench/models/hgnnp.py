@@ -11,7 +11,7 @@ class HGNNP(nn.Module):
         - Proposed in [HGNN+: General Hypergraph Neural Networks](https://ieeexplore.ieee.org/document/9795251) paper (IEEE T-PAMI 2022).
         - Reference implementation: [Code](https://deephypergraph.readthedocs.io/en/latest/_modules/dhg/models/hypergraphs/hgnnp.html#HGNNP).
 
-    Args:
+    Attributes:
         in_channels: The number of input channels.
         hidden_channels: The number of hidden channels.
         num_classes: The number of output channels.

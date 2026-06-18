@@ -10,7 +10,7 @@ class Node2Vec(nn.Module):
     """
     Node2Vec implementation based on ``torch_geometric.nn.Node2Vec``.
 
-    Args:
+    Attributes:
         edge_index: Edge index representing the graph structure. Size ``(2, num_edges)``.
         embedding_dim: Dimension of the node embeddings to learn.
         walk_length: Length of each random walk.
@@ -150,7 +150,7 @@ class Node2VecGCN(nn.Module):
     """
     A joint encoder that first learns Node2Vec embeddings and then refines them with GCN layers.
 
-    Args:
+    Attributes:
         node2vec_config: Model-side configuration for the internal ``Node2Vec`` encoder.
         gcn_config: Model-side configuration for the GCN stack applied to the Node2Vec embeddings.
     """

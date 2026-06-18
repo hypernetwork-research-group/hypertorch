@@ -39,7 +39,7 @@ class VilLainHlpModule(HlpModule):
     """
     Feature-free VilLain Hyperedge Link Prediction module.
 
-    Args:
+    Attributes:
         encoder_config: Configuration for the VilLain encoder.
         embedding_mode: Whether to return node or hyperedge embeddings from the VilLain encoder.
         aggregation: Aggregation method to pool node embeddings into hyperedge embeddings

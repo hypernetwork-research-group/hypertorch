@@ -10,7 +10,7 @@ class HyperGCNConv(nn.Module):
         - The HyperGCNConv layer proposed in [HyperGCN: A New Method of Training Graph Convolutional Networks on Hypergraphs](https://dl.acm.org/doi/10.5555/3454287.3454422) paper (NeurIPS 2019).
         - Reference implementation: [source](https://deephypergraph.readthedocs.io/en/latest/_modules/dhg/nn/convs/hypergraphs/hypergcn_conv.html#HyperGCNConv).
 
-    Args:
+    Attributes:
         in_channels: The number of input channels.
         out_channels: The number of output channels.
         bias: If set to ``False``, the layer will not learn the bias parameter.
@@ -117,7 +117,7 @@ class HGNNConv(nn.Module):
     Unlike ``HyperGCNConv``, which uses a GCN Laplacian on a graph reduced from the hypergraph,
     ``HGNNConv`` operates entirely in hypergraph space and preserves all higher-order relationships.
 
-    Args:
+    Attributes:
         in_channels: The number of input channels.
         out_channels: The number of output channels.
         bias: If set to ``False``, the layer will not learn the bias parameter.
@@ -193,7 +193,7 @@ class HGNNPConv(nn.Module):
     spectral Laplacian, ``HGNNPConv`` uses plain inverse degrees and performs
     two-stage mean aggregation: nodes -> hyperedges -> nodes.
 
-    Args:
+    Attributes:
         in_channels: The number of input channels.
         out_channels: The number of output channels.
         bias: If set to ``False``, the layer will not learn the bias parameter.
@@ -257,7 +257,7 @@ class HNHNConv(nn.Module):
         - The HNHNConv layer proposed in [HNHN: Hypergraph Networks with Hyperedge Neurons](https://arxiv.org/abs/2006.12278) paper.
         - Reference implementation: [Code](https://deephypergraph.readthedocs.io/en/latest/_modules/dhg/nn/convs/hypergraphs/hnhn_conv.html#HNHNConv).
 
-    Args:
+    Attributes:
         in_channels: The number of input channels.
         out_channels: The number of output channels.
         bias: If set to ``False``, the layer will not learn the bias parameter.

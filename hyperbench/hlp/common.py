@@ -13,7 +13,7 @@ class HlpModule(L.LightningModule):
     """
     A LightningModule for HLP models with optional negative sampling.
 
-    Args:
+    Attributes:
         encoder: Optional encoder module. Defaults to ``None`` as not
             all HLP model will use an encoder.
         decoder: Decoder module to use to predict whether hyperedges are positive or negative.

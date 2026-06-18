@@ -48,7 +48,7 @@ class GCN(nn.Module):
     """
     A reusable multi-layer GCN stack built from ``torch_geometric.nn.GCNConv``.
 
-    Args:
+    Attributes:
         in_channels: Dimension of the input node embeddings to the GCN layers.
         out_channels: Dimension of the output node embeddings from the GCN layers.
         hidden_channels: Dimension of the hidden node embeddings in the GCN layers.

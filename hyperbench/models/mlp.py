@@ -36,7 +36,7 @@ class MLP(nn.Module):
         >>> output.shape
         ... torch.Size([10, 1])
 
-    Args:
+    Attributes:
         in_channels: Number of input features.
         out_channels: Number of output features.
         hidden_channels: Number of hidden units in each hidden layer. Required if num_layers > 1.

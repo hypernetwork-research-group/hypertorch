@@ -37,7 +37,7 @@ class NHP(nn.Module):
         >>> scores.shape
         ... torch.Size([2])
 
-    Args:
+    Attributes:
         in_channels: Number of input features per node.
         hidden_channels: Number of hidden units in the node embeddings.
         activation_fn: Activation function to use after the linear transformations.

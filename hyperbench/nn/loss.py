@@ -66,7 +66,7 @@ class VilLainLoss:
     The VilLain model owns message passing and accumulation over steps
     and this class owns the per-step formulas for local and global loss,
 
-    Args:
+    Attributes:
         num_subspaces: Number of virtual-label subspaces in each embedding.
         labels_per_subspace: Number of virtual labels in each subspace.
         eps: Numerical stability constant used in logarithms and cosine similarity.

@@ -39,7 +39,7 @@ class HGNNPHlpModule(HlpModule):
     row-stochastic hypergraph convolution, aggregates them per hyperedge,
     and scores each hyperedge with a linear decoder.
 
-    Args:
+    Attributes:
         encoder_config: Configuration for the HGNN+ encoder.
         aggregation: Method to aggregate node embeddings per hyperedge. Defaults to ``"mean"``.
         loss_fn: Loss function. Defaults to ``BCEWithLogitsLoss``.
