@@ -51,18 +51,48 @@ MARKDOWN_CHARACTER_ESCAPE_TABLE: dict[str, str] = {
 
 
 def clone_optional_tensor(tensor: Tensor | None) -> Tensor | None:
+    """
+    Clone a tensor when it is provided.
+
+    Args:
+        tensor: Optional tensor to clone.
+
+    Returns:
+        tensor: A cloned tensor, or ``None`` when no tensor is provided.
+    """
     return tensor.clone() if tensor is not None else None
 
 
 def empty_nodefeatures() -> Tensor:
+    """
+    Create an empty node feature tensor.
+
+    Returns:
+        features: Empty floating-point tensor of shape ``(0, 0)``.
+    """
     return torch.empty((0, 0), dtype=torch.float)
 
 
 def empty_hyperedgeindex() -> Tensor:
+    """
+    Create an empty hyperedge index tensor.
+
+    Returns:
+        hyperedge_index: Empty long tensor of shape ``(2, 0)``.
+    """
     return torch.empty((2, 0), dtype=torch.long)
 
 
 def empty_edgeattr(num_edges: int) -> Tensor:
+    """
+    Create an empty edge attribute tensor for a fixed number of edges.
+
+    Args:
+        num_edges: Number of edge rows to allocate.
+
+    Returns:
+        edge_attr: Empty floating-point tensor of shape ``(num_edges, 0)``.
+    """
     return torch.empty((num_edges, 0), dtype=torch.float)
 
 
@@ -81,6 +111,15 @@ def escape(text: str, escaped_characters_table: dict[str, str]) -> str:
 
 
 def to_non_empty_edgeattr(edge_attr: Tensor | None) -> Tensor:
+    """
+    Convert optional edge attributes to a tensor with an edge dimension.
+
+    Args:
+        edge_attr: Optional edge attribute tensor.
+
+    Returns:
+        edge_attr: The provided tensor, or an empty tensor with the inferred edge count.
+    """
     num_edges = edge_attr.size(0) if edge_attr is not None else 0
     return empty_edgeattr(num_edges) if edge_attr is None else edge_attr
 
@@ -122,6 +161,18 @@ def validate_is_between(
     min_value: int | float,
     max_value: int | float,
 ) -> None:
+    """
+    Validate that a numeric value is finite and lies within inclusive bounds.
+
+    Args:
+        name: Name of the validated value.
+        value: Numeric value to validate.
+        min_value: Inclusive lower bound.
+        max_value: Inclusive upper bound.
+
+    Raises:
+        ValueError: If the bounds are invalid or the value is outside them.
+    """
     if min_value > max_value:
         raise ValueError(
             f"Invalid bounds for {name!r}: 'min_value' ({min_value}) cannot "
@@ -134,31 +185,90 @@ def validate_is_between(
 
 
 def validate_is_finite(name: str, value: int | float) -> None:
+    """
+    Validate that a numeric value is finite.
+
+    Args:
+        name: Name of the validated value.
+        value: Numeric value to validate.
+
+    Raises:
+        ValueError: If the value is not finite.
+    """
     if not math.isfinite(value):
         raise ValueError(f"{name!r} must be finite, got {value}.")
 
 
 def validate_is_finite_when_provided(name: str, value: int | float | None) -> None:
+    """
+    Validate that an optional numeric value is finite when provided.
+
+    Args:
+        name: Name of the validated value.
+        value: Optional numeric value to validate.
+
+    Raises:
+        ValueError: If the provided value is not finite.
+    """
     if value is not None and not math.isfinite(value):
         raise ValueError(f"{name!r} must be finite when provided, got {value}.")
 
 
 def validate_is_non_negative(name: str, value: int | float) -> None:
+    """
+    Validate that a numeric value is non-negative.
+
+    Args:
+        name: Name of the validated value.
+        value: Numeric value to validate.
+
+    Raises:
+        ValueError: If the value is negative.
+    """
     if value < 0:
         raise ValueError(f"{name!r} must be non-negative, got {value}.")
 
 
 def validate_is_positive(name: str, value: int | float) -> None:
+    """
+    Validate that a numeric value is positive.
+
+    Args:
+        name: Name of the validated value.
+        value: Numeric value to validate.
+
+    Raises:
+        ValueError: If the value is not positive.
+    """
     if value <= 0:
         raise ValueError(f"{name!r} must be positive, got {value}.")
 
 
 def validate_is_non_empty(name: str, value: Sequence) -> None:
+    """
+    Validate that a sequence is not empty.
+
+    Args:
+        name: Name of the validated sequence.
+        value: Sequence to validate.
+
+    Raises:
+        ValueError: If the sequence is empty.
+    """
     if len(value) < 1:
         raise ValueError(f"{name!r} cannot be empty.")
 
 
 def validate_ratios(ratios: list[int | float]) -> None:
+    """
+    Validate split ratios.
+
+    Args:
+        ratios: Ratios that must be positive, finite, non-empty, and sum to one.
+
+    Raises:
+        ValueError: If any ratio is invalid or the ratios do not sum to one.
+    """
     validate_is_non_empty("ratios", ratios)
 
     for ratio in ratios:
