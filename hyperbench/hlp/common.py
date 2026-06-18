@@ -56,21 +56,27 @@ class HlpModule(L.LightningModule):
                 Defaults to ``1``.
         """
         super().__init__()
-        self.encoder = encoder
-        self.decoder = decoder
-        self.loss_fn = loss_fn
-        self.metrics_log_kwargs = metrics_log_kwargs or {}
+        self.encoder: nn.Module | None = encoder
+        self.decoder: nn.Module = decoder
+        self.loss_fn: nn.Module = loss_fn
+        self.metrics_log_kwargs: dict[str, Any] = metrics_log_kwargs or {}
 
         if metrics is not None:
-            self.train_metrics = metrics.clone(prefix=stage_metric_prefix(Stage.TRAIN))
-            self.val_metrics = metrics.clone(prefix=stage_metric_prefix(Stage.VAL))
-            self.test_metrics = metrics.clone(prefix=stage_metric_prefix(Stage.TEST))
+            self.train_metrics: MetricCollection | None = metrics.clone(
+                prefix=stage_metric_prefix(Stage.TRAIN)
+            )
+            self.val_metrics: MetricCollection | None = metrics.clone(
+                prefix=stage_metric_prefix(Stage.VAL)
+            )
+            self.test_metrics: MetricCollection | None = metrics.clone(
+                prefix=stage_metric_prefix(Stage.TEST)
+            )
         else:
-            self.train_metrics = None
-            self.val_metrics = None
-            self.test_metrics = None
+            self.train_metrics: MetricCollection | None = None
+            self.val_metrics: MetricCollection | None = None
+            self.test_metrics: MetricCollection | None = None
 
-        self.__negative_sampling_scheduler = None
+        self.__negative_sampling_scheduler: NegativeSamplingScheduler | None = None
         if negative_sampler is not None:
             self.__negative_sampling_scheduler = NegativeSamplingScheduler(
                 negative_sampler,

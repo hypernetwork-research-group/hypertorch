@@ -106,7 +106,7 @@ class MLP(nn.Module):
                 if drop_rate > 0.0:
                     layers.append(nn.Dropout(drop_rate))
 
-        self.layers = nn.Sequential(*layers)
+        self.layers: nn.Sequential = nn.Sequential(*layers)
 
     def forward(self, x: Tensor) -> Tensor:
         """

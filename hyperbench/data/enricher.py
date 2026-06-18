@@ -77,18 +77,18 @@ class _VilLainTrainer:
             weight_decay: Adam weight decay.
             verbose: Whether to print training progress.
         """
-        self.embedding_dim = num_features
-        self.num_nodes = num_nodes
-        self.num_hyperedges = num_hyperedges
-        self.labels_per_subspace = labels_per_subspace
-        self.training_steps = training_steps
-        self.generation_steps = generation_steps
-        self.tau = tau
-        self.eps = eps
-        self.num_epochs = num_epochs
-        self.learning_rate = learning_rate
-        self.weight_decay = weight_decay
-        self.verbose = verbose
+        self.embedding_dim: int = num_features
+        self.num_nodes: int = num_nodes
+        self.num_hyperedges: int = num_hyperedges
+        self.labels_per_subspace: int = labels_per_subspace
+        self.training_steps: int = training_steps
+        self.generation_steps: int = generation_steps
+        self.tau: float = tau
+        self.eps: float = eps
+        self.num_epochs: int = num_epochs
+        self.learning_rate: float = learning_rate
+        self.weight_decay: float = weight_decay
+        self.verbose: bool = verbose
 
         self.__validate()
 
@@ -230,7 +230,7 @@ class Enricher(ABC):
             cache_dir: Directory for saving/loading cached features.
                 If ``None``, caching is disabled.
         """
-        self.cache_dir = cache_dir
+        self.cache_dir: str | None = cache_dir
 
     @abstractmethod
     def enrich(self, hyperedge_index: Tensor) -> Tensor:
@@ -291,7 +291,7 @@ class FillValueHyperedgeAttrsEnricher(HyperedgeAttrsEnricher):
             fill_value: The constant value to fill the hyperedge attributes with.
         """
         super().__init__(cache_dir=cache_dir)
-        self.fill_value = fill_value
+        self.fill_value: float = fill_value
 
     def enrich(self, hyperedge_index: Tensor) -> Tensor:
         """
@@ -437,8 +437,8 @@ class ABHyperedgeWeightsEnricher(HyperedgeWeightsEnricher):
         validate_is_between("alpha", alpha, 0.0, 1.0)
         validate_is_finite_when_provided("beta", beta)
 
-        self.alpha = alpha
-        self.beta = beta
+        self.alpha: float = alpha
+        self.beta: float | None = beta
 
     def enrich(self, hyperedge_index: Tensor) -> Tensor:
         """
@@ -555,20 +555,20 @@ class Node2VecEnricher(NodeEnricher):
             verbose: Whether to print verbose output during training.
         """
         super().__init__(cache_dir=cache_dir)
-        self.embedding_dim = num_features
-        self.walk_length = walk_length
-        self.context_size = context_size
-        self.num_walks_per_node = num_walks_per_node
-        self.p = p
-        self.q = q
-        self.num_negative_samples = num_negative_samples
-        self.num_nodes = num_nodes
-        self.graph_reduction_strategy = graph_reduction_strategy
-        self.num_epochs = num_epochs
-        self.learning_rate = learning_rate
-        self.batch_size = batch_size
-        self.sparse = sparse
-        self.verbose = verbose
+        self.embedding_dim: int = num_features
+        self.walk_length: int = walk_length
+        self.context_size: int = context_size
+        self.num_walks_per_node: int = num_walks_per_node
+        self.p: float = p
+        self.q: float = q
+        self.num_negative_samples: int = num_negative_samples
+        self.num_nodes: int = num_nodes
+        self.graph_reduction_strategy: Literal["clique_expansion"] = graph_reduction_strategy
+        self.num_epochs: int = num_epochs
+        self.learning_rate: float = learning_rate
+        self.batch_size: int = batch_size
+        self.sparse: bool = sparse
+        self.verbose: bool = verbose
 
         self.__validate()
 
@@ -738,8 +738,8 @@ class LaplacianPositionalEncodingEnricher(NodeEnricher):
         validate_is_positive("num_features", num_features)
         validate_is_non_negative("num_nodes", num_nodes)
 
-        self.num_features = num_features
-        self.num_nodes = num_nodes
+        self.num_features: int = num_features
+        self.num_nodes: int = num_nodes
 
     def enrich(self, hyperedge_index: Tensor) -> Tensor:
         """

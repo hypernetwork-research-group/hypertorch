@@ -44,9 +44,9 @@ class NegativeSamplingScheduler:
             negative_sampling_schedule: Schedule controlling when negatives are sampled.
             negative_sampling_every_n: Epoch interval used for ``"every_n_epochs"`` scheduling.
         """
-        self.negative_sampler = negative_sampler
-        self.negative_sampling_schedule = negative_sampling_schedule
-        self.negative_sampling_every_n = negative_sampling_every_n
+        self.negative_sampler: NegativeSampler = negative_sampler
+        self.negative_sampling_schedule: NegativeSamplingSchedule = negative_sampling_schedule
+        self.negative_sampling_every_n: int = negative_sampling_every_n
 
         self.__cached_negative_samples: HData | None = None
 

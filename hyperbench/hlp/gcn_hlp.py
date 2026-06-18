@@ -120,10 +120,10 @@ class GCNHlpModule(HlpModule):
             metrics_log_kwargs=metrics_log_kwargs,
         )
 
-        self.encoder_config = encoder_config
-        self.aggregation = aggregation
-        self.lr = lr
-        self.weight_decay = weight_decay
+        self.encoder_config: GCNEncoderConfig = encoder_config
+        self.aggregation: Literal["mean", "max", "min", "sum"] = aggregation
+        self.lr: float = lr
+        self.weight_decay: float = weight_decay
 
     def forward(self, x: Tensor, hyperedge_index: Tensor) -> Tensor:
         """

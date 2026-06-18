@@ -63,15 +63,15 @@ class ModelConfig:
             test_dataloader: Optional per-model test dataloader. When set, ``test_all``
                 uses this instead of the shared ``dataloader`` argument.
         """
-        self.name = name
-        self.version = version
-        self.model = model
-        self.is_trainable = is_trainable
-        self.trainer = trainer
-        self.test_trainer = test_trainer
-        self.train_dataloader = train_dataloader
-        self.val_dataloader = val_dataloader
-        self.test_dataloader = test_dataloader
+        self.name: str = name
+        self.version: str = version
+        self.model: L.LightningModule = model
+        self.is_trainable: bool = is_trainable
+        self.trainer: L.Trainer | None = trainer
+        self.test_trainer: L.Trainer | None = test_trainer
+        self.train_dataloader: DataLoader | None = train_dataloader
+        self.val_dataloader: DataLoader | None = val_dataloader
+        self.test_dataloader: DataLoader | None = test_dataloader
 
     def full_model_name(self) -> str:
         """

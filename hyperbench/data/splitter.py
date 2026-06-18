@@ -71,9 +71,9 @@ class DefaultDatasetSplitter(Splitter["Dataset", tuple[list["Dataset"], list[flo
             shuffle: Whether to shuffle hyperedges before splitting.
             seed: Optional random seed for reproducibility.
         """
-        self.node_space_setting = node_space_setting
-        self.shuffle = shuffle
-        self.seed = seed
+        self.node_space_setting: NodeSpaceSetting = node_space_setting
+        self.shuffle: bool | None = shuffle
+        self.seed: int | None = seed
 
         validate_node_space_setting(self.node_space_setting)
 
@@ -197,7 +197,7 @@ class DefaultHDataSplitter(Splitter["HData", "HData"]):
         Args:
             node_space_setting: Whether to preserve the full node space in the split.
         """
-        self.node_space_setting = node_space_setting
+        self.node_space_setting: NodeSpaceSetting = node_space_setting
         validate_node_space_setting(self.node_space_setting)
 
     def split(self, to_split: HData, **kwargs: Any) -> HData:
@@ -298,10 +298,10 @@ class HyperedgeIDSplitter(Splitter["Tensor", tuple[list["Tensor"], list[float]]]
             num_nodes: Number of nodes in the source hypergraph.
             num_hyperedges: Number of hyperedges in the source hypergraph.
         """
-        self.hyperedge_index = hyperedge_index
-        self.num_nodes = num_nodes
-        self.num_hyperedges = num_hyperedges
-        self.device = hyperedge_index.device
+        self.hyperedge_index: Tensor = hyperedge_index
+        self.num_nodes: int = num_nodes
+        self.num_hyperedges: int = num_hyperedges
+        self.device: torch.device = hyperedge_index.device
 
     def ensure_split_covers_all_nodes(
         self,

@@ -86,12 +86,12 @@ class VilLainHlpModule(HlpModule):
                 Useful for configuring distributed synchronization behavior of
                 ``torchmetrics``. Defaults to ``None``.
         """
-        self.embedding_dim = encoder_config.get("embedding_dim", 128)
-        self.aggregation = aggregation
-        self.lr = lr
-        self.weight_decay = weight_decay
-        self.villain_loss_weight = encoder_config.get("villain_loss_weight", 1.0)
-        self.embedding_mode = embedding_mode
+        self.embedding_dim: int = encoder_config.get("embedding_dim", 128)
+        self.aggregation: Literal["mean", "max", "min", "maxmin", "sum"] = aggregation
+        self.lr: float = lr
+        self.weight_decay: float = weight_decay
+        self.villain_loss_weight: float = encoder_config.get("villain_loss_weight", 1.0)
+        self.embedding_mode: Literal["node", "hyperedge"] = embedding_mode
 
         encoder = VilLain(
             num_nodes=encoder_config["num_nodes"],

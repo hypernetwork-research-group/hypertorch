@@ -55,18 +55,20 @@ class HyperGCNConv(nn.Module):
                 Defaults to ``None``.
         """
         super().__init__()
-        self.is_last = is_last
-        self.use_mediator = use_mediator
-        self.batch_norm_1d = nn.BatchNorm1d(out_channels) if use_batch_normalization else None
-        self.activation_fn = nn.ReLU(inplace=True)
-        self.dropout = nn.Dropout(drop_rate)
+        self.is_last: bool = is_last
+        self.use_mediator: bool = use_mediator
+        self.batch_norm_1d: nn.BatchNorm1d | None = (
+            nn.BatchNorm1d(out_channels) if use_batch_normalization else None
+        )
+        self.activation_fn: nn.ReLU = nn.ReLU(inplace=True)
+        self.dropout: nn.Dropout = nn.Dropout(drop_rate)
 
         # θ is the learnable weight matrix (as in the HyperGCN paper),
         # it projects node features from in_channels to out_channels and
         # learns how to mix feature channels
-        self.theta = nn.Linear(in_channels, out_channels, bias=bias)
+        self.theta: nn.Linear = nn.Linear(in_channels, out_channels, bias=bias)
 
-        self.seed = seed
+        self.seed: int | None = seed
 
     def forward(
         self,
@@ -168,11 +170,13 @@ class HGNNConv(nn.Module):
                 dropout functions. Defaults to ``False``.
         """
         super().__init__()
-        self.is_last = is_last
-        self.batch_norm_1d = nn.BatchNorm1d(out_channels) if use_batch_normalization else None
-        self.activation_fn = nn.ReLU(inplace=True)
-        self.dropout = nn.Dropout(drop_rate)
-        self.theta = nn.Linear(in_channels, out_channels, bias=bias)
+        self.is_last: bool = is_last
+        self.batch_norm_1d: nn.BatchNorm1d | None = (
+            nn.BatchNorm1d(out_channels) if use_batch_normalization else None
+        )
+        self.activation_fn: nn.ReLU = nn.ReLU(inplace=True)
+        self.dropout: nn.Dropout = nn.Dropout(drop_rate)
+        self.theta: nn.Linear = nn.Linear(in_channels, out_channels, bias=bias)
 
     def forward(self, x: Tensor, hyperedge_index: Tensor) -> Tensor:
         """
@@ -256,11 +260,13 @@ class HGNNPConv(nn.Module):
                 functions. Defaults to ``False``.
         """
         super().__init__()
-        self.is_last = is_last
-        self.batch_norm_1d = nn.BatchNorm1d(out_channels) if use_batch_normalization else None
-        self.activation_fn = nn.ReLU(inplace=True)
-        self.dropout = nn.Dropout(drop_rate)
-        self.theta = nn.Linear(in_channels, out_channels, bias=bias)
+        self.is_last: bool = is_last
+        self.batch_norm_1d: nn.BatchNorm1d | None = (
+            nn.BatchNorm1d(out_channels) if use_batch_normalization else None
+        )
+        self.activation_fn: nn.ReLU = nn.ReLU(inplace=True)
+        self.dropout: nn.Dropout = nn.Dropout(drop_rate)
+        self.theta: nn.Linear = nn.Linear(in_channels, out_channels, bias=bias)
 
     def forward(self, x: Tensor, hyperedge_index: Tensor) -> Tensor:
         """
@@ -335,12 +341,14 @@ class HNHNConv(nn.Module):
                 dropout functions. Defaults to ``False``.
         """
         super().__init__()
-        self.is_last = is_last
-        self.batch_norm_1d = nn.BatchNorm1d(out_channels) if use_batch_normalization else None
-        self.activation_fn = nn.ReLU(inplace=True)
-        self.dropout = nn.Dropout(drop_rate)
-        self.theta_v2e = nn.Linear(in_channels, out_channels, bias=bias)
-        self.theta_e2v = nn.Linear(out_channels, out_channels, bias=bias)
+        self.is_last: bool = is_last
+        self.batch_norm_1d: nn.BatchNorm1d | None = (
+            nn.BatchNorm1d(out_channels) if use_batch_normalization else None
+        )
+        self.activation_fn: nn.ReLU = nn.ReLU(inplace=True)
+        self.dropout: nn.Dropout = nn.Dropout(drop_rate)
+        self.theta_v2e: nn.Linear = nn.Linear(in_channels, out_channels, bias=bias)
+        self.theta_e2v: nn.Linear = nn.Linear(out_channels, out_channels, bias=bias)
 
     def forward(self, x: Tensor, hyperedge_index: Tensor) -> Tensor:
         """

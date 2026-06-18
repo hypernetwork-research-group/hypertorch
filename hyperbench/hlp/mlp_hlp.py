@@ -114,8 +114,8 @@ class MLPHlpModule(HlpModule):
             metrics_log_kwargs=metrics_log_kwargs,
         )
 
-        self.aggregation = aggregation
-        self.lr = lr
+        self.aggregation: Literal["mean", "max", "min", "sum"] = aggregation
+        self.lr: float = lr
 
     def forward(self, x: Tensor, hyperedge_index: Tensor) -> Tensor:
         """

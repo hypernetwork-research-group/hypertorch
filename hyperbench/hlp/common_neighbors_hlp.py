@@ -57,12 +57,12 @@ class CommonNeighborsHlpModule(HlpModule):
 
         # Pre-compute neighbors of training nodes based on training edges only
         # to create a "known world" for the model to make predictions from
-        self.node_to_neighbors = Hypergraph.from_hyperedge_index(
+        self.node_to_neighbors: dict[int, set[int]] = Hypergraph.from_hyperedge_index(
             train_hyperedge_index
         ).neighbors_of_all()
 
         # Disable automatic optimization since there is no training
-        self.automatic_optimization = False
+        self.automatic_optimization: bool = False
 
     def forward(self, hyperedge_index: Tensor) -> Tensor:
         """

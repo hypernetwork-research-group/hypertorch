@@ -79,7 +79,7 @@ class Node2Vec(nn.Module):
                 f"walk_length={walk_length}, context_size={context_size}."
             )
 
-        self.model = PyGNode2Vec(
+        self.model: PyGNode2Vec = PyGNode2Vec(
             edge_index=edge_index,
             embedding_dim=embedding_dim,
             walk_length=walk_length,
@@ -216,8 +216,8 @@ class Node2VecGCN(nn.Module):
             gcn_config: Configuration for the GCN stack.
         """
         super().__init__()
-        self.node2vec = Node2Vec(**node2vec_config)
-        self.gcn = GCN(**gcn_config)
+        self.node2vec: Node2Vec = Node2Vec(**node2vec_config)
+        self.gcn: GCN = GCN(**gcn_config)
 
     def forward(
         self,

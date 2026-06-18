@@ -92,8 +92,8 @@ class NHPHlpModule(HlpModule):
             metrics_log_kwargs=metrics_log_kwargs,
         )
 
-        self.lr = lr
-        self.weight_decay = weight_decay
+        self.lr: float = lr
+        self.weight_decay: float = weight_decay
 
     def forward(self, x: Tensor, hyperedge_index: Tensor) -> Tensor:
         """

@@ -286,8 +286,10 @@ class SameNodeSpaceNegativeSampler(NegativeSampler, ABC):
                  If ``False``, they retain the original global IDs.
         """
         super().__init__(return_0based_negatives=return_0based_negatives)
-        self.hyperedge_attr_enricher = hyperedge_attr_enricher
-        self.hyperedge_weights_enricher = hyperedge_weights_enricher
+        self.hyperedge_attr_enricher: HyperedgeAttrsEnricher | None = hyperedge_attr_enricher
+        self.hyperedge_weights_enricher: HyperedgeWeightsEnricher | None = (
+            hyperedge_weights_enricher
+        )
 
 
 class GeneratedNodesNegativeSampler(NegativeSampler, ABC):
@@ -322,9 +324,11 @@ class GeneratedNodesNegativeSampler(NegativeSampler, ABC):
                 If ``False``, they retain the original global IDs.
         """
         super().__init__(return_0based_negatives=return_0based_negatives)
-        self.node_feature_enricher = node_feature_enricher
-        self.hyperedge_attr_enricher = hyperedge_attr_enricher
-        self.hyperedge_weights_enricher = hyperedge_weights_enricher
+        self.node_feature_enricher: NodeEnricher = node_feature_enricher
+        self.hyperedge_attr_enricher: HyperedgeAttrsEnricher | None = hyperedge_attr_enricher
+        self.hyperedge_weights_enricher: HyperedgeWeightsEnricher | None = (
+            hyperedge_weights_enricher
+        )
 
 
 class RandomNegativeSampler(SameNodeSpaceNegativeSampler):
@@ -384,9 +388,9 @@ class RandomNegativeSampler(SameNodeSpaceNegativeSampler):
             hyperedge_weights_enricher=hyperedge_weights_enricher,
             return_0based_negatives=return_0based_negatives,
         )
-        self.num_negative_samples = num_negative_samples
-        self.num_nodes_per_sample = num_nodes_per_sample
-        self.max_retry = max_retry
+        self.num_negative_samples: int = num_negative_samples
+        self.num_nodes_per_sample: int = num_nodes_per_sample
+        self.max_retry: int = max_retry
 
     def sample(self, hdata: HData, seed: int | None = None) -> HData:
         """
@@ -723,9 +727,9 @@ class CliqueNegativeSampler(SameNodeSpaceNegativeSampler):
             hyperedge_weights_enricher=hyperedge_weights_enricher,
             return_0based_negatives=return_0based_negatives,
         )
-        self.num_negative_samples = num_negative_samples
-        self.num_nodes_per_sample = num_nodes_per_sample
-        self.max_candidates = max_candidates
+        self.num_negative_samples: int = num_negative_samples
+        self.num_nodes_per_sample: int = num_nodes_per_sample
+        self.max_candidates: int | None = max_candidates
 
     def sample(self, hdata: HData, seed: int | None = None) -> HData:
         """

@@ -58,11 +58,11 @@ class HIFHypergraph:
             hyperedges: A list of edge dictionaries, where each dictionary contains information
                 about a hyperedge (e.g., id, features).
         """
-        self.network_type = network_type
-        self.metadata = metadata if metadata is not None else {}
-        self.incidences = incidences if incidences is not None else []
-        self.nodes = nodes if nodes is not None else []
-        self.hyperedges = hyperedges if hyperedges is not None else []
+        self.network_type: Literal["asc", "directed", "undirected"] | None = network_type
+        self.metadata: dict[str, Any] = metadata if metadata is not None else {}
+        self.incidences: list[dict[str, Any]] = incidences if incidences is not None else []
+        self.nodes: list[dict[str, Any]] = nodes if nodes is not None else []
+        self.hyperedges: list[dict[str, Any]] = hyperedges if hyperedges is not None else []
 
     @classmethod
     def empty(cls) -> HIFHypergraph:
@@ -242,7 +242,7 @@ class Hypergraph:
         Args:
             hyperedges: List of hyperedges represented as lists of node IDs.
         """
-        self.hyperedges = hyperedges
+        self.hyperedges: list[list[int]] = hyperedges
 
     @property
     def num_nodes(self) -> int:
@@ -458,7 +458,7 @@ class HyperedgeIndex:
             hyperedge_index: Tensor of shape ``(2, num_incidences)`` representing hyperedges,
                 where each column is ``(node, hyperedge)``.
         """
-        self.__hyperedge_index = hyperedge_index
+        self.__hyperedge_index: Tensor = hyperedge_index
 
     @property
     def all_node_ids(self) -> Tensor:

@@ -83,7 +83,7 @@ class DataLoader(TorchDataLoader):
                 in_order: If ``True``, batches are returned in first-in, first-out order when
                     ``num_workers > 0``. Defaults to ``True``.
         """
-        self.__sample_full_hypergraph = sample_full_hypergraph
+        self.__sample_full_hypergraph: bool = sample_full_hypergraph
 
         super().__init__(
             dataset=dataset,
@@ -97,7 +97,7 @@ class DataLoader(TorchDataLoader):
             **kwargs,
         )
 
-        self.__cached_dataset_hdata = dataset.hdata
+        self.__cached_dataset_hdata: HData = dataset.hdata
 
     def collate(self, batch: list[HData]) -> HData:
         """

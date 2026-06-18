@@ -92,8 +92,8 @@ class Node2VecSLPHlpModule(HlpModule):
                 Useful for configuring distributed synchronization behavior of
                 ``torchmetrics``. Defaults to ``None``.
         """
-        self.mode = encoder_config.get("mode", NODE2VEC_JOINT_MODE)
-        self.embedding_dim = encoder_config["num_features"]
+        self.mode: Node2VecMode = encoder_config.get("mode", NODE2VEC_JOINT_MODE)
+        self.embedding_dim: int = encoder_config["num_features"]
         node2vec_config = encoder_config["node2vec_config"]
 
         encoder = (
@@ -112,13 +112,13 @@ class Node2VecSLPHlpModule(HlpModule):
             metrics_log_kwargs=metrics_log_kwargs,
         )
 
-        self.aggregation = aggregation
-        self.lr = lr
-        self.weight_decay = weight_decay
-        self.random_walk_batch_size = node2vec_config.get("random_walk_batch_size", 128)
-        self.node2vec_loss_weight = node2vec_config.get("node2vec_loss_weight", 1.0)
+        self.aggregation: Literal["mean", "max", "min", "sum"] = aggregation
+        self.lr: float = lr
+        self.weight_decay: float = weight_decay
+        self.random_walk_batch_size: int = node2vec_config.get("random_walk_batch_size", 128)
+        self.node2vec_loss_weight: float = node2vec_config.get("node2vec_loss_weight", 1.0)
 
-        self.__walk_loader_state = Node2VecWalkLoaderState()
+        self.__walk_loader_state: Node2VecWalkLoaderState = Node2VecWalkLoaderState()
 
     def forward(
         self,

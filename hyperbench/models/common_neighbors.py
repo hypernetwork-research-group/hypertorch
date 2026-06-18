@@ -28,7 +28,9 @@ class CommonNeighbors(nn.Module):
             scorer: Optional custom neighbor scorer.
         """
         super().__init__()
-        self.scorer = scorer if scorer is not None else CommonNeighborsScorer(aggregation)
+        self.scorer: NeighborScorer = (
+            scorer if scorer is not None else CommonNeighborsScorer(aggregation)
+        )
 
     def forward(
         self,

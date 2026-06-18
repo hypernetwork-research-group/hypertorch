@@ -66,7 +66,7 @@ class CommonNeighborsScorer(NeighborScorer):
         Args:
             aggregation: Method used to aggregate pairwise common-neighbor counts.
         """
-        self.aggregation = aggregation
+        self.aggregation: Literal["mean", "min", "sum"] = aggregation
 
     def score(
         self,

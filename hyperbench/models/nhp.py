@@ -73,15 +73,15 @@ class NHP(nn.Module):
         activation_fn = activation_fn if activation_fn is not None else nn.ReLU
         activation_fn_kwargs = activation_fn_kwargs if activation_fn_kwargs is not None else {}
 
-        self.aggregation = aggregation
+        self.aggregation: Literal["mean", "maxmin"] = aggregation
 
-        self.self_loop = nn.Linear(in_channels, hidden_channels, bias=bias)
+        self.self_loop: nn.Linear = nn.Linear(in_channels, hidden_channels, bias=bias)
         # GCN message passing is implemented through neighbor sum computation,
         # so one projection is enough for the hyperedge-aware term
-        self.hyperedge_aware = nn.Linear(in_channels, hidden_channels, bias=bias)
-        self.activation_fn = activation_fn(**activation_fn_kwargs)
+        self.hyperedge_aware: nn.Linear = nn.Linear(in_channels, hidden_channels, bias=bias)
+        self.activation_fn: nn.Module = activation_fn(**activation_fn_kwargs)
 
-        self.hyperedge_score = nn.Linear(hidden_channels, 1, bias=bias)
+        self.hyperedge_score: nn.Linear = nn.Linear(hidden_channels, 1, bias=bias)
 
     def forward(self, x: Tensor, hyperedge_index: Tensor) -> Tensor:
         """

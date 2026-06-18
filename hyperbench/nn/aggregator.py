@@ -34,9 +34,9 @@ class HyperedgeAggregator:
             node_embeddings: Node embedding matrix of size ``(num_nodes, num_channels)``.
             num_hyperedges: Optional explicit hyperedge count. Defaults to ``None``.
         """
-        self.hyperedge_index_wrapper = HyperedgeIndex(hyperedge_index)
-        self.node_embeddings = node_embeddings
-        self.num_hyperedges = num_hyperedges
+        self.hyperedge_index_wrapper: HyperedgeIndex = HyperedgeIndex(hyperedge_index)
+        self.node_embeddings: Tensor = node_embeddings
+        self.num_hyperedges: int | None = num_hyperedges
 
     def pool(self, aggregation: Literal["maxmin", "max", "min", "mean", "mul", "sum"]) -> Tensor:
         """
@@ -158,9 +158,9 @@ class NodeAggregator:
                 ``(num_hyperedges, num_channels)``.
             num_nodes: Optional explicit node count. Defaults to ``None``.
         """
-        self.hyperedge_index_wrapper = HyperedgeIndex(hyperedge_index)
-        self.hyperedge_embeddings = hyperedge_embeddings
-        self.num_nodes = num_nodes
+        self.hyperedge_index_wrapper: HyperedgeIndex = HyperedgeIndex(hyperedge_index)
+        self.hyperedge_embeddings: Tensor = hyperedge_embeddings
+        self.num_nodes: int | None = num_nodes
 
     def pool(self, aggregation: Literal["maxmin", "max", "min", "mean", "mul", "sum"]) -> Tensor:
         """

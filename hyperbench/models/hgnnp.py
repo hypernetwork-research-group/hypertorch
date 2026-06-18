@@ -39,7 +39,7 @@ class HGNNP(nn.Module):
         """
         super().__init__()
 
-        self.layers = nn.ModuleList(
+        self.layers: nn.ModuleList = nn.ModuleList(
             [
                 HGNNPConv(
                     in_channels=in_channels,

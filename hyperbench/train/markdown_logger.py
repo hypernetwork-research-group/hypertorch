@@ -51,10 +51,10 @@ class MarkdownTableLogger(Logger):
         super().__init__()
         validate_is_non_negative("precision", precision)
 
-        self.__save_dir = save_dir
-        self.__model_name = model_name
-        self.__experiment_name = experiment_name
-        self.__precision = precision
+        self.__save_dir: str | Path = save_dir
+        self.__model_name: str = model_name
+        self.__experiment_name: str = experiment_name
+        self.__precision: int = precision
 
         if experiment_name not in self.__shared_stores:
             self.__shared_stores[experiment_name] = {}

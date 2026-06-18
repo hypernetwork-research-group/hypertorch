@@ -204,18 +204,18 @@ class MultiModelTrainer:
         Raises:
             ValueError: If no model configurations are provided or numeric settings are invalid.
         """
-        self.auto_wait = auto_wait
+        self.auto_wait: bool = auto_wait
         self.__tensorboard_process: subprocess.Popen | None = None
         validate_is_non_negative("tensorboard_port", tensorboard_port)
 
-        self.model_configs = model_configs
+        self.model_configs: list[ModelConfig] = model_configs
         validate_is_non_empty("model_configs", self.model_configs)
 
-        self.log_dir = self.__logdir(default_root_dir, experiment_name)
+        self.log_dir: Path = self.__logdir(default_root_dir, experiment_name)
 
-        self.auto_start_tensorboard = auto_start_tensorboard
-        self.tensorboard_port = tensorboard_port
-        self.__checkpoint_callback_kwargs = (
+        self.auto_start_tensorboard: bool = auto_start_tensorboard
+        self.tensorboard_port: int = tensorboard_port
+        self.__checkpoint_callback_kwargs: dict[str, Any] = (
             checkpoint_callback_kwargs if checkpoint_callback_kwargs is not None else {}
         )
 

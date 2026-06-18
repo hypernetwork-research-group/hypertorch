@@ -66,7 +66,9 @@ class _PreloadedDataset(Dataset):
         super().__init__(hdata=hdata, sampling_strategy=sampling_strategy)
         if hdata is None:
             self.hdata = HIFLoader.load_by_name(
-                self.DATASET_NAME, hf_sha=self.HF_SHA, save_on_disk=save_on_disk
+                dataset_name=self.DATASET_NAME,
+                hf_sha=self.HF_SHA,
+                save_on_disk=save_on_disk,
             )
 
     def __validate(self) -> None:

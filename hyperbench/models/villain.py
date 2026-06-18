@@ -77,21 +77,21 @@ class VilLain(nn.Module):
             eps=eps,
         )
 
-        self.num_nodes = num_nodes
-        self.embedding_dim = embedding_dim
-        self.labels_per_subspace = labels_per_subspace
-        self.training_steps = training_steps
-        self.generation_steps = generation_steps
-        self.tau = tau
-        self.eps = eps
+        self.num_nodes: int = num_nodes
+        self.embedding_dim: int = embedding_dim
+        self.labels_per_subspace: int = labels_per_subspace
+        self.training_steps: int = training_steps
+        self.generation_steps: int = generation_steps
+        self.tau: float = tau
+        self.eps: float = eps
 
-        self.num_subspaces = math.ceil(embedding_dim / labels_per_subspace)
-        self.raw_embedding_dim = self.num_subspaces * labels_per_subspace
-        self.node_embedding = nn.Parameter(
+        self.num_subspaces: int = math.ceil(embedding_dim / labels_per_subspace)
+        self.raw_embedding_dim: int = self.num_subspaces * labels_per_subspace
+        self.node_embedding: nn.Parameter = nn.Parameter(
             torch.empty(size=(self.num_nodes, self.raw_embedding_dim), dtype=torch.float)
         )
 
-        self.loss_fn = VilLainLoss(
+        self.loss_fn: VilLainLoss = VilLainLoss(
             num_subspaces=self.num_subspaces,
             labels_per_subspace=self.labels_per_subspace,
             eps=self.eps,

@@ -101,11 +101,11 @@ class HNHNHlpModule(HlpModule):
             metrics_log_kwargs=metrics_log_kwargs,
         )
 
-        self.aggregation = aggregation
-        self.lr = lr
-        self.weight_decay = weight_decay
-        self.scheduler_step_size = scheduler_step_size
-        self.scheduler_gamma = scheduler_gamma
+        self.aggregation: Literal["mean", "max", "min", "sum"] = aggregation
+        self.lr: float = lr
+        self.weight_decay: float = weight_decay
+        self.scheduler_step_size: int = scheduler_step_size
+        self.scheduler_gamma: float = scheduler_gamma
 
     def forward(self, x: Tensor, hyperedge_index: Tensor) -> Tensor:
         """

@@ -125,7 +125,7 @@ class HData:
             else torch.arange(self.num_nodes, dtype=torch.long, device=self.x.device)
         )
 
-        self.y = (
+        self.y: Tensor = (
             y
             if y is not None
             else torch.ones((self.num_hyperedges,), dtype=torch.float, device=self.x.device)
@@ -133,7 +133,7 @@ class HData:
 
         self.__validate()
 
-        self.device = self.get_device_if_all_consistent()
+        self.device: torch.device = self.get_device_if_all_consistent()
 
     def __repr__(self) -> str:
         """

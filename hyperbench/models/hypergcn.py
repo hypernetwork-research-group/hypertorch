@@ -56,12 +56,12 @@ class HyperGCN(nn.Module):
                 Defaults to ``None``.
         """
         super().__init__()
-        self.fast = fast
-        self.use_mediator = use_mediator
+        self.fast: bool = fast
+        self.use_mediator: bool = use_mediator
         self.cached_gcn_laplacian_matrix: Tensor | None = None
-        self.seed = seed
+        self.seed: int | None = seed
 
-        self.layers = nn.ModuleList(
+        self.layers: nn.ModuleList = nn.ModuleList(
             [
                 HyperGCNConv(
                     in_channels=in_channels,

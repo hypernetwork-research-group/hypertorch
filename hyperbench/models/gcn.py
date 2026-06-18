@@ -96,9 +96,9 @@ class GCN(nn.Module):
         activation_fn = activation_fn if activation_fn is not None else nn.ReLU
         activation_fn_kwargs = activation_fn_kwargs if activation_fn_kwargs is not None else {}
 
-        self.dropout = nn.Dropout(drop_rate)
-        self.activation = activation_fn(**activation_fn_kwargs)
-        self.layers = self.__build_layers(
+        self.dropout: nn.Dropout = nn.Dropout(drop_rate)
+        self.activation: nn.Module = activation_fn(**activation_fn_kwargs)
+        self.layers: nn.ModuleList = self.__build_layers(
             in_channels=in_channels,
             out_channels=out_channels,
             hidden_channels=hidden_channels,

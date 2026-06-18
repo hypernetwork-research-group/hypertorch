@@ -12,7 +12,7 @@ from hyperbench.utils import (
 )
 
 from hyperbench.data.hif import HIFLoader, HIFProcessor
-from hyperbench.data.sampler import SamplingStrategy, create_sampler_from_strategy
+from hyperbench.data.sampler import BaseSampler, SamplingStrategy, create_sampler_from_strategy
 from hyperbench.data.splitter import DefaultDatasetSplitter, Splitter
 
 if TYPE_CHECKING:
@@ -50,9 +50,9 @@ class Dataset(TorchDataset):
                 (e.g., by node IDs or hyperedge IDs).
                 If not provided, defaults to ``SamplingStrategy.HYPEREDGE``.
         """
-        self.__sampler = create_sampler_from_strategy(sampling_strategy)
-        self.sampling_strategy = sampling_strategy
-        self.hdata = hdata if hdata is not None else HData.empty()
+        self.__sampler: BaseSampler = create_sampler_from_strategy(sampling_strategy)
+        self.sampling_strategy: SamplingStrategy = sampling_strategy
+        self.hdata: HData = hdata if hdata is not None else HData.empty()
 
     def __len__(self) -> int:
         """

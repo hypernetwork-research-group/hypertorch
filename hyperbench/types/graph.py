@@ -30,9 +30,9 @@ class Graph:
             ValueError: If edge weights are provided but their length does not
                 match the number of edges.
         """
-        self.edges = edges
+        self.edges: list[list[int]] = edges
         self.__validate_edge_weights(edge_weights)
-        self.__edge_weights = edge_weights
+        self.__edge_weights: list[float] | None = edge_weights
 
     @property
     def edge_weights(self) -> list[float] | None:
@@ -194,9 +194,9 @@ class EdgeIndex:
             edge_index: Tensor of shape ``(2, num_edges)`` representing graph edges.
             edge_weights: Optional tensor of shape ``(num_edges,)`` containing edge weights.
         """
-        self.__edge_index = edge_index
+        self.__edge_index: Tensor = edge_index
         self.__validate_edge_weights(edge_weights)
-        self.__edge_weights = edge_weights
+        self.__edge_weights: Tensor | None = edge_weights
 
     @property
     def item(self) -> Tensor:
