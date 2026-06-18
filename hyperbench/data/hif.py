@@ -43,6 +43,7 @@ class HIFProcessor:
             attrs: Dictionary of attributes
             attr_keys: Optional list of attribute keys to encode. If provided,
                 ensures consistent ordering and fill missing with ``0.0``.
+                Defaults to ``None``.
 
         Returns:
             attrs: Tensor of numeric attribute values
@@ -377,6 +378,7 @@ class HIFLoader:
             dataset_name: Name of the dataset to load.
             hf_sha: Optional pinned Hugging Face revision used as a fallback source.
             save_on_disk: Whether to cache the downloaded compressed dataset file.
+                Defaults to ``False``.
 
         Returns:
             hdata: Loaded hypergraph data.

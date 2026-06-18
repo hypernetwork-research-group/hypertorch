@@ -97,7 +97,7 @@ class Node2Vec(nn.Module):
         Return Node2Vec embeddings for optional node batches.
 
         Args:
-            batch: Optional node IDs to embed.
+            batch: Optional node IDs to embed. Defaults to ``None``.
 
         Returns:
             embeddings: Node embeddings.
@@ -133,7 +133,7 @@ class Node2Vec(nn.Module):
 
         Args:
             batch_size: Number of walk starts per batch.
-            shuffle: Whether to shuffle walk starts.
+            shuffle: Whether to shuffle walk starts. Defaults to ``True``.
 
         Returns:
             loader: Random-walk data loader.
@@ -229,7 +229,7 @@ class Node2VecGCN(nn.Module):
 
         Args:
             batch: Optional node IDs passed to the Node2Vec encoder.
-            edge_index: Edge index used by the GCN stack.
+            edge_index: Edge index used by the GCN stack. Defaults to ``None``.
 
         Returns:
             embeddings: GCN-refined node embeddings.
@@ -272,7 +272,7 @@ class Node2VecGCN(nn.Module):
 
         Args:
             batch_size: Number of walk starts per batch.
-            shuffle: Whether to shuffle walk starts.
+            shuffle: Whether to shuffle walk starts. Defaults to ``True``.
 
         Returns:
             loader: Random-walk data loader.

@@ -16,6 +16,13 @@ class CommonNeighborsHlpModule(HlpModule):
     A LightningModule for the CommonNeighbors model with optional negative sampling.
 
     Attributes:
+        encoder: Optional encoder module inherited from ``HlpModule``. Defaults to ``None``.
+        decoder: Common-neighbor decoder inherited from ``HlpModule``.
+        loss_fn: Loss function inherited from ``HlpModule``.
+        metrics_log_kwargs: Metric logging keyword arguments inherited from ``HlpModule``.
+        train_metrics: Optional training metrics inherited from ``HlpModule``.
+        val_metrics: Optional validation metrics inherited from ``HlpModule``.
+        test_metrics: Optional test metrics inherited from ``HlpModule``.
         node_to_neighbors: Precomputed training-world node neighborhoods.
         automatic_optimization: Disabled because this module has no trainable optimization.
     """
@@ -34,11 +41,12 @@ class CommonNeighborsHlpModule(HlpModule):
 
         Args:
             train_hyperedge_index: Training hyperedge index used to precompute neighborhoods.
-            aggregation: Common-neighbor aggregation method.
+            aggregation: Common-neighbor aggregation method. Defaults to ``"mean"``.
             decoder: Optional decoder module. Defaults to ``CommonNeighbors``.
             loss_fn: Optional loss function. Defaults to ``BCEWithLogitsLoss``.
-            metrics: Optional metric collection for evaluation.
+            metrics: Optional metric collection for evaluation. Defaults to ``None``.
             metrics_log_kwargs: Additional keyword arguments passed to metric log calls.
+                Defaults to ``None``.
         """
         super().__init__(
             decoder=decoder if decoder is not None else CommonNeighbors(aggregation),

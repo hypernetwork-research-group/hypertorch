@@ -67,6 +67,7 @@ def maxmin_scatter(
         dim: The axis along which to index.
         dim_size: The size of the output tensor along the scatter dimension.
             If not provided, it will be inferred from the maximum index value.
+            Defaults to ``None``.
 
     Returns:
         values: A tensor containing the max-min values for each index group.

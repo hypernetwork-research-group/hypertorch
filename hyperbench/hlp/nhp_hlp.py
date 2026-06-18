@@ -17,8 +17,11 @@ class NHPEncoderConfig(TypedDict):
     Attributes:
         in_channels: Number of input features per node.
         hidden_channels: Number of hidden channels for incidence embeddings. Defaults to ``512``.
+        activation_fn: Optional activation function. Defaults to ``None``.
+        activation_fn_kwargs: Keyword arguments for the activation function. Defaults to ``None``.
         aggregation: Hyperedge scoring aggregation. ``"maxmin"`` uses the paper's
             element-wise range representation; ``"mean"`` uses mean pooling.
+            Defaults to ``"maxmin"``.
         bias: Whether to include bias terms. Defaults to ``True``.
     """
 
@@ -39,6 +42,13 @@ class NHPHlpModule(HlpModule):
     NHP builds candidate-specific incidence embeddings before pooling and scoring each hyperedge.
 
     Attributes:
+        encoder: NHP scorer inherited from ``HlpModule``.
+        decoder: Identity decoder inherited from ``HlpModule``.
+        loss_fn: Loss function inherited from ``HlpModule``.
+        metrics_log_kwargs: Metric logging keyword arguments inherited from ``HlpModule``.
+        train_metrics: Optional training metrics inherited from ``HlpModule``.
+        val_metrics: Optional validation metrics inherited from ``HlpModule``.
+        test_metrics: Optional test metrics inherited from ``HlpModule``.
         lr: Learning rate for the optimizer. Defaults to ``0.001``.
         weight_decay: L2 regularization. Defaults to ``5e-4``.
     """
@@ -60,7 +70,7 @@ class NHPHlpModule(HlpModule):
             loss_fn: Optional loss function. Defaults to ``NHPRankingLoss``.
             lr: Learning rate for the optimizer. Defaults to ``0.001``.
             weight_decay: L2 regularization. Defaults to ``5e-4``.
-            metrics: Optional metric collection for evaluation.
+            metrics: Optional metric collection for evaluation. Defaults to ``None``.
             metrics_log_kwargs: Additional keyword arguments passed to metric log calls.
                 Useful for configuring distributed synchronization behavior
                 of ``torchmetrics``. Defaults to ``None``.

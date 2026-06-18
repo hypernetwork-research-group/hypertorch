@@ -562,6 +562,7 @@ class HyperedgeIndex:
         Args:
             num_nodes: Total number of nodes to include in the adjacency list.
                 If ``None``, inferred from the unique node IDs in ``hyperedge_index``.
+                 Defaults to ``None``.
 
         Returns:
             adjacency: A list where ``adjacency[node_id]`` is the set of
@@ -603,6 +604,7 @@ class HyperedgeIndex:
         Args:
             num_nodes: Total number of nodes. If ``None``, inferred from hyperedge index.
             num_hyperedges: Total number of hyperedges. If ``None``, inferred from hyperedge index.
+                Defaults to ``None``.
 
         Returns:
             incidence_matrix: The sparse incidence matrix H of
@@ -642,6 +644,7 @@ class HyperedgeIndex:
                 shape ``(num_nodes, num_hyperedges)``.
             power: Exponent applied to node degrees before placing them on the diagonal.
             num_nodes: Total number of nodes. If ``None``, inferred from hyperedge index.
+                Defaults to ``None``.
 
         Returns:
             degree_matrix: The sparse diagonal matrix of shape ``(num_nodes, num_nodes)``.
@@ -689,6 +692,7 @@ class HyperedgeIndex:
             incidence_matrix: The sparse incidence matrix H of
                 shape ``(num_nodes, num_hyperedges)``.
             num_nodes: Total number of nodes. If ``None``, inferred from hyperedge index.
+                Defaults to ``None``.
 
         Returns:
             degree_matrix: The sparse diagonal matrix `D_n^-1` of shape ``(num_nodes, num_nodes)``.
@@ -723,6 +727,7 @@ class HyperedgeIndex:
             incidence_matrix: The sparse incidence matrix H of
                 shape ``(num_nodes, num_hyperedges)``.
             num_nodes: Total number of nodes. If ``None``, inferred from hyperedge index.
+                Defaults to ``None``.
 
         Returns:
             degree_matrix: The sparse diagonal matrix `D_n^-1/2`
@@ -758,6 +763,7 @@ class HyperedgeIndex:
             incidence_matrix: The sparse incidence matrix H of
                 shape ``(num_nodes, num_hyperedges)``.
             num_hyperedges: Total number of hyperedges. If ``None``, inferred from hyperedge index.
+                Defaults to ``None``.
 
         Returns:
             degree_matrix: The sparse diagonal matrix `D_e^-1` of
@@ -828,6 +834,7 @@ class HyperedgeIndex:
         Args:
             num_nodes: Total number of nodes. If ``None``, inferred from hyperedge index.
             num_hyperedges: Total number of hyperedges. If ``None``, inferred from hyperedge index.
+                Defaults to ``None``.
 
         Returns:
             laplacian: The sparse HGNN Laplacian matrix of shape ``(num_nodes, num_nodes)``.
@@ -875,7 +882,8 @@ class HyperedgeIndex:
 
         Args:
             num_nodes: Total number of nodes. If ``None``, inferred from hyperedge index.
-            num_hyperedges: Total number of hyperedges. If ``None``, inferred from hyperedge index.
+            num_hyperedges: Total number of hyperedges.
+                If ``None``, inferred from hyperedge index. Defaults to ``None``.
 
         Returns:
             laplacian: The sparse HGNN+ smoothing matrix of shape ``(num_nodes, num_nodes)``.
@@ -942,6 +950,7 @@ class HyperedgeIndex:
         Args:
             num_nodes: Total number of nodes. If ``None``, inferred from hyperedge index.
             num_hyperedges: Total number of hyperedges. If ``None``, inferred from hyperedge index.
+                Defaults to ``None``.
 
         Returns:
             edge_index: The edge index of the clique-expanded graph. Size ``(2, |E'|)``.
@@ -1139,11 +1148,11 @@ class HyperedgeIndex:
             node_ids_to_rebase: Tensor of shape ``(num_nodes,)`` containing the original node IDs
                 that need to be rebased to 0-based format.
                 If ``None``, all node IDs in the hyperedge index will be rebased to 0-based format
-                based on their unique sorted order.
+                based on their unique sorted order. Defaults to ``None``.
             hyperedge_ids_to_rebase: Tensor of shape ``(num_hyperedges,)`` containing the original
                 hyperedge IDs that need to be rebased to 0-based format.
                 If ``None``, all hyperedge IDs in the hyperedge index will be rebased to
-                0-based format based on their unique sorted order.
+                0-based format based on their unique sorted order. Defaults to ``None``.
 
         Returns:
             hyperedge_index: A new `HyperedgeIndex` instance with the hyperedge index

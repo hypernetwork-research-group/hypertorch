@@ -41,6 +41,7 @@ class CommonNeighbors(nn.Module):
         Args:
             hyperedge_index: Tensor containing the hyperedge indices.
             node_to_neighbors: Optional mapping from nodes to their neighborhoods.
+                Defaults to ``None``.
 
         Returns:
             scores: A 1-D tensor of shape (num_hyperedges,) with CN scores.

@@ -133,7 +133,8 @@ def write_dataset_to_disk_as_zst(
     Args:
         dataset_name: The name of the dataset.
         content: The compressed content as bytes.
-        output_dir: The directory to write the file to. If None, a default location is used.
+        output_dir: The directory to write the file to. If ``None``, a default location is used.
+            Defaults to ``None``.
     """
     try:
         if output_dir is not None:
@@ -212,6 +213,7 @@ def get_cache_dir(
     Args:
         create: Whether to create the directory if it does not exist.
         env_var: Environment variable that can override the default cache path.
+            Defaults to ``"HYPERBENCH_CACHE_DIR"``.
 
     Returns:
         cache_dir: Absolute cache directory path.

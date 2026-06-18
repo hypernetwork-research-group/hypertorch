@@ -40,10 +40,19 @@ class VilLainHlpModule(HlpModule):
     Feature-free VilLain Hyperedge Link Prediction module.
 
     Attributes:
+        encoder: VilLain encoder module inherited from ``HlpModule``.
+        decoder: SLP decoder module inherited from ``HlpModule``.
+        loss_fn: Loss function inherited from ``HlpModule``.
+        metrics_log_kwargs: Metric logging keyword arguments inherited from ``HlpModule``.
+        train_metrics: Optional training metrics inherited from ``HlpModule``.
+        val_metrics: Optional validation metrics inherited from ``HlpModule``.
+        test_metrics: Optional test metrics inherited from ``HlpModule``.
         embedding_dim: VilLain embedding dimension.
         embedding_mode: Whether to return node or hyperedge embeddings from the VilLain encoder.
+            Defaults to ``"node"``.
         aggregation: Aggregation method to pool node embeddings into hyperedge embeddings
             when ``embedding_mode="node"``. Ignored when ``embedding_mode="hyperedge"``.
+            Defaults to ``"maxmin"``.
         lr: Learning rate for the optimizer. Defaults to ``0.01``.
         weight_decay: Weight decay for the optimizer. Defaults to ``0.0``.
         villain_loss_weight: Weight applied to VilLain self-supervision. Defaults to ``1.0``.
@@ -66,11 +75,13 @@ class VilLainHlpModule(HlpModule):
         Args:
             encoder_config: Configuration for the VilLain encoder.
             embedding_mode: Whether to score from node-derived or hyperedge embeddings.
+                Defaults to ``"node"``.
             aggregation: Aggregation method used when ``embedding_mode="node"``.
+                Defaults to ``"maxmin"``.
             loss_fn: Optional HLP loss function. Defaults to ``BCEWithLogitsLoss``.
             lr: Learning rate for the optimizer. Defaults to ``0.01``.
             weight_decay: Weight decay for the optimizer. Defaults to ``0.0``.
-            metrics: Optional metric collection for evaluation.
+            metrics: Optional metric collection for evaluation. Defaults to ``None``.
             metrics_log_kwargs: Additional keyword arguments passed to metric log calls.
                 Useful for configuring distributed synchronization behavior of
                 ``torchmetrics``. Defaults to ``None``.

@@ -316,7 +316,7 @@ class HyperedgeIDSplitter(Splitter["Tensor", tuple[list["Tensor"], list[float]]]
 
         Args:
             hyperedge_ids_by_split: Hyperedge IDs assigned to each split.
-            split_idx: Index of the split that must cover the full node space.
+            split_idx: Index of the split that must cover the full node space. Defaults to ``0``.
 
         Returns:
             hyperedge_ids_by_split: The updated hyperedge IDs for each split.

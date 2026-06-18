@@ -27,7 +27,7 @@ class Node2VecSLPEncoderConfig(TypedDict):
 
     Attributes:
         mode: Whether to use precomputed node embeddings from ``x`` or train a Node2Vec encoder
-            jointly inside the module.
+            jointly inside the module. Defaults to ``"joint"``.
         num_features: Dimension of the node embeddings consumed by the decoder.
         node2vec_config: Shared Node2Vec configuration used in joint mode, or metadata for
             validating precomputed embeddings.
@@ -47,6 +47,13 @@ class Node2VecSLPHlpModule(HlpModule):
         - ``joint``: train a Node2Vec encoder jointly with the hyperedge decoder.
 
     Attributes:
+        encoder: Optional Node2Vec encoder inherited from ``HlpModule``.
+        decoder: SLP decoder module inherited from ``HlpModule``.
+        loss_fn: Loss function inherited from ``HlpModule``.
+        metrics_log_kwargs: Metric logging keyword arguments inherited from ``HlpModule``.
+        train_metrics: Optional training metrics inherited from ``HlpModule``.
+        val_metrics: Optional validation metrics inherited from ``HlpModule``.
+        test_metrics: Optional test metrics inherited from ``HlpModule``.
         mode: Whether to use precomputed or joint Node2Vec embeddings.
         embedding_dim: Node embedding dimension consumed by the decoder.
         aggregation: Method to aggregate node embeddings per hyperedge.
@@ -54,7 +61,9 @@ class Node2VecSLPHlpModule(HlpModule):
         lr: Learning rate for the optimizer. Defaults to ``0.001``.
         weight_decay: Weight decay for the optimizer. Defaults to ``0.0``.
         random_walk_batch_size: Batch size used for Node2Vec walk loss in joint mode.
+            Defaults to ``128``.
         node2vec_loss_weight: Weight applied to Node2Vec walk loss in joint mode.
+            Defaults to ``1.0``.
         __walk_loader_state: Cached random-walk loader state for joint mode.
     """
 
@@ -78,7 +87,7 @@ class Node2VecSLPHlpModule(HlpModule):
             loss_fn: Optional HLP loss function. Defaults to ``BCEWithLogitsLoss``.
             lr: Learning rate for the optimizer. Defaults to ``0.001``.
             weight_decay: Weight decay for the optimizer. Defaults to ``0.0``.
-            metrics: Optional metric collection for evaluation.
+            metrics: Optional metric collection for evaluation. Defaults to ``None``.
             metrics_log_kwargs: Additional keyword arguments passed to metric log calls.
                 Useful for configuring distributed synchronization behavior of
                 ``torchmetrics``. Defaults to ``None``.
@@ -124,6 +133,7 @@ class Node2VecSLPHlpModule(HlpModule):
             x: Node feature or precomputed embedding matrix.
             hyperedge_index: Hyperedge incidence tensor.
             global_node_ids: Optional global node IDs for joint Node2Vec lookup.
+                Defaults to ``None``.
 
         Returns:
             scores: Predicted hyperedge scores.

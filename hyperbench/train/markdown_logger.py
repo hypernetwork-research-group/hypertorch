@@ -131,7 +131,7 @@ class MarkdownTableLogger(Logger):
 
         Args:
             metrics: Dictionary of metric names to values.
-            step: Optional step number, unused.
+            step: Optional step number, unused. Defaults to ``None``.
         """
         store = self.__shared_stores[self.__experiment_name]
         if self.__model_name not in store:

@@ -121,7 +121,7 @@ class Dataset(TorchDataset):
             url: The URL to the .json or .json.zst file containing the HIF hypergraph data.
                 sampling_strategy: The sampling strategy to use for the dataset. If not provided,
                 defaults to ``SamplingStrategy.HYPEREDGE``.
-            save_on_disk: Whether to save the downloaded file on disk.
+            save_on_disk: Whether to save the downloaded file on disk. Defaults to ``False``.
 
         Returns:
             dataset: The `Dataset` instance with the loaded hypergraph data.
@@ -199,7 +199,7 @@ class Dataset(TorchDataset):
                 ``inductive`` allows the target dataset to have a different node space, filling
                 missing features with ``fill_value``.
             fill_value: Scalar or vector used to fill missing node features when
-                ``node_space_setting`` is not transductive.
+                ``node_space_setting`` is not transductive. Defaults to ``None``.
 
         Raises:
             ValueError: If the source dataset's node features cannot be aligned with the target
@@ -273,6 +273,7 @@ class Dataset(TorchDataset):
             negative_sampler: Sampler used to generate negative hyperedges from
                 this dataset's ``hdata``.
             seed: Optional random seed used for both negative sampling and the final shuffle.
+                Defaults to ``None``.
 
         Returns:
             dataset: A new `Dataset` instance with positives and sampled negatives.
@@ -362,7 +363,7 @@ class Dataset(TorchDataset):
                 For the 'inductive' setting, splits are always returned based on
                 the provided ratios.
             splitter: Optional dataset splitter. When provided, it owns split
-                construction and final-ratio reporting.
+                construction and final-ratio reporting. Defaults to ``None``.
 
         Returns:
             datasets: List of Dataset objects, one per split, each with contiguous IDs.
@@ -435,7 +436,7 @@ class Dataset(TorchDataset):
                 For the 'inductive' setting, splits are always returned based on
                 the provided ratios.
             seed: Optional random seed for reproducibility. Ignored if ``shuffle``
-                is set to ``False``.
+                is set to ``False``. Defaults to ``None``.
 
         Returns:
             datasets_and_ratios: A tuple containing the split datasets and their
@@ -482,6 +483,7 @@ class Dataset(TorchDataset):
         Args:
             attrs: Attributes to transform.
             attr_keys: Optional attribute key order used for consistent output shape.
+                Defaults to ``None``.
 
         Returns:
             attrs: Tensor containing numeric attribute values.
@@ -500,6 +502,7 @@ class Dataset(TorchDataset):
         Args:
             attrs: Attributes to transform.
             attr_keys: Optional attribute key order used for consistent output shape.
+                Defaults to ``None``.
 
         Returns:
             attrs: Tensor containing numeric attribute values.

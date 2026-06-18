@@ -49,6 +49,13 @@ class HyperGCNHlpModule(HlpModule):
     and scores each hyperedge with a linear decoder.
 
     Attributes:
+        encoder: HyperGCN encoder module inherited from ``HlpModule``.
+        decoder: SLP decoder module inherited from ``HlpModule``.
+        loss_fn: Loss function inherited from ``HlpModule``.
+        metrics_log_kwargs: Metric logging keyword arguments inherited from ``HlpModule``.
+        train_metrics: Optional training metrics inherited from ``HlpModule``.
+        val_metrics: Optional validation metrics inherited from ``HlpModule``.
+        test_metrics: Optional test metrics inherited from ``HlpModule``.
         aggregation: Method to aggregate node embeddings per hyperedge. Defaults to ``"mean"``.
         lr: Learning rate for the optimizer. Defaults to ``0.01``.
         weight_decay: L2 regularization. Defaults to ``5e-4``.
@@ -70,10 +77,11 @@ class HyperGCNHlpModule(HlpModule):
         Args:
             encoder_config: Configuration for the HyperGCN encoder.
             aggregation: Method used to aggregate node embeddings per hyperedge.
+                Defaults to ``"mean"``.
             loss_fn: Optional loss function. Defaults to ``BCEWithLogitsLoss``.
             lr: Learning rate for the optimizer. Defaults to ``0.01``.
             weight_decay: L2 regularization. Defaults to ``5e-4``.
-            metrics: Optional metric collection for evaluation.
+            metrics: Optional metric collection for evaluation. Defaults to ``None``.
             metrics_log_kwargs: Additional keyword arguments passed to metric log calls.
                 Useful for configuring distributed synchronization behavior
                 of ``torchmetrics``. Defaults to ``None``.

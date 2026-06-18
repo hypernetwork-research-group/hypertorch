@@ -373,7 +373,7 @@ class MultiModelTrainer:
 
         Args:
             name: Model name.
-            version: Model version.
+            version: Model version. Defaults to ``"default"``.
 
         Returns:
             model: Matching model, or ``None`` when no model matches.
@@ -407,7 +407,7 @@ class MultiModelTrainer:
             ckpt_path: Optional checkpoint strategy or path.
                 Defaults to ``None``, which uses the best checkpoint if available,
                 otherwise the last checkpoint.
-            verbose: Whether to print progress messages.
+            verbose: Whether to print progress messages. Defaults to ``True``.
 
         Raises:
             ValueError: If a trainable model has no trainer.

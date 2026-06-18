@@ -210,17 +210,16 @@ class HData:
                 If ``None``, the node features from the instance with the largest number of
                 nodes will be used.
                 If ``global_node_ids`` is provided explicitly, ``x`` must also be provided
-                to ensure consistency.
+                to ensure consistency. Defaults to ``None``.
             global_node_ids: Optional global node IDs for the resulting `HData`.
                 If ``None``, the global node IDs from the instance with the largest number of
-                nodes will be used.
-                If ``x`` is provided explicitly, ``global_node_ids`` must also be provided
-                to ensure consistency.
+                nodes will be used. If ``x`` is provided explicitly, ``global_node_ids`` must
+                also be provided to ensure consistency.
                 If ``x`` is provided and there is no need for ``global_node_ids`` to preserve
-                access to the canonical node space,
-                it is recommended to use arbitrary global node IDs that are consistent with
-                the feature rows of ``x``.
+                access to the canonical node space, it is recommended to use arbitrary global node
+                IDs that are consistent with the feature rows of ``x``.
                 For example, ``global_node_ids=torch.arange(x.size(0))``).
+                Defaults to ``None``.
 
         Returns:
             hdata: A new `HData` with shared nodes and concatenated hyperedges.
@@ -279,6 +278,7 @@ class HData:
         Args:
             negative_sampler: Sampler used to generate negative hyperedges from this instance.
             seed: Optional random seed used for both negative sampling and the final shuffle.
+                Defaults to ``None``.
 
         Returns:
             hdata: A new `HData` containing the original hyperedges and sampled negatives.
@@ -379,8 +379,8 @@ class HData:
             node_space_setting: Whether to preserve the full node space in the splits.
                 ``transductive`` (default) ensures all node features are present in the split,
                 while ``inductive`` allows splits to have disjoint node spaces.
-            splitter: Optional HData splitter. When provided, it owns split
-                materialization.
+            splitter: Optional HData splitter. When provided, it owns split materialization.
+                Defaults to ``None``.
 
         Returns:
             hdata: The splitted instance with remapped node and hyperedge IDs.
@@ -474,7 +474,7 @@ class HData:
                 If ``"inductive"``, the target dataset may have a different node space, and missing
                 nodes are filled using ``fill_value``.
             fill_value: Scalar or vector used to fill missing node features when
-                ``node_space_setting`` is not transductive.
+                ``node_space_setting`` is not transductive.  Defaults to ``None``.
 
         Returns:
             hdata: A new `HData` with node features copied from ``hdata_with_features``.
@@ -750,7 +750,7 @@ class HData:
 
         Args:
             seed: Optional random seed for reproducibility. If ``None``, the shuffle
-                will be non-deterministic.
+                will be non-deterministic. Defaults to ``None``.
 
         Returns:
             hdata: A new `HData` instance with hyperedge IDs, ``y``, and
@@ -844,7 +844,7 @@ class HData:
         Args:
             device: The target device (e.g., 'cpu', 'cuda:0').
             non_blocking: If ``True`` and the source and destination devices are both CUDA,
-                the copy will be non-blocking.
+                the copy will be non-blocking. Defaults to ``False``.
 
         Returns:
             hdata: The `HData` instance with all tensors moved to the specified device.

@@ -40,7 +40,7 @@ class NeighborScorer(ABC):
 
         Args:
             hyperedge_index: Hyperedge incidence tensor.
-            node_to_neighbors: Optional precomputed node-neighborhood mapping.
+            node_to_neighbors: Optional precomputed node-neighborhood mapping. Defaults to ``None``.
 
         Returns:
             scores: Score tensor, one value per hyperedge.
@@ -110,9 +110,10 @@ class CommonNeighborsScorer(NeighborScorer):
         Score all hyperedges in a hyperedge index tensor.
 
         Args:
-            hyperedge_index: Tensor of shape ``(2, |E|)``.
-            node_to_neighbors: Optional precomputed node to neighborhood mapping. If None, it will
-                be computed from ``hyperedge_index``.
+            hyperedge_index: Tensor of shape ``(2, num_incidences)``.
+            node_to_neighbors: Optional precomputed node to neighborhood mapping.
+                If ``None``, it will be computed from ``hyperedge_index``.
+                Defaults to ``None``.
 
         Returns:
             scores: A 1-D tensor of shape ``(num_hyperedges,)`` with the CN score

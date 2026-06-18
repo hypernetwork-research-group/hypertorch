@@ -60,6 +60,7 @@ def get_hf_datasets_shas(
     Args:
         dataset_names: Dataset names to query.
         namespace: Hugging Face namespace containing the datasets.
+            Defaults to ``"HypernetworkRG"``.
 
     Returns:
         shas: Mapping from dataset name to commit SHA, or ``None`` when unavailable.
@@ -78,6 +79,7 @@ def get_hf_dataset_sha(dataset_name: str, namespace: str = "HypernetworkRG") -> 
     Args:
         dataset_name: Dataset name to query.
         namespace: Hugging Face namespace containing the dataset.
+            Defaults to ``"HypernetworkRG"``.
 
     Returns:
         sha: Dataset repository commit SHA, or ``None`` when unavailable.
@@ -107,7 +109,7 @@ def get_gh_datasets_shas(
     Args:
         dataset_names: Dataset file stems to query.
         owner: GitHub repository owner.
-        repository: GitHub repository name.
+        repository: GitHub repository name. Defaults to ``"datasets"``.
 
     Returns:
         shas: Mapping from dataset name to commit SHA, or ``None`` when unavailable.

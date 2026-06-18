@@ -42,7 +42,7 @@ class NegativeSampler(ABC):
 
         Args:
             hdata: The input data object containing graph or hypergraph information.
-            seed: Optional random seed for reproducible negative sampling.
+            seed: Optional random seed for reproducible negative sampling. Defaults to ``None``.
 
         Returns:
             hdata: The negative samples as a new `HData` object.
@@ -425,7 +425,7 @@ class RandomNegativeSampler(SameNodeSpaceNegativeSampler):
 
         Args:
             hdata: The input data object containing node and hyperedge information.
-            seed: Optional random seed for reproducible negative sampling.
+            seed: Optional random seed for reproducible negative sampling. Defaults to ``None``.
 
         Returns:
             hdata: A new `HData` instance containing the negative samples.
@@ -733,7 +733,7 @@ class CliqueNegativeSampler(SameNodeSpaceNegativeSampler):
 
         Args:
             hdata: Input hypergraph data.
-            seed: Optional random seed for reproducible candidate selection.
+            seed: Optional random seed for reproducible candidate selection. Defaults to ``None``.
 
         Returns:
             hdata: A new `HData` instance containing only sampled negative hyperedges.

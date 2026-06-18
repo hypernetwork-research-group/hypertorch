@@ -44,12 +44,16 @@ class HlpModule(L.LightningModule):
         Args:
             decoder: Decoder module used to score hyperedges.
             loss_fn: Loss function.
-            encoder: Optional encoder module.
+            encoder: Optional encoder module. Defaults to ``None``.
             metrics: Optional metric collection cloned independently per stage.
+                Defaults to ``None``.
             metrics_log_kwargs: Additional keyword arguments passed to metric log calls.
-            negative_sampler: Optional negative sampler.
+                Defaults to ``None``.
+            negative_sampler: Optional negative sampler. Defaults to ``None``.
             negative_sampling_schedule: Schedule controlling when negatives are sampled.
+                Defaults to ``"every_epoch"``.
             negative_sampling_every_n: Epoch interval for ``"every_n_epochs"`` scheduling.
+                Defaults to ``1``.
         """
         super().__init__()
         self.encoder = encoder

@@ -353,7 +353,7 @@ class EdgeIndex:
             ...               [0, 0, 1, 0]] 3
 
         Args:
-            num_nodes: The number of nodes in the graph.
+            num_nodes: The number of nodes in the graph. Defaults to ``None``.
                 If ``None``, it will be inferred from ``self.num_nodes``.
                 Note that the node indices in ``edge_index`` are assumed to be in the
                 range [0, num_nodes-1].
@@ -413,7 +413,7 @@ class EdgeIndex:
             ...      [0, 0, 1]]
 
         Args:
-            num_nodes: The number of nodes in the graph.
+            num_nodes: The number of nodes in the graph. Defaults to ``None``.
                 If ``None``, it will be inferred from ``self.num_nodes``.
 
         Returns:
@@ -460,9 +460,9 @@ class EdgeIndex:
             num_nodes: The number of nodes in the graph.
                 If ``None``, it will be inferred from ``self.num_nodes``.
                 Note that the node indices in ``edge_index`` are assumed to be in
-                the range [0, num_nodes-1].
+                the range [0, num_nodes-1]. Defaults to ``None``.
             use_edge_weights: If ``True``, use the edge weights from ``self.edge_weights``.
-                If ``False``, all edges use weight 1.
+                If ``False``, all edges use weight 1. Defaults to ``False``.
 
         Returns:
             degree_matrix: The sparse normalized degree matrix D^-1/2 of
@@ -523,7 +523,7 @@ class EdgeIndex:
 
         Args:
             num_nodes: The number of nodes in the graph. If ``None``,
-                it will be inferred from ``self.num_nodes``.
+                it will be inferred from ``self.num_nodes``. Defaults to ``None``.
 
         Returns:
             laplacian: The sparse symmetric normalized Laplacian
@@ -561,7 +561,7 @@ class EdgeIndex:
 
         Args:
             num_nodes: The number of nodes in the graph. If ``None``,
-                it will be inferred from ``self.num_nodes``.
+                it will be inferred from ``self.num_nodes``. Defaults to ``None``.
                 Note that the node indices in ``edge_index`` are assumed to be
                 in the range [0, num_nodes-1].
                 This parameter is important when ``edge_index`` does not contain all nodes
@@ -569,7 +569,7 @@ class EdgeIndex:
                 as it ensures that the resulting Laplacian matrix has the correct size and
                 includes all nodes. For instance, for self-loops.
             use_edge_weights: If ``True``, use the edge weights from ``self.edge_weights``.
-                If ``False``, all edges use weight 1.
+                If ``False``, all edges use weight 1. Defaults to ``False``.
 
         Returns:
             laplacian: The sparse symmetrically normalized Laplacian matrix of
@@ -617,7 +617,7 @@ class EdgeIndex:
 
         Args:
             num_nodes: The number of nodes in the graph. If ``None``, it will be
-                inferred from ``self.num_nodes``.
+                inferred from ``self.num_nodes``. Defaults to ``None``.
                 This parameter is important when ``edge_index`` does not contain all nodes
                 (e.g., some nodes are isolated and have no edges or have been removed),
                 as it ensures that the resulting Laplacian matrix has the correct size
@@ -681,11 +681,11 @@ class EdgeIndex:
         Args:
             with_selfloops: Whether to add self-loops to each node. Defaults to ``False``.
             num_nodes: Total number of nodes. Propagated to ``add_selfloops`` when
-                ``with_selfloops`` is ``True``.
-                This parameter is useful when ``edge_index`` does not contain all nodes
-                (e.g., some nodes are isolated and have no edges or have been removed),
-                as it ensures that the resulting Laplacian matrix has the correct size and
-                includes all nodes. For instance, for self-loops.
+                ``with_selfloops`` is ``True``. This parameter is useful when ``edge_index``
+                does not contain all nodes (e.g., some nodes are isolated and have no edges
+                or have been removed), as it ensures that the resulting Laplacian matrix has
+                the correct size and includes all nodes. For instance, for self-loops.
+                Defaults to ``None``.
 
         Returns:
             edge_index: This `EdgeIndex` instance converted to undirected.

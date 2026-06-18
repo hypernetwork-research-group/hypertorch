@@ -140,7 +140,8 @@ def to_0based_ids(original_ids: Tensor, ids_to_rebase: Tensor | None = None) -> 
 
     Args:
         original_ids: Tensor of original IDs.
-        ids_to_rebase: Optional tensor of IDs to keep and remap. If None, all unique IDs are used.
+        ids_to_rebase: Optional tensor of IDs to keep and remap.
+            If ``None``, all unique IDs are used. Defaults to ``None``.
 
     Returns:
         ids: Tensor of 0-based IDs.
