@@ -14,11 +14,22 @@ class Graph:
     Attributes:
         edges: A list of edges, where each edge is represented as a list of two integers
             (source_node, destination_node).
-        edge_weights: Optional list of edge weights corresponding to each edge in ``edges``.
+        __edge_weights: Optional list of edge weights corresponding to each edge in ``edges``.
             If provided, must have the same length as ``edges``.
     """
 
     def __init__(self, edges: list[list[int]], edge_weights: list[float] | None = None):
+        """
+        Initialize the graph.
+
+        Args:
+            edges: Edge list where each edge is ``[source_node, destination_node]``.
+            edge_weights: Optional edge weights matching ``edges``.
+
+        Raises:
+            ValueError: If edge weights are provided but their length does not
+                match the number of edges.
+        """
         self.edges = edges
         self.__validate_edge_weights(edge_weights)
         self.__edge_weights = edge_weights
@@ -109,6 +120,15 @@ class Graph:
         return edge_index
 
     def __validate_edge_weights(self, edge_weights: list[float] | None) -> None:
+        """
+        Validate graph edge weights.
+
+        Args:
+            edge_weights: Optional edge weights to validate.
+
+        Raises:
+            ValueError: If the number of weights does not match the number of edges.
+        """
         if edge_weights is None:
             return
 
@@ -158,8 +178,8 @@ class EdgeIndex:
         The number of nodes in this graph is 4 (nodes 0, 1, 2, and 3) and the number of edges is 3.
 
     Attributes:
-        edge_index: A tensor of shape ``(2, num_edges)`` representing the edges in the graph.
-        edge_weights: Optional tensor of shape ``(num_edges,)`` containing a weight for each edge.
+        __edge_index: Tensor of shape ``(2, num_edges)`` representing graph edges.
+        __edge_weights: Optional tensor of shape ``(num_edges,)`` containing edge weights.
     """
 
     def __init__(
@@ -167,6 +187,13 @@ class EdgeIndex:
         edge_index: Tensor,
         edge_weights: Tensor | None = None,
     ):
+        """
+        Initialize the edge index wrapper.
+
+        Args:
+            edge_index: Tensor of shape ``(2, num_edges)`` representing graph edges.
+            edge_weights: Optional tensor of shape ``(num_edges,)`` containing edge weights.
+        """
         self.__edge_index = edge_index
         self.__validate_edge_weights(edge_weights)
         self.__edge_weights = edge_weights
@@ -741,6 +768,15 @@ class EdgeIndex:
         return self
 
     def __validate_edge_weights(self, edge_weights: Tensor | None) -> None:
+        """
+        Validate edge weight tensor shape.
+
+        Args:
+            edge_weights: Optional edge weight tensor to validate.
+
+        Raises:
+            ValueError: If edge weights are not one-dimensional or do not match edge count.
+        """
         if edge_weights is None:
             return
 
@@ -758,6 +794,15 @@ class EdgeIndex:
             )
 
     def __validate_num_nodes(self, num_nodes: int) -> None:
+        """
+        Validate that an explicit node count can contain the edge index.
+
+        Args:
+            num_nodes: Explicit number of nodes.
+
+        Raises:
+            ValueError: If ``num_nodes`` is negative or smaller than the maximum node ID.
+        """
         validate_is_non_negative("num_nodes", num_nodes)
 
         if self.num_edges < 1:

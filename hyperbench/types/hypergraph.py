@@ -24,7 +24,7 @@ class HIFHypergraph:
     A hypergraph data structure that supports directed/undirected hyperedges with incidence-based
     representation.
 
-    Args:
+    Attributes:
         network_type: The type of hypergraph, which can be "asc" (or "directed") for
             directed hyperedges, or "undirected" for undirected hyperedges.
         metadata: Optional dictionary of metadata about the hypergraph.
@@ -44,6 +44,20 @@ class HIFHypergraph:
         nodes: list[dict[str, Any]] | None = None,
         hyperedges: list[dict[str, Any]] | None = None,
     ):
+        """
+        Initialize the HIF hypergraph.
+
+        Args:
+            network_type: The type of hypergraph, which can be "asc" (or "directed") for
+                directed hyperedges, or "undirected" for undirected hyperedges.
+            metadata: Optional dictionary of metadata about the hypergraph.
+            incidences: A list of incidences, where each incidence is a dictionary with keys
+                "node" and "edge" representing the relationship between a node and a hyperedge.
+            nodes: A list of node dictionaries, where each dictionary contains information about
+                a node (e.g., id, features).
+            hyperedges: A list of edge dictionaries, where each dictionary contains information
+                about a hyperedge (e.g., id, features).
+        """
         self.network_type = network_type
         self.metadata = metadata if metadata is not None else {}
         self.incidences = incidences if incidences is not None else []
@@ -52,6 +66,12 @@ class HIFHypergraph:
 
     @classmethod
     def empty(cls) -> HIFHypergraph:
+        """
+        Create an empty undirected HIF hypergraph.
+
+        Returns:
+            hypergraph: Empty HIF hypergraph.
+        """
         return cls(
             network_type="undirected",
             nodes=[],
@@ -211,11 +231,17 @@ class Hypergraph:
     """
     A simple hypergraph data structure using edge list representation.
 
-    Args:
+    Attributes:
         hyperedges: A list of hyperedges, where each hyperedge is represented as a list of node IDs.
     """
 
     def __init__(self, hyperedges: list[list[int]]):
+        """
+        Initialize the hypergraph.
+
+        Args:
+            hyperedges: List of hyperedges represented as lists of node IDs.
+        """
         self.hyperedges = hyperedges
 
     @property
@@ -420,12 +446,18 @@ class HyperedgeIndex:
         The number of nodes in this hypergraph is 3 (nodes 0, 1, and 2).
         The number of hyperedges is 2 (hyperedges 0 and 1).
 
-    Args:
-        hyperedge_index: A tensor of shape ``(2, num_incidences)`` representing hyperedges,
-            where each column is (node, hyperedge).
+    Attributes:
+        __hyperedge_index: Tensor of shape ``(2, num_incidences)`` representing incidences.
     """
 
     def __init__(self, hyperedge_index: Tensor):
+        """
+        Initialize the hyperedge index wrapper.
+
+        Args:
+            hyperedge_index: Tensor of shape ``(2, num_incidences)`` representing hyperedges,
+                where each column is ``(node, hyperedge)``.
+        """
         self.__hyperedge_index = hyperedge_index
 
     @property
@@ -1134,6 +1166,15 @@ class HyperedgeIndex:
         return self
 
     def __validate_num_hyperedges(self, num_hyperedges: int | None) -> None:
+        """
+        Validate that an explicit hyperedge count can contain the index.
+
+        Args:
+            num_hyperedges: Optional explicit number of hyperedges.
+
+        Raises:
+            ValueError: If ``num_hyperedges`` is negative or smaller than the maximum ID.
+        """
         if num_hyperedges is None:
             return
         validate_is_non_negative("num_hyperedges", num_hyperedges)
@@ -1149,6 +1190,15 @@ class HyperedgeIndex:
             )
 
     def __validate_num_nodes(self, num_nodes: int | None) -> None:
+        """
+        Validate that an explicit node count can contain the index.
+
+        Args:
+            num_nodes: Optional explicit number of nodes.
+
+        Raises:
+            ValueError: If ``num_nodes`` is negative or smaller than the maximum ID.
+        """
         if num_nodes is None:
             return
         validate_is_non_negative("num_nodes", num_nodes)
@@ -1164,6 +1214,17 @@ class HyperedgeIndex:
             )
 
     def __validate_degree_matrix_dimension(self, name: str, value: int, expected: int) -> None:
+        """
+        Validate a requested degree-matrix dimension.
+
+        Args:
+            name: Name of the dimension being validated.
+            value: Requested dimension value.
+            expected: Required dimension value.
+
+        Raises:
+            ValueError: If the value is negative or does not match the expected dimension.
+        """
         validate_is_non_negative(name, value)
         if value != expected:
             raise ValueError(
