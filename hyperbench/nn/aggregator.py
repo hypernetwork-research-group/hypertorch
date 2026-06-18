@@ -13,7 +13,7 @@ class HyperedgeAggregator:
     those rows per hyperedge with the requested scatter aggregation.
 
     Attributes:
-        hyperedge_index: Hyperedge incidence in COO format of size ``(2, num_incidences)``.
+        hyperedge_index_wrapper: Wrapper around the hyperedge incidence tensor.
         node_embeddings: Node embedding matrix of size ``(num_nodes, num_channels)``.
         num_hyperedges: Optional explicit hyperedge count.
             When provided, the pooled output preserves empty hyperedges that
@@ -26,6 +26,14 @@ class HyperedgeAggregator:
         node_embeddings: Tensor,
         num_hyperedges: int | None = None,
     ):
+        """
+        Initialize the hyperedge aggregator.
+
+        Args:
+            hyperedge_index: Hyperedge incidence in COO format of size ``(2, num_incidences)``.
+            node_embeddings: Node embedding matrix of size ``(num_nodes, num_channels)``.
+            num_hyperedges: Optional explicit hyperedge count. Defaults to ``None``.
+        """
         self.hyperedge_index_wrapper = HyperedgeIndex(hyperedge_index)
         self.node_embeddings = node_embeddings
         self.num_hyperedges = num_hyperedges
@@ -128,11 +136,11 @@ class NodeAggregator:
     Each node-hyperedge incidence selects one hyperedge embedding row, then
     reduces those rows per node with the requested scatter aggregation.
 
-    Args:
-        hyperedge_index: Hyperedge incidence in COO format of size ``(2, num_incidences)``.
+    Attributes:
+        hyperedge_index_wrapper: Wrapper around the hyperedge incidence tensor.
         hyperedge_embeddings: Hyperedge embedding matrix of size ``(num_hyperedges, num_channels)``.
         num_nodes: Optional explicit node count. When provided, the pooled output preserves
-            isolated nodes that do not appear in ``hyperedge_index``.
+            isolated nodes that do not appear in ``hyperedge_index``. Defaults to ``None``.
     """
 
     def __init__(
@@ -141,6 +149,15 @@ class NodeAggregator:
         hyperedge_embeddings: Tensor,
         num_nodes: int | None = None,
     ):
+        """
+        Initialize the node aggregator.
+
+        Args:
+            hyperedge_index: Hyperedge incidence in COO format of size ``(2, num_incidences)``.
+            hyperedge_embeddings: Hyperedge embedding matrix of size
+                ``(num_hyperedges, num_channels)``.
+            num_nodes: Optional explicit node count. Defaults to ``None``.
+        """
         self.hyperedge_index_wrapper = HyperedgeIndex(hyperedge_index)
         self.hyperedge_embeddings = hyperedge_embeddings
         self.num_nodes = num_nodes

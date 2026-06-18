@@ -78,6 +78,14 @@ class VilLainLoss:
         labels_per_subspace: int,
         eps: float = 1e-12,
     ) -> None:
+        """
+        Initialize the VilLain loss helper.
+
+        Args:
+            num_subspaces: Number of virtual-label subspaces in each embedding.
+            labels_per_subspace: Number of virtual labels in each subspace.
+            eps: Numerical stability constant. Defaults to ``1e-12``.
+        """
         super().__init__()
         self.num_subspaces = num_subspaces
         self.labels_per_subspace = labels_per_subspace

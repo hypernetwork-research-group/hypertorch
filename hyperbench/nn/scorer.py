@@ -17,6 +17,16 @@ class NeighborScorer(ABC):
         candidate_nodes: list[int],
         candidate_to_neighbors: dict[int, Neighborhood],
     ) -> float:
+        """
+        Score a single candidate hyperedge.
+
+        Args:
+            candidate_nodes: Node IDs in the candidate hyperedge.
+            candidate_to_neighbors: Mapping from node IDs to their neighborhoods.
+
+        Returns:
+            score: Candidate score.
+        """
         raise NotImplementedError
 
     @abstractmethod
@@ -25,6 +35,16 @@ class NeighborScorer(ABC):
         hyperedge_index: Tensor,
         node_to_neighbors: dict[int, Neighborhood] | None = None,
     ) -> Tensor:
+        """
+        Score a batch of hyperedges.
+
+        Args:
+            hyperedge_index: Hyperedge incidence tensor.
+            node_to_neighbors: Optional precomputed node-neighborhood mapping.
+
+        Returns:
+            scores: Score tensor, one value per hyperedge.
+        """
         raise NotImplementedError
 
 
@@ -40,6 +60,12 @@ class CommonNeighborsScorer(NeighborScorer):
     __DEFAULT_SCORE = 0.0
 
     def __init__(self, aggregation: Literal["mean", "min", "sum"]) -> None:
+        """
+        Initialize the common-neighbors scorer.
+
+        Args:
+            aggregation: Method used to aggregate pairwise common-neighbor counts.
+        """
         self.aggregation = aggregation
 
     def score(
@@ -105,6 +131,15 @@ class CommonNeighborsScorer(NeighborScorer):
         return torch.tensor(scores, dtype=torch.float32, device=hyperedge_index.device)
 
     def __to_score_by_aggregation(self, pairwise_counts: list[int]) -> float:
+        """
+        Aggregate pairwise common-neighbor counts into a score.
+
+        Args:
+            pairwise_counts: Pairwise common-neighbor counts.
+
+        Returns:
+            score: Aggregated common-neighbors score.
+        """
         score = self.__DEFAULT_SCORE
         if len(pairwise_counts) < 1:
             return score
