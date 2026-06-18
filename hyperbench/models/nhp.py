@@ -38,14 +38,11 @@ class NHP(nn.Module):
         ... torch.Size([2])
 
     Attributes:
-        in_channels: Number of input features per node.
-        hidden_channels: Number of hidden units in the node embeddings.
-        activation_fn: Activation function to use after the linear transformations.
-            Defaults to ``nn.ReLU``.
-        activation_fn_kwargs: Keyword arguments for the activation function. Defaults to empty dict.
         aggregation: Method to aggregate the incidence embeddings into a hyperedge embedding.
-            Must be either "maxmin" or "mean". Defaults to "maxmin".
-        bias: Whether to include bias terms in the linear layers. Defaults to ``True``.
+        self_loop: Linear projection for the current node feature.
+        hyperedge_aware: Linear projection for neighboring node features in a hyperedge.
+        activation_fn: Activation module applied to node embeddings.
+        hyperedge_score: Linear scorer for hyperedge embeddings.
     """  # noqa: E501
 
     def __init__(
@@ -57,6 +54,20 @@ class NHP(nn.Module):
         aggregation: Literal["mean", "maxmin"] = "maxmin",
         bias: bool = True,
     ):
+        """
+        Initialize the NHP model.
+
+        Args:
+            in_channels: Number of input features per node.
+            hidden_channels: Number of hidden units in the node embeddings.
+            activation_fn: Activation function to use after the linear transformations.
+                Defaults to ``nn.ReLU``.
+            activation_fn_kwargs: Keyword arguments for the activation function.
+                Defaults to empty dict.
+            aggregation: Method to aggregate the incidence embeddings into a hyperedge embedding.
+                Must be either "maxmin" or "mean". Defaults to "maxmin".
+            bias: Whether to include bias terms in the linear layers. Defaults to ``True``.
+        """
         super().__init__()
 
         activation_fn = activation_fn if activation_fn is not None else nn.ReLU

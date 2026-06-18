@@ -31,6 +31,10 @@ class VilLain(nn.Module):
         generation_steps: Propagation steps averaged for final embeddings. Defaults to ``100``.
         tau: Gumbel-Softmax temperature. Defaults to ``1.0``.
         eps: Numerical stability constant. Defaults to ``1e-10``.
+        num_subspaces: Number of virtual-label subspaces.
+        raw_embedding_dim: Internal embedding dimension before truncation.
+        node_embedding: Trainable node virtual-label logits.
+        loss_fn: VilLain loss helper.
     """  # noqa: E501
 
     def __init__(
@@ -43,6 +47,25 @@ class VilLain(nn.Module):
         tau: float = 1.0,
         eps: float = 1e-10,
     ):
+        """
+        Initialize the VilLain model.
+
+        Args:
+            num_nodes: Total number of trainable nodes.
+            embedding_dim: Returned embedding dimension.
+                Defaults to ``128``.
+            labels_per_subspace: Number of virtual labels per subspace.
+                Defaults to ``2``.
+            training_steps: Propagation steps used for self-supervised loss.
+                Defaults to ``4``.
+            generation_steps: Propagation steps averaged for final embeddings.
+                Defaults to ``100``.
+            tau: Gumbel-Softmax temperature. Defaults to ``1.0``.
+            eps: Numerical stability constant. Defaults to ``1e-10``.
+
+        Raises:
+            ValueError: If any argument is outside its supported range.
+        """
         super().__init__()
         self.__validate_args(
             num_nodes=num_nodes,
@@ -377,6 +400,21 @@ class VilLain(nn.Module):
         tau: float,
         eps: float,
     ) -> None:
+        """
+        Validate VilLain constructor arguments.
+
+        Args:
+            num_nodes: Total number of trainable nodes.
+            embedding_dim: Returned embedding dimension.
+            labels_per_subspace: Number of virtual labels per subspace.
+            training_steps: Propagation steps used for self-supervised loss.
+            generation_steps: Propagation steps averaged for final embeddings.
+            tau: Gumbel-Softmax temperature.
+            eps: Numerical stability constant.
+
+        Raises:
+            ValueError: If any argument is outside its supported range.
+        """
         if num_nodes < 1:
             raise ValueError("num_nodes must be positive.")
         if embedding_dim < 1:

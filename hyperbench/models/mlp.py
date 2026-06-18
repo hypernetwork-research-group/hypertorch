@@ -37,22 +37,7 @@ class MLP(nn.Module):
         ... torch.Size([10, 1])
 
     Attributes:
-        in_channels: Number of input features.
-        out_channels: Number of output features.
-        hidden_channels: Number of hidden units in each hidden layer. Required if num_layers > 1.
-        num_layers: Total number of layers (including output layer). Must be at least 1.
-            Defaults to 1.
-        activation_fn: Activation function to use after each hidden layer. Defaults to ``nn.ReLU``.
-        activation_fn_kwargs: Keyword arguments for the activation function.
-            Defaults to empty dict.
-        normalization_fn: Normalization function to use after each
-            hidden layer (before activation).
-            If ``None``, no normalization is applied. Defaults to ``None``.
-        normalization_fn_kwargs: Keyword arguments for the normalization function.
-            Defaults to empty dict.
-        bias: Whether to include bias terms in the linear layers. Defaults to ``True``.
-        drop_rate: Dropout rate to apply after each hidden layer (after activation). If 0.0, no
-            dropout is applied. Defaults to 0.0.
+        layers: Sequential MLP layers.
     """
 
     def __init__(
@@ -68,6 +53,29 @@ class MLP(nn.Module):
         bias: bool = True,
         drop_rate: float = 0.0,
     ):
+        """
+        Initialize the MLP.
+
+        Args:
+            in_channels: Number of input features.
+            out_channels: Number of output features.
+            hidden_channels: Number of hidden units in each hidden layer.
+                Required if ``num_layers > 1``.
+            num_layers: Total number of layers (including output layer). Must be at least 1.
+                Defaults to 1.
+            activation_fn: Activation function to use after each hidden layer.
+                Defaults to ``nn.ReLU``.
+            activation_fn_kwargs: Keyword arguments for the activation function.
+                Defaults to empty dict.
+            normalization_fn: Normalization function to use after each
+                hidden layer (before activation).
+                If ``None``, no normalization is applied. Defaults to ``None``.
+            normalization_fn_kwargs: Keyword arguments for the normalization function.
+                Defaults to empty dict.
+            bias: Whether to include bias terms in the linear layers. Defaults to ``True``.
+            drop_rate: Dropout rate to apply after each hidden layer (after activation). If 0.0, no
+                dropout is applied. Defaults to 0.0.
+        """
         super().__init__()
         self.__validate_num_layers(num_layers, hidden_channels)
 
@@ -100,10 +108,29 @@ class MLP(nn.Module):
 
         self.layers = nn.Sequential(*layers)
 
-    def forward(self, x) -> Tensor:
+    def forward(self, x: Tensor) -> Tensor:
+        """
+        Apply the MLP to input features.
+
+        Args:
+            x: Input feature tensor.
+
+        Returns:
+            x: Output feature tensor.
+        """
         return self.layers(x)
 
     def __validate_num_layers(self, num_layers: int, hidden_channels: int | None) -> None:
+        """
+        Validate MLP layer configuration.
+
+        Args:
+            num_layers: Number of linear layers.
+            hidden_channels: Optional hidden channel count.
+
+        Raises:
+            ValueError: If the layer configuration is invalid.
+        """
         if num_layers < 1:
             raise ValueError("At least one layer is required for MLP.")
         if num_layers > 1 and hidden_channels is None:
@@ -122,9 +149,8 @@ class SLP(MLP):
         >>> output.shape
         ... torch.Size([10, 1])
 
-    Args:
-        in_channels: Number of input features.
-        out_channels: Number of output features.
+    Attributes:
+        layers: Single linear layer.
     """
 
     def __init__(
@@ -132,6 +158,13 @@ class SLP(MLP):
         in_channels: int,
         out_channels: int,
     ):
+        """
+        Initialize the SLP.
+
+        Args:
+            in_channels: Number of input features.
+            out_channels: Number of output features.
+        """
         super().__init__(
             in_channels=in_channels,
             out_channels=out_channels,

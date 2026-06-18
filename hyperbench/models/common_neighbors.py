@@ -11,8 +11,6 @@ class CommonNeighbors(nn.Module):
     Computes Common Neighbors scores for hyperedges.
 
     Attributes:
-        aggregation: Method to aggregate node embeddings per hyperedge. Can be one of
-            ``"mean"``, ``"min"``, or ``"sum"``.
         scorer: An instance of a NeighborScorer that computes the scores for hyperedges.
     """
 
@@ -21,6 +19,14 @@ class CommonNeighbors(nn.Module):
         aggregation: Literal["mean", "min", "sum"],
         scorer: NeighborScorer | None = None,
     ) -> None:
+        """
+        Initialize the common-neighbors model.
+
+        Args:
+            aggregation: Method used by the default scorer to aggregate pairwise counts.
+                Defaults to ``mean``.
+            scorer: Optional custom neighbor scorer.
+        """
         super().__init__()
         self.scorer = scorer if scorer is not None else CommonNeighborsScorer(aggregation)
 
