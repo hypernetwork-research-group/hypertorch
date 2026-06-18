@@ -10,6 +10,16 @@ def collect_metric_bounds(
     results: Mapping[str, Mapping[str, Any]],
     metric_names: list[str],
 ) -> dict[str, tuple[float, float]]:
+    """
+    Collect minimum and maximum values for numeric metrics.
+
+    Args:
+        results: Mapping from model names to metric dictionaries.
+        metric_names: Metric names to inspect.
+
+    Returns:
+        metric_bounds: Mapping from metric name to ``(min, max)`` bounds.
+    """
     metric_bounds: dict[str, tuple[float, float]] = {}
 
     for metric_name in metric_names:
@@ -32,6 +42,22 @@ def colorize_metric_value(
     metric_bounds: Mapping[str, tuple[float, float]] | None,
     sort_order: str,
 ) -> str:
+    """
+    Wrap a formatted metric value in a LaTex cell color command.
+
+    Args:
+        metric: Metric name.
+        value: Numeric metric value.
+        text: Already formatted metric text.
+        metric_bounds: Optional metric bounds used for color scaling.
+        sort_order: ``"asc"`` when lower is better, or ``"des"`` when higher is better.
+
+    Returns:
+        text: Original or colorized LaTex cell text.
+
+    Raises:
+        ValueError: If ``sort_order`` is unsupported.
+    """
     bounds = None if metric_bounds is None else metric_bounds.get(metric)
     if bounds is None:
         return text
@@ -92,10 +118,11 @@ class LaTexTableLogger(Logger):
     so you can open it mid-run to see partial results.
 
     Attributes:
-        save_dir: Base directory where the comparison/ subfolder will be created.
-        model_name: The model's full name (e.g., "mlp:mean").
-        experiment_name: Shared key that groups all models in the same experiment.
-        precision: Decimal places for metric values in the table.
+        __save_dir: Base directory where the comparison subfolder will be created.
+        __model_name: The model's full name.
+        __experiment_name: Shared key grouping models in the same experiment.
+        __precision: Decimal places for metric values in the table.
+        __options: Table rendering options.
     """
 
     # Class-level shared store: {experiment_name: {model_name: {metric_name: value}}}
@@ -109,6 +136,17 @@ class LaTexTableLogger(Logger):
         precision: int = 4,
         options: LaTexTableConfig | None = None,
     ) -> None:
+        """
+        Initialize the LaTex table logger.
+
+        Args:
+            save_dir: Base directory where comparison files are written.
+            model_name: Full model name to use as the table row label.
+            experiment_name: Shared key grouping models in the same experiment.
+            precision: Decimal places for metric values.
+            options: Optional table rendering configuration.
+                Defaults to an empty dict configuration, if not provided.
+        """
         super().__init__()
         validate_is_non_negative("precision", precision)
 
@@ -125,10 +163,22 @@ class LaTexTableLogger(Logger):
 
     @property
     def name(self) -> str:
+        """
+        Return the logger name.
+
+        Returns:
+            name: Logger name.
+        """
         return "LaTexTableLogger"
 
     @property
     def version(self) -> str | int:
+        """
+        Return the logger version.
+
+        Returns:
+            version: Model name used as the logger version.
+        """
         return self.__model_name
 
     @property
@@ -138,17 +188,40 @@ class LaTexTableLogger(Logger):
 
     @property
     def save_dir(self) -> str | Path:
+        """
+        Return the logger save directory.
+
+        Returns:
+            save_dir: Base directory for comparison files.
+        """
         return self.__save_dir
 
     @property
     def experiment_name(self) -> str | Path:
+        """
+        Return the experiment name.
+
+        Returns:
+            experiment_name: Shared experiment key.
+        """
         return self.__experiment_name
 
     def clear(self, experiment_name: str) -> None:
-        """Remove accumulated data for an experiment."""
+        """
+        Remove accumulated data for an experiment.
+
+        Args:
+            experiment_name: The experiment name whose data should be cleared.
+        """
         self.__shared_stores.pop(experiment_name, None)
 
     def log_hyperparams(self, params: Any) -> None:
+        """
+        Accept hyperparameter logging calls from Lightning.
+
+        Args:
+            params: Hyperparameters provided by Lightning, unused.
+        """
         pass
 
     def log_metrics(self, metrics: dict[str, Any], step: int | None = None) -> None:
@@ -237,6 +310,19 @@ class LaTexTableLogger(Logger):
         sort_by: list[str] | None = None,
         border: bool = True,
     ) -> str:
+        """
+        Build a LaTex comparison table from grouped result sections.
+
+        Args:
+            sections_data: Section titles and per-model metric mappings.
+            precision: Decimal places for metric values. Defaults to ``4``.
+            table_caption: Optional table caption. Defaults to ``None``.
+            sort_by: Optional per-metric sort directions. Defaults to ``None``.
+            border: Whether to use bordered table rules. Defaults to ``True``.
+
+        Returns:
+            table: LaTex table content.
+        """
         if not sections_data:
             return ""
 
@@ -284,6 +370,23 @@ class LaTexTableLogger(Logger):
         sort_by: list[str] | None,
         border: bool,
     ) -> list[str]:
+        """
+        Build LaTex table rows for a result section.
+
+        Args:
+            title: Section title.
+            results: Mapping from model names to metric dictionaries.
+            total_cols: Total number of columns in the shared table.
+            precision: Decimal places for metric values.
+            sort_by: Optional per-metric sort directions.
+            border: Whether to use bordered table rules.
+
+        Returns:
+            lines: LaTex rows for the section.
+
+        Raises:
+            ValueError: If any sort direction is unsupported.
+        """
         metrics = sorted({m for mm in results.values() for m in mm})
         sort_orders = sort_by or ["asc"]
 
@@ -374,6 +477,25 @@ class LaTexTableLogger(Logger):
         sort_by: list[str] | None = None,
         border: bool = True,
     ) -> Path:
+        """
+        Build and save LaTex comparison tables to a file.
+
+        Args:
+            test_results: Mapping from model names to test metrics.
+            save_dir: Directory where the LaTex file will be written.
+            train_results: Optional mapping from model names to train metrics.
+                Defaults to ``None``.
+            val_results: Optional mapping from model names to validation metrics.
+                Defaults to ``None``.
+            filename: Name of the output file. Defaults to ``"overall.tex"``.
+            precision: Decimal places for metric values. Defaults to ``4``.
+            table_caption: Optional table caption. Defaults to ``None``.
+            sort_by: Optional per-metric sort directions. Defaults to ``None``.
+            border: Whether to use bordered table rules. Defaults to ``True``.
+
+        Returns:
+            path: Path to the written file.
+        """
         sections_data: list[tuple[str, Mapping[str, Mapping[str, Any]]]] = []
         if test_results:
             sections_data.append(("Test Results", test_results))
