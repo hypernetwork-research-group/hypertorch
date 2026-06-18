@@ -28,11 +28,12 @@ class Dataset(TorchDataset):
     """
     A dataset class for loading and processing hypergraph data.
 
-    Args:
-        hdata: The processed hypergraph data in HData format.
-        sampling_strategy: The strategy used for sampling sub-hypergraphs
-            (e.g., by node IDs or hyperedge IDs).
-            If not provided, defaults to ``SamplingStrategy.HYPEREDGE``.
+    Attributes:
+        hdata: The hypergraph data stored by the dataset.
+        sampling_strategy: The strategy used for sampling sub-hypergraphs.
+        __sampler: Sampler instance derived from ``sampling_strategy``.
+            This is used in ``__getitem__`` to sample batches based on the provided indices,
+            and in ``__len__`` to determine the number of sampleable items in the dataset.
     """
 
     def __init__(
@@ -41,20 +42,25 @@ class Dataset(TorchDataset):
         sampling_strategy: SamplingStrategy = SamplingStrategy.HYPEREDGE,
     ) -> None:
         """
-        Initialize the Dataset.
+        Initialize the dataset.
 
         Args:
-            hdata: Optional HData object to initialize the dataset with.
-                If provided, the dataset will be initialized with this data instead of loading and
-                processing from HIF. Must be provided if prepare is set to ``False``.
-            sampling_strategy: The sampling strategy to use for the dataset. If not provided,
-                defaults to ``SamplingStrategy.HYPEREDGE``.
+            hdata: The processed hypergraph data in HData format.
+            sampling_strategy: The strategy used for sampling sub-hypergraphs
+                (e.g., by node IDs or hyperedge IDs).
+                If not provided, defaults to ``SamplingStrategy.HYPEREDGE``.
         """
         self.__sampler = create_sampler_from_strategy(sampling_strategy)
         self.sampling_strategy = sampling_strategy
         self.hdata = hdata if hdata is not None else HData.empty()
 
     def __len__(self) -> int:
+        """
+        Return the number of sampleable items in the dataset.
+
+        Returns:
+            length: Number of sampleable nodes or hyperedges, depending on the sampling strategy.
+        """
         return self.__sampler.len(self.hdata)
 
     def __getitem__(self, index: int | list[int]) -> HData:
@@ -337,8 +343,8 @@ class Dataset(TorchDataset):
 
         Args:
             ratios: List of floats summing to ``1.0``, e.g., ``[0.8, 0.1, 0.1]``.
-                shuffle: Whether to shuffle hyperedges before splitting. Defaults to ``False``
-                for deterministic splits.
+            shuffle: Whether to shuffle hyperedges before splitting.
+                Defaults to ``False`` for deterministic splits.
             seed: Optional random seed for reproducibility. Ignored if shuffle is set to ``False``.
             node_space_setting: Whether to preserve the full node space in the splits.
                 ``transductive`` (default) preserves the full node space on the
@@ -355,7 +361,6 @@ class Dataset(TorchDataset):
                 to determine which split should be rebalanced to cover all nodes.
                 For the 'inductive' setting, splits are always returned based on
                 the provided ratios.
-            seed: Optional random seed for reproducibility. Ignored if shuffle is set to ``False``.
             splitter: Optional dataset splitter. When provided, it owns split
                 construction and final-ratio reporting.
 
@@ -470,6 +475,17 @@ class Dataset(TorchDataset):
         attrs: dict[str, Any],
         attr_keys: list[str] | None = None,
     ) -> Tensor:
+        """
+        Transform HIF node attributes into a numeric tensor.
+        Overload this in case processing node attributes requires custom logic.
+
+        Args:
+            attrs: Attributes to transform.
+            attr_keys: Optional attribute key order used for consistent output shape.
+
+        Returns:
+            attrs: Tensor containing numeric attribute values.
+        """
         return HIFProcessor.transform_attrs(attrs, attr_keys)
 
     def transform_hyperedge_attrs(
@@ -477,6 +493,17 @@ class Dataset(TorchDataset):
         attrs: dict[str, Any],
         attr_keys: list[str] | None = None,
     ) -> Tensor:
+        """
+        Transform hyperedge attributes into a numeric tensor.
+        Overload this in case processing hyperedge attributes requires custom logic.
+
+        Args:
+            attrs: Attributes to transform.
+            attr_keys: Optional attribute key order used for consistent output shape.
+
+        Returns:
+            attrs: Tensor containing numeric attribute values.
+        """
         return HIFProcessor.transform_attrs(attrs, attr_keys)
 
     def stats(self) -> dict[str, Any]:

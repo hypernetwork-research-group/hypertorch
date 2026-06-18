@@ -25,6 +25,13 @@ class NegativeSampler(ABC):
     """
 
     def __init__(self, return_0based_negatives: bool = False):
+        """
+        Initialize the negative sampler.
+
+        Args:
+            return_0based_negatives: If ``True``, returned negative samples have 0-based node
+                and hyperedge IDs. If ``False``, they retain the original global IDs.
+        """
         super().__init__()
         self.return_0based_negatives: bool = return_0based_negatives
 
@@ -254,16 +261,11 @@ class SameNodeSpaceNegativeSampler(NegativeSampler, ABC):
     """
     Base class for negative samplers that sample only from existing nodes.
 
-    Args:
-        hyperedge_attr_enricher: An optional `HyperedgeAttrsEnricher` to generate attributes for
-            the new hyperedges.
-        hyperedge_weights_enricher: An optional `HyperedgeWeightsEnricher` to generate weights
-            for the new hyperedges.
-        return_0based_negatives:
-            - If ``True``, the negative samples returned by the ``sample`` method will have
-                0-based node and hyperedge IDs.
-            - If ``False``, the negative samples will retain the original global node
-                and hyperedge IDs from the input data.
+    Attributes:
+        hyperedge_attr_enricher: Optional enricher used to generate attributes for
+            sampled hyperedges.
+        hyperedge_weights_enricher: Optional enricher used to generate weights for
+            sampled hyperedges.
     """
 
     def __init__(
@@ -272,6 +274,17 @@ class SameNodeSpaceNegativeSampler(NegativeSampler, ABC):
         hyperedge_weights_enricher: HyperedgeWeightsEnricher | None = None,
         return_0based_negatives: bool = False,
     ):
+        """
+        Initialize the same-node-space negative sampler.
+
+        Args:
+            hyperedge_attr_enricher: Optional enricher used to generate attributes for
+                sampled hyperedges.
+            hyperedge_weights_enricher: Optional enricher used to generate weights for
+                sampled hyperedges.
+            return_0based_negatives: If ``True``, returned negatives are rebased to 0-based IDs.
+                 If ``False``, they retain the original global IDs.
+        """
         super().__init__(return_0based_negatives=return_0based_negatives)
         self.hyperedge_attr_enricher = hyperedge_attr_enricher
         self.hyperedge_weights_enricher = hyperedge_weights_enricher
@@ -281,17 +294,12 @@ class GeneratedNodesNegativeSampler(NegativeSampler, ABC):
     """
     Base class for negative samplers that generate new nodes instead of sampling from existing ones.
 
-    Args:
-        node_feature_enricher: A `NodeEnricher` to generate features for the new nodes.
-        hyperedge_attr_enricher: An optional `HyperedgeAttrsEnricher` to generate attributes
-            for the new hyperedges.
-        hyperedge_weights_enricher: An optional `HyperedgeWeightsEnricher` to generate weights
-            for the new hyperedges.
-        return_0based_negatives:
-            - If ``True``, the negative samples returned by the ``sample`` method will have
-                0-based node and hyperedge IDs.
-            - If ``False``, the negative samples will retain the original global node and
-                hyperedge IDs from the input data.
+    Attributes:
+        node_feature_enricher: Enricher used to generate features for new nodes.
+        hyperedge_attr_enricher: Optional enricher used to generate attributes for
+            sampled hyperedges.
+        hyperedge_weights_enricher: Optional enricher used to generate weights for
+            sampled hyperedges.
     """
 
     def __init__(
@@ -301,6 +309,18 @@ class GeneratedNodesNegativeSampler(NegativeSampler, ABC):
         hyperedge_weights_enricher: HyperedgeWeightsEnricher | None = None,
         return_0based_negatives: bool = False,
     ):
+        """
+        Initialize the generated-node negative sampler.
+
+        Args:
+            node_feature_enricher: Enricher used to generate features for new nodes.
+            hyperedge_attr_enricher: Optional enricher used to generate attributes for
+                sampled hyperedges.
+            hyperedge_weights_enricher: Optional enricher used to generate weights for
+                sampled hyperedges.
+            return_0based_negatives: If ``True``, returned negatives are rebased to 0-based IDs.
+                If ``False``, they retain the original global IDs.
+        """
         super().__init__(return_0based_negatives=return_0based_negatives)
         self.node_feature_enricher = node_feature_enricher
         self.hyperedge_attr_enricher = hyperedge_attr_enricher
@@ -315,27 +335,11 @@ class RandomNegativeSampler(SameNodeSpaceNegativeSampler):
     contains the global node and hyperedge IDs and features that can be indexed with
     the negative samples' IDs.
 
-    Args:
+    Attributes:
         num_negative_samples: Number of negative hyperedges to generate.
         num_nodes_per_sample: Number of nodes per negative hyperedge.
-        hyperedge_attr_enricher: An optional `HyperedgeAttrsEnricher` to generate attributes
-            for the new hyperedges.
-            If not provided, random attributes will be generated for the negative hyperedges if
-            the input data has hyperedge attributes.
-        hyperedge_weights_enricher: An optional `HyperedgeWeightsEnricher` to generate weights
-            for the new hyperedges. If not provided, the negative hyperedges will not have weights.
-        return_0based_negatives:
-            - If ``True``, the negative samples returned by the ``sample`` method
-                will have 0-based node and hyperedge IDs.
-            - If ``False``, the negative samples will retain the original global node and
-                hyperedge IDs from the input data.
         max_retry: Maximum number of rejected sampling attempts allowed per requested
             negative hyperedge before failing.
-            If ``num_negative_samples`` is ``N``, the total maximum number of attempts
-            will be ``N * max_retry``.
-
-    Raises:
-        ValueError: If any numeric argument is not positive.
     """
 
     def __init__(
@@ -347,6 +351,27 @@ class RandomNegativeSampler(SameNodeSpaceNegativeSampler):
         return_0based_negatives: bool = False,
         max_retry: int = 100,
     ):
+        """
+        Initialize the random negative sampler.
+
+        Args:
+            num_negative_samples: Number of negative hyperedges to generate.
+            num_nodes_per_sample: Number of nodes per negative hyperedge.
+            hyperedge_attr_enricher: An optional `HyperedgeAttrsEnricher` to generate attributes
+                for the new hyperedges. If not provided, random attributes will be generated for
+                the negative hyperedges if the input data has hyperedge attributes.
+            hyperedge_weights_enricher: An optional `HyperedgeWeightsEnricher` to generate weights
+                for the new hyperedges. If not provided, negative hyperedges will not have weights.
+            return_0based_negatives: If ``True``, negative samples returned by ``sample`` will
+                have 0-based node and hyperedge IDs. If ``False``, negative samples retain the
+                original global node and hyperedge IDs from the input data.
+            max_retry: Maximum number of rejected sampling attempts allowed per requested
+                negative hyperedge before failing. If ``num_negative_samples`` is ``N``, the total
+                maximum number of attempts will be ``N * max_retry``.
+
+        Raises:
+            ValueError: If any numeric argument is not positive.
+        """
         if num_negative_samples <= 0:
             raise ValueError(f"num_negative_samples must be positive, got {num_negative_samples}.")
         if num_nodes_per_sample <= 0:
@@ -640,26 +665,18 @@ class CliqueNegativeSampler(SameNodeSpaceNegativeSampler):
     ``num_nodes_per_sample`` nodes where every pair is adjacent, and the node set must not
     already exist as a positive hyperedge.
 
-    Args:
+    Attributes:
         num_negative_samples: Number of negative hyperedges to generate.
         num_nodes_per_sample: Number of nodes per negative hyperedge. Must be at least 2.
-        hyperedge_attr_enricher: Optional enricher to generate attributes for sampled negatives.
-        hyperedge_weights_enricher: Optional enricher to generate weights for sampled negatives.
-        return_0based_negatives: If ``True``, returned negative node and hyperedge IDs
-            are rebased to 0-based IDs.
         max_candidates: Optional upper bound for full-size clique candidates enumerated
-            during search.
-            If ``None``, it means no explicit cap. The limit counts every full-size clique candidate
-            encountered before positive-hyperedge filtering, so positive hyperedges still consume
-            the budget because they still require search work. This is a safety guard for
-            dense graphs where clique enumeration can grow quickly. For example,
-            ``max_candidates=10_000`` means the sampler stops if finding candidates
+            during search. If ``None``, it means no explicit cap. The limit counts every full-size
+            clique candidate encountered before positive-hyperedge filtering,
+            so positive hyperedges still consume the budget because they still require search work.
+            This is a safety guard for dense graphs where clique enumeration can grow quickly.
+            For example, ``max_candidates=10_000`` means the sampler stops if finding candidates
             requires enumerating more than 10,000 cliques of size ``num_nodes_per_sample``.
             It does not control how many negatives are returned, as that is controlled
             by ``num_negative_samples``.
-
-    Raises:
-        ValueError: If numeric arguments are invalid.
     """
 
     def __init__(
@@ -671,6 +688,24 @@ class CliqueNegativeSampler(SameNodeSpaceNegativeSampler):
         return_0based_negatives: bool = False,
         max_candidates: int | None = None,
     ):
+        """
+        Initialize the clique negative sampler.
+
+        Args:
+            num_negative_samples: Number of negative hyperedges to generate.
+            num_nodes_per_sample: Number of nodes per negative hyperedge. Must be at least 2.
+            hyperedge_attr_enricher: Optional enricher to generate attributes for
+                sampled negatives.
+            hyperedge_weights_enricher: Optional enricher to generate weights for
+                sampled negatives.
+            return_0based_negatives: If ``True``, returned negative node and hyperedge IDs
+                are rebased to 0-based IDs.
+            max_candidates: Optional upper bound for full-size clique candidates enumerated
+                during search. If ``None``, there is no explicit cap.
+
+        Raises:
+            ValueError: If numeric arguments are invalid.
+        """
         if num_negative_samples <= 0:
             raise ValueError(f"num_negative_samples must be positive, got {num_negative_samples}.")
         if num_nodes_per_sample < 2:

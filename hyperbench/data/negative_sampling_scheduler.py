@@ -27,6 +27,7 @@ class NegativeSamplingScheduler:
         negative_sampling_every_n: An integer specifying the interval for sampling negatives
             when the schedule is set to ``"every_n_epochs"``. This parameter is ignored
             for other schedules.
+        __cached_negative_samples: Most recently sampled negative batch.
     """
 
     def __init__(
@@ -35,6 +36,14 @@ class NegativeSamplingScheduler:
         negative_sampling_schedule: NegativeSamplingSchedule = "every_epoch",
         negative_sampling_every_n: int = 1,
     ) -> None:
+        """
+        Initialize the scheduler.
+
+        Args:
+            negative_sampler: Sampler used to create negative samples.
+            negative_sampling_schedule: Schedule controlling when negatives are sampled.
+            negative_sampling_every_n: Epoch interval used for ``"every_n_epochs"`` scheduling.
+        """
         self.negative_sampler = negative_sampler
         self.negative_sampling_schedule = negative_sampling_schedule
         self.negative_sampling_every_n = negative_sampling_every_n
