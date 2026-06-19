@@ -1,16 +1,7 @@
 import torch
-from torchmetrics import MetricCollection
-from torchmetrics.classification import (
-    BinaryAUROC,
-    BinaryAccuracy,
-    BinaryAveragePrecision,
-    BinaryPrecision,
-    BinaryRecall,
-)
 from hyperbench.data import (
     Dataset,
     Splitter,
-    AlgebraDataset,
     SamplingStrategy,
 )
 from hyperbench.types import HData
@@ -21,67 +12,53 @@ class CustomSplitter(Splitter["Dataset", list["Dataset"]]):
         super().__init__()
 
     def split(self, to_split: Dataset, **kwargs) -> list[Dataset]:
-        hdata = to_split.hdata
+        split_ratios = [0.5, 0.25, 0.25]  # Custom split ratios for train, val, test
+        num_train_included = int(split_ratios[0] * to_split.hdata.num_hyperedges)
+        num_val_included = int(split_ratios[1] * to_split.hdata.num_hyperedges)
+        num_test_included = int(split_ratios[2] * to_split.hdata.num_hyperedges)
 
-        perm = hdata.hyperedge_index[0].argsort()
-        num_hes = len(perm)
-        if num_hes == 0:
-            return []
-
-        mid = num_hes // 2
-        first_ids = perm[:mid]
-        second_ids = perm[mid:]
-
-        split_ids_list = [first_ids, second_ids]
-        split_second_ids_first_half = split_ids_list[1][: len(split_ids_list[1]) // 2]
-        split_second_ids_second_half = split_ids_list[1][len(split_ids_list[1]) // 2 :]
-        split_ids_list = [
-            split_ids_list[0],
-            split_second_ids_first_half,
-            split_second_ids_second_half,
+        train_he = to_split.hdata.hyperedge_index[:, :num_train_included]
+        val_he = to_split.hdata.hyperedge_index[
+            :, num_train_included : num_train_included + num_val_included
         ]
-        split_datasets: list[Dataset] = []
-        for _, split_ids in enumerate(split_ids_list):
-            keep_mask = torch.isin(hdata.hyperedge_index[1], split_ids)
-            split_hyperedge_index = hdata.hyperedge_index[:, keep_mask]
-            unique_hyperedge_indices = torch.unique(split_hyperedge_index[1])
-            x = hdata.x
-            split_hdata = HData(
-                x=x,
-                hyperedge_index=split_hyperedge_index,
-                y=unique_hyperedge_indices.float(),
-                num_nodes=hdata.num_nodes,
-                num_hyperedges=len(unique_hyperedge_indices),
-            )
-            split_hdata = split_hdata.to(device=hdata.device)
+        test_he = to_split.hdata.hyperedge_index[
+            :,
+            num_train_included + num_val_included : num_train_included
+            + num_val_included
+            + num_test_included,
+        ]
 
-            split_dataset = to_split.__class__(
-                hdata=split_hdata, sampling_strategy=to_split.sampling_strategy
-            )
-            split_datasets.append(split_dataset)
+        train_hdata = HData.from_hyperedge_index(train_he)
+        val_hdata = HData.from_hyperedge_index(val_he)
+        test_hdata = HData.from_hyperedge_index(test_he)
+
+        split_datasets = [
+            Dataset.from_hdata(train_hdata, sampling_strategy=to_split.sampling_strategy),
+            Dataset.from_hdata(val_hdata, sampling_strategy=to_split.sampling_strategy),
+            Dataset.from_hdata(test_hdata, sampling_strategy=to_split.sampling_strategy),
+        ]
 
         return split_datasets
 
 
 if __name__ == "__main__":
     verbose = True
-    num_workers = 8
-    num_features = 32
-    metrics = MetricCollection(
-        {
-            "auc": BinaryAUROC(),
-            "accuracy": BinaryAccuracy(),
-            "avg_precision": BinaryAveragePrecision(),
-            "precision": BinaryPrecision(),
-            "recall": BinaryRecall(),
-        }
+
+    x = torch.arange(7, dtype=torch.float).unsqueeze(1)
+    hyperedge_index = torch.tensor(
+        [
+            [0, 1, 2, 0, 3, 1, 3, 2, 3, 3, 4, 4, 5, 6],
+            [0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 5],
+        ],
+        dtype=torch.long,
     )
-
-    print("Loading and preparing dataset...")
-
-    dataset = AlgebraDataset(sampling_strategy=SamplingStrategy.HYPEREDGE)
-    if verbose:
-        print(f"Dataset:\n {dataset.hdata}\n")
+    hdata = HData(
+        x=x,
+        hyperedge_index=hyperedge_index,
+        num_nodes=7,
+        num_hyperedges=6,
+    )
+    dataset = Dataset.from_hdata(hdata, sampling_strategy=SamplingStrategy.HYPEREDGE)
 
     custom_splitter = CustomSplitter()
 
@@ -97,8 +74,8 @@ if __name__ == "__main__":
 
     if verbose:
         print(f"Original dataset:\n {dataset.hdata}\n")
-        print(f"First 50 dataset:\n {first_50.hdata}\n")
-        print(f"Second 25 dataset:\n {second_25.hdata}\n")
-        print(f"Third 25 dataset:\n {third_25.hdata}\n")
+        print(f"First 50% split:\n {first_50.hdata}\n")
+        print(f"Second 25% split:\n {second_25.hdata}\n")
+        print(f"Third 25% split:\n {third_25.hdata}\n")
 
     print("Complete!")
