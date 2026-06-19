@@ -24,7 +24,6 @@ class HlpModule(L.LightningModule):
         train_metrics: Optional metric collection for training.
         val_metrics: Optional metric collection for validation.
         test_metrics: Optional metric collection for testing.
-        __negative_sampling_scheduler: Optional negative-sampling scheduler.
     """
 
     def __init__(

@@ -34,8 +34,6 @@ class MultiModelTrainer:
         auto_start_tensorboard: Whether TensorBoard should be started automatically.
         tensorboard_port: Port used by the auto-started TensorBoard server.
         auto_wait: Whether ``finalize`` should wait before stopping TensorBoard.
-        __tensorboard_process: Running TensorBoard process, if one was started.
-        __checkpoint_callback_kwargs: Default checkpoint callback keyword arguments.
     """
 
     DEFAULT_BASE_LOG_DIR = "hyperbench_logs"

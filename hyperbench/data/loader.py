@@ -12,11 +12,6 @@ class DataLoader(TorchDataLoader):
     """
     DataLoader combines a dataset and a sampler, and provides an iterable
     over the given dataset. It extends ``torch.utils.data.DataLoader``.
-
-    Attributes:
-        __sample_full_hypergraph: Whether each batch should contain the dataset's full
-            hypergraph instead of sampled items.
-        __cached_dataset_hdata: Cached full-graph data used when full-graph batching is enabled.
     """
 
     def __init__(

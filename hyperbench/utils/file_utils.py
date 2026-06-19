@@ -135,6 +135,9 @@ def write_dataset_to_disk_as_zst(
         content: The compressed content as bytes.
         output_dir: The directory to write the file to. If ``None``, a default location is used.
             Defaults to ``None``.
+
+    Raises:
+        ValueError: If the output path cannot be determined or the file cannot be written.
     """
     try:
         if output_dir is not None:

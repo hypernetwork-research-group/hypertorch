@@ -71,6 +71,10 @@ class HIFProcessor:
 
         Returns:
             hdata: The processed hypergraph data.
+
+        Raises:
+            ValueError: If HIF node IDs are not unique or an incidence references an
+                undeclared node ID.
         """
         num_nodes = len(hypergraph.nodes)
         x = cls.__process_x(hypergraph, num_nodes)
@@ -296,6 +300,10 @@ class HIFLoader:
 
         Returns:
             hdata: The loaded hypergraph object.
+
+        Raises:
+            ValueError: If the URL cannot be downloaded, has an unsupported file format,
+                or has an unexpected filename format.
         """
         url = validate_http_url(url)
 
@@ -349,6 +357,9 @@ class HIFLoader:
 
         Returns:
             hdata: The loaded hypergraph object.
+
+        Raises:
+            ValueError: If ``filepath`` does not exist or has an unsupported file format.
         """
         if not os.path.exists(filepath):
             raise ValueError(f"File {filepath!r} does not exist.")

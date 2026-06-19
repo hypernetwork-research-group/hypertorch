@@ -26,6 +26,9 @@ class NeighborScorer(ABC):
 
         Returns:
             score: Candidate score.
+
+        Raises:
+            NotImplementedError: If the method is not implemented by a subclass.
         """
         raise NotImplementedError
 
@@ -44,6 +47,9 @@ class NeighborScorer(ABC):
 
         Returns:
             scores: Score tensor, one value per hyperedge.
+
+        Raises:
+            NotImplementedError: If the method is not implemented by a subclass.
         """
         raise NotImplementedError
 

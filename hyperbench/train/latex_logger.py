@@ -107,7 +107,8 @@ class LaTexTableConfig(TypedDict):
 
 
 class LaTexTableLogger(Logger):
-    """A Lightning Logger that accumulates metrics and writes a LaTex comparison table.
+    """
+    A Lightning Logger that accumulates metrics and writes a LaTex comparison table.
 
     Multiple instances (one per model) share a class-level store keyed by experiment_name.
     Every time finalize() is called (after fit() or test() for each model), the current
@@ -116,13 +117,6 @@ class LaTexTableLogger(Logger):
 
     This means the file is progressively updated as models finish training/testing,
     so you can open it mid-run to see partial results.
-
-    Attributes:
-        __save_dir: Base directory where the comparison subfolder will be created.
-        __model_name: The model's full name.
-        __experiment_name: Shared key grouping models in the same experiment.
-        __precision: Decimal places for metric values in the table.
-        __options: Table rendering options.
     """
 
     # Class-level shared store: {experiment_name: {model_name: {metric_name: value}}}

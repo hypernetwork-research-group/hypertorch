@@ -12,18 +12,12 @@ class MarkdownTableLogger(Logger):
     A Lightning Logger that accumulates metrics and writes a markdown comparison table.
 
     Multiple instances (one per model) share a class-level store keyed by experiment_name.
-    Every time finalize() is called (after fit() or test() for each model), the current
+    Every time ``finalize()`` is called (after ``fit()`` or ``test()`` for each model), the current
     state of all accumulated metrics is written to a markdown file. The last model to
     finalize produces the most complete table.
 
     This means the file is progressively updated as models finish training/testing,
     so partial results are available while running.
-
-    Attributes:
-        __save_dir: Base directory where the ``comparison/`` subfolder will be created.
-        __model_name: The model's full name. For example, "mlp:mean".
-        __experiment_name: Shared key grouping models in the same experiment.
-        __precision: Decimal places for metric values in the table.
     """
 
     # Class-level shared store: {experiment_name: {model_name: {metric_name: value}}}

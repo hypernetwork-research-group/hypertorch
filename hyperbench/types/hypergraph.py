@@ -440,14 +440,11 @@ class HyperedgeIndex:
         ...                    [0, 0, 0, 1]]
 
         This represents two hyperedges:
-            - Hyperedge 0 connects nodes 0, 1, and 2.
-            - Hyperedge 1 connects node 0.
+        >>> - Hyperedge 0 connects nodes 0, 1, and 2.
+        ... - Hyperedge 1 connects node 0.
 
         The number of nodes in this hypergraph is 3 (nodes 0, 1, and 2).
         The number of hyperedges is 2 (hyperedges 0 and 1).
-
-    Attributes:
-        __hyperedge_index: Tensor of shape ``(2, num_incidences)`` representing incidences.
     """
 
     def __init__(self, hyperedge_index: Tensor):
@@ -922,6 +919,9 @@ class HyperedgeIndex:
 
         Returns:
             edge_index: The edge index of the reduced graph. Size ``(2, num_edges)``.
+
+        Raises:
+            ValueError: If ``strategy`` is unsupported.
         """
         match strategy:
             case "clique_expansion":

@@ -14,8 +14,6 @@ class Graph:
     Attributes:
         edges: A list of edges, where each edge is represented as a list of two integers
             (source_node, destination_node).
-        __edge_weights: Optional list of edge weights corresponding to each edge in ``edges``.
-            If provided, must have the same length as ``edges``.
     """
 
     def __init__(self, edges: list[list[int]], edge_weights: list[float] | None = None):
@@ -176,10 +174,6 @@ class EdgeIndex:
 
         This represents a graph with edges (0, 1), (1, 0), and (2, 3).
         The number of nodes in this graph is 4 (nodes 0, 1, 2, and 3) and the number of edges is 3.
-
-    Attributes:
-        __edge_index: Tensor of shape ``(2, num_edges)`` representing graph edges.
-        __edge_weights: Optional tensor of shape ``(num_edges,)`` containing edge weights.
     """
 
     def __init__(

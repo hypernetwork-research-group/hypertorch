@@ -117,6 +117,9 @@ class HNHNHlpModule(HlpModule):
 
         Returns:
             scores: Logit scores of shape ``(num_hyperedges,)``.
+
+        Raises:
+            ValueError: If the encoder is not defined for this module.
         """
         if self.encoder is None:
             raise ValueError("Encoder is not defined for this HLP module.")

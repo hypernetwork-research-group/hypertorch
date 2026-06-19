@@ -29,6 +29,10 @@ class NHPRankingLoss(nn.Module):
 
         Returns:
             loss: Scalar loss value.
+
+        Raises:
+            ValueError: If ``logits`` and ``labels`` do not contain both positive and
+                negative hyperedges.
         """
         # Split logits by label as we need to compare positive scores against negative scores.
         # Example: logits = [2.0, 1.0, -1.0]

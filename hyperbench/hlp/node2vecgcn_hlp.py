@@ -71,7 +71,6 @@ class Node2VecGCNHlpModule(HlpModule):
             Defaults to ``128``.
         node2vec_loss_weight: Weight applied to Node2Vec walk loss in joint mode.
             Defaults to ``1.0``.
-        __walk_loader_state: Cached random-walk loader state for joint mode.
     """
 
     def __init__(

@@ -31,6 +31,9 @@ class BaseSampler(ABC):
 
         Returns:
             hdata: A new HData instance containing only the sampled items and their associated data.
+
+        Raises:
+            NotImplementedError: If the method is not implemented by a subclass.
         """
         raise NotImplementedError("Subclasses must implement the sample method.")
 
@@ -41,6 +44,9 @@ class BaseSampler(ABC):
 
         Args:
             hdata: The HData to query for the number of sampleable items.
+
+        Raises:
+            NotImplementedError: If the method is not implemented by a subclass.
         """
         raise NotImplementedError("Subclasses must implement the len method.")
 

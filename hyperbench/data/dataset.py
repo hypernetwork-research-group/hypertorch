@@ -31,9 +31,6 @@ class Dataset(TorchDataset):
     Attributes:
         hdata: The hypergraph data stored by the dataset.
         sampling_strategy: The strategy used for sampling sub-hypergraphs.
-        __sampler: Sampler instance derived from ``sampling_strategy``.
-            This is used in ``__getitem__`` to sample batches based on the provided indices,
-            and in ``__len__`` to determine the number of sampleable items in the dataset.
     """
 
     def __init__(
