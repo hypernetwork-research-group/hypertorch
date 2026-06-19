@@ -1,3 +1,4 @@
+import torch
 from torchmetrics import MetricCollection
 from torchmetrics.classification import (
     BinaryAUROC,
@@ -11,13 +12,8 @@ from hyperbench.data import (
     Splitter,
     AlgebraDataset,
     SamplingStrategy,
-    HyperedgeIDSplitter,
-    DefaultHDataSplitter,
 )
-from hyperbench.utils import (
-    NodeSpaceSetting,
-    is_transductive_setting,
-)
+from hyperbench.types import HData
 
 
 class CustomSplitter(Splitter["Dataset", list["Dataset"]]):
@@ -26,18 +22,9 @@ class CustomSplitter(Splitter["Dataset", list["Dataset"]]):
 
     def split(self, to_split: Dataset, **kwargs) -> list[Dataset]:
         hdata = to_split.hdata
-        hyperedge_splitter = HyperedgeIDSplitter(
-            hyperedge_index=hdata.hyperedge_index,
-            num_nodes=hdata.num_nodes,
-            num_hyperedges=hdata.num_hyperedges,
-        )
-        print("Using CustomSplitter to split the dataset...")
-        perm = hyperedge_splitter.get_hyperedge_ids_permutation(
-            shuffle=False,
-            seed=None,
-        )
 
-        num_hes = int(perm.size(0))
+        perm = hdata.hyperedge_index[0].argsort()
+        num_hes = len(perm)
         if num_hes == 0:
             return []
 
@@ -46,17 +33,25 @@ class CustomSplitter(Splitter["Dataset", list["Dataset"]]):
         second_ids = perm[mid:]
 
         split_ids_list = [first_ids, second_ids]
-
+        split_second_ids_first_half = split_ids_list[1][: len(split_ids_list[1]) // 2]
+        split_second_ids_second_half = split_ids_list[1][len(split_ids_list[1]) // 2 :]
+        split_ids_list = [
+            split_ids_list[0],
+            split_second_ids_first_half,
+            split_second_ids_second_half,
+        ]
         split_datasets: list[Dataset] = []
-        for idx, split_ids in enumerate(split_ids_list):
-            node_space_setting: NodeSpaceSetting = (
-                "transductive"
-                if idx == 0
-                and is_transductive_setting(kwargs.get("node_space_setting", "transductive"))
-                else "inductive"
-            )
-            split_hdata = DefaultHDataSplitter(node_space_setting=node_space_setting).split(
-                to_split=hdata, split_hyperedge_ids=split_ids
+        for _, split_ids in enumerate(split_ids_list):
+            keep_mask = torch.isin(hdata.hyperedge_index[1], split_ids)
+            split_hyperedge_index = hdata.hyperedge_index[:, keep_mask]
+            unique_hyperedge_indices = torch.unique(split_hyperedge_index[1])
+            x = hdata.x
+            split_hdata = HData(
+                x=x,
+                hyperedge_index=split_hyperedge_index,
+                y=unique_hyperedge_indices.float(),
+                num_nodes=hdata.num_nodes,
+                num_hyperedges=len(unique_hyperedge_indices),
             )
             split_hdata = split_hdata.to(device=hdata.device)
 
@@ -69,7 +64,7 @@ class CustomSplitter(Splitter["Dataset", list["Dataset"]]):
 
 
 if __name__ == "__main__":
-    verbose = False
+    verbose = True
     num_workers = 8
     num_features = 32
     metrics = MetricCollection(
@@ -98,11 +93,12 @@ if __name__ == "__main__":
         cover_all_nodes_in_train_split=False,
         splitter=custom_splitter,  # pass the custom splitter to the split function
     )
-    first_half, second_half = split_datasets
+    first_50, second_25, third_25 = split_datasets
 
     if verbose:
         print(f"Original dataset:\n {dataset.hdata}\n")
-        print(f"First half dataset:\n {first_half.hdata}\n")
-        print(f"Second half dataset:\n {second_half.hdata}\n")
+        print(f"First 50 dataset:\n {first_50.hdata}\n")
+        print(f"Second 25 dataset:\n {second_25.hdata}\n")
+        print(f"Third 25 dataset:\n {third_25.hdata}\n")
 
     print("Complete!")
