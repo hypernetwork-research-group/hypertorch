@@ -21,9 +21,7 @@ def describe_negative_dataset(name: str, dataset: Dataset) -> None:
 
 
 class CustomNegativeSampler(NegativeSampler):
-    def __init__(self, num_negative_samples: int):
-        self.num_negative_samples = num_negative_samples
-        self.num_nodes_per_sample = 1
+    def __init__(self):
         self.negative_tensor = torch.tensor(
             [
                 [0, 1, 2, 0, 3, 1, 3, 2, 3, 3, 4],
@@ -36,9 +34,9 @@ class CustomNegativeSampler(NegativeSampler):
         return HData(
             x=hdata.x,
             hyperedge_index=self.negative_tensor,
-            y=torch.zeros(self.num_negative_samples, dtype=torch.float),
+            y=torch.zeros(5, dtype=torch.float),
             num_nodes=hdata.num_nodes,
-            num_hyperedges=self.num_negative_samples,
+            num_hyperedges=5,
         )
 
 
@@ -61,12 +59,8 @@ if __name__ == "__main__":
 
     print("Add negative samples to the dataset using CustomNegativeSampler...\n")
 
-    custom_negative_sampler = CustomNegativeSampler(
-        num_negative_samples=5,
-    )
-
     dataset_with_custom_negatives = dataset.add_negative_samples(
-        custom_negative_sampler,
+        negative_sampler=CustomNegativeSampler(),
         seed=42,
     )
 
