@@ -1,0 +1,178 @@
+import torch
+
+from torch import Generator
+from collections.abc import Callable
+from typing import Any
+from torch.utils.data import DataLoader as TorchDataLoader
+from hypertorch.data import Dataset
+from hypertorch.types import HData, HyperedgeIndex
+
+
+class DataLoader(TorchDataLoader):
+    """
+    DataLoader combines a dataset and a sampler, and provides an iterable
+    over the given dataset. It extends ``torch.utils.data.DataLoader``.
+    """
+
+    def __init__(
+        self,
+        dataset: Dataset,
+        batch_size: int = 1,
+        shuffle: bool | None = False,
+        sample_full_hypergraph: bool = False,
+        drop_last: bool = False,
+        num_workers: int = 0,
+        persistent_workers: bool = False,
+        collate_fn: Callable[[list[HData]], HData] | None = None,
+        generator: Generator | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """
+        Initialize the data loader.
+
+        Args:
+            dataset: Dataset that provides sampled `HData` objects.
+            batch_size: Number of samples per batch. Ignored when
+                ``sample_full_hypergraph`` is ``True`` because the full dataset
+                is loaded as one batch.
+            shuffle: Whether to reshuffle sample indices at every epoch.
+            sample_full_hypergraph: Whether each batch should contain the dataset's full
+                hypergraph instead of the sampled items.
+            drop_last: Whether to drop the final incomplete batch when the dataset size
+                is not divisible by the batch size. If ``True``, drop the last incomplete batch.
+                If ``False``, the last batch will be kept and will be smaller.
+                Defaults to ``False``.
+            num_workers: Optional number of subprocesses to use for data loading.
+                For instance, ``0`` means loading happens in the main process. Defaults to ``0``.
+            persistent_workers: Whether worker processes should stay alive after a dataset has
+                been consumed once. If ``True``, the data loader will not shut down
+                the worker processes after a dataset has been consumed once. This allows to
+                maintain the workers `Dataset` instances alive. Defaults to ``False``.
+            collate_fn: Optional custom collate function. When ``None``, uses
+                the default `collate` method.
+            generator: Optional random generator used by the underlying Torch data loader.
+            kwargs:
+                sampler: Defines the strategy to draw samples from the dataset.
+                    Can be any ``Iterable`` with ``__len__`` implemented.
+                    Mutually exclusive with ``shuffle``. Defaults to ``None``.
+                batch_sampler: Defines the strategy to draw batches of indices. Mutually exclusive
+                    with ``batch_size``, ``shuffle``, ``sampler``, and ``drop_last``.
+                    Defaults to ``None``.
+                pin_memory: Whether to copy tensors into pinned memory before returning them.
+                    If ``True``, the data loader will copy tensors into device/CUDA pinned memory
+                    before returning them. If your data elements are a custom type, or `collate_fn`
+                    returns a batch that is a custom type, look at ``torch.utils.data.DataLoader``
+                    for examples. Defaults to ``False``.
+                timeout: Timeout, in seconds, for collecting a batch from worker processes.
+                    Should always be non-negative and defaults to ``0``.
+                worker_init_fn: If not ``None``, this will be called on each worker subprocess
+                    with the worker id (an int in ``[0, num_workers - 1]``) as input, after seeding
+                    and before data loading. Defaults to ``None``.
+                multiprocessing_context: Multiprocessing context or context name used to create
+                    worker processes.
+                prefetch_factor: Number of batches loaded in advance by each worker.
+                    For example, ``2`` means there will be a total of ``2 * num_workers`` batches
+                    prefetched across all workers. The default value depends on the set value
+                    for num_workers. If ``num_workers=0``, defaults to ``None``.
+                    If ``num_workers > 0``, defaults to ``2``.
+                in_order: If ``True``, batches are returned in first-in, first-out order when
+                    ``num_workers > 0``. Defaults to ``True``.
+        """
+        self.__sample_full_hypergraph: bool = sample_full_hypergraph
+
+        super().__init__(
+            dataset=dataset,
+            batch_size=len(dataset) if self.__sample_full_hypergraph else batch_size,
+            shuffle=shuffle,
+            collate_fn=self.collate if collate_fn is None else collate_fn,
+            generator=generator,
+            num_workers=num_workers,
+            persistent_workers=persistent_workers,
+            drop_last=drop_last,
+            **kwargs,
+        )
+
+        self.__cached_dataset_hdata: HData = dataset.hdata
+
+    def collate(self, batch: list[HData]) -> HData:
+        """
+        Collates a list of `HData` objects into a single batched `HData` object.
+
+        This function combines multiple separate samples into a single batched representation
+        suitable for mini-batch training.
+
+        Handles:
+            - Concatenating node features from all samples.
+            - Concatenating and offsetting hyperedges from all samples.
+            - Concatenating hyperedge attributes from all samples, if present.
+            - Concatenating hyperedge weights from all samples, if present.
+
+        Examples:
+            Given ``batch = [HData_0, HData_1]``:
+
+            For node features:
+
+            >>> HData_0.x.shape  # (3, 64) — 3 nodes with 64 features
+            >>> HData_1.x.shape  # (2, 64) — 2 nodes with 64 features
+            >>> x.shape  # (5, 64) — all 5 nodes concatenated
+
+            For hyperedge index:
+
+            - ``HData_0`` (3 nodes, 2 hyperedges):
+
+            >>> hyperedge_index = [[0, 1, 1, 2],  # Nodes 0, 1, 1, 2
+            ...                    [0, 0, 1, 1]]  # HE 0 contains {0,1}, HE 1 contains {1,2}
+
+            - ``HData_1`` (2 nodes, 1 hyperedge):
+
+            >>> hyperedge_index = [[0, 1],  # Nodes 0, 1
+            ...                    [0, 0]]  # Hyperedge 0 contains {0,1}
+
+            Batched result:
+
+            >>> hyperedge_index = [[0, 1, 1, 2, 3, 4],  # Node indices: original then offset by 3
+            ...                    [0, 0, 1, 1, 2, 2]]  # Hyperedge IDs: original then offset by 2
+
+        Args:
+            batch: List of `HData` objects to collate.
+
+        Returns:
+            hdata: A single `HData` object containing the collated data.
+        """
+        if self.__sample_full_hypergraph:
+            return self.__cached_dataset_hdata.clone().to(batch[0].device)
+
+        collated_hyperedge_index = torch.cat([data.hyperedge_index for data in batch], dim=1)
+        hyperedge_index_wrapper = HyperedgeIndex(collated_hyperedge_index).remove_duplicate_edges()
+
+        hyperedge_ids = hyperedge_index_wrapper.hyperedge_ids
+        node_ids = hyperedge_index_wrapper.node_ids
+
+        collated_x = self.__cached_dataset_hdata.x[node_ids]
+        collated_y = self.__cached_dataset_hdata.y[hyperedge_ids]
+        collated_global_node_ids = self.__cached_dataset_hdata.global_node_ids[node_ids]
+
+        collated_hyperedge_attr = None
+        if self.__cached_dataset_hdata.hyperedge_attr is not None:
+            collated_hyperedge_attr = self.__cached_dataset_hdata.hyperedge_attr[hyperedge_ids]
+
+        collated_hyperedge_weights = None
+        if self.__cached_dataset_hdata.hyperedge_weights is not None:
+            collated_hyperedge_weights = self.__cached_dataset_hdata.hyperedge_weights[
+                hyperedge_ids
+            ]
+
+        collated_hyperedge_index = hyperedge_index_wrapper.to_0based().item
+
+        collated_hdata = HData(
+            x=collated_x,
+            hyperedge_index=collated_hyperedge_index,
+            hyperedge_weights=collated_hyperedge_weights,
+            hyperedge_attr=collated_hyperedge_attr,
+            num_nodes=hyperedge_index_wrapper.num_nodes,
+            num_hyperedges=hyperedge_index_wrapper.num_hyperedges,
+            global_node_ids=collated_global_node_ids,
+            y=collated_y,
+        )
+
+        return collated_hdata.to(batch[0].device)

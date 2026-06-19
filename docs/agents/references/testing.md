@@ -1,21 +1,21 @@
 # Testing with pytest
 
-## HyperBench specifics
+## HyperTorch specifics
 
-- Unit tests aree under `hyperbench/tests/`.
-- Integration tests are under `hyperbench/integration_tests/`.
+- Unit tests aree under `hypertorch/tests/`.
+- Integration tests are under `hypertorch/integration_tests/`.
 - Mirror package structure when adding tests. For example:
-  - `hyperbench/data/...` -> `hyperbench/tests/data/...`.
-  - `hyperbench/train/...` -> `hyperbench/tests/train/...`.
-  - `hyperbench/utils/...` -> `hyperbench/tests/utils/...`.
+  - `hypertorch/data/...` -> `hypertorch/tests/data/...`.
+  - `hypertorch/train/...` -> `hypertorch/tests/train/...`.
+  - `hypertorch/utils/...` -> `hypertorch/tests/utils/...`.
 - Prefer Makefile targets:
   - `make test` for all unit tests.
-  - `make stest T=<path-within-hyperbench/tests>` for a subset of unit tests.
+  - `make stest T=<path-within-hypertorch/tests>` for a subset of unit tests.
   - `make i-test` for all integration tests.
-  - `make si-test T=<path-within-hyperbench/integration_tests>` for a subset of integration tests.
+  - `make si-test T=<path-within-hypertorch/integration_tests>` for a subset of integration tests.
 - Use `uv run pytest` only for targeted one-off runs.
 - Run `make test` to see coverage reports and identify untested lines.
-- Run `make i-test` or `make si-test T=<path-within-hyperbench/integration_tests>` when a change affects live workflows.
+- Run `make i-test` or `make si-test T=<path-within-hypertorch/integration_tests>` when a change affects live workflows.
 
 ## Style
 
@@ -58,9 +58,9 @@ def test_user_validation() -> None:
 
 Examples from this repository include patching:
 
-- `hyperbench.data.hif.requests.get`
-- `hyperbench.data.hif.hf_hub_download`
-- `hyperbench.train.trainer.subprocess.Popen`
+- `hypertorch.data.hif.requests.get`
+- `hypertorch.data.hif.hf_hub_download`
+- `hypertorch.train.trainer.subprocess.Popen`
 - `lightning.pytorch.loggers.TensorBoardLogger`
 
 Example:
@@ -70,7 +70,7 @@ from unittest.mock import patch
 
 
 def test_download_uses_requests_fallback() -> None:
-    with patch("hyperbench.data.hif.requests.get") as mock_get:
+    with patch("hypertorch.data.hif.requests.get") as mock_get:
         mock_get.return_value.ok = True
         mock_get.return_value.content = b"{}"
 
@@ -83,7 +83,7 @@ def test_download_uses_requests_fallback() -> None:
 ### Fixtures for setup/teardown and shared mocks
 
 - Keep fixture scope minimal.
-- Put broadly shared fixtures in `hyperbench/tests/conftest.py` if they are reused.
+- Put broadly shared fixtures in `hypertorch/tests/conftest.py` if they are reused.
 - Prefer factory fixtures when a test needs a small amount of variation.
 
 ```python
@@ -356,7 +356,7 @@ addopts = [
     "--tb=short",
     "--strict-markers",
 ]
-testpaths = ["hyperbench/tests"]
+testpaths = ["hypertorch/tests"]
 """
 ```
 

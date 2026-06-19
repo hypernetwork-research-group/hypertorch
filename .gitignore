@@ -128,8 +128,8 @@ cython_debug/
 plans/
 
 # Logs
-hyperbench_logs/
+hypertorch_logs/
 lightning_logs/
 
-# hyperbench cache
-.hyperbench_cache/
+# hypertorch cache
+.hypertorch_cache/

@@ -1,8 +1,8 @@
 [project]
-name = "hyperbench"
+name = "hypertorch"
 version = "0.1.0"
 description = """
-HyperBench is a library for hypergraph learning and benchmarking.
+HyperTorch is a library for hypergraph learning and benchmarking.
 It provides a standardized workflow for loading hypergraph datasets,
 training models, evaluating them under comparable settings, and reporting results.
 """
@@ -72,11 +72,11 @@ test = [
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["hyperbench"]
+include = ["hypertorch"]
 
 [tool.pytest.ini_options]
 addopts = ["--color=yes", "--verbose", "--tb=short", "--strict-markers"]
-testpaths = ["hyperbench/tests", "hyperbench/integration_tests"]
+testpaths = ["hypertorch/tests", "hypertorch/integration_tests"]
 markers = ["integration: tests that use real workflows"]
 filterwarnings = [
   "ignore:.*torch.jit.script.*deprecated.*",
@@ -91,14 +91,14 @@ filterwarnings = [
 ]
 
 [tool.coverage.run]
-source = ["hyperbench"]
+source = ["hypertorch"]
 branch = true
 omit = [
-  "hyperbench/integration_tests/*",
-  "hyperbench/tests/*",
-  "hyperbench/nn/*",
-  "hyperbench/models/*",
-  "hyperbench/hlp/*",
+  "hypertorch/integration_tests/*",
+  "hypertorch/tests/*",
+  "hypertorch/nn/*",
+  "hypertorch/models/*",
+  "hypertorch/hlp/*",
 ]
 
 [tool.coverage.report]

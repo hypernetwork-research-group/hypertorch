@@ -1,11 +1,11 @@
 import torch
 
-from hyperbench.data import (
+from hypertorch.data import (
     Dataset,
     NegativeSampler,
     SamplingStrategy,
 )
-from hyperbench.types import HData
+from hypertorch.types import HData
 
 
 class CustomNegativeSampler(NegativeSampler):

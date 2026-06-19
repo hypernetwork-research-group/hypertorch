@@ -1,50 +1,50 @@
 ci:
-  - changed-files:
-      - any-glob-to-any-file: ".github/**"
+- changed-files:
+  - any-glob-to-any-file: ".github/**"
 
 data:
-  - changed-files:
-      - any-glob-to-any-file: "hyperbench/data/**"
+- changed-files:
+  - any-glob-to-any-file: "hypertorch/data/**"
 
 docs:
-  - changed-files:
-      - any-glob-to-any-file:
-          - "docs/**"
-          - "examples/**"
-          - "*.md"
-  - head-branch: ["^docs"]
+- changed-files:
+  - any-glob-to-any-file:
+    - "docs/**"
+    - "examples/**"
+    - "*.md"
+- head-branch: ["^docs"]
 
 models:
-  - changed-files:
-      - any-glob-to-any-file:
-          - "hyperbench/hlp/**"
-          - "hyperbench/models/**"
-          - "hyperbench/nn/**"
+- changed-files:
+  - any-glob-to-any-file:
+    - "hypertorch/hlp/**"
+    - "hypertorch/models/**"
+    - "hypertorch/nn/**"
 
 tests:
-  - changed-files:
-      - any-glob-to-any-file: "hyperbench/tests/**"
+- changed-files:
+  - any-glob-to-any-file: "hypertorch/tests/**"
 
 training:
-  - changed-files:
-      - any-glob-to-any-file: "hyperbench/train/**"
+- changed-files:
+  - any-glob-to-any-file: "hypertorch/train/**"
 
 types:
-  - changed-files:
-      - any-glob-to-any-file: "hyperbench/types/**"
+- changed-files:
+  - any-glob-to-any-file: "hypertorch/types/**"
 
 utils:
-  - changed-files:
-      - any-glob-to-any-file: "hyperbench/utils/**"
+- changed-files:
+  - any-glob-to-any-file: "hypertorch/utils/**"
 
 feature:
-  - head-branch: ["^feat"]
+- head-branch: ["^feat"]
 
 fix:
-  - head-branch: ["^fix"]
+- head-branch: ["^fix"]
 
 chore:
-  - head-branch: ["^chore"]
+- head-branch: ["^chore"]
 
 refactoring:
-  - head-branch: ["^refactor"]
+- head-branch: ["^refactor"]

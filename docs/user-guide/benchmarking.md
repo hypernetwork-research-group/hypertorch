@@ -1,6 +1,6 @@
 # Benchmarking
 
-Benchmarking in HyperBench typically means:
+Benchmarking in HyperTorch typically means:
 - Running multiple models on the same dataset split.
 - Using the same negative sampling and feature enrichment.
 - Producing comparable metrics and summary tables.
@@ -10,9 +10,9 @@ Benchmarking in HyperBench typically means:
 The recommended pattern is to pass multiple `ModelConfig` objects to `MultiModelTrainer`:
 
 ```python
-from hyperbench.types import ModelConfig
-from hyperbench.train import MultiModelTrainer
-from hyperbench.hlp import CommonNeighborsHlpModule, MLPHlpModule
+from hypertorch.types import ModelConfig
+from hypertorch.train import MultiModelTrainer
+from hypertorch.hlp import CommonNeighborsHlpModule, MLPHlpModule
 
 configs = [
     ModelConfig(
@@ -47,11 +47,11 @@ with MultiModelTrainer(model_configs=configs, max_epochs=200, accelerator="auto"
 
 ## Where results are saved
 
-By default, runs are saved under `hyperbench_logs/`.
+By default, runs are saved under `hypertorch_logs/`.
 
 The trainer writes comparison tables to:
-- `hyperbench_logs/experiment_*/comparison/results.md`.
-- `hyperbench_logs/experiment_*/comparison/results.tex`.
+- `hypertorch_logs/experiment_*/comparison/results.md`.
+- `hypertorch_logs/experiment_*/comparison/results.tex`.
 
 ## Next steps
 

@@ -4,7 +4,7 @@
 		docs docs-build docs-serve \
 		loc help
 
-PROJECT_NAME=hyperbench
+PROJECT_NAME=hypertorch
 UV=uv
 PYTEST=pytest
 PYTEST_WORKERS?=auto
@@ -110,7 +110,7 @@ clean:
 
 destroy: clean
 	@echo '=== Destroying environment ==='
-	rm -rf .venv $(UV).lock hyperbench_logs .hyperbench_cache .$(UV)-cache
+	rm -rf .venv $(UV).lock hypertorch_logs .hypertorch_cache .$(UV)-cache
 
 help:
 	@echo "Usage: make [target]"

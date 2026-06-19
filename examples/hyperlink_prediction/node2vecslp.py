@@ -6,10 +6,10 @@ from torchmetrics.classification import (
     BinaryPrecision,
     BinaryRecall,
 )
-from hyperbench.hlp import Node2VecSLPHlpModule
-from hyperbench.train import MultiModelTrainer
-from hyperbench.types import ModelConfig
-from hyperbench.data import (
+from hypertorch.hlp import Node2VecSLPHlpModule
+from hypertorch.train import MultiModelTrainer
+from hypertorch.types import ModelConfig
+from hypertorch.data import (
     AlgebraDataset,
     DataLoader,
     Node2VecEnricher,

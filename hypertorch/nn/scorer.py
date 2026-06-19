@@ -1,0 +1,162 @@
+import torch
+
+from abc import ABC, abstractmethod
+from torch import Tensor
+from typing import Literal
+from hypertorch.types import Neighborhood, Hypergraph, HyperedgeIndex
+
+
+class NeighborScorer(ABC):
+    """
+    Abstract base class for neighbor scorers.
+    """
+
+    @abstractmethod
+    def score(
+        self,
+        candidate_nodes: list[int],
+        candidate_to_neighbors: dict[int, Neighborhood],
+    ) -> float:
+        """
+        Score a single candidate hyperedge.
+
+        Args:
+            candidate_nodes: Node IDs in the candidate hyperedge.
+            candidate_to_neighbors: Mapping from node IDs to their neighborhoods.
+
+        Returns:
+            score: Candidate score.
+
+        Raises:
+            NotImplementedError: If the method is not implemented by a subclass.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def score_batch(
+        self,
+        hyperedge_index: Tensor,
+        node_to_neighbors: dict[int, Neighborhood] | None = None,
+    ) -> Tensor:
+        """
+        Score a batch of hyperedges.
+
+        Args:
+            hyperedge_index: Hyperedge incidence tensor.
+            node_to_neighbors: Optional precomputed node-neighborhood mapping. Defaults to ``None``.
+
+        Returns:
+            scores: Score tensor, one value per hyperedge.
+
+        Raises:
+            NotImplementedError: If the method is not implemented by a subclass.
+        """
+        raise NotImplementedError
+
+
+class CommonNeighborsScorer(NeighborScorer):
+    """
+    Scorer for computing the Common Neighbors (CN) score for hyperedges.
+
+    Attributes:
+        aggregation: Method to aggregate node embeddings per hyperedge. Can be one of
+            ``"mean"``, ``"min"``, or ``"sum"``.
+    """
+
+    __DEFAULT_SCORE = 0.0
+
+    def __init__(self, aggregation: Literal["mean", "min", "sum"]) -> None:
+        """
+        Initialize the common-neighbors scorer.
+
+        Args:
+            aggregation: Method used to aggregate pairwise common-neighbor counts.
+        """
+        self.aggregation: Literal["mean", "min", "sum"] = aggregation
+
+    def score(
+        self,
+        candidate_nodes: list[int],
+        candidate_to_neighbors: dict[int, Neighborhood],
+    ) -> float:
+        """
+        Compute the CN score for a single candidate hyperedge.
+
+        Args:
+            candidate_nodes: List of node IDs forming the candidate hyperedge.
+                If less than 2 nodes are provided, the function returns a default score of ``0.0``.
+            candidate_to_neighbors: Mapping from node IDs to their set of neighbors.
+
+        Returns:
+            score: The aggregated common neighbors score.
+        """
+        if len(candidate_nodes) < 2:
+            return self.__DEFAULT_SCORE
+
+        pairwise_counts: list[int] = []
+        candidates_tensor = torch.tensor(candidate_nodes, dtype=torch.long)
+
+        # Example: candidate_nodes = [1, 2, 3]
+        #          -> compute common neighbors for pairs (1, 2), (1, 3), and (2, 3)
+        for u, v in torch.combinations(candidates_tensor, 2):
+            neighbors_u: Neighborhood = candidate_to_neighbors.get(u.item(), set())
+            neighbors_v: Neighborhood = candidate_to_neighbors.get(v.item(), set())
+
+            common_neighbors = neighbors_u & neighbors_v
+            pairwise_counts.append(len(common_neighbors))
+
+        return self.__to_score_by_aggregation(pairwise_counts)
+
+    def score_batch(
+        self,
+        hyperedge_index: Tensor,
+        node_to_neighbors: dict[int, Neighborhood] | None = None,
+    ) -> Tensor:
+        """
+        Score all hyperedges in a hyperedge index tensor.
+
+        Args:
+            hyperedge_index: Tensor of shape ``(2, num_incidences)``.
+            node_to_neighbors: Optional precomputed node to neighborhood mapping.
+                If ``None``, it will be computed from ``hyperedge_index``.
+                Defaults to ``None``.
+
+        Returns:
+            scores: A 1-D tensor of shape ``(num_hyperedges,)`` with the CN score
+                or each hyperedge.
+        """
+        if node_to_neighbors is None:
+            node_to_neighbors = Hypergraph.from_hyperedge_index(hyperedge_index).neighbors_of_all()
+
+        scores: list[float] = []
+        hyperedge_index_wrapper = HyperedgeIndex(hyperedge_index)
+        for hyperedge_id in range(hyperedge_index_wrapper.num_hyperedges):
+            node_ids = hyperedge_index_wrapper.nodes_in(hyperedge_id)
+            hyperedge_score = self.score(node_ids, node_to_neighbors)
+            scores.append(hyperedge_score)
+
+        return torch.tensor(scores, dtype=torch.float32, device=hyperedge_index.device)
+
+    def __to_score_by_aggregation(self, pairwise_counts: list[int]) -> float:
+        """
+        Aggregate pairwise common-neighbor counts into a score.
+
+        Args:
+            pairwise_counts: Pairwise common-neighbor counts.
+
+        Returns:
+            score: Aggregated common-neighbors score.
+        """
+        score = self.__DEFAULT_SCORE
+        if len(pairwise_counts) < 1:
+            return score
+
+        match self.aggregation:
+            case "mean":
+                score = sum(pairwise_counts) / len(pairwise_counts)
+            case "min":
+                score = float(min(pairwise_counts))
+            case "sum":
+                score = float(sum(pairwise_counts))
+
+        return score

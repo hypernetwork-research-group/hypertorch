@@ -1,12 +1,12 @@
 import torch
 
-from hyperbench.data import (
+from hypertorch.data import (
     CliqueNegativeSampler,
     Dataset,
     RandomNegativeSampler,
     SamplingStrategy,
 )
-from hyperbench.types import HData
+from hypertorch.types import HData
 
 
 def describe_negative_dataset(name: str, dataset: Dataset) -> None:

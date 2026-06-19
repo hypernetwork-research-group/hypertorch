@@ -3,7 +3,7 @@
 If this is your first time contributing to an open-source project, welcome!
 Before you dive into the code, we recommend checking out the [contribution guide](../development/contribution.md) for an introduction to general development workflow, tools, and best practices.
 
-This guide will walk you through the process of setting up a development environment for HyperBench, contributing to the codebase and documentation, and understanding our development policies.
+This guide will walk you through the process of setting up a development environment for HyperTorch, contributing to the codebase and documentation, and understanding our development policies.
 
 ## Prerequisites
 
@@ -18,8 +18,8 @@ This guide will walk you through the process of setting up a development environ
 Clone the repository and navigate to the project directory:
 
 ```bash
-git clone https://www.github.com/hypernetwork-research-group/hyperbench.git
-cd hyperbench
+git clone https://www.github.com/hypernetwork-research-group/hypertorch.git
+cd hypertorch
 ```
 
 To simplify development, we provide a Makefile with common targets for building, testing, linting, and more. You can see all available commands with:
@@ -97,7 +97,7 @@ make i-test
 make release
 
 # Run tests with HTML report
-uv run pytest --cov=hyperbench --cov-report=html
+uv run pytest --cov=hypertorch --cov-report=html
 ```
 
 ### Commit message style
@@ -141,7 +141,7 @@ This will ensure that your code adheres to the project's coding standards before
 
 ## Contributing to the documentation
 
-The HyperBench documentation consists of two parts: the docstrings in the code and topic pages under `docs/`.
+The HyperTorch documentation consists of two parts: the docstrings in the code and topic pages under `docs/`.
 
 The docstrings provide a clear explanation of the usage of the individual functions, while the documentation in this folder consists of tutorial-like overviews per topic together with some other information (what’s new, installation, etc).
 

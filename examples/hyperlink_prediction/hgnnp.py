@@ -6,10 +6,10 @@ from torchmetrics.classification import (
     BinaryPrecision,
     BinaryRecall,
 )
-from hyperbench.hlp import HGNNPHlpModule
-from hyperbench.train import MultiModelTrainer
-from hyperbench.types import ModelConfig
-from hyperbench.data import (
+from hypertorch.hlp import HGNNPHlpModule
+from hypertorch.train import MultiModelTrainer
+from hypertorch.types import ModelConfig
+from hypertorch.data import (
     AlgebraDataset,
     DataLoader,
     LaplacianPositionalEncodingEnricher,

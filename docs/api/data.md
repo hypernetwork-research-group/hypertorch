@@ -1,3 +1,3 @@
 # Data
 
-::: hyperbench.data
+::: hypertorch.data

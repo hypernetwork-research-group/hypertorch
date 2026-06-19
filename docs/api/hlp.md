@@ -1,3 +1,3 @@
 # HLP
 
-::: hyperbench.hlp
+::: hypertorch.hlp

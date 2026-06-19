@@ -1,13 +1,13 @@
 [project]
 docs_dir = "docs"
 site_dir = "docs/site"
-watch = ["hyperbench"]
-site_name = "©Hyperbench Documentation"
-site_description = "Documentation for Hyperbench"
+watch = ["hypertorch"]
+site_name = "©HyperTorch Documentation"
+site_description = "Documentation for HyperTorch"
 site_author = "Hypernetwork Research Group"
-site_url = "https://hypernetwork-research-group.github.io/hyperbench"
-repo_name = "hypernetwork-research-group/hyperbench"
-repo_url = "https://github.com/hypernetwork-research-group/hyperbench"
+site_url = "https://hypernetwork-research-group.github.io/hypertorch"
+repo_name = "hypernetwork-research-group/hypertorch"
+repo_url = "https://github.com/hypernetwork-research-group/hypertorch"
 copyright = """
 Copyright &copy; 2026 The authors
 """
@@ -23,7 +23,7 @@ nav = [
   ] },
   { "User guide" = [
     { "Overview" = "user-guide/overview.md" },
-    { "1 minute to HyperBench" = "user-guide/1-minute-to-hyperbench.md" },
+    { "1 minute to HyperTorch" = "user-guide/1-minute-to-hypertorch.md" },
     { "HIF integration" = "user-guide/hif-integration.md" },
     { "Models" = "user-guide/models.md" },
     { "Training" = "user-guide/training.md" },
@@ -56,7 +56,7 @@ extra_css = ["stylesheets/extra.css"]
 
 [[project.extra.social]]
 icon = "fontawesome/brands/github"
-link = "https://github.com/hypernetwork-research-group/hyperbench"
+link = "https://github.com/hypernetwork-research-group/hypertorch"
 
 [project.theme]
 language = "en"

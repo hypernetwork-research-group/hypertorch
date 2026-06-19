@@ -1,6 +1,6 @@
 # CI
 
-HyperBench uses GitHub Actions for continuous integration (CI).
+HyperTorch uses GitHub Actions for continuous integration (CI).
 
 This page documents the CI checks that **build, test, and validate** the codebase.
 Check [Troubleshooting](../development/ci.md#troubleshooting) for common failure modes and how to fix them locally.
@@ -11,7 +11,7 @@ Check [Troubleshooting](../development/ci.md#troubleshooting) for common failure
 |---|---|---|---|---|---|
 | Lint (Ruff) | `.github/workflows/ci.yaml` | PRs; pushes to `main` | Ubuntu, macOS, Windows; Python 3.10–3.14 | `ruff check --output-format=github` | `make lint` |
 | Format (Ruff) | `.github/workflows/ci.yaml` | PRs; pushes to `main` | Ubuntu, macOS, Windows; Python 3.10–3.14 | `ruff format` | `make format` |
-| Unit tests (+ coverage in console) | `.github/workflows/ci.yaml` | PRs; pushes to `main` | Ubuntu, macOS, Windows; Python 3.10–3.14 | `pytest -n auto --cov=hyperbench --cov-report=term-missing -m "not integration"` | `make test` |
+| Unit tests (+ coverage in console) | `.github/workflows/ci.yaml` | PRs; pushes to `main` | Ubuntu, macOS, Windows; Python 3.10–3.14 | `pytest -n auto --cov=hypertorch --cov-report=term-missing -m "not integration"` | `make test` |
 | Integration tests | `.github/workflows/ci.yaml`; `.github/workflows/daily_ci.yaml` | PRs; pushes to `main`; daily schedule; manual dispatch | CI: Ubuntu, Python 3.10 and 3.14; Daily CI: Ubuntu, macOS, Windows, Python 3.10–3.14 | `pytest -n auto -m "integration"` | `make i-test` |
 | Coverage upload (Codecov) | `.github/workflows/coverage.yaml` | pushes to `main` | Ubuntu; Python 3.14 | Generates `coverage.xml` and uploads coverage + JUnit test results to Codecov | `uv run pytest --cov --cov-branch --cov-report=xml` |
 | Docs build (deploy) | `.github/workflows/docs.yaml` | pushes to `main`; manual dispatch | Ubuntu; Python 3.14 | Installs docs deps and runs `zensical build --clean`, then deploys `docs/site` to GitHub Pages | `make docs-build` |

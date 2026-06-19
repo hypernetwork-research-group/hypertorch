@@ -52,7 +52,7 @@ def iter_docstrings(obj: griffe.Object) -> Iterable[griffe.Docstring]:
 
 
 def validate_docstrings(
-    package: str = "hyperbench",
+    package: str = "hypertorch",
     *,
     repo_root: Path | None = None,
     search_paths: Sequence[Path] | None = None,

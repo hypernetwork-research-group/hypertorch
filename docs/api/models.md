@@ -1,3 +1,3 @@
 # Models
 
-::: hyperbench.models
+::: hypertorch.models

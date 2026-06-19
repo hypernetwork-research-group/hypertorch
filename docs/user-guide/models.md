@@ -1,11 +1,11 @@
 # Models
 
-HyperBench provides ready-to-use built-in models inspired by the existing literature.
+HyperTorch provides ready-to-use built-in models inspired by the existing literature.
 
 At a high level:
-- `hyperbench.hlp.*` contains ready-to-train hyperlink prediction (HLP) modules (recommended starting point).
-- `hyperbench.models.*` contains actual models like Node2Vec, GCN, etc.
-- `hyperbench.nn.*` contains layers, enrichers, aggregators, and losses.
+- `hypertorch.hlp.*` contains ready-to-train hyperlink prediction (HLP) modules (recommended starting point).
+- `hypertorch.models.*` contains actual models like Node2Vec, GCN, etc.
+- `hypertorch.nn.*` contains layers, enrichers, aggregators, and losses.
 
 ## Built-in HLP modules
 
@@ -29,7 +29,7 @@ Supported models include:
 from torchmetrics import MetricCollection
 from torchmetrics.classification import BinaryAUROC
 
-from hyperbench.hlp import Node2VecGCNHlpModule, Node2VecGCNHlpConfig
+from hypertorch.hlp import Node2VecGCNHlpModule, Node2VecGCNHlpConfig
 
 metrics = MetricCollection({"auc": BinaryAUROC()})
 
@@ -63,7 +63,7 @@ node2vecgcn = Node2VecGCNHlpModule(
 ## Minimal example: GCN
 
 ```python
-from hyperbench.hlp import GCNHlpModule
+from hypertorch.hlp import GCNHlpModule
 
 model = GCNHlpModule(
     encoder_config={

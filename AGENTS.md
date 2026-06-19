@@ -2,9 +2,9 @@
 
 ## Naming
 
-Write `hyperbench` in lowercase when referring to the Python package, modules, functions, classes, or CLI/package internals.
+Write `hypertorch` in lowercase when referring to the Python package, modules, functions, classes, or CLI/package internals.
 
-Write `HyperBench` when referring to the project, repository, organization, or published package in prose.
+Write `HyperTorch` when referring to the project, repository, organization, or published package in prose.
 
 ## Environment setup
 
@@ -15,7 +15,7 @@ Write `HyperBench` when referring to the project, repository, organization, or p
 ## Commands
 
 - `make test` to run the full test suite.
-- `make stest T=<path-within-hyperbench/tests>` to run a specific test file or folder.
+- `make stest T=<path-within-hypertorch/tests>` to run a specific test file or folder.
 - `uv run pytest` for one-off pytest commands (not recommended for regular use).
 
 - `make lint` to run Ruff checks.
@@ -33,7 +33,7 @@ Write `HyperBench` when referring to the project, repository, organization, or p
 
 ## Repository structure
 
-- `hyperbench/`: core package
+- `hypertorch/`: core package
   - `data/`: dataset loading, sampling, and HIF integration
   - `hlp/`: hyperlink prediction modules
   - `models/`: model implementations (e.g., GCN, Node2Vec, etc.)
@@ -68,10 +68,10 @@ Write `HyperBench` when referring to the project, repository, organization, or p
 
 ## Testing standards
 
-- **Location:** Tests live under `hyperbench/tests/` and should mirror the package layout they exercise.
+- **Location:** Tests live under `hypertorch/tests/` and should mirror the package layout they exercise.
 - **Execution:** Prefer:
     - `make test`
-    - `make stest T=<path-within-hyperbench/tests>`
+    - `make stest T=<path-within-hypertorch/tests>`
     - `uv run pytest ...` only for targeted one-off invocations
 - **Style:** Use pytest function tests and fixtures. Prefer `pytest.mark.parametrize` with readable `id=` values in `pytest.param(..., id=...)`.
 - **Determinism:** Avoid network access, sleeps, and external services. Patch HTTP calls, filesystem state, and subprocesses as needed.

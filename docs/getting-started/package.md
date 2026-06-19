@@ -1,6 +1,6 @@
 # Package overview
 
-HyperBench is organized as a flat Python package: the `hyperbench/` package lives at the repository root rather than under `src/`.
+HyperTorch is organized as a flat Python package: the `hypertorch/` package lives at the repository root rather than under `src/`.
 
 ```bash
 .
@@ -12,7 +12,7 @@ HyperBench is organized as a flat Python package: the `hyperbench/` package live
 │   ├── hgnn.py
 │   ├── ...                 # more examples
 │   └── villain.py
-├── hyperbench              # core Python package
+├── hypertorch              # core Python package
 │   ├── data                # datasets, loaders, and sampling
 │   ├── hlp                 # hyperlink prediction modules
 │   ├── integration_tests   # integration test suite
@@ -22,7 +22,7 @@ HyperBench is organized as a flat Python package: the `hyperbench/` package live
 │   ├── train               # trainers, negative samplers, and loggers
 │   ├── types               # shared tensor/data types
 │   └── utils               # reusable helpers
-├── hyperbench_logs         # local experiment outputs
+├── hypertorch_logs         # local experiment outputs
 │   └── experiment_0
 │       ├── comparison
 │       ├── hgnn
@@ -35,15 +35,15 @@ HyperBench is organized as a flat Python package: the `hyperbench/` package live
 
 ## Getting support
 
-If you need help with HyperBench, use these project channels:
+If you need help with HyperTorch, use these project channels:
 
-- [GitHub Discussions](https://www.github.com/hypernetwork-research-group/hyperbench/discussions): ask questions, share ideas, and connect with the community.
-- [GitHub Issues](https://www.github.com/hypernetwork-research-group/hyperbench/issues): report bugs or request features (please check existing issues first).
+- [GitHub Discussions](https://www.github.com/hypernetwork-research-group/hypertorch/discussions): ask questions, share ideas, and connect with the community.
+- [GitHub Issues](https://www.github.com/hypernetwork-research-group/hypertorch/issues): report bugs or request features (please check existing issues first).
 
 ## Community
 
-HyperBench is developed as an open-source project with contributions from researchers and practitioners in the field of hypergraph learning. We welcome contributions of all kinds, including code, documentation, examples, and discussions.
-If you're interested in contributing, please visit the [contributing guide](https://www.github.com/hypernetwork-research-group/hyperbench/blob/main/CONTRIBUTING.md) for more information on how to get involved.
+HyperTorch is developed as an open-source project with contributions from researchers and practitioners in the field of hypergraph learning. We welcome contributions of all kinds, including code, documentation, examples, and discussions.
+If you're interested in contributing, please visit the [contributing guide](https://www.github.com/hypernetwork-research-group/hypertorch/blob/main/CONTRIBUTING.md) for more information on how to get involved.
 
 ## Development team
 
@@ -60,4 +60,4 @@ The core development team includes:
 
 ## License
 
-This project is under the MIT license. See [LICENSE](https://github.com/hypernetwork-research-group/hyperbench/blob/main/LICENSE).
+This project is under the MIT license. See [LICENSE](https://github.com/hypernetwork-research-group/hypertorch/blob/main/LICENSE).

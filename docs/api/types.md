@@ -1,3 +1,3 @@
 # Types
 
-::: hyperbench.types
+::: hypertorch.types

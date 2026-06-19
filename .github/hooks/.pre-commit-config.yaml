@@ -17,7 +17,7 @@ repos:
     args:
     - --fix=lf
   - id: name-tests-test
-    exclude: hyperbench/tests/mock/
+    exclude: hypertorch/tests/mock/
   - id: pretty-format-json
     args:
     - --autofix

@@ -1,12 +1,12 @@
 cff-version: 1.2.0
 message: >-
-  If you use HyperBench in your research, please cite it using the metadata in
+  If you use HyperTorch in your research, please cite it using the metadata in
   this file.
-title: HyperBench
+title: HyperTorch
 type: software
 
-repository-code: https://github.com/hypernetwork-research-group/hyperbench
-url: https://hypernetwork-research-group.github.io/hyperbench/
+repository-code: https://github.com/hypernetwork-research-group/hypertorch
+url: https://hypernetwork-research-group.github.io/hypertorch/
 
 license: MIT
 version: 0.1.0
@@ -31,11 +31,11 @@ keywords:
 
 preferred-citation:
   type: software
-  title: HyperBench
+  title: HyperTorch
   authors:
     - family-names: Citro
       given-names: Tiziano
     - family-names: De Vinco
       given-names: Daniele
   year: 2026
-  url: https://github.com/hypernetwork-research-group/hyperbench
+  url: https://github.com/hypernetwork-research-group/hypertorch

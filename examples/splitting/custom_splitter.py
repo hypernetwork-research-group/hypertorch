@@ -1,10 +1,10 @@
 import torch
-from hyperbench.data import (
+from hypertorch.data import (
     Dataset,
     Splitter,
     SamplingStrategy,
 )
-from hyperbench.types import HData
+from hypertorch.types import HData
 
 
 class CustomSplitter(Splitter["Dataset", list["Dataset"]]):

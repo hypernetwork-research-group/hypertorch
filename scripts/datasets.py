@@ -1,4 +1,4 @@
-from hyperbench.data import list_datasets, get_dataset_by_name
+from hypertorch.data import list_datasets, get_dataset_by_name
 
 
 def __find_datasets_with_number_of_nodes_smaller_than(threshold=75000):

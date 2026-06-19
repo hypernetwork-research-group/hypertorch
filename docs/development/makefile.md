@@ -15,7 +15,7 @@ You can always run `make help` to see the latest list.
 | `make all` | Clean, setup, check, test |
 | `make release` | Clean, setup, check, test, i-test |
 | `make build` | Clean and setup |
-| `make setup` | Install dependencies (via `uv`) and install HyperBench in editable mode |
+| `make setup` | Install dependencies (via `uv`) and install HyperTorch in editable mode |
 | `make setup-tensorboard` | Install optional TensorBoard extra |
 | `make check` | Run lint + format + typecheck |
 | `make lint` | Run the linter (`ruff check`) |
@@ -26,9 +26,9 @@ You can always run `make help` to see the latest list.
 | `make typecheck` | Run the type checker (`ty check`) |
 | `make docstring-check` | Check docstring formatting |
 | `make test` | Run all tests (with coverage) |
-| `make stest T=<test_path>` | Run a single test file/folder under `hyperbench/tests/` |
+| `make stest T=<test_path>` | Run a single test file/folder under `hypertorch/tests/` |
 | `make i-test` | Run all integration tests |
-| `make si-test T=<test_path>` | Run a single integration test file/folder under `hyperbench/integration_tests/` |
+| `make si-test T=<test_path>` | Run a single integration test file/folder under `hypertorch/integration_tests/` |
 | `make run <file.py>` | Run a single Python file (for example: `make run examples/gcn.py`) |
 | `make docs` | Build and serve documentation |
 | `make docs-build` | Build documentation without serving |
@@ -40,7 +40,7 @@ You can always run `make help` to see the latest list.
 
 ### Setup
 
-- `make setup`: Install dependencies (via `uv`) and install HyperBench in editable mode
+- `make setup`: Install dependencies (via `uv`) and install HyperTorch in editable mode
 
 	CLI:
 
@@ -122,15 +122,15 @@ You can always run `make help` to see the latest list.
 	CLI:
 
 	```bash
-	uv run pytest -n auto --cov=hyperbench --cov-report=term-missing -m "not integration"
+	uv run pytest -n auto --cov=hypertorch --cov-report=term-missing -m "not integration"
 	```
 
-- `make stest T=<test_name>`: Run a single test file or folder under `hyperbench/tests/`
+- `make stest T=<test_name>`: Run a single test file or folder under `hypertorch/tests/`
 
 	CLI:
 
 	```bash
-	uv run pytest -s hyperbench/tests/<test_name>
+	uv run pytest -s hypertorch/tests/<test_name>
 	```
 
 - `make i-test`: Run all integration tests
@@ -143,12 +143,12 @@ You can always run `make help` to see the latest list.
 
 	Integration tests may perform live dataset downloads. The supported-dataset fallback tests use GitHub raw URLs first and Hugging Face Hub as the fallback source; set `HF_DOWNLOAD_TOKEN` when running in environments that need authenticated or higher-quota Hugging Face downloads.
 
-- `make si-test T=<test_name>`: Run a single integration test file or folder under `hyperbench/integration_tests/`
+- `make si-test T=<test_name>`: Run a single integration test file or folder under `hypertorch/integration_tests/`
 
 	CLI:
 
 	```bash
-	uv run pytest -n auto -s hyperbench/integration_tests/<test_name> -m "integration"
+	uv run pytest -n auto -s hypertorch/integration_tests/<test_name> -m "integration"
 	```
 
 ### Run scripts
@@ -196,7 +196,7 @@ You can always run `make help` to see the latest list.
 	```bash
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 	find . -type f -name "*.pyc" -delete 2>/dev/null || true
-	rm -rf hyperbench.egg-info .pytest_cache .coverage .ruff_cache site docs/site
+	rm -rf hypertorch.egg-info .pytest_cache .coverage .ruff_cache site docs/site
 	```
 
 - `make destroy`: Destroy the environment (removes `.venv`, lockfile, logs)
@@ -207,10 +207,10 @@ You can always run `make help` to see the latest list.
 	# clean
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 	find . -type f -name "*.pyc" -delete 2>/dev/null || true
-	rm -rf hyperbench.egg-info .pytest_cache .coverage .ruff_cache site docs/site
+	rm -rf hypertorch.egg-info .pytest_cache .coverage .ruff_cache site docs/site
 
 	# destroy
-	rm -rf .venv uv.lock hyperbench_logs
+	rm -rf .venv uv.lock hypertorch_logs
 	```
 
 ### Composite targets

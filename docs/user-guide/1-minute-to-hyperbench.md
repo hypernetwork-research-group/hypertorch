@@ -1,6 +1,6 @@
-# 1 minute to HyperBench
+# 1 minute to HyperTorch
 
-This page is a quick, “copy/paste and run” introduction to HyperBench.
+This page is a quick, “copy/paste and run” introduction to HyperTorch.
 
 ## Prerequisites
 
@@ -29,10 +29,10 @@ Most examples follow the same high-level pipeline:
 5. Create one or more models (HLP modules).
 6. Train + evaluate with `MultiModelTrainer`.
 
-Artifacts are written under `hyperbench_logs/` (by default). In particular:
+Artifacts are written under `hypertorch_logs/` (by default). In particular:
 
-- `hyperbench_logs/experiment_*/comparison/results.md` (markdown table).
-- `hyperbench_logs/experiment_*/comparison/results.tex` (LaTeX table).
+- `hypertorch_logs/experiment_*/comparison/results.md` (markdown table).
+- `hypertorch_logs/experiment_*/comparison/results.tex` (LaTeX table).
 
 ## Next steps
 
