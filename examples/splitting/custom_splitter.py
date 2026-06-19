@@ -13,9 +13,11 @@ class CustomSplitter(Splitter["Dataset", list["Dataset"]]):
 
     def split(self, to_split: Dataset, **kwargs) -> list[Dataset]:
         split_ratios = [0.5, 0.25, 0.25]  # Custom split ratios for train, val, test
-        num_hyperedges_in_train = int(split_ratios[0] * to_split.hdata.num_hyperedges)
-        num_hyperedges_in_val = int(split_ratios[1] * to_split.hdata.num_hyperedges)
-        num_hyperedges_in_test = int(split_ratios[2] * to_split.hdata.num_hyperedges)
+        # we use num_incidences to cover all the incidences in the hyperedge_index
+        num_incidences = to_split.hdata.hyperedge_index.size(1)
+        num_hyperedges_in_train = int(split_ratios[0] * num_incidences)
+        num_hyperedges_in_val = int(split_ratios[1] * num_incidences)
+        num_hyperedges_in_test = int(split_ratios[2] * num_incidences)
 
         end_train = start_val = num_hyperedges_in_train
         end_val = start_test = num_hyperedges_in_train + num_hyperedges_in_val
@@ -42,16 +44,14 @@ if __name__ == "__main__":
     x = torch.arange(7, dtype=torch.float).unsqueeze(1)
     hyperedge_index = torch.tensor(
         [
-            [0, 1, 2, 0, 3, 1, 3, 2, 3, 3, 4, 4, 5, 6],
-            [0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 5],
+            [0, 1, 2, 0, 3, 1, 3, 2, 3, 3, 4, 4, 5, 6, 2, 3, 4, 5, 6, 1],
+            [0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 5, 6, 6, 6, 7, 7, 7],
         ],
         dtype=torch.long,
     )
     hdata = HData(
         x=x,
         hyperedge_index=hyperedge_index,
-        num_nodes=7,
-        num_hyperedges=6,
     )
     dataset = Dataset.from_hdata(hdata, sampling_strategy=SamplingStrategy.HYPEREDGE)
 

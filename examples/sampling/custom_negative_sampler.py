@@ -8,18 +8,6 @@ from hyperbench.data import (
 from hyperbench.types import HData
 
 
-def describe_negative_dataset(name: str, dataset: Dataset) -> None:
-    hdata = dataset.hdata
-    negative_mask = hdata.y == 0
-    num_negative_hyperedges = negative_mask.sum(dtype=torch.int).item()
-
-    print(f"{name}:")
-    print(f"- Hyperedges after sampling: {hdata.num_hyperedges}")
-    print(f"- Negative hyperedges added: {num_negative_hyperedges}")
-    print(f"- Labels: {hdata.y.tolist()}")
-    print()
-
-
 class CustomNegativeSampler(NegativeSampler):
     def __init__(self):
         self.negative_tensor = torch.tensor(
@@ -64,5 +52,11 @@ if __name__ == "__main__":
         seed=42,
     )
 
+    hdata = dataset_with_custom_negatives.hdata
+    negative_mask = hdata.y == 0
+    num_negative_hyperedges = negative_mask.sum(dtype=torch.int).item()
     print("Dataset after adding custom negative samples:")
-    describe_negative_dataset("Custom Negative Sampler", dataset_with_custom_negatives)
+    print(f"- Hyperedges after sampling: {hdata.num_hyperedges}")
+    print(f"- Negative hyperedges added: {num_negative_hyperedges}")
+    print(f"- Labels: {hdata.y.tolist()}")
+    print()
