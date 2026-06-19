@@ -29,6 +29,10 @@ class NHPRankingLoss(nn.Module):
 
         Returns:
             loss: Scalar loss value.
+
+        Raises:
+            ValueError: If ``logits`` and ``labels`` do not contain both positive and
+                negative hyperedges.
         """
         # Split logits by label as we need to compare positive scores against negative scores.
         # Example: logits = [2.0, 1.0, -1.0]
@@ -78,10 +82,18 @@ class VilLainLoss:
         labels_per_subspace: int,
         eps: float = 1e-12,
     ) -> None:
+        """
+        Initialize the VilLain loss helper.
+
+        Args:
+            num_subspaces: Number of virtual-label subspaces in each embedding.
+            labels_per_subspace: Number of virtual labels in each subspace.
+            eps: Numerical stability constant. Defaults to ``1e-12``.
+        """
         super().__init__()
-        self.num_subspaces = num_subspaces
-        self.labels_per_subspace = labels_per_subspace
-        self.eps = eps
+        self.num_subspaces: int = num_subspaces
+        self.labels_per_subspace: int = labels_per_subspace
+        self.eps: float = eps
 
     def local_loss(self, node_embeddings: Tensor, hyperedge_embeddings: Tensor) -> Tensor:
         """

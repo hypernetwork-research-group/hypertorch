@@ -14,14 +14,23 @@ class Graph:
     Attributes:
         edges: A list of edges, where each edge is represented as a list of two integers
             (source_node, destination_node).
-        edge_weights: Optional list of edge weights corresponding to each edge in ``edges``.
-            If provided, must have the same length as ``edges``.
     """
 
     def __init__(self, edges: list[list[int]], edge_weights: list[float] | None = None):
-        self.edges = edges
+        """
+        Initialize the graph.
+
+        Args:
+            edges: Edge list where each edge is ``[source_node, destination_node]``.
+            edge_weights: Optional edge weights matching ``edges``.
+
+        Raises:
+            ValueError: If edge weights are provided but their length does not
+                match the number of edges.
+        """
+        self.edges: list[list[int]] = edges
         self.__validate_edge_weights(edge_weights)
-        self.__edge_weights = edge_weights
+        self.__edge_weights: list[float] | None = edge_weights
 
     @property
     def edge_weights(self) -> list[float] | None:
@@ -109,6 +118,15 @@ class Graph:
         return edge_index
 
     def __validate_edge_weights(self, edge_weights: list[float] | None) -> None:
+        """
+        Validate graph edge weights.
+
+        Args:
+            edge_weights: Optional edge weights to validate.
+
+        Raises:
+            ValueError: If the number of weights does not match the number of edges.
+        """
         if edge_weights is None:
             return
 
@@ -156,10 +174,6 @@ class EdgeIndex:
 
         This represents a graph with edges (0, 1), (1, 0), and (2, 3).
         The number of nodes in this graph is 4 (nodes 0, 1, 2, and 3) and the number of edges is 3.
-
-    Attributes:
-        edge_index: A tensor of shape ``(2, num_edges)`` representing the edges in the graph.
-        edge_weights: Optional tensor of shape ``(num_edges,)`` containing a weight for each edge.
     """
 
     def __init__(
@@ -167,9 +181,16 @@ class EdgeIndex:
         edge_index: Tensor,
         edge_weights: Tensor | None = None,
     ):
-        self.__edge_index = edge_index
+        """
+        Initialize the edge index wrapper.
+
+        Args:
+            edge_index: Tensor of shape ``(2, num_edges)`` representing graph edges.
+            edge_weights: Optional tensor of shape ``(num_edges,)`` containing edge weights.
+        """
+        self.__edge_index: Tensor = edge_index
         self.__validate_edge_weights(edge_weights)
-        self.__edge_weights = edge_weights
+        self.__edge_weights: Tensor | None = edge_weights
 
     @property
     def item(self) -> Tensor:
@@ -326,7 +347,7 @@ class EdgeIndex:
             ...               [0, 0, 1, 0]] 3
 
         Args:
-            num_nodes: The number of nodes in the graph.
+            num_nodes: The number of nodes in the graph. Defaults to ``None``.
                 If ``None``, it will be inferred from ``self.num_nodes``.
                 Note that the node indices in ``edge_index`` are assumed to be in the
                 range [0, num_nodes-1].
@@ -386,7 +407,7 @@ class EdgeIndex:
             ...      [0, 0, 1]]
 
         Args:
-            num_nodes: The number of nodes in the graph.
+            num_nodes: The number of nodes in the graph. Defaults to ``None``.
                 If ``None``, it will be inferred from ``self.num_nodes``.
 
         Returns:
@@ -433,9 +454,9 @@ class EdgeIndex:
             num_nodes: The number of nodes in the graph.
                 If ``None``, it will be inferred from ``self.num_nodes``.
                 Note that the node indices in ``edge_index`` are assumed to be in
-                the range [0, num_nodes-1].
+                the range [0, num_nodes-1]. Defaults to ``None``.
             use_edge_weights: If ``True``, use the edge weights from ``self.edge_weights``.
-                If ``False``, all edges use weight 1.
+                If ``False``, all edges use weight 1. Defaults to ``False``.
 
         Returns:
             degree_matrix: The sparse normalized degree matrix D^-1/2 of
@@ -496,7 +517,7 @@ class EdgeIndex:
 
         Args:
             num_nodes: The number of nodes in the graph. If ``None``,
-                it will be inferred from ``self.num_nodes``.
+                it will be inferred from ``self.num_nodes``. Defaults to ``None``.
 
         Returns:
             laplacian: The sparse symmetric normalized Laplacian
@@ -534,7 +555,7 @@ class EdgeIndex:
 
         Args:
             num_nodes: The number of nodes in the graph. If ``None``,
-                it will be inferred from ``self.num_nodes``.
+                it will be inferred from ``self.num_nodes``. Defaults to ``None``.
                 Note that the node indices in ``edge_index`` are assumed to be
                 in the range [0, num_nodes-1].
                 This parameter is important when ``edge_index`` does not contain all nodes
@@ -542,7 +563,7 @@ class EdgeIndex:
                 as it ensures that the resulting Laplacian matrix has the correct size and
                 includes all nodes. For instance, for self-loops.
             use_edge_weights: If ``True``, use the edge weights from ``self.edge_weights``.
-                If ``False``, all edges use weight 1.
+                If ``False``, all edges use weight 1. Defaults to ``False``.
 
         Returns:
             laplacian: The sparse symmetrically normalized Laplacian matrix of
@@ -590,7 +611,7 @@ class EdgeIndex:
 
         Args:
             num_nodes: The number of nodes in the graph. If ``None``, it will be
-                inferred from ``self.num_nodes``.
+                inferred from ``self.num_nodes``. Defaults to ``None``.
                 This parameter is important when ``edge_index`` does not contain all nodes
                 (e.g., some nodes are isolated and have no edges or have been removed),
                 as it ensures that the resulting Laplacian matrix has the correct size
@@ -654,11 +675,11 @@ class EdgeIndex:
         Args:
             with_selfloops: Whether to add self-loops to each node. Defaults to ``False``.
             num_nodes: Total number of nodes. Propagated to ``add_selfloops`` when
-                ``with_selfloops`` is ``True``.
-                This parameter is useful when ``edge_index`` does not contain all nodes
-                (e.g., some nodes are isolated and have no edges or have been removed),
-                as it ensures that the resulting Laplacian matrix has the correct size and
-                includes all nodes. For instance, for self-loops.
+                ``with_selfloops`` is ``True``. This parameter is useful when ``edge_index``
+                does not contain all nodes (e.g., some nodes are isolated and have no edges
+                or have been removed), as it ensures that the resulting Laplacian matrix has
+                the correct size and includes all nodes. For instance, for self-loops.
+                Defaults to ``None``.
 
         Returns:
             edge_index: This `EdgeIndex` instance converted to undirected.
@@ -741,6 +762,15 @@ class EdgeIndex:
         return self
 
     def __validate_edge_weights(self, edge_weights: Tensor | None) -> None:
+        """
+        Validate edge weight tensor shape.
+
+        Args:
+            edge_weights: Optional edge weight tensor to validate.
+
+        Raises:
+            ValueError: If edge weights are not one-dimensional or do not match edge count.
+        """
         if edge_weights is None:
             return
 
@@ -758,6 +788,15 @@ class EdgeIndex:
             )
 
     def __validate_num_nodes(self, num_nodes: int) -> None:
+        """
+        Validate that an explicit node count can contain the edge index.
+
+        Args:
+            num_nodes: Explicit number of nodes.
+
+        Raises:
+            ValueError: If ``num_nodes`` is negative or smaller than the maximum node ID.
+        """
         validate_is_non_negative("num_nodes", num_nodes)
 
         if self.num_edges < 1:

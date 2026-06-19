@@ -54,8 +54,7 @@ class HData:
         hyperedge_attr: Hyperedge feature matrix of
             shape ``[num_hyperedges, num_hyperedge_features]``.
             Features associated with each hyperedge (e.g., weights, timestamps, types).
-        num_nodes: Number of nodes in the hypergraph.
-            If ``None``, inferred as ``x.size(0)``.
+        num_nodes: Number of nodes in the hypergraph. If ``None``, inferred as ``x.size(0)``.
         num_hyperedges: Number of hyperedges in the hypergraph.
             If ``None``, inferred as the number of unique hyperedge IDs in ``hyperedge_index[1]``.
         y: Labels for hyperedges, of shape ``[num_hyperedges]``.
@@ -66,6 +65,7 @@ class HData:
             when ``hyperedge_index`` is rebased locally.
             If ``None``, defaults to ``torch.arange(num_nodes)``, assuming that these are the
             global node IDs in the same order as the rows of ``x``.
+        device: Device shared by all tensors in the instance.
     """
 
     def __init__(
@@ -79,6 +79,22 @@ class HData:
         global_node_ids: Tensor | None = None,
         y: Tensor | None = None,
     ):
+        """
+        Initialize hypergraph learning data.
+
+        Args:
+            x: Node feature matrix of shape ``[num_nodes, num_features]``.
+            hyperedge_index: Hyperedge connectivity in COO format of shape
+                ``[2, num_incidences]``.
+            hyperedge_weights: Optional tensor of shape ``[num_hyperedges]`` containing weights
+                for each hyperedge.
+            hyperedge_attr: Optional hyperedge feature matrix of shape
+                ``[num_hyperedges, num_hyperedge_features]``.
+            num_nodes: Optional explicit number of nodes.
+            num_hyperedges: Optional explicit number of hyperedges.
+            global_node_ids: Optional stable node IDs matching rows of ``x``.
+            y: Optional labels for hyperedges.
+        """
         self.x: Tensor = x
         self.hyperedge_index: Tensor = hyperedge_index
         self.__validate_x_and_hyperedge_index_type_and_dim()
@@ -109,7 +125,7 @@ class HData:
             else torch.arange(self.num_nodes, dtype=torch.long, device=self.x.device)
         )
 
-        self.y = (
+        self.y: Tensor = (
             y
             if y is not None
             else torch.ones((self.num_hyperedges,), dtype=torch.float, device=self.x.device)
@@ -117,9 +133,15 @@ class HData:
 
         self.__validate()
 
-        self.device = self.get_device_if_all_consistent()
+        self.device: torch.device = self.get_device_if_all_consistent()
 
     def __repr__(self) -> str:
+        """
+        Return a shape-oriented representation of the data object.
+
+        Returns:
+            representation: Human-readable summary of tensor shapes and counts.
+        """
         hyperedge_weights_shape = (
             self.hyperedge_weights.shape if self.hyperedge_weights is not None else None
         )
@@ -188,17 +210,16 @@ class HData:
                 If ``None``, the node features from the instance with the largest number of
                 nodes will be used.
                 If ``global_node_ids`` is provided explicitly, ``x`` must also be provided
-                to ensure consistency.
+                to ensure consistency. Defaults to ``None``.
             global_node_ids: Optional global node IDs for the resulting `HData`.
                 If ``None``, the global node IDs from the instance with the largest number of
-                nodes will be used.
-                If ``x`` is provided explicitly, ``global_node_ids`` must also be provided
-                to ensure consistency.
+                nodes will be used. If ``x`` is provided explicitly, ``global_node_ids`` must
+                also be provided to ensure consistency.
                 If ``x`` is provided and there is no need for ``global_node_ids`` to preserve
-                access to the canonical node space,
-                it is recommended to use arbitrary global node IDs that are consistent with
-                the feature rows of ``x``.
+                access to the canonical node space, it is recommended to use arbitrary global node
+                IDs that are consistent with the feature rows of ``x``.
                 For example, ``global_node_ids=torch.arange(x.size(0))``).
+                Defaults to ``None``.
 
         Returns:
             hdata: A new `HData` with shared nodes and concatenated hyperedges.
@@ -257,6 +278,7 @@ class HData:
         Args:
             negative_sampler: Sampler used to generate negative hyperedges from this instance.
             seed: Optional random seed used for both negative sampling and the final shuffle.
+                Defaults to ``None``.
 
         Returns:
             hdata: A new `HData` containing the original hyperedges and sampled negatives.
@@ -267,6 +289,12 @@ class HData:
 
     @classmethod
     def empty(cls) -> HData:
+        """
+        Create an empty HData instance.
+
+        Returns:
+            hdata: Empty hypergraph data object.
+        """
         return cls(
             x=empty_nodefeatures(),
             hyperedge_index=empty_hyperedgeindex(),
@@ -351,8 +379,8 @@ class HData:
             node_space_setting: Whether to preserve the full node space in the splits.
                 ``transductive`` (default) ensures all node features are present in the split,
                 while ``inductive`` allows splits to have disjoint node spaces.
-            splitter: Optional HData splitter. When provided, it owns split
-                materialization.
+            splitter: Optional HData splitter. When provided, it owns split materialization.
+                Defaults to ``None``.
 
         Returns:
             hdata: The splitted instance with remapped node and hyperedge IDs.
@@ -446,7 +474,7 @@ class HData:
                 If ``"inductive"``, the target dataset may have a different node space, and missing
                 nodes are filled using ``fill_value``.
             fill_value: Scalar or vector used to fill missing node features when
-                ``node_space_setting`` is not transductive.
+                ``node_space_setting`` is not transductive.  Defaults to ``None``.
 
         Returns:
             hdata: A new `HData` with node features copied from ``hdata_with_features``.
@@ -722,7 +750,7 @@ class HData:
 
         Args:
             seed: Optional random seed for reproducibility. If ``None``, the shuffle
-                will be non-deterministic.
+                will be non-deterministic. Defaults to ``None``.
 
         Returns:
             hdata: A new `HData` instance with hyperedge IDs, ``y``, and
@@ -816,7 +844,7 @@ class HData:
         Args:
             device: The target device (e.g., 'cpu', 'cuda:0').
             non_blocking: If ``True`` and the source and destination devices are both CUDA,
-                the copy will be non-blocking.
+                the copy will be non-blocking. Defaults to ``False``.
 
         Returns:
             hdata: The `HData` instance with all tensors moved to the specified device.
@@ -997,6 +1025,17 @@ class HData:
         x: Tensor | None,
         global_node_ids: Tensor | None,
     ) -> None:
+        """
+        Validate inputs for concatenating HData objects in the same node space.
+
+        Args:
+            hdatas: HData objects to concatenate.
+            x: Optional shared node feature matrix.
+            global_node_ids: Optional shared global node IDs.
+
+        Raises:
+            ValueError: If required paired arguments are missing or hyperedge IDs overlap.
+        """
         validate_is_non_empty("hdatas", hdatas)
 
         if x is not None and global_node_ids is None:
@@ -1023,6 +1062,21 @@ class HData:
         dtype: torch.dtype,
         device: torch.device,
     ) -> Tensor:
+        """
+        Convert a fill value into a feature vector.
+
+        Args:
+            fill_value: Scalar or vector fill value.
+            num_features: Required number of feature values.
+            dtype: Desired tensor dtype.
+            device: Desired tensor device.
+
+        Returns:
+            fill_features: Tensor of shape ``(num_features,)`` or an empty tensor.
+
+        Raises:
+            ValueError: If the fill value cannot be broadcast to the requested feature count.
+        """
         if fill_value is None:
             return torch.empty((0,), dtype=dtype, device=device)
 
@@ -1050,6 +1104,12 @@ class HData:
         return fill_features
 
     def __validate(self) -> None:
+        """
+        Validate all HData tensor fields.
+
+        Raises:
+            ValueError: If any field has an invalid shape, dtype, or count.
+        """
         self.__validate_x()
         self.__validate_hyperedge_index()
         self.__validate_hyperedge_attr()
@@ -1058,6 +1118,15 @@ class HData:
         self.__validate_labels()
 
     def __validate_enrichment_mode(self, enrichment_mode: EnrichmentMode | None) -> None:
+        """
+        Validate a feature enrichment mode.
+
+        Args:
+            enrichment_mode: Optional enrichment mode to validate.
+
+        Raises:
+            ValueError: If the mode is unsupported.
+        """
         if enrichment_mode is None or enrichment_mode in ("replace", "concatenate"):
             return
 
@@ -1067,6 +1136,12 @@ class HData:
         )
 
     def __validate_hyperedge_attr(self) -> None:
+        """
+        Validate optional hyperedge attributes.
+
+        Raises:
+            ValueError: If hyperedge attributes have an invalid dtype or shape.
+        """
         if self.hyperedge_attr is None:
             return
 
@@ -1084,6 +1159,12 @@ class HData:
             )
 
     def __validate_hyperedge_index(self) -> None:
+        """
+        Validate hyperedge index IDs against configured node and hyperedge counts.
+
+        Raises:
+            ValueError: If IDs are negative or counts are too small.
+        """
         if self.hyperedge_index.numel() > 0 and bool((self.hyperedge_index < 0).any()):
             raise ValueError("'hyperedge_index' cannot contain negative node or hyperedge IDs.")
 
@@ -1104,6 +1185,12 @@ class HData:
             )
 
     def __validate_hyperedge_weights(self) -> None:
+        """
+        Validate optional hyperedge weights.
+
+        Raises:
+            ValueError: If hyperedge weights have an invalid dtype or shape.
+        """
         if self.hyperedge_weights is None:
             return
 
@@ -1122,6 +1209,12 @@ class HData:
             )
 
     def __validate_global_node_ids(self) -> None:
+        """
+        Validate global node IDs.
+
+        Raises:
+            ValueError: If global node IDs have an invalid dtype, shape, or length.
+        """
         validate_long_tensor_dtype("global_node_ids", self.global_node_ids)
         if self.global_node_ids.dim() != 1:
             raise ValueError(
@@ -1135,6 +1228,12 @@ class HData:
             )
 
     def __validate_labels(self) -> None:
+        """
+        Validate hyperedge labels.
+
+        Raises:
+            ValueError: If labels have an invalid dtype, shape, or length.
+        """
         validate_floating_tensor_dtype("y", self.y)
         if self.y.dim() != 1:
             raise ValueError(f"'y' must be a 1D tensor, got shape {tuple(self.y.shape)}.")
@@ -1145,6 +1244,12 @@ class HData:
             )
 
     def __validate_x(self) -> None:
+        """
+        Validate node feature row count.
+
+        Raises:
+            ValueError: If node features do not match the configured node count.
+        """
         if self.x.size(0) not in (0, self.num_nodes):
             raise ValueError(
                 f"'x' must have one feature row per node, or be 'torch.empty((0, 0))' "
@@ -1157,6 +1262,16 @@ class HData:
         node_space_setting: NodeSpaceSetting,
         fill_value: NodeSpaceFiller | None,
     ) -> None:
+        """
+        Validate node-space enrichment settings.
+
+        Args:
+            node_space_setting: Node-space setting to validate.
+            fill_value: Optional fill value for missing nodes.
+
+        Raises:
+            ValueError: If the setting and fill value are incompatible.
+        """
         validate_node_space_setting(node_space_setting)
 
         if is_transductive_setting(node_space_setting) and fill_value is not None:
@@ -1167,6 +1282,12 @@ class HData:
             raise ValueError("'fill_value' must be provided when node_space_setting='inductive'.")
 
     def __validate_x_and_hyperedge_index_type_and_dim(self) -> None:
+        """
+        Validate core tensor dtypes and dimensions.
+
+        Raises:
+            ValueError: If ``x`` or ``hyperedge_index`` has an invalid dtype or shape.
+        """
         validate_floating_tensor_dtype("x", self.x)
         if self.x.dim() != 2:
             raise ValueError(f"'x' must be a 2D tensor, got shape {tuple(self.x.shape)}.")

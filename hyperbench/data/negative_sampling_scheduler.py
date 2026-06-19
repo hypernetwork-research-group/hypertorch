@@ -35,9 +35,17 @@ class NegativeSamplingScheduler:
         negative_sampling_schedule: NegativeSamplingSchedule = "every_epoch",
         negative_sampling_every_n: int = 1,
     ) -> None:
-        self.negative_sampler = negative_sampler
-        self.negative_sampling_schedule = negative_sampling_schedule
-        self.negative_sampling_every_n = negative_sampling_every_n
+        """
+        Initialize the scheduler.
+
+        Args:
+            negative_sampler: Sampler used to create negative samples.
+            negative_sampling_schedule: Schedule controlling when negatives are sampled.
+            negative_sampling_every_n: Epoch interval used for ``"every_n_epochs"`` scheduling.
+        """
+        self.negative_sampler: NegativeSampler = negative_sampler
+        self.negative_sampling_schedule: NegativeSamplingSchedule = negative_sampling_schedule
+        self.negative_sampling_every_n: int = negative_sampling_every_n
 
         self.__cached_negative_samples: HData | None = None
 
@@ -63,6 +71,10 @@ class NegativeSamplingScheduler:
         Returns:
             should_sample: True if negatives should be resampled for the current epoch,
                 False otherwise.
+
+        Raises:
+            ValueError: If ``epoch`` is negative, ``negative_sampling_every_n`` is not
+                positive for ``"every_n_epochs"``, or the schedule is unsupported.
         """
         if epoch < 0:
             raise ValueError(f"Epoch must be non-negative, got {epoch}.")
@@ -95,6 +107,10 @@ class NegativeSamplingScheduler:
 
         Returns:
             negatives: A batch of negative samples, either freshly sampled or from cache.
+
+        Raises:
+            ValueError: If the schedule asks to reuse cached negatives before any negatives
+                have been sampled.
         """
         if self.should_sample(epoch):
             self.__cached_negative_samples = self.negative_sampler.sample(batch)

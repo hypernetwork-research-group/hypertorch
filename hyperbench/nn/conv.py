@@ -11,19 +11,18 @@ class HyperGCNConv(nn.Module):
         - Reference implementation: [source](https://deephypergraph.readthedocs.io/en/latest/_modules/dhg/nn/convs/hypergraphs/hypergcn_conv.html#HyperGCNConv).
 
     Attributes:
-        in_channels: The number of input channels.
-        out_channels: The number of output channels.
-        bias: If set to ``False``, the layer will not learn the bias parameter.
-            Defaults to ``True``.
-        use_batch_normalization: If set to ``True``, the layer will use batch normalization.
-            Defaults to ``False``.
-        drop_rate: If set to a positive number, the layer will use dropout. Defaults to ``0.5``.
+        is_last: Whether to skip the final activation and dropout.
+            If ``True``, the layer will not apply the final activation and
+            dropout functions. Defaults to ``False``.
         use_mediator: Whether to use mediator to transform the hyperedges to edges in the graph.
             Defaults to ``False``.
-        is_last: If set to ``True``, the layer will not apply the final activation and
-            dropout functions. Defaults to ``False``.
-        seed: Optional random seed for the random reduction of hyperedges to edges.
-            Defaults to ``None``.
+        batch_norm_1d: Optional batch normalization layer.
+        activation_fn: Activation function applied to hidden outputs.
+        dropout: Dropout layer applied to hidden outputs. Defaults to ``0.5``.
+        theta: Learnable feature projection.
+        seed: Optional random seed for reducing hyperedges to graph edges.
+            Defaults to ``None``. If provided, it will be used for the random
+            reduction of hyperedges to edges.
     """  # noqa: E501
 
     def __init__(
@@ -37,19 +36,39 @@ class HyperGCNConv(nn.Module):
         is_last: bool = False,
         seed: int | None = None,
     ):
+        """
+        Initialize the HyperGCN convolution layer.
+
+        Args:
+            in_channels: The number of input channels.
+            out_channels: The number of output channels.
+            bias: If set to ``False``, the layer will not learn the bias parameter.
+                Defaults to ``True``.
+            use_batch_normalization: If set to ``True``, the layer will use batch normalization.
+                Defaults to ``False``.
+            drop_rate: If set to a positive number, the layer will use dropout. Defaults to ``0.5``.
+            use_mediator: Whether to use mediator to transform the hyperedges to edges in the graph.
+                Defaults to ``False``.
+            is_last: If set to ``True``, the layer will not apply the final activation and
+                dropout functions. Defaults to ``False``.
+            seed: Optional random seed for the random reduction of hyperedges to edges.
+                Defaults to ``None``.
+        """
         super().__init__()
-        self.is_last = is_last
-        self.use_mediator = use_mediator
-        self.batch_norm_1d = nn.BatchNorm1d(out_channels) if use_batch_normalization else None
-        self.activation_fn = nn.ReLU(inplace=True)
-        self.dropout = nn.Dropout(drop_rate)
+        self.is_last: bool = is_last
+        self.use_mediator: bool = use_mediator
+        self.batch_norm_1d: nn.BatchNorm1d | None = (
+            nn.BatchNorm1d(out_channels) if use_batch_normalization else None
+        )
+        self.activation_fn: nn.ReLU = nn.ReLU(inplace=True)
+        self.dropout: nn.Dropout = nn.Dropout(drop_rate)
 
         # θ is the learnable weight matrix (as in the HyperGCN paper),
         # it projects node features from in_channels to out_channels and
         # learns how to mix feature channels
-        self.theta = nn.Linear(in_channels, out_channels, bias=bias)
+        self.theta: nn.Linear = nn.Linear(in_channels, out_channels, bias=bias)
 
-        self.seed = seed
+        self.seed: int | None = seed
 
     def forward(
         self,
@@ -118,15 +137,13 @@ class HGNNConv(nn.Module):
     ``HGNNConv`` operates entirely in hypergraph space and preserves all higher-order relationships.
 
     Attributes:
-        in_channels: The number of input channels.
-        out_channels: The number of output channels.
-        bias: If set to ``False``, the layer will not learn the bias parameter.
-            Defaults to ``True``.
-        use_batch_normalization: If set to ``True``, the layer will use batch normalization.
-            Defaults to ``False``.
-        drop_rate: If set to a positive number, the layer will use dropout. Defaults to ``0.5``.
-        is_last: If set to ``True``, the layer will not apply the final activation and
+        is_last: Whether to skip the final activation and dropout.
+            If ``True``, the layer will not apply the final activation and
             dropout functions. Defaults to ``False``.
+        batch_norm_1d: Optional batch normalization layer.
+        activation_fn: Activation function applied to hidden outputs.
+        dropout: Dropout layer applied to hidden outputs. Defaults to ``0.5``.
+        theta: Learnable feature projection.
     """  # noqa: E501
 
     def __init__(
@@ -138,12 +155,28 @@ class HGNNConv(nn.Module):
         drop_rate: float = 0.5,
         is_last: bool = False,
     ):
+        """
+        Initialize the HGNN convolution layer.
+
+        Args:
+            in_channels: The number of input channels.
+            out_channels: The number of output channels.
+            bias: If set to ``False``, the layer will not learn the bias parameter.
+                Defaults to ``True``.
+            use_batch_normalization: If set to ``True``, the layer will use batch normalization.
+                Defaults to ``False``.
+            drop_rate: If set to a positive number, the layer will use dropout. Defaults to ``0.5``.
+            is_last: If set to ``True``, the layer will not apply the final activation and
+                dropout functions. Defaults to ``False``.
+        """
         super().__init__()
-        self.is_last = is_last
-        self.batch_norm_1d = nn.BatchNorm1d(out_channels) if use_batch_normalization else None
-        self.activation_fn = nn.ReLU(inplace=True)
-        self.dropout = nn.Dropout(drop_rate)
-        self.theta = nn.Linear(in_channels, out_channels, bias=bias)
+        self.is_last: bool = is_last
+        self.batch_norm_1d: nn.BatchNorm1d | None = (
+            nn.BatchNorm1d(out_channels) if use_batch_normalization else None
+        )
+        self.activation_fn: nn.ReLU = nn.ReLU(inplace=True)
+        self.dropout: nn.Dropout = nn.Dropout(drop_rate)
+        self.theta: nn.Linear = nn.Linear(in_channels, out_channels, bias=bias)
 
     def forward(self, x: Tensor, hyperedge_index: Tensor) -> Tensor:
         """
@@ -194,15 +227,13 @@ class HGNNPConv(nn.Module):
     two-stage mean aggregation: nodes -> hyperedges -> nodes.
 
     Attributes:
-        in_channels: The number of input channels.
-        out_channels: The number of output channels.
-        bias: If set to ``False``, the layer will not learn the bias parameter.
-            Defaults to ``True``.
-        use_batch_normalization: If set to ``True``, the layer will use batch normalization.
-            Defaults to ``False``.
-        drop_rate: If set to a positive number, the layer will use dropout. Defaults to ``0.5``.
-        is_last: If set to ``True``, the layer will not apply the final activation and dropout
-            functions. Defaults to ``False``.
+        is_last: Whether to skip the final activation and dropout.
+            If ``True``, the layer will not apply the final activation and
+            dropout functions. Defaults to ``False``.
+        batch_norm_1d: Optional batch normalization layer.
+        activation_fn: Activation function applied to hidden outputs.
+        dropout: Dropout layer applied to hidden outputs. Defaults to ``0.5``.
+        theta: Learnable feature projection.
     """  # noqa: E501
 
     def __init__(
@@ -214,12 +245,28 @@ class HGNNPConv(nn.Module):
         drop_rate: float = 0.5,
         is_last: bool = False,
     ):
+        """
+        Initialize the HGNN+ convolution layer.
+
+        Args:
+            in_channels: The number of input channels.
+            out_channels: The number of output channels.
+            bias: If set to ``False``, the layer will not learn the bias parameter.
+                Defaults to ``True``.
+            use_batch_normalization: If set to ``True``, the layer will use batch normalization.
+                Defaults to ``False``.
+            drop_rate: If set to a positive number, the layer will use dropout. Defaults to ``0.5``.
+            is_last: If set to ``True``, the layer will not apply the final activation and dropout
+                functions. Defaults to ``False``.
+        """
         super().__init__()
-        self.is_last = is_last
-        self.batch_norm_1d = nn.BatchNorm1d(out_channels) if use_batch_normalization else None
-        self.activation_fn = nn.ReLU(inplace=True)
-        self.dropout = nn.Dropout(drop_rate)
-        self.theta = nn.Linear(in_channels, out_channels, bias=bias)
+        self.is_last: bool = is_last
+        self.batch_norm_1d: nn.BatchNorm1d | None = (
+            nn.BatchNorm1d(out_channels) if use_batch_normalization else None
+        )
+        self.activation_fn: nn.ReLU = nn.ReLU(inplace=True)
+        self.dropout: nn.Dropout = nn.Dropout(drop_rate)
+        self.theta: nn.Linear = nn.Linear(in_channels, out_channels, bias=bias)
 
     def forward(self, x: Tensor, hyperedge_index: Tensor) -> Tensor:
         """
@@ -258,15 +305,14 @@ class HNHNConv(nn.Module):
         - Reference implementation: [Code](https://deephypergraph.readthedocs.io/en/latest/_modules/dhg/nn/convs/hypergraphs/hnhn_conv.html#HNHNConv).
 
     Attributes:
-        in_channels: The number of input channels.
-        out_channels: The number of output channels.
-        bias: If set to ``False``, the layer will not learn the bias parameter.
-            Defaults to ``True``.
-        use_batch_normalization: If set to ``True``, the layer will use batch normalization.
-            Defaults to ``False``.
-        drop_rate: If set to a positive number, the layer will use dropout. Defaults to ``0.5``.
-        is_last: If set to ``True``, the layer will not apply the final activation and
+        is_last: Whether to skip the final activation and dropout.
+            If ``True``, the layer will not apply the final activation and
             dropout functions. Defaults to ``False``.
+        batch_norm_1d: Optional batch normalization layer.
+        activation_fn: Activation function applied to hidden outputs.
+        dropout: Dropout layer applied to hidden outputs. Defaults to ``0.5``.
+        theta_v2e: Learnable node-to-hyperedge projection.
+        theta_e2v: Learnable hyperedge-to-node projection.
     """  # noqa: E501
 
     __AGGREGATION: Literal["mean"] = "mean"
@@ -280,13 +326,29 @@ class HNHNConv(nn.Module):
         drop_rate: float = 0.5,
         is_last: bool = False,
     ):
+        """
+        Initialize the HNHN convolution layer.
+
+        Args:
+            in_channels: The number of input channels.
+            out_channels: The number of output channels.
+            bias: If set to ``False``, the layer will not learn the bias parameter.
+                Defaults to ``True``.
+            use_batch_normalization: If set to ``True``, the layer will use batch normalization.
+                Defaults to ``False``.
+            drop_rate: If set to a positive number, the layer will use dropout. Defaults to ``0.5``.
+            is_last: If set to ``True``, the layer will not apply the final activation and
+                dropout functions. Defaults to ``False``.
+        """
         super().__init__()
-        self.is_last = is_last
-        self.batch_norm_1d = nn.BatchNorm1d(out_channels) if use_batch_normalization else None
-        self.activation_fn = nn.ReLU(inplace=True)
-        self.dropout = nn.Dropout(drop_rate)
-        self.theta_v2e = nn.Linear(in_channels, out_channels, bias=bias)
-        self.theta_e2v = nn.Linear(out_channels, out_channels, bias=bias)
+        self.is_last: bool = is_last
+        self.batch_norm_1d: nn.BatchNorm1d | None = (
+            nn.BatchNorm1d(out_channels) if use_batch_normalization else None
+        )
+        self.activation_fn: nn.ReLU = nn.ReLU(inplace=True)
+        self.dropout: nn.Dropout = nn.Dropout(drop_rate)
+        self.theta_v2e: nn.Linear = nn.Linear(in_channels, out_channels, bias=bias)
+        self.theta_e2v: nn.Linear = nn.Linear(out_channels, out_channels, bias=bias)
 
     def forward(self, x: Tensor, hyperedge_index: Tensor) -> Tensor:
         """

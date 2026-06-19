@@ -11,8 +11,6 @@ class CommonNeighbors(nn.Module):
     Computes Common Neighbors scores for hyperedges.
 
     Attributes:
-        aggregation: Method to aggregate node embeddings per hyperedge. Can be one of
-            ``"mean"``, ``"min"``, or ``"sum"``.
         scorer: An instance of a NeighborScorer that computes the scores for hyperedges.
     """
 
@@ -21,8 +19,18 @@ class CommonNeighbors(nn.Module):
         aggregation: Literal["mean", "min", "sum"],
         scorer: NeighborScorer | None = None,
     ) -> None:
+        """
+        Initialize the common-neighbors model.
+
+        Args:
+            aggregation: Method used by the default scorer to aggregate pairwise counts.
+                Defaults to ``mean``.
+            scorer: Optional custom neighbor scorer.
+        """
         super().__init__()
-        self.scorer = scorer if scorer is not None else CommonNeighborsScorer(aggregation)
+        self.scorer: NeighborScorer = (
+            scorer if scorer is not None else CommonNeighborsScorer(aggregation)
+        )
 
     def forward(
         self,
@@ -35,6 +43,7 @@ class CommonNeighbors(nn.Module):
         Args:
             hyperedge_index: Tensor containing the hyperedge indices.
             node_to_neighbors: Optional mapping from nodes to their neighborhoods.
+                Defaults to ``None``.
 
         Returns:
             scores: A 1-D tensor of shape (num_hyperedges,) with CN scores.

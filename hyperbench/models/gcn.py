@@ -49,20 +49,9 @@ class GCN(nn.Module):
     A reusable multi-layer GCN stack built from ``torch_geometric.nn.GCNConv``.
 
     Attributes:
-        in_channels: Dimension of the input node embeddings to the GCN layers.
-        out_channels: Dimension of the output node embeddings from the GCN layers.
-        hidden_channels: Dimension of the hidden node embeddings in the GCN layers.
-            Defaults to ``in_channels``.
-        num_layers: Number of GCN layers. Must be at least 1. Defaults to ``2``.
-        drop_rate: Dropout rate applied after each GCN layer except the last one.
-        bias: Whether to include a bias term in the GCN layers.
-        activation_fn: Activation function to use after each hidden layer. Defaults to ``nn.ReLU``.
-        activation_fn_kwargs: Keyword arguments for the activation function.
-            Defaults to empty dict.
-        improved: Whether to use the improved version of ``GCNConv``.
-        add_self_loops: Whether to add self-loops to the input graph.
-        normalize: Whether to symmetrically normalize the adjacency matrix in ``GCNConv``.
-        cached: Whether to cache the normalized adjacency matrix in ``GCNConv``.
+        dropout: Dropout layer applied after hidden GCN layers.
+        activation: Activation module applied after hidden GCN layers.
+        layers: GCN convolution layers.
     """
 
     def __init__(
@@ -80,13 +69,36 @@ class GCN(nn.Module):
         normalize: bool = True,
         cached: bool = False,
     ):
+        """
+        Initialize the GCN stack.
+
+        Args:
+            in_channels: Dimension of input node embeddings.
+            out_channels: Dimension of output node embeddings.
+            hidden_channels: Dimension of hidden node embeddings.
+            num_layers: Number of GCN layers. Must be at least ``1``.
+                Defaults to ``2``.
+            drop_rate: Dropout rate applied after hidden GCN layers.
+                Defaults to ``0.0``.
+            bias: Whether to include a bias term in GCN layers.
+                Defaults to ``True``.
+            activation_fn: Activation function class used after hidden layers.
+                Defaults to ``nn.ReLU``.
+            activation_fn_kwargs: Keyword arguments for the activation function.
+                Defaults to empty dict.
+            improved: Whether to use the improved version of ``GCNConv``.
+            add_self_loops: Whether to add self-loops to the input graph.
+            normalize: Whether to symmetrically normalize adjacency in ``GCNConv``.
+            cached: Whether to cache the normalized adjacency matrix in ``GCNConv``.
+                Defaults to ``False``.
+        """
         super().__init__()
         activation_fn = activation_fn if activation_fn is not None else nn.ReLU
         activation_fn_kwargs = activation_fn_kwargs if activation_fn_kwargs is not None else {}
 
-        self.dropout = nn.Dropout(drop_rate)
-        self.activation = activation_fn(**activation_fn_kwargs)
-        self.layers = self.__build_layers(
+        self.dropout: nn.Dropout = nn.Dropout(drop_rate)
+        self.activation: nn.Module = activation_fn(**activation_fn_kwargs)
+        self.layers: nn.ModuleList = self.__build_layers(
             in_channels=in_channels,
             out_channels=out_channels,
             hidden_channels=hidden_channels,
@@ -99,6 +111,16 @@ class GCN(nn.Module):
         )
 
     def forward(self, x: Tensor, edge_index: Tensor) -> Tensor:
+        """
+        Apply the GCN stack to node features.
+
+        Args:
+            x: Node feature matrix.
+            edge_index: Graph edge index.
+
+        Returns:
+            x: Output node embeddings.
+        """
         num_layers = len(self.layers)
         for idx, layer in enumerate(self.layers):
             x = layer(x, edge_index)
@@ -122,6 +144,26 @@ class GCN(nn.Module):
         normalize: bool,
         cached: bool,
     ) -> nn.ModuleList:
+        """
+        Build the internal GCN convolution layers.
+
+        Args:
+            in_channels: Dimension of input node embeddings.
+            out_channels: Dimension of output node embeddings.
+            hidden_channels: Dimension of hidden node embeddings.
+            num_layers: Number of GCN layers.
+            bias: Whether to include a bias term in GCN layers.
+            improved: Whether to use the improved version of ``GCNConv``.
+            add_self_loops: Whether to add self-loops to the input graph.
+            normalize: Whether to symmetrically normalize adjacency in ``GCNConv``.
+            cached: Whether ``GCNConv`` should cache normalized adjacency.
+
+        Returns:
+            layers: Module list containing the GCN layers.
+
+        Raises:
+            ValueError: If the layer configuration is invalid.
+        """
         if num_layers < 1:
             raise ValueError(f"Expected num_layers >= 1 for GCN, got {num_layers}.")
 

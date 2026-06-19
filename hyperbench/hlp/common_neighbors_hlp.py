@@ -16,13 +16,15 @@ class CommonNeighborsHlpModule(HlpModule):
     A LightningModule for the CommonNeighbors model with optional negative sampling.
 
     Attributes:
-        aggregation: The aggregation method for common neighbors ("mean", "min", or "sum").
-        decoder: An optional decoder module. Defaults to `CommonNeighbors`.
-        loss_fn: An optional loss function. Defaults to ``BCEWithLogitsLoss``.
-        metrics: An optional dictionary of metric functions.
-        metrics_log_kwargs: Additional keyword arguments to pass to all ``self.log`` calls
-            for metrics. Useful for configuring distributed synchronization behavior of
-            torchmetrics. Defaults to ``None``.
+        encoder: Optional encoder module inherited from ``HlpModule``. Defaults to ``None``.
+        decoder: Common-neighbor decoder inherited from ``HlpModule``.
+        loss_fn: Loss function inherited from ``HlpModule``.
+        metrics_log_kwargs: Metric logging keyword arguments inherited from ``HlpModule``.
+        train_metrics: Optional training metrics inherited from ``HlpModule``.
+        val_metrics: Optional validation metrics inherited from ``HlpModule``.
+        test_metrics: Optional test metrics inherited from ``HlpModule``.
+        node_to_neighbors: Precomputed training-world node neighborhoods.
+        automatic_optimization: Disabled because this module has no trainable optimization.
     """
 
     def __init__(
@@ -34,6 +36,18 @@ class CommonNeighborsHlpModule(HlpModule):
         metrics: MetricCollection | None = None,
         metrics_log_kwargs: dict[str, Any] | None = None,
     ):
+        """
+        Initialize the CommonNeighbors HLP module.
+
+        Args:
+            train_hyperedge_index: Training hyperedge index used to precompute neighborhoods.
+            aggregation: Common-neighbor aggregation method. Defaults to ``"mean"``.
+            decoder: Optional decoder module. Defaults to ``CommonNeighbors``.
+            loss_fn: Optional loss function. Defaults to ``BCEWithLogitsLoss``.
+            metrics: Optional metric collection for evaluation. Defaults to ``None``.
+            metrics_log_kwargs: Additional keyword arguments passed to metric log calls.
+                Defaults to ``None``.
+        """
         super().__init__(
             decoder=decoder if decoder is not None else CommonNeighbors(aggregation),
             loss_fn=loss_fn if loss_fn is not None else nn.BCEWithLogitsLoss(),
@@ -43,12 +57,12 @@ class CommonNeighborsHlpModule(HlpModule):
 
         # Pre-compute neighbors of training nodes based on training edges only
         # to create a "known world" for the model to make predictions from
-        self.node_to_neighbors = Hypergraph.from_hyperedge_index(
+        self.node_to_neighbors: dict[int, set[int]] = Hypergraph.from_hyperedge_index(
             train_hyperedge_index
         ).neighbors_of_all()
 
         # Disable automatic optimization since there is no training
-        self.automatic_optimization = False
+        self.automatic_optimization: bool = False
 
     def forward(self, hyperedge_index: Tensor) -> Tensor:
         """
@@ -72,20 +86,65 @@ class CommonNeighborsHlpModule(HlpModule):
             )
 
     def training_step(self, batch: HData, batch_idx: int) -> Tensor:
+        """
+        Return a zero loss for the non-trainable heuristic.
+
+        Args:
+            batch: Input batch, unused.
+            batch_idx: Batch index, unused.
+
+        Returns:
+            loss: Zero scalar tensor on the module device.
+        """
         return torch.tensor(0.0, dtype=torch.float, device=self.device)
 
     def validation_step(self, batch: HData, batch_idx: int) -> Tensor:
+        """
+        Return a zero validation loss for the non-trainable heuristic.
+
+        Args:
+            batch: Input batch, unused.
+            batch_idx: Batch index, unused.
+
+        Returns:
+            loss: Zero scalar tensor on the module device.
+        """
         return torch.tensor(0.0, dtype=torch.float, device=self.device)
 
     def test_step(self, batch: HData, batch_idx: int) -> Tensor:
+        """
+        Evaluate a test batch.
+
+        Args:
+            batch: Test batch.
+            batch_idx: Batch index, unused.
+
+        Returns:
+            loss: Test loss.
+        """
         return self.__step(batch, stage=Stage.TEST)
 
     def predict_step(self, batch: HData, batch_idx: int) -> Tensor:
+        """
+        Predict common-neighbor scores for a batch.
+
+        Args:
+            batch: Prediction batch.
+            batch_idx: Batch index, unused.
+
+        Returns:
+            scores: Predicted hyperedge scores.
+        """
         return self.forward(batch.hyperedge_index)
 
-    def configure_optimizers(self):
+    def configure_optimizers(self) -> None:
+        """
+        Return no optimizer for the non-trainable heuristic.
+
+        Returns:
+            optimizer: No optimizer is configured, so always returns ``None``.
+        """
         # No training, so no optimizers needed
-        return None
 
     def __step(self, batch: HData, stage: Stage) -> Tensor:
         """

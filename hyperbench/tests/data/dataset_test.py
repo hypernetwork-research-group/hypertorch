@@ -116,7 +116,9 @@ def test_preloaded_dataset_loads_hdata_when_hdata_is_none():
 
     assert dataset.hdata == mock_hdata
     mock_load.assert_called_once_with(
-        "algebra", hf_sha="2bb641461e00c103fb5ef4fe6a30aad42500fc21", save_on_disk=True
+        dataset_name="algebra",
+        hf_sha="2bb641461e00c103fb5ef4fe6a30aad42500fc21",
+        save_on_disk=True,
     )
 
 

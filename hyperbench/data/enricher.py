@@ -28,7 +28,7 @@ class _VilLainTrainer:
     model construction, and training loop used by node feature and hyperedge attribute enrichers.
 
     Attributes:
-        num_features: Dimensionality of the embeddings to generate.
+        embedding_dim: Dimensionality of the embeddings to generate.
         num_nodes: Total number of nodes, including isolated nodes missing from ``hyperedge_index``.
         num_hyperedges: Total number of hyperedges, including empty hyperedges missing
             from ``hyperedge_index``.
@@ -58,18 +58,37 @@ class _VilLainTrainer:
         weight_decay: float = 0.0,
         verbose: bool = False,
     ):
-        self.embedding_dim = num_features
-        self.num_nodes = num_nodes
-        self.num_hyperedges = num_hyperedges
-        self.labels_per_subspace = labels_per_subspace
-        self.training_steps = training_steps
-        self.generation_steps = generation_steps
-        self.tau = tau
-        self.eps = eps
-        self.num_epochs = num_epochs
-        self.learning_rate = learning_rate
-        self.weight_decay = weight_decay
-        self.verbose = verbose
+        """
+        Initialize the VilLain training helper.
+
+        Args:
+            num_features: Dimensionality of the embeddings to generate.
+            num_nodes: Total number of nodes, including isolated nodes missing
+                from ``hyperedge_index``.
+            num_hyperedges: Total number of hyperedges, including empty hyperedges missing
+                from ``hyperedge_index``.
+            labels_per_subspace: Number of virtual labels per VilLain subspace.
+            training_steps: Propagation steps used for VilLain self-supervised loss.
+            generation_steps: Propagation steps averaged for final embeddings.
+            tau: Gumbel-Softmax temperature.
+            eps: Numerical stability constant.
+            num_epochs: Number of optimization epochs.
+            learning_rate: Adam learning rate.
+            weight_decay: Adam weight decay.
+            verbose: Whether to print training progress.
+        """
+        self.embedding_dim: int = num_features
+        self.num_nodes: int = num_nodes
+        self.num_hyperedges: int = num_hyperedges
+        self.labels_per_subspace: int = labels_per_subspace
+        self.training_steps: int = training_steps
+        self.generation_steps: int = generation_steps
+        self.tau: float = tau
+        self.eps: float = eps
+        self.num_epochs: int = num_epochs
+        self.learning_rate: float = learning_rate
+        self.weight_decay: float = weight_decay
+        self.verbose: bool = verbose
 
         self.__validate()
 
@@ -164,6 +183,12 @@ class _VilLainTrainer:
         return model
 
     def __validate(self) -> None:
+        """
+        Validate VilLain training configuration.
+
+        Raises:
+            ValueError: If any configuration value is outside its supported range.
+        """
         validate_is_positive("num_features", self.embedding_dim)
         validate_is_non_negative("num_nodes", self.num_nodes)
         validate_is_non_negative("num_hyperedges", self.num_hyperedges)
@@ -190,7 +215,7 @@ class Enricher(ABC):
     """
     Generic base class for enrichers.
 
-    Args:
+    Attributes:
         cache_dir: Directory for saving/loading cached features. If ``None``, caching is disabled.
     """
 
@@ -198,10 +223,29 @@ class Enricher(ABC):
         self,
         cache_dir: str | None = None,
     ):
-        self.cache_dir = cache_dir
+        """
+        Initialize the enricher.
+
+        Args:
+            cache_dir: Directory for saving/loading cached features.
+                If ``None``, caching is disabled.
+        """
+        self.cache_dir: str | None = cache_dir
 
     @abstractmethod
     def enrich(self, hyperedge_index: Tensor) -> Tensor:
+        """
+        Enrich data derived from a hyperedge index.
+
+        Args:
+            hyperedge_index: Hyperedge index tensor.
+
+        Returns:
+            features: Enriched tensor.
+
+        Raises:
+            NotImplementedError: If the method is not implemented in a subclass.
+        """
         raise NotImplementedError("Subclasses must implement the enrich method.")
 
 
@@ -229,8 +273,7 @@ class FillValueHyperedgeAttrsEnricher(HyperedgeAttrsEnricher):
     """
     Generates simple hyperedge attributes by filling them with a constant value.
 
-    Args:
-        cache_dir: Directory for saving/loading cached features. If ``None``, caching is disabled.
+    Attributes:
         fill_value: The constant value to fill the hyperedge attributes with. Defaults to ``1.0``.
     """
 
@@ -239,8 +282,16 @@ class FillValueHyperedgeAttrsEnricher(HyperedgeAttrsEnricher):
         cache_dir: str | None = None,
         fill_value: float = 1.0,
     ):
+        """
+        Initialize the fill-value hyperedge attribute enricher.
+
+        Args:
+            cache_dir: Directory for saving/loading cached features.
+                If ``None``, caching is disabled.
+            fill_value: The constant value to fill the hyperedge attributes with.
+        """
         super().__init__(cache_dir=cache_dir)
-        self.fill_value = fill_value
+        self.fill_value: float = fill_value
 
     def enrich(self, hyperedge_index: Tensor) -> Tensor:
         """
@@ -266,23 +317,6 @@ class FillValueHyperedgeAttrsEnricher(HyperedgeAttrsEnricher):
 class VilLainHyperedgeAttrsEnricher(_VilLainTrainer, HyperedgeAttrsEnricher):
     """
     Enrich hyperedge attributes with VilLain embeddings learned from hypergraph topology.
-
-    Args:
-        num_features: Dimensionality of the hyperedge embeddings to generate.
-        num_nodes: Total number of nodes, including isolated nodes that do not
-            appear in ``hyperedge_index``.
-        num_hyperedges: Total number of hyperedges, including empty hyperedges that
-            do not appear in ``hyperedge_index``.
-        labels_per_subspace: Number of virtual labels per subspace. Defaults to ``2``.
-        training_steps: Propagation steps used for VilLain self-supervised loss. Defaults to ``4``.
-        generation_steps: Propagation steps averaged for final embeddings. Defaults to ``100``.
-        tau: Gumbel-Softmax temperature. Defaults to ``1.0``.
-        eps: Numerical stability constant. Defaults to ``1e-10``.
-        num_epochs: Number of epochs used to optimize VilLain embeddings. Defaults to ``5``.
-        learning_rate: Learning rate for embedding optimization. Defaults to ``0.01``.
-        weight_decay: Weight decay for the optimizer. Defaults to ``0.0``.
-        cache_dir: Optional directory to cache computed features. If ``None``, caching is disabled.
-        verbose: Whether to print verbose output during training. Defaults to ``False``.
     """
 
     def __init__(
@@ -301,6 +335,27 @@ class VilLainHyperedgeAttrsEnricher(_VilLainTrainer, HyperedgeAttrsEnricher):
         cache_dir: str | None = None,
         verbose: bool = False,
     ):
+        """
+        Initialize the VilLain hyperedge attribute enricher.
+
+        Args:
+            num_features: Dimensionality of the hyperedge embeddings to generate.
+            num_nodes: Total number of nodes, including isolated nodes missing from
+                ``hyperedge_index``.
+            num_hyperedges: Total number of hyperedges, including empty hyperedges missing
+                from ``hyperedge_index``.
+            labels_per_subspace: Number of virtual labels per subspace.
+            training_steps: Propagation steps used for VilLain self-supervised loss.
+            generation_steps: Propagation steps averaged for final embeddings.
+            tau: Gumbel-Softmax temperature.
+            eps: Numerical stability constant.
+            num_epochs: Number of epochs used to optimize VilLain embeddings.
+            learning_rate: Learning rate for embedding optimization.
+            weight_decay: Weight decay for the optimizer.
+            cache_dir: Optional directory to cache computed features. If ``None``,
+                caching is disabled.
+            verbose: Whether to print verbose output during training.
+        """
         HyperedgeAttrsEnricher.__init__(self, cache_dir=cache_dir)
         _VilLainTrainer.__init__(
             self,
@@ -352,12 +407,11 @@ class ABHyperedgeWeightsEnricher(HyperedgeWeightsEnricher):
     """
     Generates hyperedge weights based on the number of nodes in each hyperedge.
 
-    Args:
-        cache_dir: Directory for saving/loading cached features. If ``None``, caching is disabled.
+    Attributes:
         alpha: Scaling factor for the random component added to weights.
-            Must be between 0.0 and 1.0.
+            Must be between ``0.0`` and ``1.0``.
         beta: If provided, the random component is alpha * beta.
-            If None, no random component is added.
+            If ``None``, no random component is added.
     """
 
     def __init__(
@@ -366,13 +420,25 @@ class ABHyperedgeWeightsEnricher(HyperedgeWeightsEnricher):
         alpha: float = 1.0,
         beta: float | None = None,
     ):
+        """
+        Initialize the hyperedge weight enricher.
+
+        Args:
+            cache_dir: Directory for saving/loading cached features.
+                If ``None``, caching is disabled.
+            alpha: Scaling factor for the random component added to weights.
+            beta: If provided, the random component is ``alpha * beta``.
+
+        Raises:
+            ValueError: If ``alpha`` or ``beta`` is invalid.
+        """
         super().__init__(cache_dir=cache_dir)
 
         validate_is_between("alpha", alpha, 0.0, 1.0)
         validate_is_finite_when_provided("beta", beta)
 
-        self.alpha = alpha
-        self.beta = beta
+        self.alpha: float = alpha
+        self.beta: float | None = beta
 
     def enrich(self, hyperedge_index: Tensor) -> Tensor:
         """
@@ -403,8 +469,8 @@ class Node2VecEnricher(NodeEnricher):
     Enrich node features using Node2Vec embeddings computed from the clique expansion of the
     hypergraph.
 
-    Args:
-        num_features: Dimensionality of the node embeddings to generate.
+    Attributes:
+        embedding_dim: Dimensionality of the node embeddings to generate.
         walk_length: Length of each random walk.
         context_size: Window size for the skip-gram model
             (number of neighbors in the walk considered as context).
@@ -420,33 +486,28 @@ class Node2VecEnricher(NodeEnricher):
         p: Return hyperparameter for Node2Vec. Default is ``1.0`` (unbiased).
             This controls the probability of stepping back to the node visited in the previous step.
             Lower values of ``p`` make immediate backtracking more likely,
-            which keeps walks closer to the
-            local neighborhood. Higher values of ``p`` discourage returning to the previous node,
-             so walks
-            are less likely to bounce back and forth across the same edge.
+            which keeps walks closer to the local neighborhood. Higher values of ``p`` discourage
+            returning to the previous node, so walks are less likely to bounce back
+            and forth across the same edge.
         q: In-out hyperparameter for Node2Vec. Default is ``1.0`` (unbiased).
             This controls whether walks stay near the source node or explore further outward.
             Lower values of ``q`` bias the walk toward outward exploration, behaving more like DFS
-            and
-            emphasizing structural roles. Higher values of ``q`` bias the walk toward nearby nodes,
-            behaving more like BFS and emphasizing community structure and homophily.
-        num_negative_samples: Number of negative samples to use for training the skip-gram model.
+            and emphasizing structural roles. Higher values of ``q`` bias the walk toward
+            nearby nodes, behaving more like BFS and emphasizing community structure and homophily.
+        num_negative_samples: Number of negative samples used for skip-gram training.
             If set to ``X``, then for each positive pair ``(u, v)`` generated from the random walks,
             ``X`` negative pairs ``(u, v_neg)`` will be generated,
             where ``v_neg`` is a node sampled uniformly at random from all nodes in the graph.
             Defaults to ``1``, meaning one negative sample per positive pair.
-        num_nodes: Total number of nodes in the graph. If not provided, it will be inferred from
-            the hyperedge_index.
-            This is only needed if the hyperedge_index does not include all nodes
-            (e.g., some isolated nodes are missing).
+        num_nodes: Total number of nodes to preserve. If not provided, it will be inferred from
+            ``hyperedge_index``. This is only needed if ``hyperedge_index`` does not include
+            all nodes (e.g., some isolated nodes are missing).
         graph_reduction_strategy: Strategy for reducing the hyperedge graph.
             Defaults to ``clique_expansion``.
         num_epochs: Number of epochs used to optimize Node2Vec embeddings. Defaults to ``5``.
         learning_rate: Learning rate for embedding optimization. Defaults to ``0.01``.
         batch_size: Batch size used by the random-walk loader. Defaults to ``128``.
         sparse: Whether Node2Vec embeddings should use sparse gradients.
-        cache_dir: Optional directory to cache computed embeddings. If ``None``, caching
-            is disabled.
         verbose: Whether to print verbose output during training. Defaults to ``False``.
     """
 
@@ -468,21 +529,46 @@ class Node2VecEnricher(NodeEnricher):
         cache_dir: str | None = None,
         verbose: bool = False,
     ):
+        """
+        Initialize the Node2Vec enricher.
+
+        Args:
+            num_features: Dimensionality of the node embeddings to generate.
+            walk_length: Length of each random walk.
+            context_size: Window size for the skip-gram model. For example, if
+                ``context_size=2`` and ``walk_length=5``, then for a random walk
+                ``[v0, v1, v2, v3, v4]``, the context for ``v2`` is
+                ``[v0, v1, v3, v4]``.
+            num_walks_per_node: Number of random walks to start at each node.
+            p: Return hyperparameter for Node2Vec.
+            q: In-out hyperparameter for Node2Vec.
+            num_negative_samples: Number of negative samples to use for skip-gram training.
+            num_nodes: Total number of nodes in the graph. If not provided, it is inferred from
+                ``hyperedge_index``.
+            graph_reduction_strategy: Strategy for reducing the hypergraph.
+            num_epochs: Number of epochs used to optimize Node2Vec embeddings.
+            learning_rate: Learning rate for embedding optimization.
+            batch_size: Batch size used by the random-walk loader.
+            sparse: Whether Node2Vec embeddings should use sparse gradients.
+            cache_dir: Optional directory to cache computed embeddings.
+                If ``None``, caching is disabled.
+            verbose: Whether to print verbose output during training.
+        """
         super().__init__(cache_dir=cache_dir)
-        self.embedding_dim = num_features
-        self.walk_length = walk_length
-        self.context_size = context_size
-        self.num_walks_per_node = num_walks_per_node
-        self.p = p
-        self.q = q
-        self.num_negative_samples = num_negative_samples
-        self.num_nodes = num_nodes
-        self.graph_reduction_strategy = graph_reduction_strategy
-        self.num_epochs = num_epochs
-        self.learning_rate = learning_rate
-        self.batch_size = batch_size
-        self.sparse = sparse
-        self.verbose = verbose
+        self.embedding_dim: int = num_features
+        self.walk_length: int = walk_length
+        self.context_size: int = context_size
+        self.num_walks_per_node: int = num_walks_per_node
+        self.p: float = p
+        self.q: float = q
+        self.num_negative_samples: int = num_negative_samples
+        self.num_nodes: int = num_nodes
+        self.graph_reduction_strategy: Literal["clique_expansion"] = graph_reduction_strategy
+        self.num_epochs: int = num_epochs
+        self.learning_rate: float = learning_rate
+        self.batch_size: int = batch_size
+        self.sparse: bool = sparse
+        self.verbose: bool = verbose
 
         self.__validate()
 
@@ -586,6 +672,12 @@ class Node2VecEnricher(NodeEnricher):
         return x.detach().to(device)
 
     def __validate(self) -> None:
+        """
+        Validate Node2Vec enrichment configuration.
+
+        Raises:
+            ValueError: If any configuration value is outside its supported range.
+        """
         validate_is_positive("num_features", self.embedding_dim)
         validate_is_positive("walk_length", self.walk_length)
         validate_is_positive("context_size", self.context_size)
@@ -613,16 +705,13 @@ class LaplacianPositionalEncodingEnricher(NodeEnricher):
     Enrich node features with Laplacian Positional Encodings computed from the symmetric normalized
     Laplacian of the clique expansion of the hypergraph.
 
-    Args:
+    Attributes:
         num_features: Number of positional encoding features to generate for each node.
         num_nodes: Total number of nodes in the graph. If not provided, it will be inferred
-            from the hyperedge_index.
-            This is only needed if the hyperedge_index does not include all nodes
-            (e.g., some isolated nodes are missing).
-            Another instance is when the setting is transductive and the hyperedge index
-            contains some hyperedges
-            that do not contain all the nodes in the node space.
-        cache_dir: Optional directory to cache computed features. If ``None``, caching is disabled.
+            from ``hyperedge_index``. This is only needed if ``hyperedge_index`` does not include
+            all nodes (e.g., some isolated nodes are missing). Another instance is when the setting
+            is transductive and ``hyperedge_index`` contains some hyperedges that do not contain
+            all the nodes in the node space.
     """
 
     def __init__(
@@ -631,13 +720,26 @@ class LaplacianPositionalEncodingEnricher(NodeEnricher):
         num_nodes: int = 0,
         cache_dir: str | None = None,
     ):
+        """
+        Initialize the Laplacian positional encoding enricher.
+
+        Args:
+            num_features: Number of positional encoding features to generate for each node.
+            num_nodes: Total number of nodes in the graph.
+                If not provided, it is inferred from ``hyperedge_index``.
+            cache_dir: Optional directory to cache computed features.
+                If ``None``, caching is disabled.
+
+        Raises:
+            ValueError: If ``num_features`` or ``num_nodes`` is invalid.
+        """
         super().__init__(cache_dir=cache_dir)
 
         validate_is_positive("num_features", num_features)
         validate_is_non_negative("num_nodes", num_nodes)
 
-        self.num_features = num_features
-        self.num_nodes = num_nodes
+        self.num_features: int = num_features
+        self.num_nodes: int = num_nodes
 
     def enrich(self, hyperedge_index: Tensor) -> Tensor:
         """
@@ -707,23 +809,6 @@ class LaplacianPositionalEncodingEnricher(NodeEnricher):
 class VilLainEnricher(_VilLainTrainer, NodeEnricher):
     """
     Enrich node features with VilLain embeddings learned from hypergraph topology.
-
-    Args:
-        num_features: Dimensionality of the node embeddings to generate.
-        num_nodes: Total number of nodes, including isolated nodes that do not appear
-            in ``hyperedge_index``.
-        num_hyperedges: Total number of hyperedges, including empty hyperedges that
-            do not appear in ``hyperedge_index``.
-        labels_per_subspace: Number of virtual labels per subspace. Defaults to ``2``.
-        training_steps: Propagation steps used for VilLain self-supervised loss. Defaults to ``4``.
-        generation_steps: Propagation steps averaged for final embeddings. Defaults to ``100``.
-        tau: Gumbel-Softmax temperature. Defaults to ``1.0``.
-        eps: Numerical stability constant. Defaults to ``1e-10``.
-        num_epochs: Number of epochs used to optimize VilLain embeddings. Defaults to ``5``.
-        learning_rate: Learning rate for embedding optimization. Defaults to ``0.01``.
-        weight_decay: Weight decay for the optimizer. Defaults to ``0.0``.
-        cache_dir: Optional directory to cache computed features. If ``None``, caching is disabled.
-        verbose: Whether to print verbose output during training. Defaults to ``False``.
     """
 
     def __init__(
@@ -742,6 +827,27 @@ class VilLainEnricher(_VilLainTrainer, NodeEnricher):
         cache_dir: str | None = None,
         verbose: bool = False,
     ):
+        """
+        Initialize the VilLain node feature enricher.
+
+        Args:
+            num_features: Dimensionality of the node embeddings to generate.
+            num_nodes: Total number of nodes, including isolated nodes missing
+                from ``hyperedge_index``.
+            num_hyperedges: Total number of hyperedges, including empty hyperedges missing
+                from ``hyperedge_index``.
+            labels_per_subspace: Number of virtual labels per subspace.
+            training_steps: Propagation steps used for VilLain self-supervised loss.
+            generation_steps: Propagation steps averaged for final embeddings.
+            tau: Gumbel-Softmax temperature.
+            eps: Numerical stability constant.
+            num_epochs: Number of epochs used to optimize VilLain embeddings.
+            learning_rate: Learning rate for embedding optimization.
+            weight_decay: Weight decay for the optimizer.
+            cache_dir: Optional directory to cache computed features. If ``None``,
+                caching is disabled.
+            verbose: Whether to print verbose output during training.
+        """
         NodeEnricher.__init__(self, cache_dir=cache_dir)
         _VilLainTrainer.__init__(
             self,

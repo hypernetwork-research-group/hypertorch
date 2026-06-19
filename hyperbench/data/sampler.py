@@ -7,6 +7,10 @@ from hyperbench.types import HData
 
 
 class SamplingStrategy(Enum):
+    """
+    Sampling strategies supported by datasets.
+    """
+
     NODE = "node"
     HYPEREDGE = "hyperedge"
 
@@ -27,6 +31,9 @@ class BaseSampler(ABC):
 
         Returns:
             hdata: A new HData instance containing only the sampled items and their associated data.
+
+        Raises:
+            NotImplementedError: If the method is not implemented by a subclass.
         """
         raise NotImplementedError("Subclasses must implement the sample method.")
 
@@ -37,6 +44,9 @@ class BaseSampler(ABC):
 
         Args:
             hdata: The HData to query for the number of sampleable items.
+
+        Raises:
+            NotImplementedError: If the method is not implemented by a subclass.
         """
         raise NotImplementedError("Subclasses must implement the len method.")
 
@@ -126,6 +136,10 @@ class BaseSampler(ABC):
 
 
 class HyperedgeSampler(BaseSampler):
+    """
+    Sampler that selects hyperedges and their incident nodes.
+    """
+
     def sample(self, index: int | list[int], hdata: HData) -> HData:
         """
         Sample hyperedges by their IDs and return the sub-hypergraph containing only those
@@ -191,6 +205,10 @@ class HyperedgeSampler(BaseSampler):
 
 
 class NodeSampler(BaseSampler):
+    """
+    Sampler that selects nodes and their incident hyperedges.
+    """
+
     def sample(self, index: int | list[int], hdata: HData) -> HData:
         """
         Sample nodes by their IDs and return the sub-hypergraph containing only those nodes and

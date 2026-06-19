@@ -24,7 +24,7 @@ class HIFHypergraph:
     A hypergraph data structure that supports directed/undirected hyperedges with incidence-based
     representation.
 
-    Args:
+    Attributes:
         network_type: The type of hypergraph, which can be "asc" (or "directed") for
             directed hyperedges, or "undirected" for undirected hyperedges.
         metadata: Optional dictionary of metadata about the hypergraph.
@@ -44,14 +44,34 @@ class HIFHypergraph:
         nodes: list[dict[str, Any]] | None = None,
         hyperedges: list[dict[str, Any]] | None = None,
     ):
-        self.network_type = network_type
-        self.metadata = metadata if metadata is not None else {}
-        self.incidences = incidences if incidences is not None else []
-        self.nodes = nodes if nodes is not None else []
-        self.hyperedges = hyperedges if hyperedges is not None else []
+        """
+        Initialize the HIF hypergraph.
+
+        Args:
+            network_type: The type of hypergraph, which can be "asc" (or "directed") for
+                directed hyperedges, or "undirected" for undirected hyperedges.
+            metadata: Optional dictionary of metadata about the hypergraph.
+            incidences: A list of incidences, where each incidence is a dictionary with keys
+                "node" and "edge" representing the relationship between a node and a hyperedge.
+            nodes: A list of node dictionaries, where each dictionary contains information about
+                a node (e.g., id, features).
+            hyperedges: A list of edge dictionaries, where each dictionary contains information
+                about a hyperedge (e.g., id, features).
+        """
+        self.network_type: Literal["asc", "directed", "undirected"] | None = network_type
+        self.metadata: dict[str, Any] = metadata if metadata is not None else {}
+        self.incidences: list[dict[str, Any]] = incidences if incidences is not None else []
+        self.nodes: list[dict[str, Any]] = nodes if nodes is not None else []
+        self.hyperedges: list[dict[str, Any]] = hyperedges if hyperedges is not None else []
 
     @classmethod
     def empty(cls) -> HIFHypergraph:
+        """
+        Create an empty undirected HIF hypergraph.
+
+        Returns:
+            hypergraph: Empty HIF hypergraph.
+        """
         return cls(
             network_type="undirected",
             nodes=[],
@@ -211,12 +231,18 @@ class Hypergraph:
     """
     A simple hypergraph data structure using edge list representation.
 
-    Args:
+    Attributes:
         hyperedges: A list of hyperedges, where each hyperedge is represented as a list of node IDs.
     """
 
     def __init__(self, hyperedges: list[list[int]]):
-        self.hyperedges = hyperedges
+        """
+        Initialize the hypergraph.
+
+        Args:
+            hyperedges: List of hyperedges represented as lists of node IDs.
+        """
+        self.hyperedges: list[list[int]] = hyperedges
 
     @property
     def num_nodes(self) -> int:
@@ -414,19 +440,22 @@ class HyperedgeIndex:
         ...                    [0, 0, 0, 1]]
 
         This represents two hyperedges:
-            - Hyperedge 0 connects nodes 0, 1, and 2.
-            - Hyperedge 1 connects node 0.
+        >>> - Hyperedge 0 connects nodes 0, 1, and 2.
+        ... - Hyperedge 1 connects node 0.
 
         The number of nodes in this hypergraph is 3 (nodes 0, 1, and 2).
         The number of hyperedges is 2 (hyperedges 0 and 1).
-
-    Args:
-        hyperedge_index: A tensor of shape ``(2, num_incidences)`` representing hyperedges,
-            where each column is (node, hyperedge).
     """
 
     def __init__(self, hyperedge_index: Tensor):
-        self.__hyperedge_index = hyperedge_index
+        """
+        Initialize the hyperedge index wrapper.
+
+        Args:
+            hyperedge_index: Tensor of shape ``(2, num_incidences)`` representing hyperedges,
+                where each column is ``(node, hyperedge)``.
+        """
+        self.__hyperedge_index: Tensor = hyperedge_index
 
     @property
     def all_node_ids(self) -> Tensor:
@@ -530,6 +559,7 @@ class HyperedgeIndex:
         Args:
             num_nodes: Total number of nodes to include in the adjacency list.
                 If ``None``, inferred from the unique node IDs in ``hyperedge_index``.
+                 Defaults to ``None``.
 
         Returns:
             adjacency: A list where ``adjacency[node_id]`` is the set of
@@ -571,6 +601,7 @@ class HyperedgeIndex:
         Args:
             num_nodes: Total number of nodes. If ``None``, inferred from hyperedge index.
             num_hyperedges: Total number of hyperedges. If ``None``, inferred from hyperedge index.
+                Defaults to ``None``.
 
         Returns:
             incidence_matrix: The sparse incidence matrix H of
@@ -610,6 +641,7 @@ class HyperedgeIndex:
                 shape ``(num_nodes, num_hyperedges)``.
             power: Exponent applied to node degrees before placing them on the diagonal.
             num_nodes: Total number of nodes. If ``None``, inferred from hyperedge index.
+                Defaults to ``None``.
 
         Returns:
             degree_matrix: The sparse diagonal matrix of shape ``(num_nodes, num_nodes)``.
@@ -657,6 +689,7 @@ class HyperedgeIndex:
             incidence_matrix: The sparse incidence matrix H of
                 shape ``(num_nodes, num_hyperedges)``.
             num_nodes: Total number of nodes. If ``None``, inferred from hyperedge index.
+                Defaults to ``None``.
 
         Returns:
             degree_matrix: The sparse diagonal matrix `D_n^-1` of shape ``(num_nodes, num_nodes)``.
@@ -691,6 +724,7 @@ class HyperedgeIndex:
             incidence_matrix: The sparse incidence matrix H of
                 shape ``(num_nodes, num_hyperedges)``.
             num_nodes: Total number of nodes. If ``None``, inferred from hyperedge index.
+                Defaults to ``None``.
 
         Returns:
             degree_matrix: The sparse diagonal matrix `D_n^-1/2`
@@ -726,6 +760,7 @@ class HyperedgeIndex:
             incidence_matrix: The sparse incidence matrix H of
                 shape ``(num_nodes, num_hyperedges)``.
             num_hyperedges: Total number of hyperedges. If ``None``, inferred from hyperedge index.
+                Defaults to ``None``.
 
         Returns:
             degree_matrix: The sparse diagonal matrix `D_e^-1` of
@@ -796,6 +831,7 @@ class HyperedgeIndex:
         Args:
             num_nodes: Total number of nodes. If ``None``, inferred from hyperedge index.
             num_hyperedges: Total number of hyperedges. If ``None``, inferred from hyperedge index.
+                Defaults to ``None``.
 
         Returns:
             laplacian: The sparse HGNN Laplacian matrix of shape ``(num_nodes, num_nodes)``.
@@ -843,7 +879,8 @@ class HyperedgeIndex:
 
         Args:
             num_nodes: Total number of nodes. If ``None``, inferred from hyperedge index.
-            num_hyperedges: Total number of hyperedges. If ``None``, inferred from hyperedge index.
+            num_hyperedges: Total number of hyperedges.
+                If ``None``, inferred from hyperedge index. Defaults to ``None``.
 
         Returns:
             laplacian: The sparse HGNN+ smoothing matrix of shape ``(num_nodes, num_nodes)``.
@@ -882,6 +919,9 @@ class HyperedgeIndex:
 
         Returns:
             edge_index: The edge index of the reduced graph. Size ``(2, num_edges)``.
+
+        Raises:
+            ValueError: If ``strategy`` is unsupported.
         """
         match strategy:
             case "clique_expansion":
@@ -910,6 +950,7 @@ class HyperedgeIndex:
         Args:
             num_nodes: Total number of nodes. If ``None``, inferred from hyperedge index.
             num_hyperedges: Total number of hyperedges. If ``None``, inferred from hyperedge index.
+                Defaults to ``None``.
 
         Returns:
             edge_index: The edge index of the clique-expanded graph. Size ``(2, |E'|)``.
@@ -1107,11 +1148,11 @@ class HyperedgeIndex:
             node_ids_to_rebase: Tensor of shape ``(num_nodes,)`` containing the original node IDs
                 that need to be rebased to 0-based format.
                 If ``None``, all node IDs in the hyperedge index will be rebased to 0-based format
-                based on their unique sorted order.
+                based on their unique sorted order. Defaults to ``None``.
             hyperedge_ids_to_rebase: Tensor of shape ``(num_hyperedges,)`` containing the original
                 hyperedge IDs that need to be rebased to 0-based format.
                 If ``None``, all hyperedge IDs in the hyperedge index will be rebased to
-                0-based format based on their unique sorted order.
+                0-based format based on their unique sorted order. Defaults to ``None``.
 
         Returns:
             hyperedge_index: A new `HyperedgeIndex` instance with the hyperedge index
@@ -1134,6 +1175,15 @@ class HyperedgeIndex:
         return self
 
     def __validate_num_hyperedges(self, num_hyperedges: int | None) -> None:
+        """
+        Validate that an explicit hyperedge count can contain the index.
+
+        Args:
+            num_hyperedges: Optional explicit number of hyperedges.
+
+        Raises:
+            ValueError: If ``num_hyperedges`` is negative or smaller than the maximum ID.
+        """
         if num_hyperedges is None:
             return
         validate_is_non_negative("num_hyperedges", num_hyperedges)
@@ -1149,6 +1199,15 @@ class HyperedgeIndex:
             )
 
     def __validate_num_nodes(self, num_nodes: int | None) -> None:
+        """
+        Validate that an explicit node count can contain the index.
+
+        Args:
+            num_nodes: Optional explicit number of nodes.
+
+        Raises:
+            ValueError: If ``num_nodes`` is negative or smaller than the maximum ID.
+        """
         if num_nodes is None:
             return
         validate_is_non_negative("num_nodes", num_nodes)
@@ -1164,6 +1223,17 @@ class HyperedgeIndex:
             )
 
     def __validate_degree_matrix_dimension(self, name: str, value: int, expected: int) -> None:
+        """
+        Validate a requested degree-matrix dimension.
+
+        Args:
+            name: Name of the dimension being validated.
+            value: Requested dimension value.
+            expected: Required dimension value.
+
+        Raises:
+            ValueError: If the value is negative or does not match the expected dimension.
+        """
         validate_is_non_negative(name, value)
         if value != expected:
             raise ValueError(

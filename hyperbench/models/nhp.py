@@ -38,14 +38,11 @@ class NHP(nn.Module):
         ... torch.Size([2])
 
     Attributes:
-        in_channels: Number of input features per node.
-        hidden_channels: Number of hidden units in the node embeddings.
-        activation_fn: Activation function to use after the linear transformations.
-            Defaults to ``nn.ReLU``.
-        activation_fn_kwargs: Keyword arguments for the activation function. Defaults to empty dict.
         aggregation: Method to aggregate the incidence embeddings into a hyperedge embedding.
-            Must be either "maxmin" or "mean". Defaults to "maxmin".
-        bias: Whether to include bias terms in the linear layers. Defaults to ``True``.
+        self_loop: Linear projection for the current node feature.
+        hyperedge_aware: Linear projection for neighboring node features in a hyperedge.
+        activation_fn: Activation module applied to node embeddings.
+        hyperedge_score: Linear scorer for hyperedge embeddings.
     """  # noqa: E501
 
     def __init__(
@@ -57,20 +54,34 @@ class NHP(nn.Module):
         aggregation: Literal["mean", "maxmin"] = "maxmin",
         bias: bool = True,
     ):
+        """
+        Initialize the NHP model.
+
+        Args:
+            in_channels: Number of input features per node.
+            hidden_channels: Number of hidden units in the node embeddings.
+            activation_fn: Activation function to use after the linear transformations.
+                Defaults to ``nn.ReLU``.
+            activation_fn_kwargs: Keyword arguments for the activation function.
+                Defaults to empty dict.
+            aggregation: Method to aggregate the incidence embeddings into a hyperedge embedding.
+                Must be either "maxmin" or "mean". Defaults to "maxmin".
+            bias: Whether to include bias terms in the linear layers. Defaults to ``True``.
+        """
         super().__init__()
 
         activation_fn = activation_fn if activation_fn is not None else nn.ReLU
         activation_fn_kwargs = activation_fn_kwargs if activation_fn_kwargs is not None else {}
 
-        self.aggregation = aggregation
+        self.aggregation: Literal["mean", "maxmin"] = aggregation
 
-        self.self_loop = nn.Linear(in_channels, hidden_channels, bias=bias)
+        self.self_loop: nn.Linear = nn.Linear(in_channels, hidden_channels, bias=bias)
         # GCN message passing is implemented through neighbor sum computation,
         # so one projection is enough for the hyperedge-aware term
-        self.hyperedge_aware = nn.Linear(in_channels, hidden_channels, bias=bias)
-        self.activation_fn = activation_fn(**activation_fn_kwargs)
+        self.hyperedge_aware: nn.Linear = nn.Linear(in_channels, hidden_channels, bias=bias)
+        self.activation_fn: nn.Module = activation_fn(**activation_fn_kwargs)
 
-        self.hyperedge_score = nn.Linear(hidden_channels, 1, bias=bias)
+        self.hyperedge_score: nn.Linear = nn.Linear(hidden_channels, 1, bias=bias)
 
     def forward(self, x: Tensor, hyperedge_index: Tensor) -> Tensor:
         """
@@ -82,6 +93,9 @@ class NHP(nn.Module):
 
         Returns:
             scores: Scores of shape ``(num_hyperedges,)``.
+
+        Raises:
+            ValueError: If ``aggregation`` is not supported.
         """
         if hyperedge_index.numel() == 0:
             return x.new_empty((0,))

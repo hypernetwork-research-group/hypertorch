@@ -31,6 +31,10 @@ class VilLain(nn.Module):
         generation_steps: Propagation steps averaged for final embeddings. Defaults to ``100``.
         tau: Gumbel-Softmax temperature. Defaults to ``1.0``.
         eps: Numerical stability constant. Defaults to ``1e-10``.
+        num_subspaces: Number of virtual-label subspaces.
+        raw_embedding_dim: Internal embedding dimension before truncation.
+        node_embedding: Trainable node virtual-label logits.
+        loss_fn: VilLain loss helper.
     """  # noqa: E501
 
     def __init__(
@@ -43,6 +47,25 @@ class VilLain(nn.Module):
         tau: float = 1.0,
         eps: float = 1e-10,
     ):
+        """
+        Initialize the VilLain model.
+
+        Args:
+            num_nodes: Total number of trainable nodes.
+            embedding_dim: Returned embedding dimension.
+                Defaults to ``128``.
+            labels_per_subspace: Number of virtual labels per subspace.
+                Defaults to ``2``.
+            training_steps: Propagation steps used for self-supervised loss.
+                Defaults to ``4``.
+            generation_steps: Propagation steps averaged for final embeddings.
+                Defaults to ``100``.
+            tau: Gumbel-Softmax temperature. Defaults to ``1.0``.
+            eps: Numerical stability constant. Defaults to ``1e-10``.
+
+        Raises:
+            ValueError: If any argument is outside its supported range.
+        """
         super().__init__()
         self.__validate_args(
             num_nodes=num_nodes,
@@ -54,21 +77,21 @@ class VilLain(nn.Module):
             eps=eps,
         )
 
-        self.num_nodes = num_nodes
-        self.embedding_dim = embedding_dim
-        self.labels_per_subspace = labels_per_subspace
-        self.training_steps = training_steps
-        self.generation_steps = generation_steps
-        self.tau = tau
-        self.eps = eps
+        self.num_nodes: int = num_nodes
+        self.embedding_dim: int = embedding_dim
+        self.labels_per_subspace: int = labels_per_subspace
+        self.training_steps: int = training_steps
+        self.generation_steps: int = generation_steps
+        self.tau: float = tau
+        self.eps: float = eps
 
-        self.num_subspaces = math.ceil(embedding_dim / labels_per_subspace)
-        self.raw_embedding_dim = self.num_subspaces * labels_per_subspace
-        self.node_embedding = nn.Parameter(
+        self.num_subspaces: int = math.ceil(embedding_dim / labels_per_subspace)
+        self.raw_embedding_dim: int = self.num_subspaces * labels_per_subspace
+        self.node_embedding: nn.Parameter = nn.Parameter(
             torch.empty(size=(self.num_nodes, self.raw_embedding_dim), dtype=torch.float)
         )
 
-        self.loss_fn = VilLainLoss(
+        self.loss_fn: VilLainLoss = VilLainLoss(
             num_subspaces=self.num_subspaces,
             labels_per_subspace=self.labels_per_subspace,
             eps=self.eps,
@@ -91,14 +114,13 @@ class VilLain(nn.Module):
         Args:
             hyperedge_index: Incidence tensor of shape ``(2, num_incidences)``.
             node_ids: Optional global node ids matching local node ids the embedding table in the
-                transductive setting.
-                Use this when a batch has rebased local node ids but the learned logits live in the
-                full transductive node table.
+                transductive setting. Use this when a batch has rebased local node ids but the
+                learned logits live in the full transductive node table.
                 This is needed as the model keeps an internal embedding table with a row for every
-                node in the global node space.
+                node in the global node space. Defaults to ``None``.
             num_hyperedges: Optional explicit hyperedge count used during node-to-hyperedge pooling
-                to preserve empty hyperedges.
-                If not provided, the hyperedge count is inferred from ``hyperedge_index``.
+                to preserve empty hyperedges. If not provided, the hyperedge count is inferred from
+                ``hyperedge_index``. Defaults to ``None``.
 
         Returns:
             total_loss: The combined loss scalar tensor to optimize.
@@ -127,10 +149,10 @@ class VilLain(nn.Module):
                 transductive setting. Use this when a batch has rebased local node ids but the
                 learned logits live in the full transductive node table.
                 This is needed as the model keeps an internal embedding table with a row for every
-                node in the global node space.
+                node in the global node space. Defaults to ``None``.
             num_hyperedges: Optional explicit hyperedge count used during node-to-hyperedge pooling
-                to preserve empty hyperedges.
-                If not provided, the hyperedge count is inferred from ``hyperedge_index``.
+                to preserve empty hyperedges. If not provided, the hyperedge count is inferred from
+                ``hyperedge_index``. Defaults to ``None``.
 
         Returns:
             total_loss: The combined loss scalar tensor to optimize.
@@ -176,10 +198,10 @@ class VilLain(nn.Module):
                 transductive setting. Use this when a batch has rebased local node ids but the
                 learned logits live in the full transductive node table.
                 This is needed as the model keeps an internal embedding table with a row for every
-                node in the global node space.
+                node in the global node space. Defaults to ``None``.
             num_hyperedges: Optional explicit hyperedge count used during node-to-hyperedge pooling
                 to preserve empty hyperedges. If not provided, the hyperedge count is inferred from
-                ``hyperedge_index``.
+                ``hyperedge_index``. Defaults to ``None``.
 
         Returns:
             hyperedge_embeddings: Hyperedge embeddings of shape ``(num_hyperedges, embedding_dim)``.
@@ -206,10 +228,10 @@ class VilLain(nn.Module):
                 transductive setting. Use this when a batch has rebased local node ids but the
                 learned logits live in the full transductive node table.
                 This is needed as the model keeps an internal embedding table with a row for every
-                node in the global node space.
+                node in the global node space. Defaults to ``None``.
             num_hyperedges: Optional explicit hyperedge count used during node-to-hyperedge pooling
                 to preserve empty hyperedges. If not provided, the hyperedge count is inferred from
-                ``hyperedge_index``.
+                ``hyperedge_index``. Defaults to ``None``.
 
         Returns:
             node_embeddings: Node embeddings of shape ``(num_local_nodes, embedding_dim)``.
@@ -377,6 +399,21 @@ class VilLain(nn.Module):
         tau: float,
         eps: float,
     ) -> None:
+        """
+        Validate VilLain constructor arguments.
+
+        Args:
+            num_nodes: Total number of trainable nodes.
+            embedding_dim: Returned embedding dimension.
+            labels_per_subspace: Number of virtual labels per subspace.
+            training_steps: Propagation steps used for self-supervised loss.
+            generation_steps: Propagation steps averaged for final embeddings.
+            tau: Gumbel-Softmax temperature.
+            eps: Numerical stability constant.
+
+        Raises:
+            ValueError: If any argument is outside its supported range.
+        """
         if num_nodes < 1:
             raise ValueError("num_nodes must be positive.")
         if embedding_dim < 1:

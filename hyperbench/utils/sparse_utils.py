@@ -22,6 +22,9 @@ def sparse_dropout(
     Returns:
         matrix: A new sparse matrix with the same shape as the input sparse matrix,
             but with some elements dropped out.
+
+    Raises:
+        ValueError: If ``dropout_prob`` is outside the range ``[0, 1]``.
     """
     device = sparse_tensor.device
 

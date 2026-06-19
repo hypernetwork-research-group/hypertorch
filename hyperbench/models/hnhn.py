@@ -13,14 +13,7 @@ class HNHN(nn.Module):
         - Reference implementation: [Code](https://deephypergraph.readthedocs.io/en/latest/_modules/dhg/models/hypergraphs/hnhn.html#HNHN).
 
     Attributes:
-        in_channels: The number of input channels.
-        hidden_channels: The number of hidden channels.
-        num_classes: The number of output channels.
-        bias: If set to ``False``, the layer will not learn the bias parameter.
-            Defaults to ``True``.
-        use_batch_normalization: If set to ``True``, layers will use batch normalization.
-            Defaults to ``False``.
-        drop_rate: Dropout ratio. Defaults to ``0.5``.
+        layers: Two stacked ``HNHNConv`` layers.
     """  # noqa: E501
 
     def __init__(
@@ -32,9 +25,22 @@ class HNHN(nn.Module):
         use_batch_normalization: bool = False,
         drop_rate: float = 0.5,
     ):
+        """
+        Initialize the HNHN model.
+
+        Args:
+            in_channels: Number of input channels.
+            hidden_channels: Number of hidden channels.
+            num_classes: Number of output channels.
+            bias: If set to ``False``, the layer will not learn the bias parameter.
+                Defaults to ``True``.
+            use_batch_normalization: If set to ``True``, layers will use batch normalization.
+                Defaults to ``False``.
+            drop_rate: Dropout ratio. Defaults to ``0.5``.
+        """
         super().__init__()
 
-        self.layers = nn.ModuleList(
+        self.layers: nn.ModuleList = nn.ModuleList(
             [
                 HNHNConv(
                     in_channels=in_channels,

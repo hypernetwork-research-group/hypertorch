@@ -15,22 +15,11 @@ class HyperGCN(nn.Module):
         - Reference implementation: [source](https://deephypergraph.readthedocs.io/en/latest/_modules/dhg/models/hypergraphs/hypergcn.html#HyperGCN).
 
     Attributes:
-        in_channels: The number of input channels.
-        hidden_channels: The number of hidden channels.
-        num_classes: The number of classes of the classification task as HyperGCB is a
-            node classification model.
-        bias: If set to ``False``, the layer will not learn the bias parameter.
-            Defaults to ``True``.
-        use_batch_normalization: If set to ``True``, layers will use batch normalization.
-            Defaults to ``False``.
-        drop_rate: Dropout ratio. Defaults to ``0.5``.
-        use_mediator: Whether to use mediator to transform the hyperedges to edges in the graph.
-            Defaults to ``False``.
-        fast: If set to ``True``, the transformed graph structure will be computed once from
-            the input hypergraph and vertex features, and cached for future use.
-            Defaults to ``True``.
-        seed: Optional random seed for the random reduction of hyperedges to edges.
-            Defaults to ``None``.
+        fast: Whether to cache the reduced graph smoothing matrix.
+        use_mediator: Whether to use mediator edges during hypergraph reduction.
+        cached_gcn_laplacian_matrix: Cached normalized GCN Laplacian matrix.
+        seed: Optional random seed for hypergraph reduction.
+        layers: Two stacked ``HyperGCNConv`` layers.
     """  # noqa: E501
 
     def __init__(
@@ -45,13 +34,34 @@ class HyperGCN(nn.Module):
         fast: bool = True,
         seed: int | None = None,
     ):
-        super().__init__()
-        self.fast = fast
-        self.use_mediator = use_mediator
-        self.cached_gcn_laplacian_matrix: Tensor | None = None
-        self.seed = seed
+        """
+        Initialize the HyperGCN model.
 
-        self.layers = nn.ModuleList(
+        Args:
+            in_channels: The number of input channels.
+            hidden_channels: The number of hidden channels.
+            num_classes: The number of classes of the classification task as HyperGCB is a
+                node classification model.
+            bias: If set to ``False``, the layer will not learn the bias parameter.
+                Defaults to ``True``.
+            use_batch_normalization: If set to ``True``, layers will use batch normalization.
+                Defaults to ``False``.
+            drop_rate: Dropout ratio. Defaults to ``0.5``.
+            use_mediator: Whether to use mediator to transform the hyperedges to edges in the graph.
+                Defaults to ``False``.
+            fast: If set to ``True``, the transformed graph structure will be computed once from
+                the input hypergraph and vertex features, and cached for future use.
+                Defaults to ``True``.
+            seed: Optional random seed for the random reduction of hyperedges to edges.
+                Defaults to ``None``.
+        """
+        super().__init__()
+        self.fast: bool = fast
+        self.use_mediator: bool = use_mediator
+        self.cached_gcn_laplacian_matrix: Tensor | None = None
+        self.seed: int | None = seed
+
+        self.layers: nn.ModuleList = nn.ModuleList(
             [
                 HyperGCNConv(
                     in_channels=in_channels,

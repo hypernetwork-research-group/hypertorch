@@ -43,6 +43,7 @@ class HIFProcessor:
             attrs: Dictionary of attributes
             attr_keys: Optional list of attribute keys to encode. If provided,
                 ensures consistent ordering and fill missing with ``0.0``.
+                Defaults to ``None``.
 
         Returns:
             attrs: Tensor of numeric attribute values
@@ -70,6 +71,10 @@ class HIFProcessor:
 
         Returns:
             hdata: The processed hypergraph data.
+
+        Raises:
+            ValueError: If HIF node IDs are not unique or an incidence references an
+                undeclared node ID.
         """
         num_nodes = len(hypergraph.nodes)
         x = cls.__process_x(hypergraph, num_nodes)
@@ -163,6 +168,17 @@ class HIFProcessor:
         hyperedge_id_to_idx: dict[Any, int],
         num_hyperedges: int,
     ) -> Tensor | None:
+        """
+        Build the hyperedge attribute matrix from HIF hyperedge attributes.
+
+        Args:
+            hypergraph: HIF hypergraph to process.
+            hyperedge_id_to_idx: Mapping from HIF hyperedge IDs to contiguous indices.
+            num_hyperedges: Number of hyperedges in the processed data.
+
+        Returns:
+            hyperedge_attr: Hyperedge attribute tensor, or ``None`` when no attributes exist.
+        """
         hyperedge_attr = None  # shape [num_hyperedges, num_hyperedge_attributes]
         has_hyperedges = hypergraph.hyperedges is not None and len(hypergraph.hyperedges) > 0
         has_any_hyperedge_attrs = has_hyperedges and any(
@@ -196,6 +212,16 @@ class HIFProcessor:
 
     @classmethod
     def __process_x(cls, hypergraph: HIFHypergraph, num_nodes: int) -> Tensor:
+        """
+        Build the node feature matrix from HIF node attributes.
+
+        Args:
+            hypergraph: HIF hypergraph to process.
+            num_nodes: Number of nodes in the processed data.
+
+        Returns:
+            x: Node feature matrix.
+        """
         # Collect all attribute keys to have tensors of same size
         node_attr_keys = cls.__collect_attr_keys(
             [node.get("attrs", {}) for node in hypergraph.nodes]
@@ -222,6 +248,17 @@ class HIFProcessor:
         hyperedge_id_to_idx: dict[Any, int],
         num_hyperedges: int,
     ) -> Tensor | None:
+        """
+        Build hyperedge weights from HIF hyperedge attributes.
+
+        Args:
+            hypergraph: HIF hypergraph to process.
+            hyperedge_id_to_idx: Mapping from HIF hyperedge IDs to contiguous indices.
+            num_hyperedges: Number of hyperedges in the processed data.
+
+        Returns:
+            hyperedge_weights: Hyperedge weight tensor, or ``None`` when no edge attributes exist.
+        """
         has_hyperedges = hypergraph.hyperedges is not None and len(hypergraph.hyperedges) > 0
         has_any_hyperedge_attrs = has_hyperedges and any(
             "attrs" in edge for edge in hypergraph.hyperedges
@@ -263,6 +300,10 @@ class HIFLoader:
 
         Returns:
             hdata: The loaded hypergraph object.
+
+        Raises:
+            ValueError: If the URL cannot be downloaded, has an unsupported file format,
+                or has an unexpected filename format.
         """
         url = validate_http_url(url)
 
@@ -316,6 +357,9 @@ class HIFLoader:
 
         Returns:
             hdata: The loaded hypergraph object.
+
+        Raises:
+            ValueError: If ``filepath`` does not exist or has an unsupported file format.
         """
         if not os.path.exists(filepath):
             raise ValueError(f"File {filepath!r} does not exist.")
@@ -338,6 +382,21 @@ class HIFLoader:
         hf_sha: str | None = None,
         save_on_disk: bool = False,
     ) -> HData:
+        """
+        Load a supported dataset by name.
+
+        Args:
+            dataset_name: Name of the dataset to load.
+            hf_sha: Optional pinned Hugging Face revision used as a fallback source.
+            save_on_disk: Whether to cache the downloaded compressed dataset file.
+                Defaults to ``False``.
+
+        Returns:
+            hdata: Loaded hypergraph data.
+
+        Raises:
+            ValueError: If the dataset cannot be downloaded or parsed.
+        """
         cache_dir = get_cache_dir()
         output_dir = os.path.join(cache_dir, "datasets")
         zst_filename = os.path.join(output_dir, f"{dataset_name}.json.zst")
@@ -420,6 +479,19 @@ class HIFLoader:
 
     @classmethod
     def __process_hif_data(cls, hif_data: dict[str, Any], dataset_name: str | None = None) -> HData:
+        """
+        Validate and process parsed HIF data.
+
+        Args:
+            hif_data: Parsed HIF JSON data.
+            dataset_name: Optional dataset name used in validation errors.
+
+        Returns:
+            hdata: Processed hypergraph data.
+
+        Raises:
+            ValueError: If the data is not HIF-compliant.
+        """
         if not validate_hif_data(hif_data):
             raise ValueError(f"Dataset {dataset_name or ''} is not HIF-compliant.")
 

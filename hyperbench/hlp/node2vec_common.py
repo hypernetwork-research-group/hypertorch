@@ -140,6 +140,18 @@ def _get_walk_loader(
     batch_size: int,
     state: Node2VecWalkLoaderState,
 ) -> DataLoader | None:
+    """
+    Return or initialize the Node2Vec walk loader for joint mode.
+
+    Args:
+        mode: Node2Vec training mode.
+        encoder: Optional encoder module.
+        batch_size: Random-walk loader batch size.
+        state: Mutable walk-loader state.
+
+    Returns:
+        loader: Walk loader in joint mode, otherwise ``None``.
+    """
     if mode != NODE2VEC_JOINT_MODE:
         return None
 
@@ -158,7 +170,22 @@ def _next_walk_batch(
     encoder: nn.Module | None,
     batch_size: int,
     state: Node2VecWalkLoaderState,
-):
+) -> tuple[Tensor, Tensor]:
+    """
+    Return the next Node2Vec random-walk batch.
+
+    Args:
+        mode: Node2Vec training mode.
+        encoder: Optional encoder module.
+        batch_size: Random-walk loader batch size.
+        state: Mutable walk-loader state.
+
+    Returns:
+        batch: Positive and negative random-walk tensors.
+
+    Raises:
+        ValueError: If the joint-mode walk loader cannot be initialized.
+    """
     _get_walk_loader(mode, encoder, batch_size, state)
     if state.walk_loader is None or state.cached_walk_loader_iterator is None:
         raise ValueError("Joint Node2Vec mode could not initialize the walk loader.")
@@ -174,6 +201,20 @@ def _to_node2vec_edge_index(
     node2vec_config: Node2VecHlpConfig,
     mode: Node2VecMode,
 ) -> tuple[Tensor, int]:
+    """
+    Build the Node2Vec graph edge index from a training hypergraph.
+
+    Args:
+        node2vec_config: Node2Vec HLP configuration.
+        mode: Node2Vec training mode.
+
+    Returns:
+        edge_index: Reduced graph edge index without self-loops.
+        num_nodes: Number of nodes in the stable node space.
+
+    Raises:
+        ValueError: If ``train_hyperedge_index`` is missing.
+    """
     if "train_hyperedge_index" not in node2vec_config:
         raise ValueError(f"Node2Vec in mode {mode} requires train_hyperedge_index.")
 
@@ -187,6 +228,16 @@ def _to_node2vec_edge_index(
 
 
 def _to_gcn_config(embedding_dim: int, gcn_hlp_config: Node2VecGCNHlpConfig) -> GCNConfig:
+    """
+    Convert an HLP GCN config into a model GCN config.
+
+    Args:
+        embedding_dim: Node2Vec embedding dimension used as GCN input size.
+        gcn_hlp_config: HLP-side GCN configuration.
+
+    Returns:
+        gcn_config: Model-side GCN configuration.
+    """
     gcn_config: GCNConfig = {
         "in_channels": embedding_dim,
         "out_channels": gcn_hlp_config["out_channels"],
@@ -207,6 +258,19 @@ def _to_gcn_config(embedding_dim: int, gcn_hlp_config: Node2VecGCNHlpConfig) -> 
 
 
 def _to_node2vec_encoder(encoder: nn.Module | None, mode: Node2VecMode) -> Node2VecEncoder:
+    """
+    Validate and return a Node2Vec-compatible encoder.
+
+    Args:
+        encoder: Optional encoder module.
+        mode: Node2Vec training mode used in error messages.
+
+    Returns:
+        encoder: Node2Vec or Node2VecGCN encoder.
+
+    Raises:
+        ValueError: If the encoder is missing or incompatible.
+    """
     if encoder is None or not isinstance(encoder, (Node2Vec, Node2VecGCN)):
         raise ValueError(
             f"Node2Vec in mode {mode} requires a Node2Vec encoder, but none was provided."
@@ -219,6 +283,17 @@ def _validate_global_node_ids(
     global_node_ids: Tensor | None,
     mode: Node2VecMode,
 ) -> None:
+    """
+    Validate global node IDs used to index a Node2Vec embedding table.
+
+    Args:
+        num_embeddings: Number of rows in the Node2Vec embedding table.
+        global_node_ids: Optional global node IDs from a batch.
+        mode: Node2Vec training mode used in error messages.
+
+    Raises:
+        ValueError: If IDs are missing or outside the embedding table range.
+    """
     if global_node_ids is None or len(global_node_ids) < 1:
         raise ValueError(f"Node2Vec in mode {mode} requires batch.global_node_ids.")
 
@@ -236,6 +311,16 @@ def _validate_global_node_ids(
 
 
 def _validate_walk_length_and_context_size(walk_length: int, context_size: int) -> None:
+    """
+    Validate Node2Vec walk and context lengths.
+
+    Args:
+        walk_length: Random walk length.
+        context_size: Skip-gram context size.
+
+    Raises:
+        ValueError: If ``walk_length`` is smaller than ``context_size``.
+    """
     if walk_length < context_size:
         raise ValueError(
             f"Expected walk_length >= context_size, got "

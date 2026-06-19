@@ -51,10 +51,10 @@ class DefaultDatasetSplitter(Splitter["Dataset", tuple[list["Dataset"], list[flo
     """
     Split a dataset by hyperedges and materialize dataset partitions.
 
-    Args:
+    Attributes:
         node_space_setting: Whether to preserve full or local node spaces.
         shuffle: Whether to shuffle hyperedges before splitting.
-        seed: Optional random seed for reproducibility.
+        seed: Random seed used when shuffling.
     """
 
     def __init__(
@@ -63,9 +63,17 @@ class DefaultDatasetSplitter(Splitter["Dataset", tuple[list["Dataset"], list[flo
         shuffle: bool | None = False,
         seed: int | None = None,
     ) -> None:
-        self.node_space_setting = node_space_setting
-        self.shuffle = shuffle
-        self.seed = seed
+        """
+        Initialize the dataset splitter.
+
+        Args:
+            node_space_setting: Whether to preserve full or local node spaces.
+            shuffle: Whether to shuffle hyperedges before splitting.
+            seed: Optional random seed for reproducibility.
+        """
+        self.node_space_setting: NodeSpaceSetting = node_space_setting
+        self.shuffle: bool | None = shuffle
+        self.seed: int | None = seed
 
         validate_node_space_setting(self.node_space_setting)
 
@@ -151,6 +159,16 @@ class DefaultDatasetSplitter(Splitter["Dataset", tuple[list["Dataset"], list[flo
         return split_datasets, final_ratios
 
     def __validate_train_split_idx(self, train_split_idx: int, ratios: list[float]) -> None:
+        """
+        Validate the split index used as the transductive train split.
+
+        Args:
+            train_split_idx: Index of the split treated as the train split.
+            ratios: Requested split ratios.
+
+        Raises:
+            ValueError: If the index is incompatible with the node-space setting or ratios.
+        """
         if self.node_space_setting != "transductive" and train_split_idx != 0:
             raise ValueError(
                 f"'train_split_idx' is only relevant when 'node_space_setting' is 'transductive', "
@@ -165,7 +183,7 @@ class DefaultHDataSplitter(Splitter["HData", "HData"]):
     """
     Materialize an `HData` split from explicit hyperedge IDs.
 
-    Args:
+    Attributes:
         node_space_setting: Whether to preserve the full node space in the split.
     """
 
@@ -173,7 +191,13 @@ class DefaultHDataSplitter(Splitter["HData", "HData"]):
         self,
         node_space_setting: NodeSpaceSetting = "transductive",
     ) -> None:
-        self.node_space_setting = node_space_setting
+        """
+        Initialize the HData splitter.
+
+        Args:
+            node_space_setting: Whether to preserve the full node space in the split.
+        """
+        self.node_space_setting: NodeSpaceSetting = node_space_setting
         validate_node_space_setting(self.node_space_setting)
 
     def split(self, to_split: HData, **kwargs: Any) -> HData:
@@ -251,12 +275,13 @@ class DefaultHDataSplitter(Splitter["HData", "HData"]):
 
 class HyperedgeIDSplitter(Splitter["Tensor", tuple[list["Tensor"], list[float]]]):
     """
-    Initialize a splitter for hyperedge-ID based dataset partitioning.
+    Splitter for hyperedge-ID based dataset partitioning.
 
-    Args:
+    Attributes:
         hyperedge_index: Hypergraph incidence index whose node coverage drives the split logic.
         num_nodes: Number of nodes in the source hypergraph.
         num_hyperedges: Number of hyperedges in the source hypergraph.
+        device: Device of the source hyperedge index.
     """
 
     def __init__(
@@ -265,10 +290,18 @@ class HyperedgeIDSplitter(Splitter["Tensor", tuple[list["Tensor"], list[float]]]
         num_nodes: int,
         num_hyperedges: int,
     ) -> None:
-        self.hyperedge_index = hyperedge_index
-        self.num_nodes = num_nodes
-        self.num_hyperedges = num_hyperedges
-        self.device = hyperedge_index.device
+        """
+        Initialize the hyperedge ID splitter.
+
+        Args:
+            hyperedge_index: Hypergraph incidence index whose node coverage drives split logic.
+            num_nodes: Number of nodes in the source hypergraph.
+            num_hyperedges: Number of hyperedges in the source hypergraph.
+        """
+        self.hyperedge_index: Tensor = hyperedge_index
+        self.num_nodes: int = num_nodes
+        self.num_hyperedges: int = num_hyperedges
+        self.device: torch.device = hyperedge_index.device
 
     def ensure_split_covers_all_nodes(
         self,
@@ -283,7 +316,7 @@ class HyperedgeIDSplitter(Splitter["Tensor", tuple[list["Tensor"], list[float]]]
 
         Args:
             hyperedge_ids_by_split: Hyperedge IDs assigned to each split.
-            split_idx: Index of the split that must cover the full node space.
+            split_idx: Index of the split that must cover the full node space. Defaults to ``0``.
 
         Returns:
             hyperedge_ids_by_split: The updated hyperedge IDs for each split.

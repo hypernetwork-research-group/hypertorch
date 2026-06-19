@@ -12,18 +12,12 @@ class MarkdownTableLogger(Logger):
     A Lightning Logger that accumulates metrics and writes a markdown comparison table.
 
     Multiple instances (one per model) share a class-level store keyed by experiment_name.
-    Every time finalize() is called (after fit() or test() for each model), the current
+    Every time ``finalize()`` is called (after ``fit()`` or ``test()`` for each model), the current
     state of all accumulated metrics is written to a markdown file. The last model to
     finalize produces the most complete table.
 
     This means the file is progressively updated as models finish training/testing,
     so partial results are available while running.
-
-    Attributes:
-        save_dir: Base directory where the comparison/ subfolder will be created.
-        model_name: The model's full name (e.g., "mlp:mean").
-        experiment_name: Shared key that groups all models in the same experiment.
-        precision: Decimal places for metric values in the table.
     """
 
     # Class-level shared store: {experiment_name: {model_name: {metric_name: value}}}
@@ -36,23 +30,47 @@ class MarkdownTableLogger(Logger):
         experiment_name: str,
         precision: int = 4,
     ) -> None:
+        """
+        Initialize the markdown table logger.
+
+        Args:
+            save_dir: Base directory where comparison files are written.
+            model_name: Full model name to use as the table row label.
+            experiment_name: Shared key grouping models in the same experiment.
+            precision: Decimal places for metric values. Default is ``4``.
+
+        Raises:
+            ValueError: If ``precision`` is negative.
+        """
         super().__init__()
         validate_is_non_negative("precision", precision)
 
-        self.__save_dir = save_dir
-        self.__model_name = model_name
-        self.__experiment_name = experiment_name
-        self.__precision = precision
+        self.__save_dir: str | Path = save_dir
+        self.__model_name: str = model_name
+        self.__experiment_name: str = experiment_name
+        self.__precision: int = precision
 
         if experiment_name not in self.__shared_stores:
             self.__shared_stores[experiment_name] = {}
 
     @property
     def name(self) -> str:
+        """
+        Return the logger name.
+
+        Returns:
+            name: Logger name.
+        """
         return "MarkdownTableLogger"
 
     @property
     def version(self) -> str | int:
+        """
+        Return the logger version.
+
+        Returns:
+            version: Model name used as the logger version.
+        """
         return self.__model_name
 
     @property
@@ -62,14 +80,27 @@ class MarkdownTableLogger(Logger):
 
     @property
     def save_dir(self) -> str | Path:
+        """
+        Return the logger save directory.
+
+        Returns:
+            save_dir: Base directory for comparison files.
+        """
         return self.__save_dir
 
     @property
     def experiment_name(self) -> str | Path:
+        """
+        Return the experiment name.
+
+        Returns:
+            experiment_name: Shared experiment key.
+        """
         return self.__experiment_name
 
     def clear(self, experiment_name: str) -> None:
-        """Remove accumulated data for an experiment.
+        """
+        Remove accumulated data for an experiment.
 
         Args:
             experiment_name: The experiment name whose data should be cleared.
@@ -77,13 +108,24 @@ class MarkdownTableLogger(Logger):
         self.__shared_stores.pop(experiment_name, None)
 
     def log_hyperparams(self, params: Any) -> None:
+        """
+        Accept hyperparameter logging calls from Lightning.
+
+        Args:
+            params: Hyperparameters provided by Lightning, unused.
+        """
         pass
 
     def log_metrics(self, metrics: dict[str, float], step: int | None = None) -> None:
-        """Accumulate metrics for this model. Called by Lightning on every log step.
+        """
+        Accumulate metrics for this model. Called by Lightning on every log step.
 
         Keeps only the latest value for each metric name. For example, if
         "val_auc" is logged at step 10 and step 20, only the step 20 value is kept.
+
+        Args:
+            metrics: Dictionary of metric names to values.
+            step: Optional step number, unused. Defaults to ``None``.
         """
         store = self.__shared_stores[self.__experiment_name]
         if self.__model_name not in store:
@@ -91,14 +133,15 @@ class MarkdownTableLogger(Logger):
         store[self.__model_name].update(metrics)
 
     def finalize(self, status: str) -> None:
-        """Write the markdown comparison table with all accumulated metrics so far.
+        """
+        Write the markdown comparison table with all accumulated metrics so far.
 
         Called by Lightning after fit() and after test() for each model. Since models
         train/test sequentially, each finalize() overwrites the file with all data
         accumulated up to that point. The file grows more complete over time.
 
         Args:
-            status: The stage that just completed, e.g., "fit" or "test".
+            status: The stage that just completed, unused. For example, "fit" or "test".
         """
         test_results, train_results, val_results = self.__split_results()
 
@@ -172,6 +215,7 @@ class MarkdownTableLogger(Logger):
         Args:
             results: Mapping of model names to metric dictionaries.
             precision: Number of decimal places for numeric metric values.
+                Defaults to ``4``.
 
         Returns:
             table: Markdown table string. Returns an empty string if ``results`` is empty.
@@ -219,7 +263,8 @@ class MarkdownTableLogger(Logger):
         filename: str = "results.md",
         precision: int = 4,
     ) -> Path:
-        """Build and save markdown comparison tables to a file.
+        """
+        Build and save markdown comparison tables to a file.
 
         Writes two sections:
         - "## Test Results" with the test metrics table
@@ -229,9 +274,11 @@ class MarkdownTableLogger(Logger):
             test_results: Dict from test_all(), mapping model names to test metric dicts.
             save_dir: Directory where the markdown file will be written.
             train_results: Optional dict mapping model names to train metric dicts.
+                Defaults to ``None``.
             val_results: Optional dict mapping model names to val metric dicts.
-            filename: Name of the output file.
-            precision: Decimal places for metric values.
+                Defaults to ``None``.
+            filename: Name of the output file. Defaults to ``"results.md"``.
+            precision: Decimal places for metric values. Defaults to ``4``.
 
         Returns:
             path: Path to the written file.
@@ -267,7 +314,8 @@ class MarkdownTableLogger(Logger):
     ) -> tuple[
         dict[str, dict[str, float]], dict[str, dict[str, float]], dict[str, dict[str, float]]
     ]:
-        """Split all accumulated metrics into test vs train/val groups.
+        """
+        Split all accumulated metrics into test vs train/val groups.
 
         Metrics are classified by their name prefix:
         - "test/*"  -> test_results

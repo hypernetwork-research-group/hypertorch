@@ -15,6 +15,15 @@ HIF_SCHEMA_COMMIT_SHA = "b691a3d2ec32100c0229ebe1151e9afad015c356"
 
 
 def validate_hif_data(hif_data: dict[str, Any]) -> bool:
+    """
+    Validate a Python object against the HIF schema.
+
+    Args:
+        hif_data: Parsed HIF data to validate.
+
+    Returns:
+        valid: ``True`` when the data conforms to the schema, otherwise ``False``.
+    """
     schema = __load_hif_schema()
     validator = fastjsonschema.compile(schema)
     try:
@@ -33,6 +42,9 @@ def validate_hif_json(filename: str) -> bool:
 
     Returns:
         valid: ``True`` if the file is valid HIF, ``False`` otherwise.
+
+    Raises:
+        ValueError: If the JSON file cannot be read.
     """
     try:
         with open(filename, encoding="utf-8") as f:
@@ -45,6 +57,17 @@ def validate_hif_json(filename: str) -> bool:
 def get_hf_datasets_shas(
     dataset_names: list[str], namespace: str = "HypernetworkRG"
 ) -> dict[str, str | None]:
+    """
+    Retrieve Hugging Face dataset commit SHAs for multiple datasets.
+
+    Args:
+        dataset_names: Dataset names to query.
+        namespace: Hugging Face namespace containing the datasets.
+            Defaults to ``"HypernetworkRG"``.
+
+    Returns:
+        shas: Mapping from dataset name to commit SHA, or ``None`` when unavailable.
+    """
     shas: dict[str, str | None] = {}
 
     for dataset_name in dataset_names:
@@ -53,6 +76,17 @@ def get_hf_datasets_shas(
 
 
 def get_hf_dataset_sha(dataset_name: str, namespace: str = "HypernetworkRG") -> str | None:
+    """
+    Retrieve the latest Hugging Face commit SHA for a dataset.
+
+    Args:
+        dataset_name: Dataset name to query.
+        namespace: Hugging Face namespace containing the dataset.
+            Defaults to ``"HypernetworkRG"``.
+
+    Returns:
+        sha: Dataset repository commit SHA, or ``None`` when unavailable.
+    """
     api = HfApi()
     repo_id = f"{namespace}/{dataset_name}"
     try:
@@ -72,6 +106,17 @@ def get_gh_datasets_shas(
     owner: str = "hypernetwork-research-group",
     repository: str = "datasets",
 ) -> dict[str, str | None]:
+    """
+    Retrieve GitHub commit SHAs for multiple compressed dataset files.
+
+    Args:
+        dataset_names: Dataset file stems to query.
+        owner: GitHub repository owner.
+        repository: GitHub repository name. Defaults to ``"datasets"``.
+
+    Returns:
+        shas: Mapping from dataset name to commit SHA, or ``None`` when unavailable.
+    """
     shas: dict[str, str | None] = {}
 
     for dataset_name in dataset_names:
@@ -80,6 +125,17 @@ def get_gh_datasets_shas(
 
 
 def get_gh_dataset_sha(dataset_name: str, owner: str, repository: str) -> str | None:
+    """
+    Retrieve the latest GitHub commit SHA for a dataset file.
+
+    Args:
+        dataset_name: Dataset file stem without the ``.json.zst`` suffix.
+        owner: GitHub repository owner.
+        repository: GitHub repository name.
+
+    Returns:
+        sha: Latest commit SHA for the dataset file, or ``None`` when unavailable.
+    """
     url = f"https://api.github.com/repos/{owner}/{repository}/commits"
     file_path = f"{dataset_name}.json.zst"
 
@@ -114,6 +170,15 @@ def get_gh_dataset_sha(dataset_name: str, owner: str, repository: str) -> str | 
 
 
 def __load_hif_schema() -> dict[str, Any]:
+    """
+    Load the HIF schema from cache, bundled resources, or the pinned remote URL.
+
+    Returns:
+        schema: Parsed HIF JSON schema.
+
+    Raises:
+        RuntimeError: If the schema cannot be loaded from any source.
+    """
     cache_dir = get_cache_dir()
     cached_hif_schema = Path(cache_dir) / "hif_schema.json"
     try:
