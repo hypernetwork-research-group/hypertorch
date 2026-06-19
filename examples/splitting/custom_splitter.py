@@ -39,8 +39,6 @@ class CustomSplitter(Splitter["Dataset", list["Dataset"]]):
 
 
 if __name__ == "__main__":
-    verbose = True
-
     x = torch.arange(7, dtype=torch.float).unsqueeze(1)
     hyperedge_index = torch.tensor(
         [
@@ -57,22 +55,19 @@ if __name__ == "__main__":
     )
     dataset = Dataset.from_hdata(hdata, sampling_strategy=SamplingStrategy.HYPEREDGE)
 
-    custom_splitter = CustomSplitter()
-
     # Split dataset into train, val and test using ratios generated inside CustomSplitter.
     split_datasets = dataset.split(
         shuffle=True,
         seed=42,
         node_space_setting="transductive",
         cover_all_nodes_in_train_split=False,
-        splitter=custom_splitter,  # pass the custom splitter to the split function
+        splitter=CustomSplitter(),  # pass the custom splitter to the split function
     )
     first_50, second_25, third_25 = split_datasets
 
-    if verbose:
-        print(f"Original dataset:\n {dataset.hdata}\n")
-        print(f"First 50% split:\n {first_50.hdata}\n")
-        print(f"Second 25% split:\n {second_25.hdata}\n")
-        print(f"Third 25% split:\n {third_25.hdata}\n")
+    print(f"Original dataset:\n {dataset.hdata}\n")
+    print(f"First 50% split:\n {first_50.hdata}\n")
+    print(f"Second 25% split:\n {second_25.hdata}\n")
+    print(f"Third 25% split:\n {third_25.hdata}\n")
 
     print("Complete!")

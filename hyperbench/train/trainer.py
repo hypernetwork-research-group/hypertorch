@@ -9,7 +9,7 @@ import lightning as L
 import torch
 
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 from collections.abc import Iterable, Mapping
 from lightning.pytorch.accelerators import Accelerator
 from lightning.pytorch.callbacks import Callback, ModelCheckpoint
@@ -276,7 +276,7 @@ class MultiModelTrainer:
 
                 if should_create_test_trainer:
                     model_config.test_trainer = __trainer_for(
-                        trainer_devices=cast(list[int] | str | int, test_devices),
+                        trainer_devices=test_devices if test_devices is not None else devices,
                         model_logger=model_logger,
                         model_callbacks=model_callbacks,
                     )
