@@ -6,15 +6,22 @@ from torchmetrics.classification import (
     BinaryPrecision,
     BinaryRecall,
 )
-from hyperbench.hlp import VilLainHlpModule
+from hyperbench.hlp import GCNHlpModule
 from hyperbench.train import MultiModelTrainer
 from hyperbench.types import ModelConfig
-from hyperbench.data import CoraDataset, DataLoader, RandomNegativeSampler, SamplingStrategy
+from hyperbench.data import (
+    AlgebraDataset,
+    DataLoader,
+    LaplacianPositionalEncodingEnricher,
+    RandomNegativeSampler,
+    SamplingStrategy,
+)
 
 
 if __name__ == "__main__":
     verbose = False
     num_workers = 8
+    num_features = 32
     metrics = MetricCollection(
         {
             "auc": BinaryAUROC(),
@@ -27,7 +34,8 @@ if __name__ == "__main__":
 
     print("Loading and preparing dataset...")
 
-    dataset = CoraDataset(sampling_strategy=SamplingStrategy.HYPEREDGE)
+    dataset = AlgebraDataset(sampling_strategy=SamplingStrategy.HYPEREDGE)
+    dataset.remove_hyperedges_with_fewer_than_k_nodes(k=2)
     if verbose:
         print(f"Dataset:\n {dataset.hdata}\n")
 
@@ -39,12 +47,17 @@ if __name__ == "__main__":
         shuffle=True,
         seed=42,
     )
+    if verbose:
+        print(f"Train dataset:\n {train_dataset.hdata}\n")
+        print(f"Val dataset:\n {val_dataset.hdata}\n")
+        print(f"Test dataset:\n {test_dataset.hdata}\n")
 
+    # Add negative samples to all splits
     for name, ds in [("Train", train_dataset), ("Val", val_dataset), ("Test", test_dataset)]:
         num_negative_samples = (
             ds.hdata.num_hyperedges
-            if name in ["Train", "Val"]
-            else int(ds.hdata.num_hyperedges * 0.6)
+            if name in ["Train", "Val"]  # 1:1 ratio of pos:neg samples
+            else int(ds.hdata.num_hyperedges * 0.6)  # 60% negatives for test set
         )
         negative_sampler = RandomNegativeSampler(
             num_negative_samples=num_negative_samples,
@@ -62,23 +75,36 @@ if __name__ == "__main__":
         if verbose:
             print(f"{name} dataset after adding negative samples: {ds_with_negatives.hdata}\n")
 
+    print("Enriching node features...")
+
+    train_dataset.enrich_node_features(
+        enricher=LaplacianPositionalEncodingEnricher(
+            num_features=num_features,
+            # We are using transductive with all nodes coverage in the train split
+            num_nodes=dataset.hdata.num_nodes,
+        ),
+        enrichment_mode="replace",
+    )
+    val_dataset.enrich_node_features_from(train_dataset)
+    test_dataset.enrich_node_features_from(train_dataset)
+
     print("Creating dataloaders...")
 
-    train_loader = DataLoader(
+    train_loader_full_hypergraph = DataLoader(
         train_dataset,
         sample_full_hypergraph=True,
         shuffle=False,
         num_workers=num_workers,
         persistent_workers=True,
     )
-    val_loader = DataLoader(
+    val_loader_full_hypergraph = DataLoader(
         val_dataset,
         sample_full_hypergraph=True,
         shuffle=False,
         num_workers=num_workers,
         persistent_workers=True,
     )
-    test_loader = DataLoader(
+    test_loader_full_hypergraph = DataLoader(
         test_dataset,
         sample_full_hypergraph=True,
         shuffle=False,
@@ -86,59 +112,35 @@ if __name__ == "__main__":
         persistent_workers=True,
     )
 
-    node_villain_module = VilLainHlpModule(
+    mean_gcn_module = GCNHlpModule(
         encoder_config={
-            "embedding_dim": 128,
-            "labels_per_subspace": 8,
-            "training_steps": 4,
-            "generation_steps": 128,
-            "tau": 1.0,
-            "eps": 1e-10,
-            "villain_loss_weight": 1.0,
-            # We are using transductive with all nodes coverage in the train split
+            "in_channels": num_features,
+            "hidden_channels": 16,
+            "out_channels": 16,
+            "num_layers": 2,
+            "drop_rate": 0.1,
+            "bias": True,
+            "improved": False,
+            "add_self_loops": True,
+            "normalize": True,
+            "cached": False,
+            "graph_reduction_strategy": "clique_expansion",
             "num_nodes": dataset.hdata.num_nodes,
         },
-        embedding_mode="node",
-        aggregation="maxmin",
-        lr=0.01,
-        weight_decay=0.0,
-        metrics=metrics,
-    )
-
-    hyperedge_villain_module = VilLainHlpModule(
-        encoder_config={
-            "embedding_dim": 128,
-            "labels_per_subspace": 8,
-            "training_steps": 4,
-            "generation_steps": 28,
-            "tau": 1.0,
-            "eps": 1e-10,
-            "villain_loss_weight": 1.0,
-            # We are using transductive with all nodes coverage in the train split
-            "num_nodes": dataset.hdata.num_nodes,
-        },
-        embedding_mode="hyperedge",
-        lr=0.01,
-        weight_decay=0.0,
+        aggregation="mean",
+        lr=0.001,
+        weight_decay=5e-4,
         metrics=metrics,
     )
 
     configs = [
         ModelConfig(
-            name="villain",
-            version="node_maxmin",
-            model=node_villain_module,
-            train_dataloader=train_loader,
-            val_dataloader=val_loader,
-            test_dataloader=test_loader,
-        ),
-        ModelConfig(
-            name="villain",
-            version="hyperedge",
-            model=hyperedge_villain_module,
-            train_dataloader=train_loader,
-            val_dataloader=val_loader,
-            test_dataloader=test_loader,
+            name="gcn",
+            version="mean",
+            model=mean_gcn_module,
+            train_dataloader=train_loader_full_hypergraph,
+            val_dataloader=val_loader_full_hypergraph,
+            test_dataloader=test_loader_full_hypergraph,
         ),
     ]
 
@@ -146,18 +148,20 @@ if __name__ == "__main__":
 
     with MultiModelTrainer(
         model_configs=configs,
-        max_epochs=100,
+        max_epochs=60,
         accelerator="auto",
         log_every_n_steps=1,
         enable_checkpointing=False,
         auto_start_tensorboard=True,
         auto_wait=True,
+        devices=1,
+        test_devices=1,
     ) as trainer:
         trainer.fit_all(
-            train_dataloader=train_loader,
-            val_dataloader=val_loader,
+            train_dataloader=train_loader_full_hypergraph,
+            val_dataloader=val_loader_full_hypergraph,
             verbose=True,
         )
-        trainer.test_all(dataloader=test_loader, verbose=True)
+        trainer.test_all(dataloader=test_loader_full_hypergraph, verbose=True)
 
     print("Complete!")

@@ -1,18 +1,18 @@
 from torchmetrics import MetricCollection
 from torchmetrics.classification import (
     BinaryAUROC,
-    BinaryAccuracy,
     BinaryAveragePrecision,
     BinaryPrecision,
     BinaryRecall,
 )
-from hyperbench.hlp import Node2VecSLPHlpModule
+from lightning.pytorch.callbacks import EarlyStopping
+from hyperbench.hlp import MLPHlpModule
 from hyperbench.train import MultiModelTrainer
 from hyperbench.types import ModelConfig
 from hyperbench.data import (
     AlgebraDataset,
     DataLoader,
-    Node2VecEnricher,
+    LaplacianPositionalEncodingEnricher,
     RandomNegativeSampler,
     SamplingStrategy,
 )
@@ -25,7 +25,6 @@ if __name__ == "__main__":
     metrics = MetricCollection(
         {
             "auc": BinaryAUROC(),
-            "accuracy": BinaryAccuracy(),
             "avg_precision": BinaryAveragePrecision(),
             "precision": BinaryPrecision(),
             "recall": BinaryRecall(),
@@ -35,30 +34,31 @@ if __name__ == "__main__":
     print("Loading and preparing dataset...")
 
     dataset = AlgebraDataset(sampling_strategy=SamplingStrategy.HYPEREDGE)
-    dataset.remove_hyperedges_with_fewer_than_k_nodes(k=2)
     if verbose:
         print(f"Dataset:\n {dataset.hdata}\n")
 
     # Split dataset into train, val and test (70/10/20)
     train_dataset, val_dataset, test_dataset = dataset.split(
         ratios=[0.7, 0.1, 0.2],
-        node_space_setting="transductive",
-        cover_all_nodes_in_train_split=True,
         shuffle=True,
         seed=42,
+        node_space_setting="transductive",
+        cover_all_nodes_in_train_split=False,
     )
     if verbose:
         print(f"Train dataset:\n {train_dataset.hdata}\n")
         print(f"Val dataset:\n {val_dataset.hdata}\n")
         print(f"Test dataset:\n {test_dataset.hdata}\n")
 
-    print("Adding negative samples...")
+    # Save train hyperedge index before adding negatives (for CommonNeighbors)
+    train_hyperedge_index = train_dataset.hdata.hyperedge_index
 
+    # Add negative samples to all splits
     for name, ds in [("Train", train_dataset), ("Val", val_dataset), ("Test", test_dataset)]:
         num_negative_samples = (
             ds.hdata.num_hyperedges
-            if name in ["Train", "Val"]
-            else int(ds.hdata.num_hyperedges * 0.6)
+            if name in ["Train", "Val"]  # 1:1 ratio of pos:neg samples
+            else int(ds.hdata.num_hyperedges * 0.6)  # 60% negatives for test set
         )
         negative_sampler = RandomNegativeSampler(
             num_negative_samples=num_negative_samples,
@@ -76,24 +76,16 @@ if __name__ == "__main__":
         if verbose:
             print(f"{name} dataset after adding negative samples: {ds_with_negatives.hdata}\n")
 
-    print("Computing Node2Vec embeddings from the train graph...")
+    print("Enriching node features...")
 
-    node2vec_enricher = Node2VecEnricher(
-        num_features=num_features,
-        context_size=10,
-        walk_length=20,
-        num_walks_per_node=10,
-        num_negative_samples=1,
-        # We are using transductive with all nodes coverage in the train split
-        num_nodes=dataset.hdata.num_nodes,
-        num_epochs=10,
-        learning_rate=0.01,
-        batch_size=128,
-        sparse=False,
-        verbose=verbose,
-    )
     train_dataset.enrich_node_features(
-        enricher=node2vec_enricher,
+        enricher=LaplacianPositionalEncodingEnricher(
+            num_features=num_features,
+            # In transductive setting, use total number of nodes to ensure consistent
+            # encoding across splits
+            # as the train dataset contain all nodes but may have no hyperedges where they appear
+            num_nodes=train_dataset.hdata.num_nodes,
+        ),
         enrichment_mode="replace",
     )
     val_dataset.enrich_node_features_from(train_dataset)
@@ -103,7 +95,7 @@ if __name__ == "__main__":
 
     train_loader = DataLoader(
         train_dataset,
-        batch_size=128,
+        batch_size=128,  # or 256
         shuffle=False,
         num_workers=num_workers,
         persistent_workers=True,
@@ -123,80 +115,43 @@ if __name__ == "__main__":
         persistent_workers=True,
     )
 
-    precomputed_node2vecslp_module = Node2VecSLPHlpModule(
+    mean_mlp_module = MLPHlpModule(
         encoder_config={
-            "mode": "precomputed",
-            "num_features": num_features,
-            "node2vec_config": {},
+            "in_channels": num_features,
+            "out_channels": num_features,
+            "hidden_channels": 64,
+            "num_layers": 3,
+            "drop_rate": 0.3,
         },
         aggregation="mean",
-        lr=0.001,
-        weight_decay=0.0,
-        metrics=metrics,
-    )
-
-    train_hyperedge_index = train_dataset.hdata.hyperedge_index
-    joint_node2vecslp_module = Node2VecSLPHlpModule(
-        encoder_config={
-            "mode": "joint",
-            "num_features": num_features,
-            "node2vec_config": {
-                "context_size": 10,
-                "walk_length": 20,
-                "num_walks_per_node": 10,
-                "p": 1.0,
-                "q": 1.0,
-                "num_negative_samples": 1,
-                "train_hyperedge_index": train_hyperedge_index,
-                # We are using transductive with all nodes coverage in the train split
-                "num_nodes": dataset.hdata.num_nodes,
-                "graph_reduction_strategy": "clique_expansion",
-                "random_walk_batch_size": 128,
-                # We count the node2vec loss as 40% of the total loss (the rest is the SLP loss)
-                "node2vec_loss_weight": 0.4,
-            },
-        },
-        aggregation="mean",
-        lr=0.001,
-        weight_decay=0.0,
         metrics=metrics,
     )
 
     configs = [
-        ModelConfig(
-            name="node2vecslp",
-            version="precomputed",
-            model=precomputed_node2vecslp_module,
-            train_dataloader=train_loader,
-            val_dataloader=val_loader,
-            test_dataloader=test_loader,
-        ),
-        ModelConfig(
-            name="node2vecslp",
-            version="joint",
-            model=joint_node2vecslp_module,
-            train_dataloader=train_loader,
-            val_dataloader=val_loader,
-            test_dataloader=test_loader,
-        ),
+        ModelConfig(name="mlp", version="mean", model=mean_mlp_module),
     ]
+
+    early_stopping = EarlyStopping(
+        monitor="val/loss",
+        patience=10,
+        mode="min",
+    )
 
     print("Starting training and evaluation...")
 
     with MultiModelTrainer(
         model_configs=configs,
-        max_epochs=60,
+        max_epochs=200,
         accelerator="auto",
-        log_every_n_steps=1,
+        log_every_n_steps=10,
+        callbacks=[early_stopping],
         enable_checkpointing=False,
         auto_start_tensorboard=True,
         auto_wait=True,
+        devices=1,
+        test_devices=1,
     ) as trainer:
-        trainer.fit_all(
-            train_dataloader=train_loader,
-            val_dataloader=val_loader,
-            verbose=True,
-        )
+        trainer.fit_all(train_dataloader=train_loader, val_dataloader=val_loader, verbose=True)
         trainer.test_all(dataloader=test_loader, verbose=True)
 
     print("Complete!")

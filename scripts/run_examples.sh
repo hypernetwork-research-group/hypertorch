@@ -7,7 +7,7 @@ repo_root="$(cd "${script_dir}/.." && pwd)"
 
 cd "${repo_root}" || exit 1
 
-examples=(examples/*.py)
+examples=(examples/**/*.py)
 
 if [[ ${#examples[@]} -eq 0 || ! -e "${examples[0]}" ]]; then
     echo "No Python examples found under examples/." >&2

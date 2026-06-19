@@ -1,12 +1,12 @@
 from torchmetrics import MetricCollection
 from torchmetrics.classification import (
     BinaryAUROC,
+    BinaryAccuracy,
     BinaryAveragePrecision,
     BinaryPrecision,
     BinaryRecall,
 )
-from lightning.pytorch.callbacks import EarlyStopping
-from hyperbench.hlp import MLPHlpModule
+from hyperbench.hlp import HyperGCNHlpModule
 from hyperbench.train import MultiModelTrainer
 from hyperbench.types import ModelConfig
 from hyperbench.data import (
@@ -25,6 +25,7 @@ if __name__ == "__main__":
     metrics = MetricCollection(
         {
             "auc": BinaryAUROC(),
+            "accuracy": BinaryAccuracy(),
             "avg_precision": BinaryAveragePrecision(),
             "precision": BinaryPrecision(),
             "recall": BinaryRecall(),
@@ -34,16 +35,17 @@ if __name__ == "__main__":
     print("Loading and preparing dataset...")
 
     dataset = AlgebraDataset(sampling_strategy=SamplingStrategy.HYPEREDGE)
+    dataset.remove_hyperedges_with_fewer_than_k_nodes(k=2)
     if verbose:
         print(f"Dataset:\n {dataset.hdata}\n")
 
     # Split dataset into train, val and test (70/10/20)
     train_dataset, val_dataset, test_dataset = dataset.split(
         ratios=[0.7, 0.1, 0.2],
+        node_space_setting="transductive",
+        cover_all_nodes_in_train_split=True,
         shuffle=True,
         seed=42,
-        node_space_setting="transductive",
-        cover_all_nodes_in_train_split=False,
     )
     if verbose:
         print(f"Train dataset:\n {train_dataset.hdata}\n")
@@ -81,10 +83,8 @@ if __name__ == "__main__":
     train_dataset.enrich_node_features(
         enricher=LaplacianPositionalEncodingEnricher(
             num_features=num_features,
-            # In transductive setting, use total number of nodes to ensure consistent encoding
-            # across splits
-            # as the train dataset contain all nodes but may have no hyperedges where they appear
-            num_nodes=train_dataset.hdata.num_nodes,
+            # We are using transductive with all nodes coverage in the train split
+            num_nodes=dataset.hdata.num_nodes,
         ),
         enrichment_mode="replace",
     )
@@ -93,21 +93,21 @@ if __name__ == "__main__":
 
     print("Creating dataloaders...")
 
-    train_loader = DataLoader(
+    train_loader_full_hypergraph = DataLoader(
         train_dataset,
-        batch_size=128,  # or 256
+        sample_full_hypergraph=True,
         shuffle=False,
         num_workers=num_workers,
         persistent_workers=True,
     )
-    val_loader = DataLoader(
+    val_loader_full_hypergraph = DataLoader(
         val_dataset,
         sample_full_hypergraph=True,
         shuffle=False,
         num_workers=num_workers,
         persistent_workers=True,
     )
-    test_loader = DataLoader(
+    test_loader_full_hypergraph = DataLoader(
         test_dataset,
         sample_full_hypergraph=True,
         shuffle=False,
@@ -115,41 +115,77 @@ if __name__ == "__main__":
         persistent_workers=True,
     )
 
-    mean_mlp_module = MLPHlpModule(
+    mean_hypergcn_no_mediator_module = HyperGCNHlpModule(
         encoder_config={
             "in_channels": num_features,
-            "out_channels": num_features,
-            "hidden_channels": 64,
-            "num_layers": 3,
-            "drop_rate": 0.3,
+            "hidden_channels": 16,
+            "out_channels": 16,
+            "bias": True,
+            "use_batch_normalization": False,
+            "drop_rate": 0.5,
+            "use_mediator": False,
+            "fast": False,
         },
         aggregation="mean",
+        lr=0.01,
+        weight_decay=5e-4,
+        metrics=metrics,
+    )
+
+    mean_hypergcn_with_mediator_module = HyperGCNHlpModule(
+        encoder_config={
+            "in_channels": 32,
+            "hidden_channels": 16,
+            "out_channels": 16,
+            "bias": True,
+            "use_batch_normalization": False,
+            "drop_rate": 0.5,
+            "use_mediator": True,
+            "fast": False,
+        },
+        aggregation="mean",
+        lr=0.01,
+        weight_decay=5e-4,
         metrics=metrics,
     )
 
     configs = [
-        ModelConfig(name="mlp", version="mean", model=mean_mlp_module),
+        ModelConfig(
+            name="hypergcn",
+            version="mean-no-mediator",
+            model=mean_hypergcn_no_mediator_module,
+            train_dataloader=train_loader_full_hypergraph,
+            val_dataloader=val_loader_full_hypergraph,
+            test_dataloader=test_loader_full_hypergraph,
+        ),
+        ModelConfig(
+            name="hypergcn",
+            version="mean-with-mediator",
+            model=mean_hypergcn_with_mediator_module,
+            train_dataloader=train_loader_full_hypergraph,
+            val_dataloader=val_loader_full_hypergraph,
+            test_dataloader=test_loader_full_hypergraph,
+        ),
     ]
-
-    early_stopping = EarlyStopping(
-        monitor="val/loss",
-        patience=10,
-        mode="min",
-    )
 
     print("Starting training and evaluation...")
 
     with MultiModelTrainer(
         model_configs=configs,
-        max_epochs=200,
+        max_epochs=10,
         accelerator="auto",
-        log_every_n_steps=10,
-        callbacks=[early_stopping],
+        log_every_n_steps=1,
         enable_checkpointing=False,
         auto_start_tensorboard=True,
         auto_wait=True,
+        devices=1,
+        test_devices=1,
     ) as trainer:
-        trainer.fit_all(train_dataloader=train_loader, val_dataloader=val_loader, verbose=True)
-        trainer.test_all(dataloader=test_loader, verbose=True)
+        trainer.fit_all(
+            train_dataloader=train_loader_full_hypergraph,
+            val_dataloader=val_loader_full_hypergraph,
+            verbose=True,
+        )
+        trainer.test_all(dataloader=test_loader_full_hypergraph, verbose=True)
 
     print("Complete!")

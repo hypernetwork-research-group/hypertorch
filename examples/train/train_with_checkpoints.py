@@ -171,6 +171,8 @@ if __name__ == "__main__":
         accelerator="auto",
         logger=False,
         enable_checkpointing=False,
+        devices=1,
+        test_devices=1,
     ):
         if predict_config.trainer is None:
             raise RuntimeError(

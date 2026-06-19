@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from torchmetrics import MetricCollection
 from torchmetrics.classification import (
     BinaryAUROC,
@@ -6,7 +8,7 @@ from torchmetrics.classification import (
     BinaryPrecision,
     BinaryRecall,
 )
-from hyperbench.hlp import GCNHlpModule
+from hyperbench.hlp import MLPHlpModule
 from hyperbench.train import MultiModelTrainer
 from hyperbench.types import ModelConfig
 from hyperbench.data import (
@@ -16,6 +18,69 @@ from hyperbench.data import (
     RandomNegativeSampler,
     SamplingStrategy,
 )
+
+from typing import Any, ClassVar
+from lightning.pytorch.loggers import Logger
+
+
+class CustomLogger(Logger):
+    __shared_stores: ClassVar[dict[str, dict[str, dict[str, Any]]]] = {}
+
+    def __init__(
+        self, experiment_name: str, model_name: str, save_dir: str | Path = "hyperbench_logs"
+    ):
+        super().__init__()
+        self.__experiment_name = experiment_name
+        self.__model_name = model_name
+        self.__save_dir = Path(save_dir) / experiment_name
+
+        if experiment_name not in self.__shared_stores:
+            self.__shared_stores[experiment_name] = {}
+
+    @property
+    def name(self) -> str:
+        return "CustomLogger"
+
+    @property
+    def version(self) -> str:
+        return "0.1"
+
+    @property
+    def experiment_name(self) -> str | Path:
+        return self.__experiment_name
+
+    @property
+    def store(self) -> dict[str, dict[str, Any]]:
+        """Access the shared store for the current experiment."""
+        return dict(self.__shared_stores.get(self.__experiment_name, {}))
+
+    def log_hyperparams(self, params: dict[str, Any]) -> None:
+        pass
+
+    def log_metrics(self, metrics: dict[str, float], step: int | None = None) -> None:
+        """Accumulate metrics for this model. Called by Lightning on every log step.
+
+        Keeps only the latest value for each metric name. For example, if
+        "val_auc" is logged at step 10 and step 20, only the step 20 value is kept.
+        """
+        store = self.__shared_stores[self.__experiment_name]
+        if self.__model_name not in store:
+            store[self.__model_name] = {}
+        store[self.__model_name].update(metrics)
+
+    def finalize(self, status: str) -> None:
+        """Save accumulated metrics to a JSON file."""
+        import json
+
+        store = self.__shared_stores.get(self.__experiment_name, {})
+        self.__save_dir.mkdir(parents=True, exist_ok=True)
+        save_path = self.__save_dir / "results.json"
+
+        with open(save_path, "w") as f:
+            json.dump(store, f, indent=4)
+
+        print(f"Finalized experiment '{self.__experiment_name}' with status '{status}'.")
+        print(f"Saved results to {save_path}")
 
 
 if __name__ == "__main__":
@@ -35,7 +100,6 @@ if __name__ == "__main__":
     print("Loading and preparing dataset...")
 
     dataset = AlgebraDataset(sampling_strategy=SamplingStrategy.HYPEREDGE)
-    dataset.remove_hyperedges_with_fewer_than_k_nodes(k=2)
     if verbose:
         print(f"Dataset:\n {dataset.hdata}\n")
 
@@ -90,21 +154,21 @@ if __name__ == "__main__":
 
     print("Creating dataloaders...")
 
-    train_loader_full_hypergraph = DataLoader(
+    train_loader = DataLoader(
         train_dataset,
-        sample_full_hypergraph=True,
+        batch_size=128,  # or 256
         shuffle=False,
         num_workers=num_workers,
         persistent_workers=True,
     )
-    val_loader_full_hypergraph = DataLoader(
+    val_loader = DataLoader(
         val_dataset,
         sample_full_hypergraph=True,
         shuffle=False,
         num_workers=num_workers,
         persistent_workers=True,
     )
-    test_loader_full_hypergraph = DataLoader(
+    test_loader = DataLoader(
         test_dataset,
         sample_full_hypergraph=True,
         shuffle=False,
@@ -112,54 +176,45 @@ if __name__ == "__main__":
         persistent_workers=True,
     )
 
-    mean_gcn_module = GCNHlpModule(
+    mean_mlp_module = MLPHlpModule(
         encoder_config={
             "in_channels": num_features,
-            "hidden_channels": 16,
-            "out_channels": 16,
-            "num_layers": 2,
-            "drop_rate": 0.1,
-            "bias": True,
-            "improved": False,
-            "add_self_loops": True,
-            "normalize": True,
-            "cached": False,
-            "graph_reduction_strategy": "clique_expansion",
-            "num_nodes": dataset.hdata.num_nodes,
+            "out_channels": num_features,
+            "hidden_channels": 64,
+            "num_layers": 3,
+            "drop_rate": 0.3,
         },
         aggregation="mean",
-        lr=0.001,
-        weight_decay=5e-4,
         metrics=metrics,
     )
 
     configs = [
         ModelConfig(
-            name="gcn",
+            name="mlp",
             version="mean",
-            model=mean_gcn_module,
-            train_dataloader=train_loader_full_hypergraph,
-            val_dataloader=val_loader_full_hypergraph,
-            test_dataloader=test_loader_full_hypergraph,
+            model=mean_mlp_module,
+            train_dataloader=train_loader,
+            val_dataloader=val_loader,
+            test_dataloader=test_loader,
         ),
     ]
 
     print("Starting training and evaluation...")
+    json_logger = CustomLogger(experiment_name="custom_logger_example", model_name="mlp")
 
     with MultiModelTrainer(
         model_configs=configs,
-        max_epochs=60,
+        max_epochs=100,
         accelerator="auto",
-        log_every_n_steps=1,
+        log_every_n_steps=10,
         enable_checkpointing=False,
         auto_start_tensorboard=True,
         auto_wait=True,
+        devices=1,
+        test_devices=1,
+        logger=json_logger,  # here you can pass the custom logger to the trainer
     ) as trainer:
-        trainer.fit_all(
-            train_dataloader=train_loader_full_hypergraph,
-            val_dataloader=val_loader_full_hypergraph,
-            verbose=True,
-        )
-        trainer.test_all(dataloader=test_loader_full_hypergraph, verbose=True)
+        trainer.fit_all(train_dataloader=train_loader, val_dataloader=val_loader, verbose=True)
+        trainer.test_all(dataloader=test_loader, verbose=True)
 
     print("Complete!")

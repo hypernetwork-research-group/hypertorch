@@ -6,15 +6,14 @@ from torchmetrics.classification import (
     BinaryPrecision,
     BinaryRecall,
 )
-from hyperbench.hlp import HyperGCNHlpModule
+from hyperbench.hlp import MLPHlpModule
 from hyperbench.train import MultiModelTrainer
 from hyperbench.types import ModelConfig
 from hyperbench.data import (
-    AlgebraDataset,
     DataLoader,
+    Dataset,
     LaplacianPositionalEncodingEnricher,
     RandomNegativeSampler,
-    SamplingStrategy,
 )
 
 
@@ -34,26 +33,25 @@ if __name__ == "__main__":
 
     print("Loading and preparing dataset...")
 
-    dataset = AlgebraDataset(sampling_strategy=SamplingStrategy.HYPEREDGE)
-    dataset.remove_hyperedges_with_fewer_than_k_nodes(k=2)
+    dataset = Dataset.from_url(
+        url="https://raw.githubusercontent.com/hypernetwork-research-group/datasets/main/algebra.json.zst",
+    )
+
     if verbose:
         print(f"Dataset:\n {dataset.hdata}\n")
 
     # Split dataset into train, val and test (70/10/20)
     train_dataset, val_dataset, test_dataset = dataset.split(
         ratios=[0.7, 0.1, 0.2],
-        node_space_setting="transductive",
-        cover_all_nodes_in_train_split=True,
         shuffle=True,
         seed=42,
+        node_space_setting="transductive",
+        cover_all_nodes_in_train_split=False,
     )
     if verbose:
         print(f"Train dataset:\n {train_dataset.hdata}\n")
         print(f"Val dataset:\n {val_dataset.hdata}\n")
         print(f"Test dataset:\n {test_dataset.hdata}\n")
-
-    # Save train hyperedge index before adding negatives (for CommonNeighbors)
-    train_hyperedge_index = train_dataset.hdata.hyperedge_index
 
     # Add negative samples to all splits
     for name, ds in [("Train", train_dataset), ("Val", val_dataset), ("Test", test_dataset)]:
@@ -83,8 +81,10 @@ if __name__ == "__main__":
     train_dataset.enrich_node_features(
         enricher=LaplacianPositionalEncodingEnricher(
             num_features=num_features,
-            # We are using transductive with all nodes coverage in the train split
-            num_nodes=dataset.hdata.num_nodes,
+            # In transductive setting, use total number of nodes to ensure consistent encoding
+            # across splits
+            # as the train dataset contain all nodes but may have no hyperedges where they appear
+            num_nodes=train_dataset.hdata.num_nodes,
         ),
         enrichment_mode="replace",
     )
@@ -93,21 +93,21 @@ if __name__ == "__main__":
 
     print("Creating dataloaders...")
 
-    train_loader_full_hypergraph = DataLoader(
+    train_loader = DataLoader(
         train_dataset,
-        sample_full_hypergraph=True,
+        batch_size=128,  # or 256
         shuffle=False,
         num_workers=num_workers,
         persistent_workers=True,
     )
-    val_loader_full_hypergraph = DataLoader(
+    val_loader = DataLoader(
         val_dataset,
         sample_full_hypergraph=True,
         shuffle=False,
         num_workers=num_workers,
         persistent_workers=True,
     )
-    test_loader_full_hypergraph = DataLoader(
+    test_loader = DataLoader(
         test_dataset,
         sample_full_hypergraph=True,
         shuffle=False,
@@ -115,56 +115,26 @@ if __name__ == "__main__":
         persistent_workers=True,
     )
 
-    mean_hypergcn_no_mediator_module = HyperGCNHlpModule(
+    mean_mlp_module = MLPHlpModule(
         encoder_config={
             "in_channels": num_features,
-            "hidden_channels": 16,
-            "out_channels": 16,
-            "bias": True,
-            "use_batch_normalization": False,
-            "drop_rate": 0.5,
-            "use_mediator": False,
-            "fast": False,
+            "out_channels": num_features,
+            "hidden_channels": 64,
+            "num_layers": 3,
+            "drop_rate": 0.3,
         },
         aggregation="mean",
-        lr=0.01,
-        weight_decay=5e-4,
-        metrics=metrics,
-    )
-
-    mean_hypergcn_with_mediator_module = HyperGCNHlpModule(
-        encoder_config={
-            "in_channels": 32,
-            "hidden_channels": 16,
-            "out_channels": 16,
-            "bias": True,
-            "use_batch_normalization": False,
-            "drop_rate": 0.5,
-            "use_mediator": True,
-            "fast": False,
-        },
-        aggregation="mean",
-        lr=0.01,
-        weight_decay=5e-4,
         metrics=metrics,
     )
 
     configs = [
         ModelConfig(
-            name="hypergcn",
-            version="mean-no-mediator",
-            model=mean_hypergcn_no_mediator_module,
-            train_dataloader=train_loader_full_hypergraph,
-            val_dataloader=val_loader_full_hypergraph,
-            test_dataloader=test_loader_full_hypergraph,
-        ),
-        ModelConfig(
-            name="hypergcn",
-            version="mean-with-mediator",
-            model=mean_hypergcn_with_mediator_module,
-            train_dataloader=train_loader_full_hypergraph,
-            val_dataloader=val_loader_full_hypergraph,
-            test_dataloader=test_loader_full_hypergraph,
+            name="mlp",
+            version="mean",
+            model=mean_mlp_module,
+            train_dataloader=train_loader,
+            val_dataloader=val_loader,
+            test_dataloader=test_loader,
         ),
     ]
 
@@ -172,18 +142,16 @@ if __name__ == "__main__":
 
     with MultiModelTrainer(
         model_configs=configs,
-        max_epochs=10,
+        max_epochs=100,
         accelerator="auto",
-        log_every_n_steps=1,
+        log_every_n_steps=10,
         enable_checkpointing=False,
         auto_start_tensorboard=True,
         auto_wait=True,
+        devices=1,
+        test_devices=1,
     ) as trainer:
-        trainer.fit_all(
-            train_dataloader=train_loader_full_hypergraph,
-            val_dataloader=val_loader_full_hypergraph,
-            verbose=True,
-        )
-        trainer.test_all(dataloader=test_loader_full_hypergraph, verbose=True)
+        trainer.fit_all(train_dataloader=train_loader, val_dataloader=val_loader, verbose=True)
+        trainer.test_all(dataloader=test_loader, verbose=True)
 
     print("Complete!")

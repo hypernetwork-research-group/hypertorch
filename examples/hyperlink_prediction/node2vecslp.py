@@ -6,13 +6,13 @@ from torchmetrics.classification import (
     BinaryPrecision,
     BinaryRecall,
 )
-from hyperbench.hlp import HNHNHlpModule
+from hyperbench.hlp import Node2VecSLPHlpModule
 from hyperbench.train import MultiModelTrainer
 from hyperbench.types import ModelConfig
 from hyperbench.data import (
     AlgebraDataset,
     DataLoader,
-    LaplacianPositionalEncodingEnricher,
+    Node2VecEnricher,
     RandomNegativeSampler,
     SamplingStrategy,
 )
@@ -21,7 +21,7 @@ from hyperbench.data import (
 if __name__ == "__main__":
     verbose = False
     num_workers = 8
-    num_features = 128
+    num_features = 32
     metrics = MetricCollection(
         {
             "auc": BinaryAUROC(),
@@ -35,6 +35,7 @@ if __name__ == "__main__":
     print("Loading and preparing dataset...")
 
     dataset = AlgebraDataset(sampling_strategy=SamplingStrategy.HYPEREDGE)
+    dataset.remove_hyperedges_with_fewer_than_k_nodes(k=2)
     if verbose:
         print(f"Dataset:\n {dataset.hdata}\n")
 
@@ -50,6 +51,8 @@ if __name__ == "__main__":
         print(f"Train dataset:\n {train_dataset.hdata}\n")
         print(f"Val dataset:\n {val_dataset.hdata}\n")
         print(f"Test dataset:\n {test_dataset.hdata}\n")
+
+    print("Adding negative samples...")
 
     for name, ds in [("Train", train_dataset), ("Val", val_dataset), ("Test", test_dataset)]:
         num_negative_samples = (
@@ -73,14 +76,24 @@ if __name__ == "__main__":
         if verbose:
             print(f"{name} dataset after adding negative samples: {ds_with_negatives.hdata}\n")
 
-    print("Enriching node features...")
+    print("Computing Node2Vec embeddings from the train graph...")
 
+    node2vec_enricher = Node2VecEnricher(
+        num_features=num_features,
+        context_size=10,
+        walk_length=20,
+        num_walks_per_node=10,
+        num_negative_samples=1,
+        # We are using transductive with all nodes coverage in the train split
+        num_nodes=dataset.hdata.num_nodes,
+        num_epochs=10,
+        learning_rate=0.01,
+        batch_size=128,
+        sparse=False,
+        verbose=verbose,
+    )
     train_dataset.enrich_node_features(
-        enricher=LaplacianPositionalEncodingEnricher(
-            num_features=num_features,
-            # We are using transductive with all nodes coverage in the train split
-            num_nodes=dataset.hdata.num_nodes,
-        ),
+        enricher=node2vec_enricher,
         enrichment_mode="replace",
     )
     val_dataset.enrich_node_features_from(train_dataset)
@@ -88,21 +101,21 @@ if __name__ == "__main__":
 
     print("Creating dataloaders...")
 
-    train_loader_full_hypergraph = DataLoader(
+    train_loader = DataLoader(
         train_dataset,
-        sample_full_hypergraph=True,
+        batch_size=128,
         shuffle=False,
         num_workers=num_workers,
         persistent_workers=True,
     )
-    val_loader_full_hypergraph = DataLoader(
+    val_loader = DataLoader(
         val_dataset,
         sample_full_hypergraph=True,
         shuffle=False,
         num_workers=num_workers,
         persistent_workers=True,
     )
-    test_loader_full_hypergraph = DataLoader(
+    test_loader = DataLoader(
         test_dataset,
         sample_full_hypergraph=True,
         shuffle=False,
@@ -110,31 +123,61 @@ if __name__ == "__main__":
         persistent_workers=True,
     )
 
-    mean_hnhn_module = HNHNHlpModule(
+    precomputed_node2vecslp_module = Node2VecSLPHlpModule(
         encoder_config={
-            "in_channels": num_features,
-            "hidden_channels": 400,
-            "out_channels": 400,
-            "bias": True,
-            "use_batch_normalization": False,
-            "drop_rate": 0.3,
+            "mode": "precomputed",
+            "num_features": num_features,
+            "node2vec_config": {},
         },
         aggregation="mean",
-        lr=0.04,
-        weight_decay=5e-4,
-        scheduler_step_size=100,
-        scheduler_gamma=0.51,
+        lr=0.001,
+        weight_decay=0.0,
+        metrics=metrics,
+    )
+
+    train_hyperedge_index = train_dataset.hdata.hyperedge_index
+    joint_node2vecslp_module = Node2VecSLPHlpModule(
+        encoder_config={
+            "mode": "joint",
+            "num_features": num_features,
+            "node2vec_config": {
+                "context_size": 10,
+                "walk_length": 20,
+                "num_walks_per_node": 10,
+                "p": 1.0,
+                "q": 1.0,
+                "num_negative_samples": 1,
+                "train_hyperedge_index": train_hyperedge_index,
+                # We are using transductive with all nodes coverage in the train split
+                "num_nodes": dataset.hdata.num_nodes,
+                "graph_reduction_strategy": "clique_expansion",
+                "random_walk_batch_size": 128,
+                # We count the node2vec loss as 40% of the total loss (the rest is the SLP loss)
+                "node2vec_loss_weight": 0.4,
+            },
+        },
+        aggregation="mean",
+        lr=0.001,
+        weight_decay=0.0,
         metrics=metrics,
     )
 
     configs = [
         ModelConfig(
-            name="hnhn",
-            version="mean",
-            model=mean_hnhn_module,
-            train_dataloader=train_loader_full_hypergraph,
-            val_dataloader=val_loader_full_hypergraph,
-            test_dataloader=test_loader_full_hypergraph,
+            name="node2vecslp",
+            version="precomputed",
+            model=precomputed_node2vecslp_module,
+            train_dataloader=train_loader,
+            val_dataloader=val_loader,
+            test_dataloader=test_loader,
+        ),
+        ModelConfig(
+            name="node2vecslp",
+            version="joint",
+            model=joint_node2vecslp_module,
+            train_dataloader=train_loader,
+            val_dataloader=val_loader,
+            test_dataloader=test_loader,
         ),
     ]
 
@@ -142,18 +185,20 @@ if __name__ == "__main__":
 
     with MultiModelTrainer(
         model_configs=configs,
-        max_epochs=200,
+        max_epochs=60,
         accelerator="auto",
         log_every_n_steps=1,
         enable_checkpointing=False,
         auto_start_tensorboard=True,
         auto_wait=True,
+        devices=1,
+        test_devices=1,
     ) as trainer:
         trainer.fit_all(
-            train_dataloader=train_loader_full_hypergraph,
-            val_dataloader=val_loader_full_hypergraph,
+            train_dataloader=train_loader,
+            val_dataloader=val_loader,
             verbose=True,
         )
-        trainer.test_all(dataloader=test_loader_full_hypergraph, verbose=True)
+        trainer.test_all(dataloader=test_loader, verbose=True)
 
     print("Complete!")

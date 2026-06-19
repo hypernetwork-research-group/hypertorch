@@ -6,7 +6,7 @@ from torchmetrics.classification import (
     BinaryPrecision,
     BinaryRecall,
 )
-from hyperbench.hlp import HGNNPHlpModule
+from hyperbench.hlp import HNHNHlpModule
 from hyperbench.train import MultiModelTrainer
 from hyperbench.types import ModelConfig
 from hyperbench.data import (
@@ -21,7 +21,7 @@ from hyperbench.data import (
 if __name__ == "__main__":
     verbose = False
     num_workers = 8
-    num_features = 32
+    num_features = 128
     metrics = MetricCollection(
         {
             "auc": BinaryAUROC(),
@@ -110,26 +110,28 @@ if __name__ == "__main__":
         persistent_workers=True,
     )
 
-    mean_hgnnp_module = HGNNPHlpModule(
+    mean_hnhn_module = HNHNHlpModule(
         encoder_config={
             "in_channels": num_features,
-            "hidden_channels": 16,
-            "out_channels": 16,
+            "hidden_channels": 400,
+            "out_channels": 400,
             "bias": True,
             "use_batch_normalization": False,
-            "drop_rate": 0.5,
+            "drop_rate": 0.3,
         },
         aggregation="mean",
-        lr=0.01,
+        lr=0.04,
         weight_decay=5e-4,
+        scheduler_step_size=100,
+        scheduler_gamma=0.51,
         metrics=metrics,
     )
 
     configs = [
         ModelConfig(
-            name="hgnnp",
+            name="hnhn",
             version="mean",
-            model=mean_hgnnp_module,
+            model=mean_hnhn_module,
             train_dataloader=train_loader_full_hypergraph,
             val_dataloader=val_loader_full_hypergraph,
             test_dataloader=test_loader_full_hypergraph,
@@ -140,12 +142,14 @@ if __name__ == "__main__":
 
     with MultiModelTrainer(
         model_configs=configs,
-        max_epochs=60,
+        max_epochs=200,
         accelerator="auto",
         log_every_n_steps=1,
         enable_checkpointing=False,
         auto_start_tensorboard=True,
         auto_wait=True,
+        devices=1,
+        test_devices=1,
     ) as trainer:
         trainer.fit_all(
             train_dataloader=train_loader_full_hypergraph,
