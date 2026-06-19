@@ -286,7 +286,7 @@ def test_load_from_path_raises_for_unsupported_extension(tmp_path):
 
     with pytest.raises(
         ValueError,
-        match=r"Unsupported format for file '.*sample\.txt'. Expected \.json or \.json\.zst",
+        match=re.compile("Unsupported format for file '.*sample.txt'. Expected .json or .json.zst"),
     ):
         HIFLoader.load_from_path(str(invalid))
 
@@ -908,8 +908,10 @@ def test_load_by_name_raises_when_downloaded_hf_content_cannot_be_written(tmp_pa
         pytest.warns(UserWarning, match="GitHub raw download failed"),
         pytest.raises(
             ValueError,
-            match=r"Failed to save downloaded dataset 'algebra' to disk at '.*algebra\.json\.zst': "
-            r"disk full\.",
+            match=re.compile(
+                "Failed to save downloaded dataset 'algebra' to disk at '.*algebra.json.zst': "
+                "disk full."
+            ),
         ),
     ):
         HIFLoader.load_by_name("algebra", hf_sha=hf_sha, save_on_disk=True)
@@ -954,7 +956,7 @@ def test_load_from_path_raises_error_when_json_file_cannot_be_read(tmp_path):
     with (
         patch("hyperbench.data.hif.validate_hif_data", return_value=True),
         patch("builtins.open", side_effect=OSError("missing file")),
-        pytest.raises(ValueError, match=r"Failed to read JSON file '.*sample\.json'"),
+        pytest.raises(ValueError, match=re.compile("Failed to read JSON file '.*sample.json'")),
     ):
         HIFLoader.load_from_path(str(json_path))
 

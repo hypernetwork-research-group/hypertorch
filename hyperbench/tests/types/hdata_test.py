@@ -1465,7 +1465,7 @@ def test_enrich_node_features_from_raises_when_target_node_missing_from_source()
 
     with pytest.raises(
         ValueError,
-        match=r"Missing node features for target global_node_ids: \[30\]\.",
+        match=re.escape("Missing node features for target global_node_ids: [30]."),
     ):
         target_hdata.enrich_node_features_from(source_hdata)
 

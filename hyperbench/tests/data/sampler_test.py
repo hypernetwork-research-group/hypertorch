@@ -198,7 +198,7 @@ def test_sample_index_out_of_bounds_raises(mock_four_node_two_hyperedge_hdata, s
 def test_sample_index_list_too_large_raises(
     mock_four_node_two_hyperedge_hdata, sampler, index_list
 ):
-    with pytest.raises(ValueError, match=r"Index list length .* cannot exceed"):
+    with pytest.raises(ValueError, match=re.compile("Index list length .* cannot exceed")):
         sampler.sample(index_list, mock_four_node_two_hyperedge_hdata)
 
 
