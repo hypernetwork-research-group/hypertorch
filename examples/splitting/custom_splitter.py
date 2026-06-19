@@ -13,20 +13,17 @@ class CustomSplitter(Splitter["Dataset", list["Dataset"]]):
 
     def split(self, to_split: Dataset, **kwargs) -> list[Dataset]:
         split_ratios = [0.5, 0.25, 0.25]  # Custom split ratios for train, val, test
-        num_train_included = int(split_ratios[0] * to_split.hdata.num_hyperedges)
-        num_val_included = int(split_ratios[1] * to_split.hdata.num_hyperedges)
-        num_test_included = int(split_ratios[2] * to_split.hdata.num_hyperedges)
+        num_hyperedges_in_train = int(split_ratios[0] * to_split.hdata.num_hyperedges)
+        num_hyperedges_in_val = int(split_ratios[1] * to_split.hdata.num_hyperedges)
+        num_hyperedges_in_test = int(split_ratios[2] * to_split.hdata.num_hyperedges)
 
-        train_he = to_split.hdata.hyperedge_index[:, :num_train_included]
-        val_he = to_split.hdata.hyperedge_index[
-            :, num_train_included : num_train_included + num_val_included
-        ]
-        test_he = to_split.hdata.hyperedge_index[
-            :,
-            num_train_included + num_val_included : num_train_included
-            + num_val_included
-            + num_test_included,
-        ]
+        end_train = start_val = num_hyperedges_in_train
+        end_val = start_test = num_hyperedges_in_train + num_hyperedges_in_val
+        end_test = num_hyperedges_in_train + num_hyperedges_in_val + num_hyperedges_in_test
+
+        train_he = to_split.hdata.hyperedge_index[:, :end_train]
+        val_he = to_split.hdata.hyperedge_index[:, start_val:end_val]
+        test_he = to_split.hdata.hyperedge_index[:, start_test:end_test]
 
         train_hdata = HData.from_hyperedge_index(train_he)
         val_hdata = HData.from_hyperedge_index(val_he)
