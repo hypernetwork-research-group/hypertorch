@@ -286,9 +286,7 @@ def test_load_from_path_raises_for_unsupported_extension(tmp_path):
 
     with pytest.raises(
         ValueError,
-        match=re.compile(
-            "Unsupported format for file '.*sample\\.txt'. Expected \\.json or \\.json\\.zst"
-        ),
+        match=re.compile("Unsupported format for file '.*sample.txt'. Expected .json or .json.zst"),
     ):
         HIFLoader.load_from_path(str(invalid))
 

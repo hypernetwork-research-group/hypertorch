@@ -170,13 +170,13 @@ def test_del_suppresses_exception_from_finalize(
 
     with pytest.warns(
         UserWarning,
-        match=re.compile("Exception occurred during MultiModelTrainer cleanup. Error: error"),
+        match=re.escape("Exception occurred during MultiModelTrainer cleanup. Error: error"),
     ):
         trainer1.__del__()
 
     with pytest.warns(
         UserWarning,
-        match=re.compile("Exception occurred during MultiModelTrainer cleanup. Error: error"),
+        match=re.escape("Exception occurred during MultiModelTrainer cleanup. Error: error"),
     ):
         del trainer2
 
