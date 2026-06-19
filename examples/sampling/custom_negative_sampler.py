@@ -23,7 +23,7 @@ class CustomNegativeSampler(NegativeSampler):
             x=hdata.x,
             hyperedge_index=self.negative_tensor,
             y=torch.zeros(5, dtype=torch.float),
-            num_nodes=hdata.num_nodes,
+            num_nodes=hdata.num_nodes,  # we use the same node space as the original dataset
             num_hyperedges=5,
         )
 
