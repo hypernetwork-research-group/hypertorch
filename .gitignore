@@ -122,14 +122,10 @@ cython_debug/
 # MacOS
 .DS_Store
 
-# Custom
+# HyperTorch
+hypertorch_logs/
+lightning_logs/
+.hypertorch_cache/
 **/datasets/*.zst
 .plans/
 plans/
-
-# Logs
-hypertorch_logs/
-lightning_logs/
-
-# hypertorch cache
-.hypertorch_cache/

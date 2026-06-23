@@ -2,7 +2,7 @@
 
 ## Install with pip or uv
 
-For users working with the pip package manager, hypertorch can be installed from PyPI.
+For users working with the pip package manager, HyperTorch can be installed from PyPI.
 
 ```bash
 pip install hypertorch
@@ -10,9 +10,9 @@ pip install hypertorch
 pip install "hypertorch[tensorboard]"
 ```
 
-Additionally, it is recommended to install and run hypertorch from a virtual environment, for example, using the Python standard library’s venv.
+Additionally, it is recommended to install and run HyperTorch from a virtual environment, for example, using the Python standard library’s venv.
 Internally, we use [uv](https://github.com/astral-sh/uv) as a build and development tool, which also provides a convenient way to manage virtual environments and dependencies.
-After installing uv, you can create a project environment and add hypertorch with:
+After installing uv, you can create a project environment and add HyperTorch with:
 
 ```bash
 uv init

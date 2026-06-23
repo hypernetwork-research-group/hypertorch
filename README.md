@@ -30,18 +30,19 @@ Use HyperTorch to:
 
 ## Main features
 
-| Feature | What you can do | Highlights | Package |
+| Feature | What you can do | Highlights | Location |
 | :--- | :--- | :--- | :--- |
-| **Dataset management** | Load, preprocess, and manage hypergraph datasets | HIF loader/processor, built-in datasets such as Algebra, Cora, Pubmed, DBLP, Amazon, and IMDB | `hypertorch.data` |
-| **Sampling and batching** | Sample sub-hypergraphs and prepare training batches | DataLoader, node and hyperedge samplers, and full-hypergraph evaluation batches | `hypertorch.data` |
-| **Training and benchmarking** | Train and benchmark models out of the box | Multi-model trainer, negative sampling, schedulers, Markdown/LaTeX result tables | `hypertorch.train` |
-| **Models** | Access a wide range of hypergraph models | HGNN, HGNNP, HNHN, HyperGCN, GCN, MLP/SLP, NHP, Node2Vec, VilLain, CommonNeighbors | `hypertorch.models` |
-| **Neural network components** | Build custom architectures and pipelines | Convolutions, aggregators, losses, scorers, enrichers, positional encodings | `hypertorch.nn` |
-| **HLP pipelines** | Use ready-to-run training and evaluation pipelines | HLP modules with encoders, configs, and loss definitions for multiple models | `hypertorch.hlp` |
+| **Dataset management** | Load, process, and validate hypergraph datasets | HIF loader/processor, built-in datasets such as Algebra, Cora, Pubmed, DBLP, Amazon, and IMDB | `hypertorch.data` |
+| **Splitting, sampling, and batching** | Prepare train/validation/test data and mini-batches | Dataset splitters, node and hyperedge samplers, negative samplers, data loaders | `hypertorch.data` |
+| **Feature enrichment** | Enrich node and hyperedge features before training | Laplacian positional encodings, Node2Vec features, hyperedge weights and attributes | `hypertorch.data` |
+| **Models** | Access hypergraph models | HGNN, HGNNP, HNHN, HyperGCN, GCN, MLP/SLP, NHP, Node2Vec, VilLain, CommonNeighbors | `hypertorch.models` |
+| **Neural components** | Build models and pipelines | Layers, aggregators, losses, and activation/normalization helpers | `hypertorch.nn` |
+| **HLP pipelines** | Use ready-to-train hyperlink prediction modules | HLP modules with encoders, configs, losses, and stage metrics for multiple models | `hypertorch.hlp` |
+| **Training and benchmarking** | Train, compare, checkpoint, and report model runs | Multi-model trainer, schedulers, TensorBoard support, CSV/Markdown/LaTeX result tables | `hypertorch.train` |
 
 ## Getting started
 
-For users working with the [pip](https://pip.pypa.io/en/stable/) package manager, hypertorch can be installed from PyPI.
+For users working with the [pip](https://pip.pypa.io/en/stable/) package manager, HyperTorch can be installed from PyPI.
 
 ```bash
 pip install hypertorch
@@ -63,18 +64,18 @@ If you want to build the project from source, see the [documentation](#documenta
 
 ### Run examples
 
-You can download [examples](examples) directory and run the example scripts to get started.
+You can download the [examples](examples) directory and run the example scripts to get started.
 
 With Python:
 
 ```bash
-python3 examples/nhp.py
+python3 examples/hyperlink_prediction/nhp.py
 ```
 
 Or with `uv`:
 
 ```bash
-uv run examples/nhp.py
+uv run examples/hyperlink_prediction/nhp.py
 ```
 
 ## Contributing

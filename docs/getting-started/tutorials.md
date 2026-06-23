@@ -10,7 +10,7 @@ make setup
 # Optional setup
 make setup-tensorboard
 
-make run examples/gcn.py
+make run examples/hyperlink_prediction/nhp.py
 ```
 
 | Example | What it demonstrates | Run |
