@@ -47,7 +47,7 @@ class Splitter(ABC, Generic[_ToSplitType, _SplitResultType]):
         pass
 
 
-class DefaultDatasetSplitter(Splitter["Dataset", tuple[list["Dataset"], list[float]]]):
+class HyperedgeDatasetSplitter(Splitter["Dataset", tuple[list["Dataset"], list[float]]]):
     """
     Split a dataset by hyperedges and materialize dataset partitions.
 
@@ -144,7 +144,7 @@ class DefaultDatasetSplitter(Splitter["Dataset", tuple[list["Dataset"], list[flo
                 if is_transductive_setting(self.node_space_setting) and split_num == train_split_idx
                 else "inductive"
             )
-            split_hdata = DefaultHDataSplitter(node_space_setting=split_node_space_setting).split(
+            split_hdata = HyperedgeHDataSplitter(node_space_setting=split_node_space_setting).split(
                 to_split=hdata,
                 split_hyperedge_ids=split_hyperedge_ids,
             )
@@ -179,7 +179,7 @@ class DefaultDatasetSplitter(Splitter["Dataset", tuple[list["Dataset"], list[flo
         validate_is_between("train_split_idx", train_split_idx, 0, len(ratios) - 1)
 
 
-class DefaultHDataSplitter(Splitter["HData", "HData"]):
+class HyperedgeHDataSplitter(Splitter["HData", "HData"]):
     """
     Materialize an `HData` split from explicit hyperedge IDs.
 

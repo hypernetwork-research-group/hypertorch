@@ -13,7 +13,7 @@ from hypertorch.utils import (
 
 from hypertorch.data.hif import HIFLoader, HIFProcessor
 from hypertorch.data.sampler import BaseSampler, SamplingStrategy, create_sampler_from_strategy
-from hypertorch.data.splitter import DefaultDatasetSplitter, Splitter
+from hypertorch.data.splitter import HyperedgeDatasetSplitter, Splitter
 
 if TYPE_CHECKING:
     from hypertorch.data import (
@@ -376,7 +376,7 @@ class Dataset(TorchDataset):
         if ratios is None:
             raise ValueError("'ratios' must be provided when no custom 'splitter' is provided.")
 
-        splits, _ = DefaultDatasetSplitter(
+        splits, _ = HyperedgeDatasetSplitter(
             node_space_setting=node_space_setting,
             shuffle=shuffle,
             seed=seed,
@@ -436,15 +436,16 @@ class Dataset(TorchDataset):
                 is set to ``False``. Defaults to ``None``.
 
         Returns:
-            datasets_and_ratios: A tuple containing the split datasets and their
-                final hyperedge-count ratios.
+            datasets: List of Dataset instances, one per split, each with contiguous IDs.
+            final_ratios: List of floats representing the actual ratios of hyperedges
+                in each split after splitting and any requested rebalancing.
 
         Raises:
             ValueError: If ratios do not sum to ``1.0``, a final split has zero
                 hyperedges, or a requested transductive train-cover split cannot
                 cover the full node space.
         """
-        return DefaultDatasetSplitter(
+        return HyperedgeDatasetSplitter(
             node_space_setting=node_space_setting,
             shuffle=shuffle,
             seed=seed,

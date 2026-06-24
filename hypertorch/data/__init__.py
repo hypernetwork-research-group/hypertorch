@@ -64,8 +64,8 @@ from .sampler import (
 )
 
 from .splitter import (
-    DefaultDatasetSplitter,
-    DefaultHDataSplitter,
+    HyperedgeDatasetSplitter,
+    HyperedgeHDataSplitter,
     HyperedgeIDSplitter,
     Splitter,
 )
@@ -83,8 +83,6 @@ __all__ = [
     "DBLPDataset",
     "DataLoader",
     "Dataset",
-    "DefaultDatasetSplitter",
-    "DefaultHDataSplitter",
     "EmailEnronDataset",
     "EmailW3CDataset",
     "EnrichmentMode",
@@ -95,7 +93,9 @@ __all__ = [
     "HIFLoader",
     "HIFProcessor",
     "HyperedgeAttrsEnricher",
+    "HyperedgeDatasetSplitter",
     "HyperedgeEnricher",
+    "HyperedgeHDataSplitter",
     "HyperedgeIDSplitter",
     "HyperedgeSampler",
     "HyperedgeWeightsEnricher",
