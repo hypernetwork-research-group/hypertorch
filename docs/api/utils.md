@@ -1,3 +1,3 @@
 # Utils
 
-::: hyperbench.utils
+::: hypertorch.utils

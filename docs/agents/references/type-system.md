@@ -1,6 +1,6 @@
 # Type system mastery
 
-## HyperBench specifics
+## HyperTorch specifics
 
 - Python requirement is `>=3.10`.
 - Use `ty` for type checking via `make check`.

@@ -4,7 +4,7 @@ This document describes how to report security issues and what to expect from ma
 
 ## Supported versions
 
-HyperBench is research-oriented and evolves quickly. Security fixes are provided on a best-effort basis.
+HyperTorch is research-oriented and evolves quickly. Security fixes are provided on a best-effort basis.
 
 | Version | Supported |
 | --- | --- |
@@ -20,7 +20,7 @@ Please do **not** open a public GitHub issue for suspected vulnerabilities.
 
 Preferred: open a **private** GitHub Security Advisory:
 
-- https://github.com/hypernetwork-research-group/hyperbench/security/advisories/new
+- https://github.com/hypernetwork-research-group/hypertorch/security/advisories/new
 
 If you cannot use GitHub Security Advisories, contact the maintainers privately (you can find the project team contacts in [pyproject.toml](pyproject.toml)).
 
@@ -42,13 +42,13 @@ This repo follows coordinated disclosure, but timelines can vary depending on ma
 
 In scope:
 
-- The `hyperbench` Python package and repository code.
+- The `hypertorch` Python package and repository code.
 - Documentation build tooling in this repo (if it can impact users).
 
 Out of scope:
 
 - Vulnerabilities in upstream dependencies (e.g., PyTorch, PyG, NumPy). Please report those to the upstream project.
-- Vulnerabilities requiring a fully compromised environment (unless there is an additional HyperBench-specific escalation).
+- Vulnerabilities requiring a fully compromised environment (unless there is an additional HyperTorch-specific escalation).
 
 ## Security updates
 

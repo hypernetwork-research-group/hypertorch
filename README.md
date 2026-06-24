@@ -1,4 +1,4 @@
-# HyperBench
+# HyperTorch
 
 | | |
 | --- | --- |
@@ -9,11 +9,11 @@
 
 ## About the project
 
-HyperBench is a library for hypergraph learning and benchmarking. It provides a standardized workflow for loading hypergraph datasets, training models, evaluating them under comparable settings, and reporting results. The current release focuses on Hyperlink Prediction, with ready-to-run pipelines for established hypergraph baselines.
+HyperTorch is a library for hypergraph learning and benchmarking. It provides a standardized workflow for loading hypergraph datasets, training models, evaluating them under comparable settings, and reporting results. The current release focuses on Hyperlink Prediction, with ready-to-run pipelines for established hypergraph baselines.
 
-The library is built around extensibility: datasets are represented in [HIF](https://github.com/HIF-org/HIF-standard) format and converted into typed tensor objects, models can be implemented as standard Lightning modules, and benchmarking is handled through reusable trainers, samplers, metrics, loggers, and result exporters (Markdown/LaTeX). HyperBench includes preloaded datasets, mini-batch and full-hypergraph data loading, negative sampling utilities, structural feature enrichers, neural components, and built-in models such as HGNN, HNHN, HyperGCN, GCN, MLP/SLP, NHP, Node2Vec, VilLain, and more.
+The library is built around extensibility: datasets are represented in [HIF](https://github.com/HIF-org/HIF-standard) format and converted into typed tensor objects, models can be implemented as standard Lightning modules, and benchmarking is handled through reusable trainers, samplers, metrics, loggers, and result exporters (Markdown/LaTeX). HyperTorch includes preloaded datasets, mini-batch and full-hypergraph data loading, negative sampling utilities, structural feature enrichers, neural components, and built-in models such as HGNN, HNHN, HyperGCN, GCN, MLP/SLP, NHP, Node2Vec, VilLain, and more.
 
-Use HyperBench to:
+Use HyperTorch to:
 - Benchmark existing models across a shared collection of hypergraph datasets.
 - Develop custom PyTorch or PyTorch Lightning models and train and compare them against the built-in baselines.
 - Integrate new datasets through the HIF format and run the same training, evaluation, and reporting pipeline on them.
@@ -30,51 +30,52 @@ Use HyperBench to:
 
 ## Main features
 
-| Feature | What you can do | Highlights | Package |
+| Feature | What you can do | Highlights | Location |
 | :--- | :--- | :--- | :--- |
-| **Dataset management** | Load, preprocess, and manage hypergraph datasets | HIF loader/processor, built-in datasets such as Algebra, Cora, Pubmed, DBLP, Amazon, and IMDB | `hyperbench.data` |
-| **Sampling and batching** | Sample sub-hypergraphs and prepare training batches | DataLoader, node and hyperedge samplers, and full-hypergraph evaluation batches | `hyperbench.data` |
-| **Training and benchmarking** | Train and benchmark models out of the box | Multi-model trainer, negative sampling, schedulers, Markdown/LaTeX result tables | `hyperbench.train` |
-| **Models** | Access a wide range of hypergraph models | HGNN, HGNNP, HNHN, HyperGCN, GCN, MLP/SLP, NHP, Node2Vec, VilLain, CommonNeighbors | `hyperbench.models` |
-| **Neural network components** | Build custom architectures and pipelines | Convolutions, aggregators, losses, scorers, enrichers, positional encodings | `hyperbench.nn` |
-| **HLP pipelines** | Use ready-to-run training and evaluation pipelines | HLP modules with encoders, configs, and loss definitions for multiple models | `hyperbench.hlp` |
+| **Dataset management** | Load, process, and validate hypergraph datasets | HIF loader/processor, built-in datasets such as Algebra, Cora, Pubmed, DBLP, Amazon, and IMDB | `hypertorch.data` |
+| **Splitting, sampling, and batching** | Prepare train/validation/test data and mini-batches | Dataset splitters, node and hyperedge samplers, negative samplers, data loaders | `hypertorch.data` |
+| **Feature enrichment** | Enrich node and hyperedge features before training | Laplacian positional encodings, Node2Vec features, hyperedge weights and attributes | `hypertorch.data` |
+| **Models** | Access hypergraph models | HGNN, HGNNP, HNHN, HyperGCN, GCN, MLP/SLP, NHP, Node2Vec, VilLain, CommonNeighbors | `hypertorch.models` |
+| **Neural components** | Build models and pipelines | Layers, aggregators, losses, and activation/normalization helpers | `hypertorch.nn` |
+| **HLP pipelines** | Use ready-to-train hyperlink prediction modules | HLP modules with encoders, configs, losses, and stage metrics for multiple models | `hypertorch.hlp` |
+| **Training and benchmarking** | Train, compare, checkpoint, and report model runs | Multi-model trainer, schedulers, TensorBoard support, CSV/Markdown/LaTeX result tables | `hypertorch.train` |
 
 ## Getting started
 
-For users working with the [pip](https://pip.pypa.io/en/stable/) package manager, hyperbench can be installed from PyPI.
+For users working with the [pip](https://pip.pypa.io/en/stable/) package manager, HyperTorch can be installed from PyPI.
 
 ```bash
-pip install hyperbench
+pip install hypertorch
 
 # if you want to install optional dependencies for tensorboard support:
-pip install "hyperbench[tensorboard]"
+pip install "hypertorch[tensorboard]"
 ```
 
 or alternatively, using [uv](https://docs.astral.sh/uv/):
 
 ```bash
-uv add hyperbench # or uv pip install hyperbench
+uv add hypertorch # or uv pip install hypertorch
 
 # for optional dependencies for tensorboard support:
-uv add "hyperbench[tensorboard]"
+uv add "hypertorch[tensorboard]"
 ```
 
 If you want to build the project from source, see the [documentation](#documentation) for more details.
 
 ### Run examples
 
-You can download [examples](examples) directory and run the example scripts to get started.
+You can download the [examples](examples) directory and run the example scripts to get started.
 
 With Python:
 
 ```bash
-python3 examples/nhp.py
+python3 examples/hyperlink_prediction/nhp.py
 ```
 
 Or with `uv`:
 
 ```bash
-uv run examples/nhp.py
+uv run examples/hyperlink_prediction/nhp.py
 ```
 
 ## Contributing
@@ -106,33 +107,33 @@ Most development discussions take place on GitHub in this repo, via the [GitHub 
 
 ![Alt](https://repobeats.axiom.co/api/embed/c168082ecb1f9f843c1b170dcfee93542b576f61.svg "Repobeats analytics image")
 
-<a href="https://www.star-history.com/?repos=hypernetwork-research-group%2Fhyperbench&type=date&logscale=&legend=top-left">
+<a href="https://www.star-history.com/?repos=hypernetwork-research-group%2Fhypertorch&type=date&logscale=&legend=top-left">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=hypernetwork-research-group/hyperbench&type=date&theme=dark&logscale&legend=top-left" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=hypernetwork-research-group/hyperbench&type=date&logscale&legend=top-left" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=hypernetwork-research-group/hyperbench&type=date&logscale&legend=top-left" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=hypernetwork-research-group/hypertorch&type=date&theme=dark&logscale&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=hypernetwork-research-group/hypertorch&type=date&logscale&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=hypernetwork-research-group/hypertorch&type=date&logscale&legend=top-left" />
  </picture>
 </a>
 
 <!-- LINKS -->
-[codecov-shield]: https://codecov.io/github/hypernetwork-research-group/hyperbench/graph/badge.svg?token=XE0TB5JMOS
-[codecov-url]: https://codecov.io/github/hypernetwork-research-group/hyperbench
-[codefactor-shield]: https://www.codefactor.io/repository/github/hypernetwork-research-group/hyperbench/badge
-[codefactor-url]: https://www.codefactor.io/repository/github/hypernetwork-research-group/hyperbench
-[daily-ci-shield]: https://github.com/hypernetwork-research-group/hyperbench/actions/workflows/daily_ci.yaml/badge.svg
-[contributors-shield]: https://img.shields.io/github/contributors/hypernetwork-research-group/hyperbench.svg?style=flat
-[contributors-url]: https://github.com/hypernetwork-research-group/hyperbench/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/hypernetwork-research-group/hyperbench.svg?style=flat
-[forks-url]: https://github.com/hypernetwork-research-group/hyperbench/network/members
-[stars-shield]: https://img.shields.io/github/stars/hypernetwork-research-group/hyperbench.svg?style=flat
-[stars-url]: https://github.com/hypernetwork-research-group/hyperbench/stargazers
-[issues-shield]: https://img.shields.io/github/issues/hypernetwork-research-group/hyperbench.svg?style=flat
-[issues-url]: https://github.com/hypernetwork-research-group/hyperbench/issues
+[codecov-shield]: https://codecov.io/github/hypernetwork-research-group/hypertorch/graph/badge.svg?token=XE0TB5JMOS
+[codecov-url]: https://codecov.io/github/hypernetwork-research-group/hypertorch
+[codefactor-shield]: https://www.codefactor.io/repository/github/hypernetwork-research-group/hypertorch/badge
+[codefactor-url]: https://www.codefactor.io/repository/github/hypernetwork-research-group/hypertorch
+[daily-ci-shield]: https://github.com/hypernetwork-research-group/hypertorch/actions/workflows/daily_ci.yaml/badge.svg
+[contributors-shield]: https://img.shields.io/github/contributors/hypernetwork-research-group/hypertorch.svg?style=flat
+[contributors-url]: https://github.com/hypernetwork-research-group/hypertorch/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/hypernetwork-research-group/hypertorch.svg?style=flat
+[forks-url]: https://github.com/hypernetwork-research-group/hypertorch/network/members
+[stars-shield]: https://img.shields.io/github/stars/hypernetwork-research-group/hypertorch.svg?style=flat
+[stars-url]: https://github.com/hypernetwork-research-group/hypertorch/stargazers
+[issues-shield]: https://img.shields.io/github/issues/hypernetwork-research-group/hypertorch.svg?style=flat
+[issues-url]: https://github.com/hypernetwork-research-group/hypertorch/issues
 [license-shield]: https://img.shields.io/badge/License-MIT-yellow.svg
 [license-url]: https://opensource.org/licenses/MIT
-[docs]: https://hypernetwork-research-group.github.io/hyperbench/
-[issues]: https://github.com/hypernetwork-research-group/hyperbench/issues
+[docs]: https://hypernetwork-research-group.github.io/hypertorch/
+[issues]: https://github.com/hypernetwork-research-group/hypertorch/issues
 [python-shield]: https://img.shields.io/badge/python-3.10%2B-blue.svg
 [python-url]: https://www.python.org/downloads/
 [docs-shield]: https://img.shields.io/badge/docs-latest-blue.svg
-[docs-url]: https://hypernetwork-research-group.github.io/hyperbench/
+[docs-url]: https://hypernetwork-research-group.github.io/hypertorch/

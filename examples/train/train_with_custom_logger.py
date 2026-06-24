@@ -8,10 +8,10 @@ from torchmetrics.classification import (
     BinaryPrecision,
     BinaryRecall,
 )
-from hyperbench.hlp import MLPHlpModule
-from hyperbench.train import MultiModelTrainer
-from hyperbench.types import ModelConfig
-from hyperbench.data import (
+from hypertorch.hlp import MLPHlpModule
+from hypertorch.train import MultiModelTrainer
+from hypertorch.types import ModelConfig
+from hypertorch.data import (
     AlgebraDataset,
     DataLoader,
     LaplacianPositionalEncodingEnricher,
@@ -27,7 +27,7 @@ class CustomLogger(Logger):
     __shared_stores: ClassVar[dict[str, dict[str, dict[str, Any]]]] = {}
 
     def __init__(
-        self, experiment_name: str, model_name: str, save_dir: str | Path = "hyperbench_logs"
+        self, experiment_name: str, model_name: str, save_dir: str | Path = "hypertorch_logs"
     ):
         super().__init__()
         self.__experiment_name = experiment_name

@@ -1,3 +1,3 @@
 # Train
 
-::: hyperbench.train
+::: hypertorch.train

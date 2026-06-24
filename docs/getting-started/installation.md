@@ -2,24 +2,24 @@
 
 ## Install with pip or uv
 
-For users working with the pip package manager, hyperbench can be installed from PyPI.
+For users working with the pip package manager, HyperTorch can be installed from PyPI.
 
 ```bash
-pip install hyperbench
+pip install hypertorch
 # if you want to install optional dependencies for tensorboard support:
-pip install "hyperbench[tensorboard]"
+pip install "hypertorch[tensorboard]"
 ```
 
-Additionally, it is recommended to install and run hyperbench from a virtual environment, for example, using the Python standard library’s venv.
+Additionally, it is recommended to install and run HyperTorch from a virtual environment, for example, using the Python standard library’s venv.
 Internally, we use [uv](https://github.com/astral-sh/uv) as a build and development tool, which also provides a convenient way to manage virtual environments and dependencies.
-After installing uv, you can create a project environment and add hyperbench with:
+After installing uv, you can create a project environment and add HyperTorch with:
 
 ```bash
 uv init
-uv add hyperbench # or uv pip install hyperbench
+uv add hypertorch # or uv pip install hypertorch
 
 # For optional dependencies
-uv add "hyperbench[tensorboard]"
+uv add "hypertorch[tensorboard]"
 ```
 
 ## Python version support
@@ -32,7 +32,7 @@ Use the development installation for contributing or if you want to use the late
 
 ## Required dependencies
 
-HyperBench declares compatibility ranges for direct dependencies in `pyproject.toml`.
+HyperTorch declares compatibility ranges for direct dependencies in `pyproject.toml`.
 
 | Dependency | Supported range | Markers / notes |
 | --- | --- | --- |

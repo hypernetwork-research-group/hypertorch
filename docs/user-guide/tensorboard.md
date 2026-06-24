@@ -1,6 +1,6 @@
 # TensorBoard
 
-HyperBench can log to TensorBoard via Lightning’s `TensorBoardLogger`.
+HyperTorch can log to TensorBoard via Lightning’s `TensorBoardLogger`.
 
 ## Install TensorBoard support
 
@@ -21,7 +21,7 @@ uv pip install -e ".[tensorboard]"
 Many examples enable automatic TensorBoard startup:
 
 ```python
-from hyperbench.train import MultiModelTrainer
+from hypertorch.train import MultiModelTrainer
 
 with MultiModelTrainer(
     model_configs=configs,
@@ -47,7 +47,7 @@ with MultiModelTrainer(
 ```
 
 ```bash
-tensorboard --logdir hyperbench_logs --port 6006
+tensorboard --logdir hypertorch_logs --port 6006
 ```
 
 Then open `http://127.0.0.1:6006` in your browser.

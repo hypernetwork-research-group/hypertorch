@@ -1,4 +1,4 @@
-from hyperbench.data import (
+from hypertorch.data import (
     ABHyperedgeWeightsEnricher,
     AlgebraDataset,
     FillValueHyperedgeAttrsEnricher,

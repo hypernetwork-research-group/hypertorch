@@ -1,3 +1,3 @@
 # NN
 
-::: hyperbench.nn
+::: hypertorch.nn

@@ -1,10 +1,10 @@
 # Packaging and project setup
 
-## HyperBench specifics
+## HyperTorch specifics
 
-- HyperBench uses `uv` for environment management and command execution.
+- HyperTorch uses `uv` for environment management and command execution.
 - Prefer Makefile targets over ad hoc commands.
-- The package uses a flat layout: `hyperbench/` lives at the repository root.
+- The package uses a flat layout: `hypertorch/` lives at the repository root.
 - Package metadata, dependencies, and tool configuration live in `pyproject.toml`.
 - Optional extras are defined in `pyproject.toml` under `[project.optional-dependencies]`, currently including `tensorboard`.
 
@@ -20,7 +20,7 @@
   - `make check`
 - Tests:
   - `make test`
-  - `make stest T=<path-within-hyperbench/tests>`
+  - `make stest T=<path-within-hypertorch/tests>`
 - Docs:
   - `make docs-build`
   - `make docs-serve`
@@ -45,7 +45,7 @@
 │   ├── hgnn.py
 |   ├── ...
 │   └── villain.py
-├── hyperbench              # core Python package
+├── hypertorch              # core Python package
 │   ├── data                # datasets, loaders, and sampling
 │   ├── hlp                 # HLP task helpers and pipelines
 │   ├── models              # model implementations
@@ -54,7 +54,7 @@
 │   ├── train               # training loops and loggers
 │   ├── types               # shared type definitions
 │   └── utils               # reusable helpers
-├── hyperbench_logs         # local experiment outputs
+├── hypertorch_logs         # local experiment outputs
 │   └── experiment_0
 │       ├── common_neighbors
 │       ├── comparison
@@ -67,7 +67,7 @@
 
 ## Packaging notes
 
-- `make setup` runs `uv sync` and then installs HyperBench in editable mode with `uv pip install -e .`.
+- `make setup` runs `uv sync` and then installs HyperTorch in editable mode with `uv pip install -e .`.
 - `make build` is a convenience target for `clean` followed by `setup`.
 - The project is discovered via setuptools in `pyproject.toml` under `[tool.setuptools.packages.find]`.
 - If you change dependencies, extras, or tool configuration, update `pyproject.toml` and any affected docs together.

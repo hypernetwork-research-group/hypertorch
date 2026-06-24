@@ -1,0 +1,130 @@
+from torch import Tensor, nn
+from hypertorch.nn import HyperGCNConv
+from hypertorch.types import EdgeIndex, HyperedgeIndex
+
+
+class HyperGCN(nn.Module):
+    """
+    HyperGCN approximates each hyperedge of the hypergraph by a set of pairwise edges connecting the
+    vertices of the hyperedge and treats the learning problem as a graph learning problem on the
+    approximation.
+
+    References:
+        - Proposed in [HyperGCN: A New Method of Training Graph Convolutional Networks on Hypergraphs](https://dl.acm.org/doi/10.5555/3454287.3454422) paper (NeurIPS 2019).
+        - Code of the paper: [source](https://github.com/malllabiisc/HyperGCN).
+        - Reference implementation: [source](https://deephypergraph.readthedocs.io/en/latest/_modules/dhg/models/hypergraphs/hypergcn.html#HyperGCN).
+
+    Attributes:
+        fast: Whether to cache the reduced graph smoothing matrix.
+        use_mediator: Whether to use mediator edges during hypergraph reduction.
+        cached_gcn_laplacian_matrix: Cached normalized GCN Laplacian matrix.
+        seed: Optional random seed for hypergraph reduction.
+        layers: Two stacked ``HyperGCNConv`` layers.
+    """  # noqa: E501
+
+    def __init__(
+        self,
+        in_channels: int,
+        hidden_channels: int,
+        num_classes: int,
+        bias: bool = True,
+        use_batch_normalization: bool = False,
+        drop_rate: float = 0.5,
+        use_mediator: bool = False,
+        fast: bool = True,
+        seed: int | None = None,
+    ):
+        """
+        Initialize the HyperGCN model.
+
+        Args:
+            in_channels: The number of input channels.
+            hidden_channels: The number of hidden channels.
+            num_classes: The number of classes of the classification task as HyperGCB is a
+                node classification model.
+            bias: If set to ``False``, the layer will not learn the bias parameter.
+                Defaults to ``True``.
+            use_batch_normalization: If set to ``True``, layers will use batch normalization.
+                Defaults to ``False``.
+            drop_rate: Dropout ratio. Defaults to ``0.5``.
+            use_mediator: Whether to use mediator to transform the hyperedges to edges in the graph.
+                Defaults to ``False``.
+            fast: If set to ``True``, the transformed graph structure will be computed once from
+                the input hypergraph and vertex features, and cached for future use.
+                Defaults to ``True``.
+            seed: Optional random seed for the random reduction of hyperedges to edges.
+                Defaults to ``None``.
+        """
+        super().__init__()
+        self.fast: bool = fast
+        self.use_mediator: bool = use_mediator
+        self.cached_gcn_laplacian_matrix: Tensor | None = None
+        self.seed: int | None = seed
+
+        self.layers: nn.ModuleList = nn.ModuleList(
+            [
+                HyperGCNConv(
+                    in_channels=in_channels,
+                    out_channels=hidden_channels,
+                    bias=bias,
+                    use_batch_normalization=use_batch_normalization,
+                    drop_rate=drop_rate,
+                    use_mediator=use_mediator,
+                    seed=self.seed,
+                ),
+                HyperGCNConv(
+                    in_channels=hidden_channels,
+                    out_channels=num_classes,
+                    bias=bias,
+                    use_batch_normalization=use_batch_normalization,
+                    use_mediator=use_mediator,
+                    is_last=True,
+                    seed=self.seed,
+                ),
+            ]
+        )
+
+    def forward(self, x: Tensor, hyperedge_index: Tensor) -> Tensor:
+        """
+        The forward function.
+
+        Args:
+            x: Input node feature matrix. Size ``(num_nodes, in_channels)``.
+            hyperedge_index: The hyperedge indices of the hypergraph. Size ``(2, num_hyperedges)``.
+
+        Returns:
+            x: The output node feature matrix. Size ``(num_nodes, num_classes)``.
+        """
+        if not self.fast:
+            for layer in self.layers:
+                x = layer(x, hyperedge_index)
+            return x
+
+        # If the GCN Laplacian is cached, we need to check if the node feature size has changed
+        # with cached_gcn_laplacian_matrix.size(0) != x.size(0), this can happen,
+        # for example, due to:
+        # adding new negative samples or having validation/test sets with different node features
+        should_not_use_cached_gcn_laplacian_matrix = (
+            self.cached_gcn_laplacian_matrix is None  # Not cached yet
+            or self.cached_gcn_laplacian_matrix.size(0)
+            != x.size(0)  # Node feature size has changed
+        )
+
+        if should_not_use_cached_gcn_laplacian_matrix:
+            edge_index, edge_weights = HyperedgeIndex(
+                hyperedge_index
+            ).reduce_to_edge_index_on_random_direction(
+                x=x,
+                with_mediators=self.use_mediator,
+                return_weights=True,
+                seed=self.seed,
+            )
+
+            self.cached_gcn_laplacian_matrix = EdgeIndex(
+                edge_index=edge_index,
+                edge_weights=edge_weights,
+            ).get_sparse_normalized_gcn_laplacian(num_nodes=x.size(0))
+
+        for layer in self.layers:
+            x = layer(x, hyperedge_index, gcn_laplacian_matrix=self.cached_gcn_laplacian_matrix)
+        return x

@@ -12,8 +12,8 @@ Although they are not mandatory for every contribution, the repository is config
 - [pre-commit](https://pre-commit.com)
 
 ```bash
-git clone https://github.com/hypernetwork-research-group/hyperbench.git
-cd hyperbench
+git clone https://github.com/hypernetwork-research-group/hypertorch.git
+cd hypertorch
 
 # Install dependencies with uv
 make build
@@ -35,7 +35,7 @@ make
 make run examples/mlp.py
 ```
 
-For a full explanation of the project structure, commands, and development guidelines, refer to the [documentation](https://hypernetwork-research-group.github.io/hyperbench/).
+For a full explanation of the project structure, commands, and development guidelines, refer to the [documentation](https://hypernetwork-research-group.github.io/hypertorch/).
 
 ## Contribution types and expectations
 
@@ -118,7 +118,7 @@ git rev-parse --abbrev-ref HEAD | grep -Eq '^(feat|fix|chore|refactor|docs)\/[a-
 - If you have pre-commit installed, it will automatically check your code before each commit. You can also run it manually with `pre-commit run --all-files`.
 - For manual checks, you can use the following commands:
   - Linting, formatting, and type checking: `make check`.
-  - Running tests: `make test` (or `make stest T=<path>` for specific tests under `hyperbench/tests/`).
+  - Running tests: `make test` (or `make stest T=<path>` for specific tests under `hypertorch/tests/`).
 
 Maintainers may:
 - Request additional explanation, tests, or revisions.
@@ -168,4 +168,4 @@ References:
 
 ### API reference
 
-Each API reference is generated with `mkdocstrings` and is under `docs/api/`. Each module should have a corresponding markdown file (e.g., `data.md` for `hyperbench.data`) with an overview and the `::: module` directive.
+Each API reference is generated with `mkdocstrings` and is under `docs/api/`. Each module should have a corresponding markdown file (e.g., `data.md` for `hypertorch.data`) with an overview and the `::: module` directive.

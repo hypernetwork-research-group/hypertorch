@@ -1,10 +1,10 @@
 # Training
 
-Training in HyperBench is orchestrated via `MultiModelTrainer` (Lightning under the hood).
+Training in HyperTorch is orchestrated via `MultiModelTrainer` (Lightning under the hood).
 
 This page outlines the typical training pipeline. For a complete runnable script, see:
-- [examples/gcn.py](https://github.com/hypernetwork-research-group/hyperbench/blob/main/examples/gcn.py)
-- [examples/early_stopping.py](https://github.com/hypernetwork-research-group/hyperbench/blob/main/examples/early_stopping.py)
+- [examples/gcn.py](https://github.com/hypernetwork-research-group/hypertorch/blob/main/examples/gcn.py)
+- [examples/early_stopping.py](https://github.com/hypernetwork-research-group/hypertorch/blob/main/examples/early_stopping.py)
 
 ## Typical pipeline
 
@@ -19,16 +19,16 @@ This page outlines the typical training pipeline. For a complete runnable script
 ## Minimal end-to-end skeleton
 
 ```python
-from hyperbench.data import (
+from hypertorch.data import (
     AlgebraDataset,
     DataLoader,
     LaplacianPositionalEncodingEnricher,
     RandomNegativeSampler,
     SamplingStrategy
 )
-from hyperbench.train import MultiModelTrainer
-from hyperbench.types import ModelConfig
-from hyperbench.hlp import MLPHlpModule
+from hypertorch.train import MultiModelTrainer
+from hypertorch.types import ModelConfig
+from hypertorch.hlp import MLPHlpModule
 
 dataset = AlgebraDataset(sampling_strategy=SamplingStrategy.HYPEREDGE)
 train_ds, test_ds = dataset.split(
@@ -112,7 +112,7 @@ hyperedge ratios after optional rebalancing.
 ## Checkpoint callback options
 
 When checkpointing is enabled and you do not pass your own Lightning
-`ModelCheckpoint`, HyperBench creates a default checkpoint callback per model.
+`ModelCheckpoint`, HyperTorch creates a default checkpoint callback per model.
 Use `checkpoint_callback_kwargs` to configure that default callback:
 
 ```python

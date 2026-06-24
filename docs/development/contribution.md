@@ -1,13 +1,13 @@
-# Contributing to HyperBench
+# Contributing to HyperTorch
 
 All contributions, bug reports, bug fixes, documentation improvements,
 enhancements, and ideas are welcome. We ask that contributors follow
-all contribution guidelines when participating with HyperBench.
+all contribution guidelines when participating with HyperTorch.
 
 ## Getting started
 
 If you are brand new to open-source development, we recommend searching
-the [GitHub "issues" tab](https://github.com/hypernetwork-research-group/hyperbench/issues)
+the [GitHub "issues" tab](https://github.com/hypernetwork-research-group/hypertorch/issues)
 to find issues that interest you and are available to work on. Issues available to work on are:
 
 * Issues without the label `needs-discussion`. These issues require clarification and confirmation
@@ -28,7 +28,7 @@ leave a comment on an issue, so other people know it's available again.
 
 ### Version control, Git, and GitHub
 
-HyperBench is hosted on [GitHub](https://www.github.com/hypernetwork-research-group/hyperbench), and to
+HyperTorch is hosted on [GitHub](https://www.github.com/hypernetwork-research-group/hypertorch), and to
 contribute, you will need to sign up for a [free GitHub account](https://github.com/signup/free). We use [Git](https://git-scm.com/) for
 version control to allow many people to work together on the project.
 
@@ -59,27 +59,27 @@ Below are some useful resources for learning more about forking and pull request
 setting up your SSH key, and configuring git.  All these steps need to be completed before
 you can work seamlessly between your local repository and GitHub.
 
-### Create a fork of HyperBench
+### Create a fork of HyperTorch
 
-You will need your own copy of HyperBench (aka fork) to work on the code. Go to the
-[HyperBench project page](https://github.com/hypernetwork-research-group/hyperbench) and hit the `Fork`
+You will need your own copy of HyperTorch (aka fork) to work on the code. Go to the
+[HyperTorch project page](https://github.com/hypernetwork-research-group/hypertorch) and hit the `Fork`
 button. Please uncheck the box to copy only the main branch before selecting `Create Fork`.
 You will want to clone your fork to your machine
 
 ```bash
-    git clone https://github.com/your-user-name/hyperbench.git hyperbench-yourname
-    cd hyperbench-yourname
-    git remote add upstream https://github.com/hypernetwork-research-group/hyperbench.git
+    git clone https://github.com/your-user-name/hypertorch.git hypertorch-yourname
+    cd hypertorch-yourname
+    git remote add upstream https://github.com/hypernetwork-research-group/hypertorch.git
     git fetch upstream --tags
 ```
 
-This creates the directory ``hyperbench-yourname`` and connects your repository to
-the upstream (main project) *HyperBench* repository.
+This creates the directory ``hypertorch-yourname`` and connects your repository to
+the upstream (main project) *HyperTorch* repository.
 
 ### Creating a feature branch
 
-Your local ``main`` branch should always reflect the current state of HyperBench repository.
-First ensure it's up-to-date with the main HyperBench repository.
+Your local ``main`` branch should always reflect the current state of HyperTorch repository.
+First ensure it's up-to-date with the main HyperTorch repository.
 
 ```bash
     git checkout main
@@ -94,7 +94,7 @@ Then, create a feature branch for making your changes. For example
 
 This changes your working branch from ``main`` to the ``feat/shiny-new-feature`` branch.  Keep any
 changes in this branch specific to one bug or feature so it is clear
-what the branch brings to HyperBench. You can have many feature branches
+what the branch brings to HyperTorch. You can have many feature branches
 and switch in between them using the ``git checkout`` command.
 
 When you want to update the feature branch with changes in main after
@@ -153,18 +153,18 @@ If you added the upstream repository as described above you will see something
 like
 
 ```bash
-    origin  git@github.com:yourname/hyperbench.git (fetch)
-    origin  git@github.com:yourname/hyperbench.git (push)
-    upstream        git://github.com/hypernetwork-research-group/hyperbench.git (fetch)
-    upstream        git://github.com/hypernetwork-research-group/hyperbench.git (push)
+    origin  git@github.com:yourname/hypertorch.git (fetch)
+    origin  git@github.com:yourname/hypertorch.git (push)
+    upstream        git://github.com/hypernetwork-research-group/hypertorch.git (fetch)
+    upstream        git://github.com/hypernetwork-research-group/hypertorch.git (push)
 ```
-Now your code is on GitHub, but it is not yet a part of the HyperBench project. For that to
+Now your code is on GitHub, but it is not yet a part of the HyperTorch project. For that to
 happen, a pull request needs to be submitted on GitHub.
 
 ### Making a pull request
 
 Once you have finished your code changes, your code change will need to follow the
-[HyperBench contribution guidelines](development.md#contributing-to-the-code-base) to be successfully accepted.
+[HyperTorch contribution guidelines](development.md#contributing-to-the-code-base) to be successfully accepted.
 
 If everything looks good, you are ready to make a pull request. A pull request is how
 code from your local repository becomes available to the GitHub community to review
@@ -175,7 +175,7 @@ and merged into the project to appear in the next release. To submit a pull requ
 - You can then click on ``Commits`` and ``Files Changed`` to make sure everything looks
    okay one last time
 - Write a descriptive title with an accepted prefix: `feat:`, `fix:`, `chore:`, `refactor:`, or `docs:`.
-- Check [CONTRIBUTING.md](https://github.com/hypernetwork-research-group/hyperbench/blob/main/CONTRIBUTING.md) for the full commit message and title guidelines.
+- Check [CONTRIBUTING.md](https://github.com/hypernetwork-research-group/hypertorch/blob/main/CONTRIBUTING.md) for the full commit message and title guidelines.
 
 - Complete the checklist template in the body of the pull request and write an additional description below the checklist if necessary.
 - Click ``Send Pull Request``.
@@ -196,8 +196,8 @@ Based on the review you get on your pull request, you will probably need to make
 some changes to the code. You can follow the [code committing steps](#making-code-changes)
 again to address any feedback and update your pull request.
 
-It is also important that updates in the HyperBench ``main`` branch are reflected in your pull request.
-To update your feature branch with changes in the HyperBench ``main`` branch, run:
+It is also important that updates in the HyperTorch ``main`` branch are reflected in your pull request.
+To update your feature branch with changes in the HyperTorch ``main`` branch, run:
 
 ```bash
     git checkout main

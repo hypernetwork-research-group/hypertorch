@@ -1,4 +1,4 @@
 # Internals
 
-This section will provide a look into some of hyperbench's internals.
-It's primarily intended for developers of hyperbench itself.
+This section will provide a look into some of HyperTorch's internals.
+It's primarily intended for developers of HyperTorch itself.

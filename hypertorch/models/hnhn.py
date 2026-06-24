@@ -1,0 +1,75 @@
+from torch import Tensor, nn
+
+from hypertorch.nn import HNHNConv
+
+
+class HNHN(nn.Module):
+    """
+    HNHN performs incidence-based hypergraph convolution with explicit hyperedge embeddings between
+    the node -> hyperedge -> node propagation steps.
+
+    References:
+        - Proposed in [HNHN: Hypergraph Networks with Hyperedge Neurons](https://arxiv.org/abs/2006.12278) paper.
+        - Reference implementation: [Code](https://deephypergraph.readthedocs.io/en/latest/_modules/dhg/models/hypergraphs/hnhn.html#HNHN).
+
+    Attributes:
+        layers: Two stacked ``HNHNConv`` layers.
+    """  # noqa: E501
+
+    def __init__(
+        self,
+        in_channels: int,
+        hidden_channels: int,
+        num_classes: int,
+        bias: bool = True,
+        use_batch_normalization: bool = False,
+        drop_rate: float = 0.5,
+    ):
+        """
+        Initialize the HNHN model.
+
+        Args:
+            in_channels: Number of input channels.
+            hidden_channels: Number of hidden channels.
+            num_classes: Number of output channels.
+            bias: If set to ``False``, the layer will not learn the bias parameter.
+                Defaults to ``True``.
+            use_batch_normalization: If set to ``True``, layers will use batch normalization.
+                Defaults to ``False``.
+            drop_rate: Dropout ratio. Defaults to ``0.5``.
+        """
+        super().__init__()
+
+        self.layers: nn.ModuleList = nn.ModuleList(
+            [
+                HNHNConv(
+                    in_channels=in_channels,
+                    out_channels=hidden_channels,
+                    bias=bias,
+                    use_batch_normalization=use_batch_normalization,
+                    drop_rate=drop_rate,
+                ),
+                HNHNConv(
+                    in_channels=hidden_channels,
+                    out_channels=num_classes,
+                    bias=bias,
+                    use_batch_normalization=use_batch_normalization,
+                    is_last=True,
+                ),
+            ]
+        )
+
+    def forward(self, x: Tensor, hyperedge_index: Tensor) -> Tensor:
+        """
+        Apply two stacked ``HNHNConv`` layers to produce node embeddings.
+
+        Args:
+            x: Input node feature matrix of size ``(num_nodes, in_channels)``.
+            hyperedge_index: Hyperedge incidence in COO format of size ``(2, num_incidences)``.
+
+        Returns:
+            x: The output node feature matrix of size ``(num_nodes, num_classes)``.
+        """
+        for layer in self.layers:
+            x = layer(x, hyperedge_index)
+        return x
