@@ -6,7 +6,7 @@ site_name = "©HyperTorch Documentation"
 site_description = "Documentation for HyperTorch"
 site_author = "Hypernetwork Research Group"
 site_url = "https://hypernetwork-research-group.github.io/hypertorch"
-repo_name = "hypernetwork-research-group/hypertorch"
+repo_name = "HyperTorch"
 repo_url = "https://github.com/hypernetwork-research-group/hypertorch"
 copyright = """
 Copyright &copy; 2026 The authors
@@ -117,7 +117,7 @@ pygments_lang_class = true
 [project.markdown_extensions.pymdownx.smartsymbols]
 [project.markdown_extensions.pymdownx.superfences]
 custom_fences = [
-  { name = "mermaid", class = "mermaid", format = "pymdownx.superfences.fence_code_format" }
+  { name = "mermaid", class = "mermaid", format = "pymdownx.superfences.fence_code_format" },
 ]
 [project.markdown_extensions.pymdownx.tabbed]
 alternate_style = true

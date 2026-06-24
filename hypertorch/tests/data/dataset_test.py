@@ -8,7 +8,7 @@ from hypertorch.types import HData
 from hypertorch.data import (
     AlgebraDataset,
     Dataset,
-    DefaultDatasetSplitter,
+    HyperedgeDatasetSplitter,
     HIFLoader,
     HyperedgeEnricher,
     NegativeSampler,
@@ -1559,7 +1559,7 @@ def test_default_dataset_splitter_returns_dataset_instances_with_sampling_strate
     )
     dataset = Dataset.from_hdata(hdata, sampling_strategy=strategy)
 
-    splits, final_ratios = DefaultDatasetSplitter(node_space_setting="inductive").split(
+    splits, final_ratios = HyperedgeDatasetSplitter(node_space_setting="inductive").split(
         to_split=dataset, ratios=[0.5, 0.5]
     )
 

@@ -396,9 +396,9 @@ class HData:
                 "'split_hyperedge_ids' must be provided when 'splitter' is not provided."
             )
 
-        from hypertorch.data.splitter import DefaultHDataSplitter
+        from hypertorch.data.splitter import HyperedgeHDataSplitter
 
-        return DefaultHDataSplitter(node_space_setting=node_space_setting).split(
+        return HyperedgeHDataSplitter(node_space_setting=node_space_setting).split(
             to_split=hdata,
             split_hyperedge_ids=split_hyperedge_ids,
         )

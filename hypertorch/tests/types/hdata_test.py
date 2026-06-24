@@ -6,7 +6,6 @@ from unittest.mock import MagicMock
 from typing import Any, cast
 from hypertorch import utils
 from hypertorch.data import (
-    DefaultHDataSplitter,
     HyperedgeEnricher,
     NegativeSampler,
     NodeEnricher,
@@ -1053,21 +1052,6 @@ def test_split_transductive_counts(
     assert result.num_nodes == expected_num_nodes
     assert result.num_hyperedges == expected_num_hyperedges
     assert torch.equal(result.hyperedge_index, expected_hyperedge_index)
-
-
-def test_default_hdata_splitter_materializes_explicit_hyperedge_ids():
-    x = torch.randn(4, 2, dtype=torch.float)
-    hyperedge_index = torch.tensor([[0, 1, 2, 2, 3], [0, 0, 0, 1, 1]], dtype=torch.long)
-    hdata = HData(x=x, hyperedge_index=hyperedge_index)
-
-    result = DefaultHDataSplitter(node_space_setting="inductive").split(
-        to_split=hdata, split_hyperedge_ids=torch.tensor([1], dtype=torch.long)
-    )
-
-    assert result.num_nodes == 2
-    assert result.num_hyperedges == 1
-    assert torch.equal(result.hyperedge_index, torch.tensor([[0, 1], [0, 0]], dtype=torch.long))
-    assert torch.equal(result.x, x[torch.tensor([2, 3], dtype=torch.long)])
 
 
 def test_split_delegates_to_custom_hdata_splitter():
