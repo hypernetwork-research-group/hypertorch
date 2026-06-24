@@ -106,7 +106,7 @@ clean:
 	@echo '=== Cleaning up ==='
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 	find . -type f -name "*.pyc" -delete 2>/dev/null || true
-	rm -rf $(PROJECT_NAME).egg-info .$(LINTER)_cache build
+	rm -rf $(PROJECT_NAME).egg-info .$(LINTER)_cache build dist
 	rm -rf .python-version .pytest_cache .coverage
 	rm -rf site docs/site
 
