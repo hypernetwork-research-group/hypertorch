@@ -106,11 +106,13 @@ clean:
 	@echo '=== Cleaning up ==='
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 	find . -type f -name "*.pyc" -delete 2>/dev/null || true
-	rm -rf $(PROJECT_NAME).egg-info .pytest_cache .coverage .$(LINTER)_cache site docs/site .python-version
+	rm -rf $(PROJECT_NAME).egg-info .$(LINTER)_cache build
+	rm -rf .python-version .pytest_cache .coverage
+	rm -rf site docs/site
 
 destroy: clean
 	@echo '=== Destroying environment ==='
-	rm -rf .venv $(UV).lock hypertorch_logs .hypertorch_cache .$(UV)-cache
+	rm -rf .venv .hypertorch_cache hypertorch_logs $(UV).lock .$(UV)-cache
 
 help:
 	@echo "Usage: make [target]"
