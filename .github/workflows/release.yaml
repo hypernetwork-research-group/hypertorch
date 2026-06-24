@@ -26,8 +26,6 @@ jobs:
         persist-credentials: false
 
     - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
-      with:
-        python-version: "3.14"
 
     - name: Build release distributions
       run: uv build
