@@ -72,7 +72,8 @@ test = [
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["hypertorch"]
+include = ["hypertorch", "hypertorch.*"]
+exclude = ["hypertorch.tests*", "hypertorch.integration_tests*"]
 
 [tool.pytest.ini_options]
 addopts = ["--color=yes", "--verbose", "--tb=short", "--strict-markers"]
