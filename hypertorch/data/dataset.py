@@ -400,7 +400,7 @@ class Dataset(TorchDataset):
         if ratios is None:
             raise ValueError("'ratios' must be provided when no custom 'splitter' is provided.")
 
-        if self.hdata.task == "node-classification":
+        if self.hdata.task == TaskEnum.NODE_CLASSIFICATION:
             splits, _ = NodeDatasetSplitter(
                 node_space_setting=node_space_setting,
                 shuffle=shuffle,
@@ -484,7 +484,7 @@ class Dataset(TorchDataset):
                 hyperedges, or a requested transductive train-cover split cannot
                 cover the full node space.
         """
-        if self.hdata.task == "node-classification":
+        if self.hdata.task == TaskEnum.NODE_CLASSIFICATION:
             return NodeDatasetSplitter(
                 node_space_setting=node_space_setting,
                 shuffle=shuffle,

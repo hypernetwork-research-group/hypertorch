@@ -283,7 +283,7 @@ class NodeSampler(BaseSampler):
             task=hdata.task,
         )
 
-        if hdata.task == TaskEnum.NODE_CLASSIFICATION.value:
+        if hdata.task == TaskEnum.NODE_CLASSIFICATION:
             target_node_mask = self.__target_node_mask_for_sample(
                 sampled_hdata=sampled_hdata,
                 sampled_node_ids=sampled_node_ids,
@@ -305,7 +305,7 @@ class NodeSampler(BaseSampler):
         """
         return (
             int(hdata.target_node_mask.sum(dtype=torch.int).item())
-            if hdata.task == TaskEnum.NODE_CLASSIFICATION.value
+            if hdata.task == TaskEnum.NODE_CLASSIFICATION
             else hdata.num_nodes
         )
 
