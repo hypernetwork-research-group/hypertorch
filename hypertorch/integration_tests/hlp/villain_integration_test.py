@@ -1,7 +1,7 @@
 import pytest
 
 from hypertorch.hlp import VilLainHlpModule
-from hypertorch.data import SamplingStrategy
+from hypertorch.data import SamplingStrategyEnum
 from hypertorch.integration_tests.common import (
     common_metrics,
     loaders,
@@ -19,10 +19,10 @@ NUM_FEATURES = 8
 @pytest.mark.parametrize(
     "sampling_strategy, full, batch_size",
     [
-        pytest.param(SamplingStrategy.HYPEREDGE, False, 128, id="hyperedge_batch_128"),
-        pytest.param(SamplingStrategy.NODE, False, 128, id="node_batch_128"),
-        pytest.param(SamplingStrategy.HYPEREDGE, True, 1, id="hyperedge_full"),
-        pytest.param(SamplingStrategy.NODE, True, 1, id="node_full"),
+        pytest.param(SamplingStrategyEnum.HYPEREDGE, False, 128, id="hyperedge_batch_128"),
+        pytest.param(SamplingStrategyEnum.NODE, False, 128, id="node_batch_128"),
+        pytest.param(SamplingStrategyEnum.HYPEREDGE, True, 1, id="hyperedge_full"),
+        pytest.param(SamplingStrategyEnum.NODE, True, 1, id="node_full"),
     ],
 )
 def test_model_villain_node(tmp_path, sampling_strategy, full, batch_size, request):
@@ -102,10 +102,10 @@ def test_model_villain_node(tmp_path, sampling_strategy, full, batch_size, reque
 @pytest.mark.parametrize(
     "sampling_strategy, full, batch_size",
     [
-        pytest.param(SamplingStrategy.HYPEREDGE, False, 128, id="hyperedge_batch_128"),
-        pytest.param(SamplingStrategy.NODE, False, 128, id="node_batch_128"),
-        pytest.param(SamplingStrategy.HYPEREDGE, True, 1, id="hyperedge_full"),
-        pytest.param(SamplingStrategy.NODE, True, 1, id="node_full"),
+        pytest.param(SamplingStrategyEnum.HYPEREDGE, False, 128, id="hyperedge_batch_128"),
+        pytest.param(SamplingStrategyEnum.NODE, False, 128, id="node_batch_128"),
+        pytest.param(SamplingStrategyEnum.HYPEREDGE, True, 1, id="hyperedge_full"),
+        pytest.param(SamplingStrategyEnum.NODE, True, 1, id="node_full"),
     ],
 )
 def test_model_villain_hyperedge(tmp_path, sampling_strategy, full, batch_size, request):

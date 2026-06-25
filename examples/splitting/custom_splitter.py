@@ -2,7 +2,6 @@ import torch
 from hypertorch.data import (
     Dataset,
     Splitter,
-    SamplingStrategy,
 )
 from hypertorch.types import HData
 
@@ -32,9 +31,21 @@ class CustomSplitter(Splitter["Dataset", list["Dataset"]]):
         test_hdata = HData.from_hyperedge_index(test_he)
 
         split_datasets = [
-            Dataset.from_hdata(train_hdata, sampling_strategy=to_split.sampling_strategy),
-            Dataset.from_hdata(val_hdata, sampling_strategy=to_split.sampling_strategy),
-            Dataset.from_hdata(test_hdata, sampling_strategy=to_split.sampling_strategy),
+            Dataset.from_hdata(
+                train_hdata,
+                sampling_strategy=to_split.sampling_strategy,
+                task=to_split.task,
+            ),
+            Dataset.from_hdata(
+                val_hdata,
+                sampling_strategy=to_split.sampling_strategy,
+                task=to_split.task,
+            ),
+            Dataset.from_hdata(
+                test_hdata,
+                sampling_strategy=to_split.sampling_strategy,
+                task=to_split.task,
+            ),
         ]
 
         return split_datasets
@@ -53,7 +64,11 @@ if __name__ == "__main__":
         x=x,
         hyperedge_index=hyperedge_index,
     )
-    dataset = Dataset.from_hdata(hdata, sampling_strategy=SamplingStrategy.HYPEREDGE)
+    dataset = Dataset.from_hdata(
+        hdata,
+        sampling_strategy="hyperedge",
+        task="hyperlink-prediction",
+    )
 
     # Split dataset into train, val and test using ratios generated inside CustomSplitter.
     split_datasets = dataset.split(

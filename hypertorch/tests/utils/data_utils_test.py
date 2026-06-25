@@ -5,6 +5,7 @@ import re
 from hypertorch.utils import (
     LATEX_CHARACTER_ESCAPE_TABLE,
     MARKDOWN_CHARACTER_ESCAPE_TABLE,
+    StrEnum,
     clone_optional_tensor,
     empty_nodefeatures,
     empty_hyperedgeindex,
@@ -20,6 +21,25 @@ from hypertorch.utils import (
     validate_is_positive,
     validate_ratios,
 )
+
+
+def test_str_enum_get_args_returns_member_values_in_definition_order():
+    class ExampleStrEnum(StrEnum):
+        FIRST = "first"
+        SECOND = "second"
+
+    result = ExampleStrEnum.get_args()
+
+    assert result == ("first", "second")
+
+
+def test_str_enum_str_returns_value():
+    class ExampleStrEnum(StrEnum):
+        FIRST = "first"
+        SECOND = "second"
+
+    assert str(ExampleStrEnum.FIRST) == "first"
+    assert str(ExampleStrEnum.SECOND) == "second"
 
 
 def test_clone_optional_tensor_with_none():

@@ -8,7 +8,7 @@ from hypertorch.data import (
     HyperedgeDatasetSplitter,
     HyperedgeHDataSplitter,
     HyperedgeIDSplitter,
-    SamplingStrategy,
+    SamplingStrategyEnum,
     Splitter,
 )
 from hypertorch.types import HData
@@ -81,7 +81,7 @@ def test_hyperedge_dataset_splitter_materializes_datasets_and_final_ratios():
         x=torch.arange(4, dtype=torch.float32).unsqueeze(1),
         hyperedge_index=torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long),
     )
-    dataset = Dataset.from_hdata(hdata, sampling_strategy=SamplingStrategy.NODE)
+    dataset = Dataset.from_hdata(hdata, sampling_strategy=SamplingStrategyEnum.NODE)
 
     split_datasets, final_ratios = HyperedgeDatasetSplitter(node_space_setting="inductive").split(
         to_split=dataset, ratios=[0.5, 0.5]
@@ -90,8 +90,8 @@ def test_hyperedge_dataset_splitter_materializes_datasets_and_final_ratios():
     assert final_ratios == [0.5, 0.5]
     assert [split.hdata.num_hyperedges for split in split_datasets] == [1, 1]
     assert [split.sampling_strategy for split in split_datasets] == [
-        SamplingStrategy.NODE,
-        SamplingStrategy.NODE,
+        SamplingStrategyEnum.NODE,
+        SamplingStrategyEnum.NODE,
     ]
 
 

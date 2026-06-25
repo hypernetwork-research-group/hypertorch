@@ -14,7 +14,6 @@ from hypertorch.data import (
     DataLoader,
     LaplacianPositionalEncodingEnricher,
     RandomNegativeSampler,
-    SamplingStrategy,
 )
 
 
@@ -34,7 +33,7 @@ if __name__ == "__main__":
 
     print("Loading and preparing dataset...")
 
-    dataset = AlgebraDataset(sampling_strategy=SamplingStrategy.HYPEREDGE)
+    dataset = AlgebraDataset(sampling_strategy="hyperedge", task="hyperlink-prediction")
     dataset.remove_hyperedges_with_fewer_than_k_nodes(k=2)
     if verbose:
         print(f"Dataset:\n {dataset.hdata}\n")

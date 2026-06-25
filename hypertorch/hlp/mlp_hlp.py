@@ -47,7 +47,7 @@ class MlpEncoderConfig(TypedDict):
 
 class MLPHlpModule(HlpModule):
     """
-    A LightningModule for MLP-based Hyperedge Link Prediction.
+    A LightningModule for MLP-based Hyperlink Prediction.
 
     Uses an MLP encoder to produce node embeddings, aggregates them per hyperedge
     via mean pooling, and scores each hyperedge with a linear decoder.

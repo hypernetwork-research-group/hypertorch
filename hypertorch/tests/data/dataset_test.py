@@ -13,7 +13,7 @@ from hypertorch.data import (
     HyperedgeEnricher,
     NegativeSampler,
     NodeEnricher,
-    SamplingStrategy,
+    SamplingStrategyEnum,
     Splitter,
 )
 from hypertorch.tests import new_mock_negative_sampler
@@ -125,8 +125,8 @@ def test_preloaded_dataset_loads_hdata_when_hdata_is_none():
 @pytest.mark.parametrize(
     "strategy, expected_len",
     [
-        pytest.param(SamplingStrategy.NODE, 4, id="node_strategy"),
-        pytest.param(SamplingStrategy.HYPEREDGE, 2, id="hyperedge_strategy"),
+        pytest.param(SamplingStrategyEnum.NODE, 4, id="node_strategy"),
+        pytest.param(SamplingStrategyEnum.HYPEREDGE, 2, id="hyperedge_strategy"),
     ],
 )
 def test_dataset_is_available_with_all_strategies(strategy, expected_len, mock_hdata_four_nodes):
@@ -203,8 +203,8 @@ def test_dataset_process_hyperedge_index_in_correct_format(mock_hdata_four_nodes
 @pytest.mark.parametrize(
     "strategy",
     [
-        pytest.param(SamplingStrategy.NODE, id="node_strategy"),
-        pytest.param(SamplingStrategy.HYPEREDGE, id="hyperedge_strategy"),
+        pytest.param(SamplingStrategyEnum.NODE, id="node_strategy"),
+        pytest.param(SamplingStrategyEnum.HYPEREDGE, id="hyperedge_strategy"),
     ],
 )
 def test_getitem_index_list_empty(mock_hdata, strategy):
@@ -219,13 +219,13 @@ def test_getitem_index_list_empty(mock_hdata, strategy):
     "strategy, index_list, expected_message",
     [
         pytest.param(
-            SamplingStrategy.NODE,
+            SamplingStrategyEnum.NODE,
             [0, 1, 2, 3, 4],
             re.escape("Index list length (5) cannot exceed the number of sampleable items (4)."),
             id="node_strategy",
         ),
         pytest.param(
-            SamplingStrategy.HYPEREDGE,
+            SamplingStrategyEnum.HYPEREDGE,
             [0, 1, 2],
             re.escape("Index list length (3) cannot exceed the number of sampleable items (2)."),
             id="hyperedge_strategy",
@@ -246,13 +246,13 @@ def test_getitem_raises_when_index_list_larger_than_max(
     "strategy, index, expected_message",
     [
         pytest.param(
-            SamplingStrategy.NODE,
+            SamplingStrategyEnum.NODE,
             4,
             re.escape("Node ID 4 is out of bounds (0, 3)."),
             id="node_strategy",
         ),
         pytest.param(
-            SamplingStrategy.HYPEREDGE,
+            SamplingStrategyEnum.HYPEREDGE,
             2,
             re.escape("Hyperedge ID 2 is out of bounds (0, 1)."),
             id="hyperedge_strategy",
@@ -274,9 +274,9 @@ def test_getitem_raises_when_index_out_of_bounds(
     [
         # When node 1 is selected, we get hyperedge 0 with nodes 0
         # and 1 -> 2 incidences, 1 hyperedge
-        pytest.param(SamplingStrategy.NODE, 1, (2, 1), 1, id="node_strategy"),
+        pytest.param(SamplingStrategyEnum.NODE, 1, (2, 1), 1, id="node_strategy"),
         # When hyperedge 0 is selected, we get nodes 0 and 1 -> 2 incidences, 1 hyperedge
-        pytest.param(SamplingStrategy.HYPEREDGE, 0, (2, 1), 1, id="hyperedge_strategy"),
+        pytest.param(SamplingStrategyEnum.HYPEREDGE, 0, (2, 1), 1, id="hyperedge_strategy"),
     ],
 )
 def test_getitem_single_index(
@@ -296,9 +296,9 @@ def test_getitem_single_index(
     [
         # When nodes (0, 2, 3) -> hyperedge 0 (nodes 0, 1) + hyperedge 1 (nodes 2, 3)
         # -> 4 incidences, 2 hyperedges
-        pytest.param(SamplingStrategy.NODE, [0, 2, 3], (2, 4), 2, id="node_strategy"),
+        pytest.param(SamplingStrategyEnum.NODE, [0, 2, 3], (2, 4), 2, id="node_strategy"),
         # When hyperedge 0 (nodes 0, 1) + hyperedge 1 (nodes 2, 3) -> 4 incidences, 2 hyperedges
-        pytest.param(SamplingStrategy.HYPEREDGE, [0, 1], (2, 4), 2, id="hyperedge_strategy"),
+        pytest.param(SamplingStrategyEnum.HYPEREDGE, [0, 1], (2, 4), 2, id="hyperedge_strategy"),
     ],
 )
 def test_getitem_when_list_index_provided(
@@ -316,8 +316,8 @@ def test_getitem_when_list_index_provided(
 @pytest.mark.parametrize(
     "strategy",
     [
-        pytest.param(SamplingStrategy.NODE, id="node_strategy"),
-        pytest.param(SamplingStrategy.HYPEREDGE, id="hyperedge_strategy"),
+        pytest.param(SamplingStrategyEnum.NODE, id="node_strategy"),
+        pytest.param(SamplingStrategyEnum.HYPEREDGE, id="hyperedge_strategy"),
     ],
 )
 def test_getitem_with_hyperedge_attr(mock_hdata_with_hyperedge_attr, strategy):
@@ -338,8 +338,8 @@ def test_getitem_with_hyperedge_attr(mock_hdata_with_hyperedge_attr, strategy):
 @pytest.mark.parametrize(
     "strategy",
     [
-        pytest.param(SamplingStrategy.NODE, id="node_strategy"),
-        pytest.param(SamplingStrategy.HYPEREDGE, id="hyperedge_strategy"),
+        pytest.param(SamplingStrategyEnum.NODE, id="node_strategy"),
+        pytest.param(SamplingStrategyEnum.HYPEREDGE, id="hyperedge_strategy"),
     ],
 )
 def test_getitem_without_hyperedge_attr(mock_hdata, strategy):
@@ -354,9 +354,9 @@ def test_getitem_without_hyperedge_attr(mock_hdata, strategy):
     "strategy, index",
     [
         # When nodes 0,2 -> hyperedge 0 (nodes 0, 1) + hyperedge 1 (node 2) -> 2 hyperedges
-        pytest.param(SamplingStrategy.NODE, [0, 2], id="node_strategy"),
+        pytest.param(SamplingStrategyEnum.NODE, [0, 2], id="node_strategy"),
         # When hyperedge 0 (nodes 0, 1) + hyperedge 1 (node 2) -> 2 hyperedges
-        pytest.param(SamplingStrategy.HYPEREDGE, [0, 1], id="hyperedge_strategy"),
+        pytest.param(SamplingStrategyEnum.HYPEREDGE, [0, 1], id="hyperedge_strategy"),
     ],
 )
 def test_getitem_with_multiple_hyperedge_attr(
@@ -379,8 +379,8 @@ def test_getitem_with_multiple_hyperedge_attr(
 @pytest.mark.parametrize(
     "strategy",
     [
-        pytest.param(SamplingStrategy.NODE, id="node_strategy"),
-        pytest.param(SamplingStrategy.HYPEREDGE, id="hyperedge_strategy"),
+        pytest.param(SamplingStrategyEnum.NODE, id="node_strategy"),
+        pytest.param(SamplingStrategyEnum.HYPEREDGE, id="hyperedge_strategy"),
     ],
 )
 def test_getitem_with_hyperedge_weights(mock_hdata_with_hyperedge_weights, strategy):
@@ -401,8 +401,8 @@ def test_getitem_with_hyperedge_weights(mock_hdata_with_hyperedge_weights, strat
 @pytest.mark.parametrize(
     "strategy",
     [
-        pytest.param(SamplingStrategy.NODE, id="node_strategy"),
-        pytest.param(SamplingStrategy.HYPEREDGE, id="hyperedge_strategy"),
+        pytest.param(SamplingStrategyEnum.NODE, id="node_strategy"),
+        pytest.param(SamplingStrategyEnum.HYPEREDGE, id="hyperedge_strategy"),
     ],
 )
 def test_getitem_without_hyperedge_weights(mock_hdata, strategy):
@@ -417,8 +417,8 @@ def test_getitem_without_hyperedge_weights(mock_hdata, strategy):
     "strategy, expected_len",
     [
         # mock_hdata: 3 nodes, 2 hyperedges
-        pytest.param(SamplingStrategy.NODE, 3, id="node_strategy"),
-        pytest.param(SamplingStrategy.HYPEREDGE, 2, id="hyperedge_strategy"),
+        pytest.param(SamplingStrategyEnum.NODE, 3, id="node_strategy"),
+        pytest.param(SamplingStrategyEnum.HYPEREDGE, 2, id="hyperedge_strategy"),
     ],
 )
 def test_from_hdata(strategy, expected_len, mock_hdata):
@@ -431,8 +431,8 @@ def test_from_hdata(strategy, expected_len, mock_hdata):
 @pytest.mark.parametrize(
     "strategy",
     [
-        pytest.param(SamplingStrategy.HYPEREDGE, id="hyperedge_strategy"),
-        pytest.param(SamplingStrategy.NODE, id="node_strategy"),
+        pytest.param(SamplingStrategyEnum.HYPEREDGE, id="hyperedge_strategy"),
+        pytest.param(SamplingStrategyEnum.NODE, id="node_strategy"),
     ],
 )
 def test_from_url(strategy, mock_hdata):
@@ -449,8 +449,8 @@ def test_from_url(strategy, mock_hdata):
 @pytest.mark.parametrize(
     "strategy",
     [
-        pytest.param(SamplingStrategy.HYPEREDGE, id="hyperedge_strategy"),
-        pytest.param(SamplingStrategy.NODE, id="node_strategy"),
+        pytest.param(SamplingStrategyEnum.HYPEREDGE, id="hyperedge_strategy"),
+        pytest.param(SamplingStrategyEnum.NODE, id="node_strategy"),
     ],
 )
 def test_from_path(strategy, mock_hdata):
@@ -980,24 +980,24 @@ def test_default_sampling_strategy_is_hyperedge(mock_hdata_four_nodes):
         dataset = AlgebraDataset()
 
     # Default strategy is HYPEREDGE, so len should be num_hyperedges (2), not num_nodes (4)
-    assert dataset.sampling_strategy == SamplingStrategy.HYPEREDGE
+    assert dataset.sampling_strategy == SamplingStrategyEnum.HYPEREDGE
     assert len(dataset) == 2
 
 
 def test_explicit_node_sampling_strategy(mock_hdata_four_nodes):
     with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_four_nodes):
-        dataset = AlgebraDataset(sampling_strategy=SamplingStrategy.NODE)
+        dataset = AlgebraDataset(sampling_strategy=SamplingStrategyEnum.NODE)
 
     # NODE strategy, so len should be num_nodes (4), not num_hyperedges (2)
-    assert dataset.sampling_strategy == SamplingStrategy.NODE
+    assert dataset.sampling_strategy == SamplingStrategyEnum.NODE
     assert len(dataset) == 4
 
 
 @pytest.mark.parametrize(
     "strategy",
     [
-        pytest.param(SamplingStrategy.NODE, id="node_strategy"),
-        pytest.param(SamplingStrategy.HYPEREDGE, id="hyperedge_strategy"),
+        pytest.param(SamplingStrategyEnum.NODE, id="node_strategy"),
+        pytest.param(SamplingStrategyEnum.HYPEREDGE, id="hyperedge_strategy"),
     ],
 )
 def test_split_preserves_sampling_strategy(mock_hdata_four_nodes, strategy):
@@ -1013,8 +1013,8 @@ def test_split_preserves_sampling_strategy(mock_hdata_four_nodes, strategy):
 @pytest.mark.parametrize(
     "strategy",
     [
-        pytest.param(SamplingStrategy.NODE, id="node_strategy"),
-        pytest.param(SamplingStrategy.HYPEREDGE, id="hyperedge_strategy"),
+        pytest.param(SamplingStrategyEnum.NODE, id="node_strategy"),
+        pytest.param(SamplingStrategyEnum.HYPEREDGE, id="hyperedge_strategy"),
     ],
 )
 def test_split_transductive_preserves_sampling_strategy(
@@ -1035,9 +1035,9 @@ def test_split_transductive_preserves_sampling_strategy(
 
 
 def test_from_hdata_with_explicit_strategy(mock_hdata):
-    dataset = Dataset.from_hdata(mock_hdata, sampling_strategy=SamplingStrategy.NODE)
+    dataset = Dataset.from_hdata(mock_hdata, sampling_strategy=SamplingStrategyEnum.NODE)
 
-    assert dataset.sampling_strategy == SamplingStrategy.NODE
+    assert dataset.sampling_strategy == SamplingStrategyEnum.NODE
     assert len(dataset) == 3  # mock_hdata has 3 nodes
 
 
@@ -1068,8 +1068,8 @@ def test_update_from_hdata_stores_provided_hdata(mock_hdata):
 @pytest.mark.parametrize(
     "strategy, expected_len",
     [
-        pytest.param(SamplingStrategy.NODE, 4, id="node_strategy"),
-        pytest.param(SamplingStrategy.HYPEREDGE, 3, id="hyperedge_strategy"),
+        pytest.param(SamplingStrategyEnum.NODE, 4, id="node_strategy"),
+        pytest.param(SamplingStrategyEnum.HYPEREDGE, 3, id="hyperedge_strategy"),
     ],
 )
 def test_update_from_hdata_inherits_sampling_strategy(mock_hdata, strategy, expected_len):
@@ -1110,8 +1110,8 @@ def test_add_negative_samples_returns_new_dataset(mock_hdata, mock_negative_samp
 @pytest.mark.parametrize(
     "strategy, expected_len",
     [
-        pytest.param(SamplingStrategy.NODE, 3, id="node_strategy"),
-        pytest.param(SamplingStrategy.HYPEREDGE, 3, id="hyperedge_strategy"),
+        pytest.param(SamplingStrategyEnum.NODE, 3, id="node_strategy"),
+        pytest.param(SamplingStrategyEnum.HYPEREDGE, 3, id="hyperedge_strategy"),
     ],
 )
 def test_add_negative_samples_preserves_sampling_strategy(
@@ -1548,8 +1548,8 @@ def test_split_raises_when_train_split_idx_provided_but_not_transductive():
 @pytest.mark.parametrize(
     "strategy",
     [
-        pytest.param(SamplingStrategy.NODE, id="node_strategy"),
-        pytest.param(SamplingStrategy.HYPEREDGE, id="hyperedge_strategy"),
+        pytest.param(SamplingStrategyEnum.NODE, id="node_strategy"),
+        pytest.param(SamplingStrategyEnum.HYPEREDGE, id="hyperedge_strategy"),
     ],
 )
 def test_default_dataset_splitter_returns_dataset_instances_with_sampling_strategy(strategy):

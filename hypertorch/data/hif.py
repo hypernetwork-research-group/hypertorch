@@ -7,7 +7,7 @@ import warnings
 from huggingface_hub import hf_hub_download
 from typing import Any
 from torch import Tensor
-from hypertorch.types import HData, HIFHypergraph
+from hypertorch.types import HData, HIFHypergraph, Task, TaskEnum
 from hypertorch.utils import (
     compress_json_bytes_as_zst,
     from_bytes_to_json,
@@ -65,7 +65,11 @@ class HIFProcessor:
         return torch.tensor(values, dtype=torch.float)
 
     @classmethod
-    def process_hypergraph(cls, hypergraph: HIFHypergraph) -> HData:
+    def process_hypergraph(
+        cls,
+        hypergraph: HIFHypergraph,
+        task: Task = TaskEnum.HYPERLINK_PREDICTION,
+    ) -> HData:
         """
         Process the loaded hypergraph into `HData` format, mapping HIF structure to tensors.
 
@@ -140,6 +144,7 @@ class HIFProcessor:
             hyperedge_attr=hyperedge_attr,
             num_nodes=num_nodes,
             num_hyperedges=num_hyperedges,
+            task=task,
         )
 
     @classmethod
@@ -290,12 +295,18 @@ class HIFLoader:
     """
 
     @classmethod
-    def load_from_url(cls, url: str, save_on_disk: bool = False) -> HData:
+    def load_from_url(
+        cls,
+        url: str,
+        task: Task = TaskEnum.HYPERLINK_PREDICTION,
+        save_on_disk: bool = False,
+    ) -> HData:
         """
         Load a hypergraph from a given URL pointing to a .json or .json.zst file in HIF format.
 
         Args:
             url: The URL to the .json or .json.zst file containing the HIF hypergraph data.
+            task: The learning task for the loaded hypergraph.
             save_on_disk (bool): Whether to save the downloaded file on disk.
 
         Returns:
@@ -328,14 +339,14 @@ class HIFLoader:
 
         if url.endswith(".json.zst"):
             hif_data = from_zst_bytes_to_json(response.content)
-            hdata = cls.__process_hif_data(hif_data)
+            hdata = cls.__process_hif_data(hif_data=hif_data, task=task)
             if save_on_disk:
                 write_dataset_to_disk_as_zst(
                     dataset_name=os.path.basename(url), content=response.content
                 )
         else:  # json
             hif_data = from_bytes_to_json(response.content)
-            hdata = cls.__process_hif_data(hif_data)
+            hdata = cls.__process_hif_data(hif_data=hif_data, task=task)
             if save_on_disk:
                 compressed_hif_data = compress_json_bytes_as_zst(response.content)
 
@@ -346,7 +357,7 @@ class HIFLoader:
         return hdata
 
     @classmethod
-    def load_from_path(cls, filepath: str) -> HData:
+    def load_from_path(cls, filepath: str, task: Task = TaskEnum.HYPERLINK_PREDICTION) -> HData:
         """
         Load a hypergraph from a local file path pointing to a .json or .json.zst file in HIF
         format.
@@ -354,6 +365,7 @@ class HIFLoader:
         Args:
             filepath: The local file path to the .json or .json.zst file
                 containing the HIF hypergraph data.
+            task: The learning task for the loaded hypergraph.
 
         Returns:
             hdata: The loaded hypergraph object.
@@ -373,13 +385,14 @@ class HIFLoader:
                 f"Unsupported format for file {filepath!r}. Expected .json or .json.zst"
             )
 
-        return cls.__process_hif_data(hif_data)
+        return cls.__process_hif_data(hif_data=hif_data, task=task)
 
     @classmethod
     def load_by_name(
         cls,
         dataset_name: str,
         hf_sha: str | None = None,
+        task: Task = TaskEnum.HYPERLINK_PREDICTION,
         save_on_disk: bool = False,
     ) -> HData:
         """
@@ -387,6 +400,7 @@ class HIFLoader:
 
         Args:
             dataset_name: Name of the dataset to load.
+            task: Task type for the dataset. Defaults to "hyperlink-prediction".
             hf_sha: Optional pinned Hugging Face revision used as a fallback source.
             save_on_disk: Whether to cache the downloaded compressed dataset file.
                 Defaults to ``False``.
@@ -404,7 +418,7 @@ class HIFLoader:
         hf_cache_dir = os.path.join(repo_root, "hf_cache")
         if os.path.exists(zst_filename):
             hif_data = from_zst_file_to_json(zst_filename)
-            return cls.__process_hif_data(hif_data, dataset_name)
+            return cls.__process_hif_data(hif_data=hif_data, dataset_name=dataset_name, task=task)
 
         github_url = (
             f"https://raw.githubusercontent.com/hypernetwork-research-group/datasets/"
@@ -414,7 +428,7 @@ class HIFLoader:
         if response.status_code == 200:
             dataset_bytes = response.content
             hif_data = from_zst_bytes_to_json(dataset_bytes)
-            hdata = cls.__process_hif_data(hif_data, dataset_name)
+            hdata = cls.__process_hif_data(hif_data=hif_data, dataset_name=dataset_name, task=task)
             if save_on_disk:
                 write_zst_file_to_disk(zst_filename=zst_filename, content=dataset_bytes)
             return hdata
@@ -452,7 +466,7 @@ class HIFLoader:
             ) from e
 
         hif_data = from_zst_file_to_json(downloaded_path)
-        hdata = cls.__process_hif_data(hif_data, dataset_name)
+        hdata = cls.__process_hif_data(hif_data=hif_data, dataset_name=dataset_name, task=task)
         if save_on_disk:
             try:
                 os.makedirs(os.path.dirname(zst_filename), exist_ok=True)
@@ -478,13 +492,19 @@ class HIFLoader:
         return hdata
 
     @classmethod
-    def __process_hif_data(cls, hif_data: dict[str, Any], dataset_name: str | None = None) -> HData:
+    def __process_hif_data(
+        cls,
+        hif_data: dict[str, Any],
+        dataset_name: str | None = None,
+        task: Task = TaskEnum.HYPERLINK_PREDICTION,
+    ) -> HData:
         """
         Validate and process parsed HIF data.
 
         Args:
             hif_data: Parsed HIF JSON data.
             dataset_name: Optional dataset name used in validation errors.
+            task: Task type for the dataset. Defaults to "hyperlink-prediction".
 
         Returns:
             hdata: Processed hypergraph data.
@@ -496,4 +516,4 @@ class HIFLoader:
             raise ValueError(f"Dataset {dataset_name or ''} is not HIF-compliant.")
 
         hypergraph = HIFHypergraph.from_hif(hif_data)
-        return HIFProcessor.process_hypergraph(hypergraph)
+        return HIFProcessor.process_hypergraph(hypergraph=hypergraph, task=task)

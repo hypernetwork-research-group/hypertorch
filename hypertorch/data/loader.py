@@ -1,6 +1,6 @@
 import torch
 
-from torch import Generator
+from torch import Generator, Tensor
 from collections.abc import Callable
 from typing import Any
 from torch.utils.data import DataLoader as TorchDataLoader
@@ -149,18 +149,24 @@ class DataLoader(TorchDataLoader):
         node_ids = hyperedge_index_wrapper.node_ids
 
         collated_x = self.__cached_dataset_hdata.x[node_ids]
-        collated_y = self.__cached_dataset_hdata.y[hyperedge_ids]
         collated_global_node_ids = self.__cached_dataset_hdata.global_node_ids[node_ids]
 
-        collated_hyperedge_attr = None
-        if self.__cached_dataset_hdata.hyperedge_attr is not None:
-            collated_hyperedge_attr = self.__cached_dataset_hdata.hyperedge_attr[hyperedge_ids]
+        collated_y, collated_target_node_mask = self.__collate_y_and_target_node_mask(
+            batch,
+            hyperedge_index_wrapper,
+        )
 
-        collated_hyperedge_weights = None
-        if self.__cached_dataset_hdata.hyperedge_weights is not None:
-            collated_hyperedge_weights = self.__cached_dataset_hdata.hyperedge_weights[
-                hyperedge_ids
-            ]
+        collated_hyperedge_attr = (
+            self.__cached_dataset_hdata.hyperedge_attr[hyperedge_ids]
+            if self.__cached_dataset_hdata.hyperedge_attr is not None
+            else None
+        )
+
+        collated_hyperedge_weights = (
+            self.__cached_dataset_hdata.hyperedge_weights[hyperedge_ids]
+            if self.__cached_dataset_hdata.hyperedge_weights is not None
+            else None
+        )
 
         collated_hyperedge_index = hyperedge_index_wrapper.to_0based().item
 
@@ -172,7 +178,43 @@ class DataLoader(TorchDataLoader):
             num_nodes=hyperedge_index_wrapper.num_nodes,
             num_hyperedges=hyperedge_index_wrapper.num_hyperedges,
             global_node_ids=collated_global_node_ids,
+            target_node_mask=collated_target_node_mask,
             y=collated_y,
+            task=self.__cached_dataset_hdata.task,
         )
 
         return collated_hdata.to(batch[0].device)
+
+    def __collate_y_and_target_node_mask(
+        self,
+        batch: list[HData],
+        hyperedge_index: HyperedgeIndex,
+    ) -> tuple[Tensor, Tensor | None]:
+        """
+        Collates the labels (y) and target node mask for a batch of HData objects.
+
+        Args:
+            batch: List of HData instances containing the data to collate.
+            hyperedge_index: A HyperedgeIndex instance wrapping the collated hyperedge index.
+
+        Returns:
+            collated_y: A tensor containing the collated labels for the batch.
+            collated_target_node_mask: A tensor containing the collated target node mask
+                for the batch, or ``None`` if not applicable.
+        """
+        node_ids, hyperedge_ids = hyperedge_index.node_ids, hyperedge_index.hyperedge_ids
+
+        if self.__cached_dataset_hdata.task == "node-classification":
+            collated_y = self.__cached_dataset_hdata.y[node_ids]
+
+            target_node_ids_list = [
+                HyperedgeIndex(hdata.hyperedge_index).node_ids[hdata.target_node_mask]
+                for hdata in batch
+            ]
+            target_node_ids = torch.cat(target_node_ids_list, dim=0)
+            collated_target_node_mask = torch.isin(node_ids, target_node_ids)
+        else:
+            collated_y = self.__cached_dataset_hdata.y[hyperedge_ids]
+            collated_target_node_mask = None
+
+        return collated_y, collated_target_node_mask
