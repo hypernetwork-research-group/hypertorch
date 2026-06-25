@@ -3,7 +3,7 @@ import torch
 from typing import Literal, TypeAlias
 from abc import ABC, abstractmethod
 from torch import Tensor
-from hypertorch.types import HData, TaskEnum
+from hypertorch.types import HData
 from hypertorch.utils import StrEnum, to_0based_ids
 
 
@@ -283,7 +283,7 @@ class NodeSampler(BaseSampler):
             task=hdata.task,
         )
 
-        if hdata.task == TaskEnum.NODE_CLASSIFICATION:
+        if hdata.is_node_related_task:
             target_node_mask = self.__target_node_mask_for_sample(
                 sampled_hdata=sampled_hdata,
                 sampled_node_ids=sampled_node_ids,
@@ -305,7 +305,7 @@ class NodeSampler(BaseSampler):
         """
         return (
             int(hdata.target_node_mask.sum(dtype=torch.int).item())
-            if hdata.task == TaskEnum.NODE_CLASSIFICATION
+            if hdata.is_node_related_task
             else hdata.num_nodes
         )
 

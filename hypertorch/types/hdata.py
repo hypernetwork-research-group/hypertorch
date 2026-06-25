@@ -172,7 +172,7 @@ class HData:
         )
         target_node_mask_shape = (
             str(self.target_node_mask.shape)
-            if self.task == TaskEnum.NODE_CLASSIFICATION
+            if self.is_node_related_task
             else f"(ignored for task={self.task!r})"
         )
 
@@ -262,6 +262,7 @@ class HData:
         cls.__validate_can_perform_cat_same_node_space(hdatas, x, global_node_ids)
 
         hdata_with_largest_node_space = max(hdatas, key=lambda hdata: hdata.num_nodes)
+
         new_x = (x.clone() if x is not None else hdata_with_largest_node_space.x).clone()
         new_global_node_ids = (
             global_node_ids.clone()
@@ -276,7 +277,7 @@ class HData:
         new_y = (
             # For node-based tasks, we must preserve the labels for the entire node space
             hdata_with_largest_node_space.y.clone()
-            if hdata_with_largest_node_space.task == TaskEnum.NODE_CLASSIFICATION
+            if hdata_with_largest_node_space.is_node_related_task
             else torch.cat([hdata.y for hdata in hdatas], dim=0)
         )
         new_hyperedge_index = torch.cat([hdata.hyperedge_index for hdata in hdatas], dim=1)
@@ -305,7 +306,7 @@ class HData:
             global_node_ids=new_global_node_ids,
             target_node_mask=new_target_node_mask,
             y=new_y,
-            task=hdatas[0].task,
+            task=hdata_with_largest_node_space.task,
         )
 
     def add_negative_samples(
@@ -460,11 +461,33 @@ class HData:
         )
 
     @property
+    def is_hyperedge_related_task(self) -> bool:
+        """
+        Check if the task uses hyperedge-level targets and operations.
+
+        Returns:
+            is_hyperedge_related: True if the task is hyperedge-related, False otherwise.
+        """
+        # For now, we only support hyperlink prediction as a hyperedge-related task
+        return self.task == TaskEnum.HYPERLINK_PREDICTION
+
+    @property
+    def is_node_related_task(self) -> bool:
+        """
+        Check if the task uses node-level targets and operations.
+
+        Returns:
+            is_node_related: True if the task is node-related, False otherwise.
+        """
+        # For now, we only support node classification as a node-related task
+        return self.task == TaskEnum.NODE_CLASSIFICATION
+
+    @property
     def sampleable_node_ids(self) -> Tensor:
         """
         Return node IDs that are eligible for sampling based on the task of this HData instance.
         """
-        if self.task == TaskEnum.NODE_CLASSIFICATION:
+        if self.is_node_related_task:
             # as_tuple=False returns a 2-D tensor where each row is the index for a nonzero value
             # so, we flatten it to get a 1-D tensor of the nonzero indices (eligible node IDs)
             # Example: target_node_mask = [False, True, False, True], then
@@ -779,7 +802,7 @@ class HData:
         x = self.x[hyperedge_index_wrapper.node_ids]
         y = (
             self.y[hyperedge_index_wrapper.node_ids]
-            if self.task == TaskEnum.NODE_CLASSIFICATION
+            if self.is_node_related_task
             else self.y[hyperedge_index_wrapper.hyperedge_ids]
         )
         target_node_mask = self.target_node_mask[hyperedge_index_wrapper.node_ids]
@@ -893,9 +916,7 @@ class HData:
         # Permutate only for tasks where y is related to hyperedges (e.g., hyperlink-prediction)
         # Example: y = [1, 1, 0], permutation = [1, 2, 0]
         #          -> new_y = [y[1], y[2], y[0]] = [1, 0, 1]
-        new_y = (
-            self.y[permutation] if self.task == TaskEnum.HYPERLINK_PREDICTION else self.y.clone()
-        )
+        new_y = self.y[permutation] if self.is_hyperedge_related_task else self.y.clone()
 
         return self.__class__(
             x=self.x.clone(),
@@ -1374,7 +1395,7 @@ class HData:
         if self.y.dim() != 1:
             raise ValueError(f"'y' must be a 1D tensor, got shape {tuple(self.y.shape)}.")
 
-        if self.task == TaskEnum.NODE_CLASSIFICATION:
+        if self.is_node_related_task:
             validate_long_tensor_dtype("y", self.y)
             if self.y.size(0) != self.num_nodes:
                 raise ValueError(
@@ -1383,12 +1404,13 @@ class HData:
                 )
             return
 
-        validate_floating_tensor_dtype("y", self.y)
-        if self.y.size(0) != self.num_hyperedges:
-            raise ValueError(
-                f"For task={self.task!r}, 'y' must have one entry per hyperedge. "
-                f"Got {self.y.size(0)} entries but num_hyperedges={self.num_hyperedges}."
-            )
+        if self.is_hyperedge_related_task:
+            validate_floating_tensor_dtype("y", self.y)
+            if self.y.size(0) != self.num_hyperedges:
+                raise ValueError(
+                    f"For task={self.task!r}, 'y' must have one entry per hyperedge. "
+                    f"Got {self.y.size(0)} entries but num_hyperedges={self.num_hyperedges}."
+                )
 
     def __validate_target_node_mask(self) -> None:
         """
@@ -1399,7 +1421,7 @@ class HData:
         """
         # We currently only support target_node_mask for node classification tasks
         # For all other tasks, it is simply ignored
-        if self.task != TaskEnum.NODE_CLASSIFICATION:
+        if not self.is_node_related_task:
             return
 
         if self.target_node_mask.dtype != torch.bool:
@@ -1498,6 +1520,6 @@ class HData:
         """
         if y is not None:
             return y
-        if self.task == TaskEnum.NODE_CLASSIFICATION:
+        if self.is_node_related_task:
             return torch.zeros((self.num_nodes,), dtype=torch.long, device=self.x.device)
         return torch.ones((self.num_hyperedges,), dtype=torch.float, device=self.x.device)

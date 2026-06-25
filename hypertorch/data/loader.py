@@ -5,7 +5,7 @@ from collections.abc import Callable
 from typing import Any
 from torch.utils.data import DataLoader as TorchDataLoader
 from hypertorch.data import Dataset
-from hypertorch.types import HData, HyperedgeIndex, TaskEnum
+from hypertorch.types import HData, HyperedgeIndex
 
 
 class DataLoader(TorchDataLoader):
@@ -206,7 +206,7 @@ class DataLoader(TorchDataLoader):
         node_ids = hyperedge_index_wrapper.node_ids
         hyperedge_ids = hyperedge_index_wrapper.hyperedge_ids
 
-        if self.__cached_dataset_hdata.task == TaskEnum.NODE_CLASSIFICATION:
+        if self.__cached_dataset_hdata.is_node_related_task:
             collated_y = self.__cached_dataset_hdata.y[node_ids]
 
             target_node_ids_list = [
@@ -215,8 +215,12 @@ class DataLoader(TorchDataLoader):
             ]
             target_node_ids = torch.cat(target_node_ids_list, dim=0)
             collated_target_node_mask = torch.isin(node_ids, target_node_ids)
-        else:  # Hyperedge-related tasks (e.g., hyperlink prediction)
+        elif self.__cached_dataset_hdata.is_hyperedge_related_task:
             collated_y = self.__cached_dataset_hdata.y[hyperedge_ids]
             collated_target_node_mask = None
+        else:
+            raise ValueError(
+                f"Unsupported task category for task={self.__cached_dataset_hdata.task!r}."
+            )
 
         return collated_y, collated_target_node_mask
