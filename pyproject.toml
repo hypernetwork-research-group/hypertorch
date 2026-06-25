@@ -99,6 +99,7 @@ omit = [
   "hypertorch/nn/*",
   "hypertorch/models/*",
   "hypertorch/hlp/*",
+  "hypertorch/nc/*",
 ]
 
 [tool.coverage.report]

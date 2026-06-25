@@ -193,7 +193,8 @@ class HyperedgeSampler(BaseSampler):
         #          -> sampled_hyperedge_index = [[0, 0, 1, 3, 4],
         #                                        [0, 0, 0, 2, 2]]
         sampled_hyperedge_index = self._sample_hyperedge_index(
-            hyperedge_index, sampled_hyperedge_ids
+            hyperedge_index=hyperedge_index,
+            sampled_hyperedge_ids=sampled_hyperedge_ids,
         )
 
         return HData.from_hyperedge_index(
@@ -250,7 +251,54 @@ class NodeSampler(BaseSampler):
         ids = self._normalize_index(index, self.len(hdata))
         self._validate_bounds(ids, self.len(hdata), "Node ID")
 
-        sampled_node_indexes = torch.tensor(ids, dtype=torch.long, device=hdata.device)
+        sampled_hdata, sampled_hyperedge_index, sampled_node_ids = self.__sample_hdata(
+            hdata=hdata,
+            ids_to_sample=ids,
+        )
+        sampled_hdata = self.__sample_task_specific_fields(
+            sampled_hdata=sampled_hdata,
+            sampled_hyperedge_index=sampled_hyperedge_index,
+            sampled_node_ids=sampled_node_ids,
+        )
+        return sampled_hdata
+
+    def len(self, hdata: HData) -> int:
+        """
+        Return the number of nodes in the given HData.
+
+        Args:
+            hdata: The HData to query for the number of nodes.
+
+        Returns:
+            num_nodes: The number of nodes in the HData.
+        """
+        return (
+            int(hdata.target_node_mask.sum(dtype=torch.int).item())
+            if hdata.is_node_related_task
+            else hdata.num_nodes
+        )
+
+    def __sample_hdata(
+        self,
+        hdata: HData,
+        ids_to_sample: list[int],
+    ) -> tuple[HData, Tensor, Tensor]:
+        """
+        Sample nodes from the given HData and return a new HData instance
+        containing only the sampled nodes and their incident hyperedges.
+
+        Args:
+            hdata: The HData to sample from.
+            ids_to_sample: A list of node IDs to sample.
+
+        Returns:
+            sampled_hdata: An HData instance containing only the sampled nodes
+                and their incident hyperedges.
+            sampled_hyperedge_index: A tensor containing the hyperedge index of the
+                sampled hyperedges.
+            sampled_node_ids: A tensor containing the IDs of the sampled nodes.
+        """
+        sampled_node_indexes = torch.tensor(ids_to_sample, dtype=torch.long, device=hdata.device)
         sampled_node_ids = hdata.sampleable_node_ids[sampled_node_indexes]
 
         hyperedge_index = hdata.hyperedge_index
@@ -275,39 +323,45 @@ class NodeSampler(BaseSampler):
         #          -> sampled_hyperedge_index = [[0, 0, 1, 3, 4],
         #                                        [0, 0, 0, 2, 2]]
         sampled_hyperedge_index = self._sample_hyperedge_index(
-            hyperedge_index, sampled_hyperedge_ids
+            hyperedge_index=hyperedge_index,
+            sampled_hyperedge_ids=sampled_hyperedge_ids,
         )
 
         sampled_hdata = HData.from_hyperedge_index(
             hyperedge_index=sampled_hyperedge_index,
             task=hdata.task,
         )
+        return sampled_hdata, sampled_hyperedge_index, sampled_node_ids
 
-        if hdata.is_node_related_task:
+    def __sample_task_specific_fields(
+        self,
+        sampled_hdata: HData,
+        sampled_hyperedge_index: Tensor,
+        sampled_node_ids: Tensor,
+    ) -> HData:
+        """
+        Sample task-specific fields for the given sampled HData.
+        For examples, if the task is node-related, it will create a
+        target node mask for the sampled nodes.
+
+        Args:
+            sampled_hdata: The sampled HData to process.
+            sampled_hyperedge_index: A tensor containing the hyperedge index
+                of the sampled hyperedges.
+            sampled_node_ids: A tensor containing the IDs of the sampled nodes.
+
+        Returns:
+            sampled_hdata: The HData with task-specific fields sampled.
+        """
+        if sampled_hdata.is_node_related_task:
             target_node_mask = self.__target_node_mask_for_sample(
                 sampled_hdata=sampled_hdata,
                 sampled_node_ids=sampled_node_ids,
                 sampled_hyperedge_index=sampled_hyperedge_index,
             )
-            sampled_hdata = sampled_hdata.with_target_node_mask(target_node_mask)
+            return sampled_hdata.with_target_node_mask(target_node_mask)
 
         return sampled_hdata
-
-    def len(self, hdata: HData) -> int:
-        """
-        Return the number of nodes in the given HData.
-
-        Args:
-            hdata: The HData to query for the number of nodes.
-
-        Returns:
-            num_nodes: The number of nodes in the HData.
-        """
-        return (
-            int(hdata.target_node_mask.sum(dtype=torch.int).item())
-            if hdata.is_node_related_task
-            else hdata.num_nodes
-        )
 
     def __target_node_mask_for_sample(
         self,
