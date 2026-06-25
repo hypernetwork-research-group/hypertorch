@@ -1,8 +1,10 @@
 import pytest
 import torch
+import re
 
 from hypertorch.data import DataLoader, Dataset
-from hypertorch.types import HData
+from hypertorch.types import HData, TaskEnum
+from typing import Any, cast
 from unittest.mock import MagicMock
 from hypertorch import utils
 
@@ -393,6 +395,116 @@ def test_collate_when_dataset_has_no_global_node_ids():
 
     assert batched.global_node_ids is not None
     assert torch.equal(batched.global_node_ids, torch.arange(batched.num_nodes, dtype=torch.long))
+
+
+def test_collate_node_classification_uses_node_labels_and_target_mask():
+    x = torch.tensor(
+        [[1.0, 1.5], [2.0, 2.5], [3.0, 3.5], [4.0, 4.5]],
+        dtype=torch.float,
+    )
+    hyperedge_index = torch.tensor([[0, 1, 2, 2, 3], [0, 0, 1, 1, 1]], dtype=torch.long)
+    y = torch.tensor([10, 11, 12, 13], dtype=torch.long)
+    hdata = HData(
+        x=x,
+        hyperedge_index=hyperedge_index,
+        y=y,
+        task=TaskEnum.NODE_CLASSIFICATION,
+    )
+
+    sample0 = HData(
+        x=torch.empty((0, 0), dtype=torch.float),
+        hyperedge_index=torch.tensor([[0, 1, 2], [0, 0, 1]], dtype=torch.long),
+        target_node_mask=torch.tensor([False, True, False], dtype=torch.bool),
+        task=TaskEnum.NODE_CLASSIFICATION,
+    )
+    sample1 = HData(
+        x=torch.empty((0, 0), dtype=torch.float),
+        hyperedge_index=torch.tensor([[2, 3], [1, 1]], dtype=torch.long),
+        target_node_mask=torch.tensor([False, True], dtype=torch.bool),
+        task=TaskEnum.NODE_CLASSIFICATION,
+    )
+
+    dataset = MagicMock(spec=Dataset)
+    dataset.hdata = hdata
+
+    loader = DataLoader(dataset, batch_size=2)
+    batched = loader.collate([sample0, sample1])
+
+    assert torch.equal(batched.x, x)
+    assert torch.equal(batched.y, y)
+    assert torch.equal(
+        batched.target_node_mask,
+        torch.tensor([False, True, False, True], dtype=torch.bool),
+    )
+    assert batched.task == TaskEnum.NODE_CLASSIFICATION
+
+
+def test_collate_node_classification_when_node_appears_as_both_target_and_context_node():
+    x = torch.tensor(
+        [[1.0, 1.5], [2.0, 2.5], [3.0, 3.5], [4.0, 4.5]],
+        dtype=torch.float,
+    )
+    hyperedge_index = torch.tensor([[0, 1, 2, 2, 3], [0, 0, 1, 1, 1]], dtype=torch.long)
+    y = torch.tensor([10, 11, 12, 13], dtype=torch.long)
+    hdata = HData(
+        x=x,
+        hyperedge_index=hyperedge_index,
+        y=y,
+        task=TaskEnum.NODE_CLASSIFICATION,
+    )
+
+    sample0 = HData(
+        x=torch.empty((0, 0), dtype=torch.float),
+        # Node 2 appear as context node, target_node_mask[2] == False
+        hyperedge_index=torch.tensor([[0, 1, 2], [0, 0, 1]], dtype=torch.long),
+        target_node_mask=torch.tensor([False, True, False], dtype=torch.bool),
+        task=TaskEnum.NODE_CLASSIFICATION,
+    )
+    sample1 = HData(
+        x=torch.empty((0, 0), dtype=torch.float),
+        # Node 2 appear as target node, target_node_mask[2] == True
+        hyperedge_index=torch.tensor([[2, 3], [1, 1]], dtype=torch.long),
+        target_node_mask=torch.tensor([True, True], dtype=torch.bool),
+        task=TaskEnum.NODE_CLASSIFICATION,
+    )
+
+    dataset = MagicMock(spec=Dataset)
+    dataset.hdata = hdata
+
+    loader = DataLoader(dataset, batch_size=2)
+    batched = loader.collate([sample0, sample1])
+
+    assert torch.equal(batched.x, x)
+    assert torch.equal(batched.y, y)
+    assert torch.equal(
+        batched.target_node_mask,
+        # Node 2 should be marked as target node since
+        # it appears in sample1 with target_node_mask=True
+        # so, batched,target_node_mask[2] == True
+        torch.tensor([False, True, True, True], dtype=torch.bool),
+    )
+    assert batched.task == TaskEnum.NODE_CLASSIFICATION
+
+
+def test_collate_raises_for_unsupported_cached_task_category():
+    hdata = HData(
+        x=torch.tensor([[1.0], [2.0]], dtype=torch.float),
+        hyperedge_index=torch.tensor([[0, 1], [0, 0]], dtype=torch.long),
+    )
+    hdata.task = cast(Any, "unsupported")
+
+    sample = HData.from_hyperedge_index(torch.tensor([[0, 1], [0, 0]], dtype=torch.long))
+
+    dataset = MagicMock(spec=Dataset)
+    dataset.hdata = hdata
+
+    loader = DataLoader(dataset, batch_size=1)
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape("Unsupported task category for task='unsupported'."),
+    ):
+        loader.collate([sample])
 
 
 def test_collate_sample_full_hypergraph_returns_cached_hdata(mock_dataset_single_sample):

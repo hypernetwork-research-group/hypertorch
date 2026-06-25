@@ -152,8 +152,8 @@ class DataLoader(TorchDataLoader):
         collated_global_node_ids = self.__cached_dataset_hdata.global_node_ids[node_ids]
 
         collated_y, collated_target_node_mask = self.__collate_y_and_target_node_mask_for_task(
-            batch,
-            hyperedge_index_wrapper,
+            batch=batch,
+            hyperedge_index_wrapper=hyperedge_index_wrapper,
         )
 
         collated_hyperedge_attr = (

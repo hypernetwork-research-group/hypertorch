@@ -63,9 +63,8 @@ class HData:
             contains hyperedge IDs.
         hyperedge_weights: Optional tensor of shape ``[num_hyperedges]`` containing weights
             for each hyperedge.
-        hyperedge_attr: Hyperedge feature matrix of
+        hyperedge_attr: Optional hyperedge attributes of
             shape ``[num_hyperedges, num_hyperedge_features]``.
-            Features associated with each hyperedge (e.g., weights, timestamps, types).
         num_nodes: Number of nodes in the hypergraph. If ``None``, inferred as ``x.size(0)``.
         num_hyperedges: Number of hyperedges in the hypergraph.
             If ``None``, inferred as the number of unique hyperedge IDs in ``hyperedge_index[1]``.
@@ -76,10 +75,13 @@ class HData:
             global node IDs in the same order as the rows of ``x``.
         target_node_mask: Optional boolean tensor of shape ``[num_nodes]`` identifying the
             supervised nodes for node-classification splits and batches.
+            If ``None``, defaults to a tensor of ones of size ``num_nodes`` for node-related tasks,
+            and size ``num_hyperedges`` for hyperedge-related tasks.
         y: Labels for hyperedges, of shape ``[num_hyperedges]``.
             Used for supervised learning tasks. For unsupervised tasks, this can be ignored.
             Default is a tensor of ones, indicating all hyperedges are positive examples.
         task: Learning task used for sampling and collation on this HData instance.
+            If ``None``, defaults to ``"hyperlink-prediction"``.
         device: Device shared by all tensors in the instance.
     """
 
@@ -101,18 +103,32 @@ class HData:
 
         Args:
             x: Node feature matrix of shape ``[num_nodes, num_features]``.
-            hyperedge_index: Hyperedge connectivity in COO format of shape
-                ``[2, num_incidences]``.
+            hyperedge_index: Hyperedge connectivity in COO format of shape ``[2, num_incidences]``,
+                where ``hyperedge_index[0]`` contains node IDs and ``hyperedge_index[1]``
+                contains hyperedge IDs.
             hyperedge_weights: Optional tensor of shape ``[num_hyperedges]`` containing weights
                 for each hyperedge.
-            hyperedge_attr: Optional hyperedge feature matrix of shape
-                ``[num_hyperedges, num_hyperedge_features]``.
-            num_nodes: Optional explicit number of nodes.
-            num_hyperedges: Optional explicit number of hyperedges.
-            global_node_ids: Optional stable node IDs matching rows of ``x``.
-            target_node_mask: Optional supervised node mask for node classification.
-            y: Optional labels for hyperedges.
-            task: Learning task. Defaults to ``"hyperlink-prediction"``.
+            hyperedge_attr: Optional hyperedge attributes of
+                shape ``[num_hyperedges, num_hyperedge_features]``.
+                Features associated with each hyperedge (e.g., timestamps, types).
+            num_nodes: Number of nodes in the hypergraph. If ``None``, inferred as ``x.size(0)``.
+            num_hyperedges: Number of hyperedges in the hypergraph.
+                If ``None``, inferred as the number of unique hyperedge IDs
+                in ``hyperedge_index[1]``.
+            global_node_ids: Optional stable node IDs of shape ``[num_nodes]`` matching the
+                row order of ``x``. Use this to preserve access to the canonical node space
+                when ``hyperedge_index`` is rebased locally.
+                If ``None``, defaults to ``torch.arange(num_nodes)``, assuming that these are the
+                global node IDs in the same order as the rows of ``x``.
+            target_node_mask: Optional boolean tensor of shape ``[num_nodes]`` identifying the
+                supervised nodes for node-classification splits and batches.
+                If ``None``, defaults to a tensor of ones of size ``num_nodes`` for node-related
+                tasks, and size ``num_hyperedges`` for hyperedge-related tasks.
+            y: Labels for hyperedges, of shape ``[num_hyperedges]``.
+                Used for supervised learning tasks. For unsupervised tasks, this can be ignored.
+                Default is a tensor of ones, indicating all hyperedges are positive examples.
+            task: Learning task used for sampling and collation on this HData instance.
+                If ``None``, defaults to ``"hyperlink-prediction"``.
         """
         self.x: Tensor = x
         self.hyperedge_index: Tensor = hyperedge_index
