@@ -1,4 +1,5 @@
-.PHONY: all release build setup setup-tensorboard clean destroy \
+.PHONY: all release build setup setup-tensorboard clean destroy\
+		package \
 		test stest i-test si-test run \
 		check format typecheck lint lint-fix lint-rule lint-rule-fix \
 		docs docs-build docs-serve \
@@ -19,6 +20,10 @@ all: clean setup check test
 release: clean setup check test i-test
 
 build: clean setup
+
+package:
+	@echo '=== Building package ==='
+	$(UV) build -o dist
 
 setup:
 	@echo '=== Setup ==='
@@ -122,6 +127,7 @@ help:
 	@echo "  build                   - Clean and setup"
 	@echo "  setup                   - Install dependencies"
 	@echo "  setup-tensorboard       - Install optional TensorBoard dependency"
+	@echo "  package                 - Build the package"
 	@echo "  check                   - Run lint and typecheck"
 	@echo "  format                  - Run formatting"
 	@echo "  typecheck               - Run type checking"
