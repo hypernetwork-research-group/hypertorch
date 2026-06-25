@@ -18,6 +18,7 @@ from hypertorch.types.graph import EdgeIndex, Graph
 
 
 Neighborhood: TypeAlias = set[int]
+"""Set of node IDs adjacent to a node or hyperedge."""
 
 
 class HIFHypergraph:
@@ -429,13 +430,19 @@ class Hypergraph:
 
 
 class GraphReductionStrategyEnum(StrEnum):
+    """
+    Enum for supported hypergraph-to-graph reduction strategies.
+    """
+
     CLIQUE_EXPANSION = "clique_expansion"
 
 
 GraphReductionStrategyLiteral: TypeAlias = Literal["clique_expansion"]
+"""Literal type for supported hypergraph-to-graph reduction strategies."""
 
 
 GraphReductionStrategy: TypeAlias = GraphReductionStrategyEnum | GraphReductionStrategyLiteral
+"""Type for supported graph reduction strategies, either as an enum or a string literal."""
 
 
 class HyperedgeIndex:

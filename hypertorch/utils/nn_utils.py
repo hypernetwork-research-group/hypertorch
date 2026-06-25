@@ -11,7 +11,11 @@ INPUT_LAYER = 0
 
 
 ActivationFn: TypeAlias = type[Module]
+"""Neural network module class used as an activation function."""
+
+
 NormalizationFn: TypeAlias = type[Module]
+"""Neural network module class used as a normalization layer."""
 
 
 class Stage(Enum):

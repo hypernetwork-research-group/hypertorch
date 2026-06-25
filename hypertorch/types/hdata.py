@@ -36,14 +36,20 @@ if TYPE_CHECKING:
 
 
 class TaskEnum(StrEnum):
+    """
+    Enum for supported hypergraph learning tasks.
+    """
+
     HYPERLINK_PREDICTION = "hyperlink-prediction"
     NODE_CLASSIFICATION = "node-classification"
 
 
 TaskLiteral: TypeAlias = Literal["hyperlink-prediction", "node-classification"]
+"""Literal type for supported hypergraph learning tasks."""
 
 
 Task: TypeAlias = TaskEnum | TaskLiteral
+"""Type for supported hypergraph learning tasks, either as a TaskEnum or a string literal."""
 
 
 class HData:
