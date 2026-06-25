@@ -16,9 +16,10 @@ jobs:
       run: |
         BRANCH_NAME=${GITHUB_REF#refs/heads/}
 
-        VALID_PATTERNS="^(feat|fix|chore|refactor|docs)\/[a-z0-9]+(-[a-z0-9]+)*$|^v[0-9]+\.[0-9]+\.[0-9]+(-[a-z0-9]+(\.[a-z0-9]+)*(-[a-z0-9]+)*)?$"
+        VALID_PATTERNS="^(feat|fix|chore|refactor|docs)\/[a-z0-9]+(-[a-z0-9]+)*$|^v*$"
 
         if ! [[ $BRANCH_NAME =~ $VALID_PATTERNS ]]; then
-          echo "Branch name invalid"
+          echo "Branch name (${BRANCH_NAME}) is invalid."
+          echo "It must follow the naming convention: 'feat|fix|chore|refactor|docs/<name>' for branches or 'v*' for tags."
           exit 1
         fi

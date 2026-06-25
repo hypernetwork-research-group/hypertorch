@@ -1,6 +1,6 @@
 [project]
 name = "hypertorch"
-version = "0.1.0"
+version = "0.1.1"
 description = """
 HyperTorch is a library for hypergraph learning and benchmarking.
 It provides a standardized workflow for loading hypergraph datasets,
