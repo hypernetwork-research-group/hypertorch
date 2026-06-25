@@ -14,12 +14,16 @@ jobs:
     steps:
     - name: Check branch name
       run: |
-        BRANCH_NAME=${GITHUB_REF#refs/heads/}
+        # Strip refs/heads/ for branches OR refs/tags/ for tags
+        if [[ $GITHUB_REF == refs/tags/* ]]; then
+          BRANCH_NAME=${GITHUB_REF#refs/tags/}
+        else
+          BRANCH_NAME=${GITHUB_REF#refs/heads/}
+        fi
 
-        VALID_PATTERNS="^(feat|fix|chore|refactor|docs)\/[a-z0-9]+(-[a-z0-9]+)*$|^v*$"
-
+        VALID_PATTERNS="^(feat|fix|chore|refactor|docs)\/[a-z0-9]+(-[a-z0-9]+)*$|^v[0-9]+\.[0-9]+\.[0-9]+(-[a-z0-9]+(\.[a-z0-9]+)*(-[a-z0-9]+)*)?$"
         if ! [[ $BRANCH_NAME =~ $VALID_PATTERNS ]]; then
-          echo "Branch name (${BRANCH_NAME}) is invalid."
+          echo "Branch name (${GITHUB_REF}) is invalid."
           echo "It must follow the naming convention: 'feat|fix|chore|refactor|docs/<name>' for branches or 'v*' for tags."
           exit 1
         fi
