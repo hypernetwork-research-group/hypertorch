@@ -51,6 +51,32 @@ def is_input_layer(layer_idx: int) -> bool:
     return is_layer(layer_idx, INPUT_LAYER)
 
 
+def maxmin_scatter(
+    src: Tensor,
+    index: Tensor,
+    dim: int,
+    dim_size: int | None = None,
+) -> Tensor:
+    """
+    Performs a scatter reduction that computes the channel-wise range (max - min) for each
+    index group.
+
+    Args:
+        src: The source tensor containing the values to scatter.
+        index: The indices of elements to scatter.
+        dim: The axis along which to index.
+        dim_size: The size of the output tensor along the scatter dimension.
+            If not provided, it will be inferred from the maximum index value.
+            Defaults to ``None``.
+
+    Returns:
+        values: A tensor containing the max-min values for each index group.
+    """
+    max_embeddings = scatter(src=src, index=index, dim=dim, dim_size=dim_size, reduce="max")
+    min_embeddings = scatter(src=src, index=index, dim=dim, dim_size=dim_size, reduce="min")
+    return max_embeddings - min_embeddings
+
+
 def node_labels_from_node_degrees(
     node_incidences: Tensor,
     num_nodes: int,
@@ -110,32 +136,6 @@ def node_labels_from_node_degrees(
     #          -> labels = [0, 0, 1, 2, 2]
     labels = torch.bucketize(input=node_degrees, boundaries=thresholds).long()
     return labels
-
-
-def maxmin_scatter(
-    src: Tensor,
-    index: Tensor,
-    dim: int,
-    dim_size: int | None = None,
-) -> Tensor:
-    """
-    Performs a scatter reduction that computes the channel-wise range (max - min) for each
-    index group.
-
-    Args:
-        src: The source tensor containing the values to scatter.
-        index: The indices of elements to scatter.
-        dim: The axis along which to index.
-        dim_size: The size of the output tensor along the scatter dimension.
-            If not provided, it will be inferred from the maximum index value.
-            Defaults to ``None``.
-
-    Returns:
-        values: A tensor containing the max-min values for each index group.
-    """
-    max_embeddings = scatter(src=src, index=index, dim=dim, dim_size=dim_size, reduce="max")
-    min_embeddings = scatter(src=src, index=index, dim=dim, dim_size=dim_size, reduce="min")
-    return max_embeddings - min_embeddings
 
 
 def validate_floating_tensor_dtype(name: str, tensor: Tensor) -> None:

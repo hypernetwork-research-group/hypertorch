@@ -6,6 +6,7 @@ from hypertorch.utils import (
     is_input_layer,
     is_layer,
     maxmin_scatter,
+    node_labels_from_node_degrees,
     validate_floating_tensor_dtype,
     validate_long_tensor_dtype,
 )
@@ -135,6 +136,58 @@ def test_maxmin_scatter_supports_nonzero_scatter_dimension():
         dtype=torch.float,
     )
     assert torch.allclose(result, expected)
+
+
+def test_node_labels_from_node_degrees_bins_nodes_by_degree_quantiles():
+    node_incidences = torch.tensor([1, 2, 2, 3, 3, 3, 4, 4, 4, 4], dtype=torch.long)
+
+    result = node_labels_from_node_degrees(
+        node_incidences=node_incidences,
+        num_nodes=5,
+        num_classes=3,
+    )
+
+    expected = torch.tensor([0, 0, 1, 2, 2], dtype=torch.long)
+    assert torch.equal(result, expected)
+
+
+def test_node_labels_from_node_degrees_includes_isolated_nodes():
+    node_incidences = torch.tensor([2, 2, 2], dtype=torch.long)
+
+    result = node_labels_from_node_degrees(
+        node_incidences=node_incidences,
+        num_nodes=4,
+        num_classes=2,
+    )
+
+    expected = torch.tensor([0, 0, 1, 0], dtype=torch.long)
+    assert torch.equal(result, expected)
+
+
+def test_node_labels_from_node_degrees_supports_custom_class_count():
+    node_incidences = torch.tensor([1, 2, 2, 3, 3, 3, 4, 4, 4, 4], dtype=torch.long)
+
+    result = node_labels_from_node_degrees(
+        node_incidences=node_incidences,
+        num_nodes=5,
+        num_classes=4,
+    )
+
+    expected = torch.tensor([0, 0, 1, 2, 3], dtype=torch.long)
+    assert torch.equal(result, expected)
+
+
+def test_node_labels_from_node_degrees_assigns_equal_degrees_to_lowest_matching_bin():
+    node_incidences = torch.tensor([0, 1, 2], dtype=torch.long)
+
+    result = node_labels_from_node_degrees(
+        node_incidences=node_incidences,
+        num_nodes=3,
+        num_classes=3,
+    )
+
+    expected = torch.tensor([0, 0, 0], dtype=torch.long)
+    assert torch.equal(result, expected)
 
 
 @pytest.mark.parametrize(
