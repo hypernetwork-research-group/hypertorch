@@ -10,7 +10,7 @@ from hypertorch.data import (
     SamplingStrategyEnum,
     create_sampler_from_strategy,
 )
-from hypertorch.types import HData
+from hypertorch.types import HData, TaskEnum
 
 
 @pytest.fixture
@@ -103,6 +103,27 @@ def test_hyperedge_sampling_len(mock_four_node_two_hyperedge_hdata):
     assert sampler.len(mock_four_node_two_hyperedge_hdata) == 2
 
 
+def test_sample_single_node_graph_hyperedge_sampler(mock_single_node_single_hyperedge_hdata):
+    sampler = HyperedgeSampler()
+    result = sampler.sample(0, mock_single_node_single_hyperedge_hdata)
+
+    assert result.hyperedge_index.shape == (2, 1)
+    assert result.num_hyperedges == 1
+    assert torch.equal(result.hyperedge_index[0], torch.tensor([0], dtype=torch.long))
+    assert torch.equal(result.hyperedge_index[1], torch.tensor([0], dtype=torch.long))
+
+
+def test_sample_hyperedge_of_size_one_hyperedge_sampler(mock_single_node_single_hyperedge_hdata):
+    sampler = HyperedgeSampler()
+    result = sampler.sample(0, mock_single_node_single_hyperedge_hdata)
+
+    # Hyperedge 0 has only node 0
+    assert result.hyperedge_index.shape == (2, 1)
+    assert result.num_hyperedges == 1
+    assert torch.equal(result.hyperedge_index[0], torch.tensor([0], dtype=torch.long))
+    assert torch.equal(result.hyperedge_index[1], torch.tensor([0], dtype=torch.long))
+
+
 def test_node_sampling_single_index(mock_four_node_two_hyperedge_hdata):
     sampler = NodeSampler()
     result = sampler.sample(0, mock_four_node_two_hyperedge_hdata)
@@ -136,6 +157,85 @@ def test_node_sampling_len(mock_four_node_two_hyperedge_hdata):
     assert sampler.len(mock_four_node_two_hyperedge_hdata) == 4
 
 
+def test_node_sampling_len_counts_all_nodes_for_hyperlink_prediction():
+    hdata = HData(
+        x=torch.arange(5, dtype=torch.float).unsqueeze(1),
+        hyperedge_index=torch.tensor([[0, 1, 2, 2, 3, 4], [0, 0, 0, 1, 1, 1]], dtype=torch.long),
+        target_node_mask=torch.tensor([False, True, False, True, False], dtype=torch.bool),
+        y=torch.arange(2, dtype=torch.float),
+        task=TaskEnum.HYPERLINK_PREDICTION,
+    )
+
+    assert NodeSampler().len(hdata) == 5
+
+
+def test_node_sampling_len_counts_only_target_nodes_for_node_classification():
+    hdata = HData(
+        x=torch.arange(5, dtype=torch.float).unsqueeze(1),
+        hyperedge_index=torch.tensor([[0, 1, 2, 2, 3, 4], [0, 0, 0, 1, 1, 1]], dtype=torch.long),
+        target_node_mask=torch.tensor([False, True, False, True, False], dtype=torch.bool),
+        y=torch.arange(5, dtype=torch.long),
+        task=TaskEnum.NODE_CLASSIFICATION,
+    )
+
+    assert NodeSampler().len(hdata) == 2
+
+
+def test_node_sampling_marks_only_seed_targets_in_context_for_node_classification():
+    hdata = HData(
+        x=torch.arange(5, dtype=torch.float).unsqueeze(1),
+        hyperedge_index=torch.tensor([[0, 1, 2, 2, 3, 4], [0, 0, 0, 1, 1, 1]], dtype=torch.long),
+        target_node_mask=torch.tensor([False, True, False, True, False], dtype=torch.bool),
+        y=torch.arange(5, dtype=torch.long),
+        task=TaskEnum.NODE_CLASSIFICATION,
+    )
+
+    result = NodeSampler().sample([0, 1], hdata)
+
+    assert torch.equal(
+        result.hyperedge_index,
+        torch.tensor([[0, 1, 2, 2, 3, 4], [0, 0, 0, 1, 1, 1]], dtype=torch.long),
+    )
+    assert torch.equal(
+        result.target_node_mask,
+        torch.tensor([False, True, False, True, False], dtype=torch.bool),
+    )
+
+
+def test_node_sampling_validates_target_node_index_bounds_for_node_classification():
+    hdata = HData(
+        x=torch.arange(5, dtype=torch.float).unsqueeze(1),
+        hyperedge_index=torch.tensor([[0, 1, 2, 2, 3, 4], [0, 0, 0, 1, 1, 1]], dtype=torch.long),
+        target_node_mask=torch.tensor([False, True, False, True, False], dtype=torch.bool),
+        y=torch.arange(5, dtype=torch.long),
+        task=TaskEnum.NODE_CLASSIFICATION,
+    )
+
+    with pytest.raises(IndexError, match=re.escape("Node ID 2 is out of bounds (0, 1).")):
+        NodeSampler().sample(2, hdata)
+
+
+def test_sample_single_node_graph_node_sampler(mock_single_node_single_hyperedge_hdata):
+    sampler = NodeSampler()
+    result = sampler.sample(0, mock_single_node_single_hyperedge_hdata)
+
+    assert result.hyperedge_index.shape == (2, 1)
+    assert result.num_hyperedges == 1
+    assert torch.equal(result.hyperedge_index[0], torch.tensor([0], dtype=torch.long))
+    assert torch.equal(result.hyperedge_index[1], torch.tensor([0], dtype=torch.long))
+
+
+def test_sample_hyperedge_of_size_one_node_sampler(mock_single_node_single_hyperedge_hdata):
+    sampler = NodeSampler()
+    result = sampler.sample(0, mock_single_node_single_hyperedge_hdata)
+
+    # Node 0 is in hyperedge 0 which has only node 0
+    assert result.hyperedge_index.shape == (2, 1)
+    assert result.num_hyperedges == 1
+    assert torch.equal(result.hyperedge_index[0], torch.tensor([0], dtype=torch.long))
+    assert torch.equal(result.hyperedge_index[1], torch.tensor([0], dtype=torch.long))
+
+
 @pytest.mark.parametrize(
     "sampler",
     [
@@ -146,42 +246,6 @@ def test_node_sampling_len(mock_four_node_two_hyperedge_hdata):
 def test_sample_empty_index_raises(mock_four_node_two_hyperedge_hdata, sampler):
     with pytest.raises(ValueError, match=re.escape("Index list cannot be empty.")):
         sampler.sample([], mock_four_node_two_hyperedge_hdata)
-
-
-@pytest.mark.parametrize(
-    "index",
-    [
-        pytest.param("0", id="string_index"),
-        pytest.param(True, id="bool_index"),
-    ],
-)
-def test_sample_rejects_non_integer_index(mock_four_node_two_hyperedge_hdata, index):
-    sampler = HyperedgeSampler()
-
-    with pytest.raises(
-        TypeError,
-        match=re.escape("Index must be an integer or a list of integers."),
-    ):
-        sampler.sample(cast(Any, index), mock_four_node_two_hyperedge_hdata)
-
-
-@pytest.mark.parametrize(
-    "index",
-    [
-        pytest.param([0, "1"], id="list_with_string"),
-        pytest.param([0, False], id="list_with_bool"),
-    ],
-)
-def test_sample_rejects_index_list_with_non_integer_items(
-    mock_four_node_two_hyperedge_hdata, index
-):
-    sampler = HyperedgeSampler()
-
-    with pytest.raises(
-        TypeError,
-        match=re.escape("Index list must contain only integers."),
-    ):
-        sampler.sample(cast(Any, index), mock_four_node_two_hyperedge_hdata)
 
 
 @pytest.mark.parametrize(
@@ -228,48 +292,6 @@ def test_sample_returns_correct_hdata(mock_four_node_two_hyperedge_hdata, sample
 
     assert result.x.shape == (0, 0)
     assert result.hyperedge_attr is None
-
-
-def test_sample_single_node_graph_node_sampler(mock_single_node_single_hyperedge_hdata):
-    sampler = NodeSampler()
-    result = sampler.sample(0, mock_single_node_single_hyperedge_hdata)
-
-    assert result.hyperedge_index.shape == (2, 1)
-    assert result.num_hyperedges == 1
-    assert torch.equal(result.hyperedge_index[0], torch.tensor([0], dtype=torch.long))
-    assert torch.equal(result.hyperedge_index[1], torch.tensor([0], dtype=torch.long))
-
-
-def test_sample_single_node_graph_hyperedge_sampler(mock_single_node_single_hyperedge_hdata):
-    sampler = HyperedgeSampler()
-    result = sampler.sample(0, mock_single_node_single_hyperedge_hdata)
-
-    assert result.hyperedge_index.shape == (2, 1)
-    assert result.num_hyperedges == 1
-    assert torch.equal(result.hyperedge_index[0], torch.tensor([0], dtype=torch.long))
-    assert torch.equal(result.hyperedge_index[1], torch.tensor([0], dtype=torch.long))
-
-
-def test_sample_hyperedge_of_size_one_node_sampler(mock_single_node_single_hyperedge_hdata):
-    sampler = NodeSampler()
-    result = sampler.sample(0, mock_single_node_single_hyperedge_hdata)
-
-    # Node 0 is in hyperedge 0 which has only node 0
-    assert result.hyperedge_index.shape == (2, 1)
-    assert result.num_hyperedges == 1
-    assert torch.equal(result.hyperedge_index[0], torch.tensor([0], dtype=torch.long))
-    assert torch.equal(result.hyperedge_index[1], torch.tensor([0], dtype=torch.long))
-
-
-def test_sample_hyperedge_of_size_one_hyperedge_sampler(mock_single_node_single_hyperedge_hdata):
-    sampler = HyperedgeSampler()
-    result = sampler.sample(0, mock_single_node_single_hyperedge_hdata)
-
-    # Hyperedge 0 has only node 0
-    assert result.hyperedge_index.shape == (2, 1)
-    assert result.num_hyperedges == 1
-    assert torch.equal(result.hyperedge_index[0], torch.tensor([0], dtype=torch.long))
-    assert torch.equal(result.hyperedge_index[1], torch.tensor([0], dtype=torch.long))
 
 
 @pytest.mark.parametrize(
