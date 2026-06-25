@@ -400,7 +400,7 @@ class Dataset(TorchDataset):
         if ratios is None:
             raise ValueError("'ratios' must be provided when no custom 'splitter' is provided.")
 
-        if self.hdata.task == TaskEnum.NODE_CLASSIFICATION:
+        if self.hdata.is_node_related_task:
             splits, _ = NodeDatasetSplitter(
                 node_space_setting=node_space_setting,
                 shuffle=shuffle,
@@ -410,6 +410,9 @@ class Dataset(TorchDataset):
                 ratios=ratios,
             )
             return splits
+
+        if not self.hdata.is_hyperedge_related_task:
+            raise ValueError(f"Unsupported task category for task={self.hdata.task!r}.")
 
         splits, _ = HyperedgeDatasetSplitter(
             node_space_setting=node_space_setting,
@@ -484,7 +487,7 @@ class Dataset(TorchDataset):
                 hyperedges, or a requested transductive train-cover split cannot
                 cover the full node space.
         """
-        if self.hdata.task == TaskEnum.NODE_CLASSIFICATION:
+        if self.hdata.is_node_related_task:
             return NodeDatasetSplitter(
                 node_space_setting=node_space_setting,
                 shuffle=shuffle,
@@ -493,6 +496,9 @@ class Dataset(TorchDataset):
                 to_split=self,
                 ratios=ratios,
             )
+
+        if not self.hdata.is_hyperedge_related_task:
+            raise ValueError(f"Unsupported task category for task={self.hdata.task!r}.")
 
         return HyperedgeDatasetSplitter(
             node_space_setting=node_space_setting,

@@ -12,7 +12,7 @@ from hypertorch.data import (
     RandomNegativeSampler,
     Splitter,
 )
-from hypertorch.types import HData
+from hypertorch.types import HData, TaskEnum
 from hypertorch.utils import assign_hyperedge_label_to_nodes
 
 
@@ -198,6 +198,25 @@ def test_init_uses_explicit_y():
 
     assert data.y.dtype == y.dtype
     assert torch.equal(data.y, y)
+
+
+@pytest.mark.parametrize(
+    "task, expected_is_hyperedge_related, expected_is_node_related",
+    [
+        pytest.param(TaskEnum.HYPERLINK_PREDICTION, True, False, id="hyperedge_enum"),
+        pytest.param("hyperlink-prediction", True, False, id="hyperedge_literal"),
+        pytest.param(TaskEnum.NODE_CLASSIFICATION, False, True, id="node_enum"),
+        pytest.param("node-classification", False, True, id="node_literal"),
+    ],
+)
+def test_task_category_properties(task, expected_is_hyperedge_related, expected_is_node_related):
+    x = torch.randn(3, 2, dtype=torch.float)
+    hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 1]], dtype=torch.long)
+
+    data = HData(x=x, hyperedge_index=hyperedge_index, task=task)
+
+    assert data.is_hyperedge_related_task is expected_is_hyperedge_related
+    assert data.is_node_related_task is expected_is_node_related
 
 
 def test_init_stores_hyperedge_attr():
