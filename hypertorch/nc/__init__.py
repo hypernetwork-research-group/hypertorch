@@ -1,8 +1,8 @@
 from .common import NcModule
-from .mlp_nc import MLPNcModule, MlpNcConfig
+from .mlp_nc import MLPNcModule, MLPNcConfig
 
 __all__ = [
+    "MLPNcConfig",
     "MLPNcModule",
-    "MlpNcConfig",
     "NcModule",
 ]
