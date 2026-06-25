@@ -1521,5 +1521,5 @@ class HData:
         if y is not None:
             return y
         if self.is_node_related_task:
-            return torch.zeros((self.num_nodes,), dtype=torch.long, device=self.x.device)
+            return torch.ones((self.num_nodes,), dtype=torch.long, device=self.x.device)
         return torch.ones((self.num_hyperedges,), dtype=torch.float, device=self.x.device)
