@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import torch
 
-from enum import Enum
 from torch import Tensor
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, get_args
 from collections.abc import Sequence
 from hypertorch.utils import (
     NodeSpaceFiller,
     NodeSpaceSetting,
+    StrEnum,
     clone_optional_tensor,
     create_seeded_torch_generator,
     empty_hyperedgeindex,
@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     )
 
 
-class TaskEnum(Enum):
+class TaskEnum(StrEnum):
     HYPERLINK_PREDICTION = "hyperlink-prediction"
     NODE_CLASSIFICATION = "node-classification"
 

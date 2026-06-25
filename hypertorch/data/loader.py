@@ -5,7 +5,7 @@ from collections.abc import Callable
 from typing import Any
 from torch.utils.data import DataLoader as TorchDataLoader
 from hypertorch.data import Dataset
-from hypertorch.types import HData, HyperedgeIndex
+from hypertorch.types import HData, HyperedgeIndex, TaskEnum
 
 
 class DataLoader(TorchDataLoader):
@@ -151,7 +151,7 @@ class DataLoader(TorchDataLoader):
         collated_x = self.__cached_dataset_hdata.x[node_ids]
         collated_global_node_ids = self.__cached_dataset_hdata.global_node_ids[node_ids]
 
-        collated_y, collated_target_node_mask = self.__collate_y_and_target_node_mask(
+        collated_y, collated_target_node_mask = self.__collate_y_and_target_node_mask_for_task(
             batch,
             hyperedge_index_wrapper,
         )
@@ -185,26 +185,28 @@ class DataLoader(TorchDataLoader):
 
         return collated_hdata.to(batch[0].device)
 
-    def __collate_y_and_target_node_mask(
+    def __collate_y_and_target_node_mask_for_task(
         self,
         batch: list[HData],
-        hyperedge_index: HyperedgeIndex,
+        hyperedge_index_wrapper: HyperedgeIndex,
     ) -> tuple[Tensor, Tensor | None]:
         """
-        Collates the labels (y) and target node mask for a batch of HData objects.
+        Collates the labels (y) and target node mask for a batch of
+        HData instances based on the task type.
 
         Args:
             batch: List of HData instances containing the data to collate.
-            hyperedge_index: A HyperedgeIndex instance wrapping the collated hyperedge index.
+            hyperedge_index_wrapper: A HyperedgeIndex wrapping the collated hyperedge index.
 
         Returns:
             collated_y: A tensor containing the collated labels for the batch.
             collated_target_node_mask: A tensor containing the collated target node mask
                 for the batch, or ``None`` if not applicable.
         """
-        node_ids, hyperedge_ids = hyperedge_index.node_ids, hyperedge_index.hyperedge_ids
+        node_ids = hyperedge_index_wrapper.node_ids
+        hyperedge_ids = hyperedge_index_wrapper.hyperedge_ids
 
-        if self.__cached_dataset_hdata.task == "node-classification":
+        if self.__cached_dataset_hdata.task == TaskEnum.NODE_CLASSIFICATION:
             collated_y = self.__cached_dataset_hdata.y[node_ids]
 
             target_node_ids_list = [
@@ -213,7 +215,7 @@ class DataLoader(TorchDataLoader):
             ]
             target_node_ids = torch.cat(target_node_ids_list, dim=0)
             collated_target_node_mask = torch.isin(node_ids, target_node_ids)
-        else:
+        else:  # Hyperedge-related tasks (e.g., hyperlink prediction)
             collated_y = self.__cached_dataset_hdata.y[hyperedge_ids]
             collated_target_node_mask = None
 
