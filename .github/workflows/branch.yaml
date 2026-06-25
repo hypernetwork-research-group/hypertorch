@@ -3,7 +3,7 @@ name: Branch Naming Convention Check
 on:
   create:
     branches:
-      - '**'
+    - '**'
 
 permissions:
   contents: read
@@ -12,12 +12,13 @@ jobs:
   branch-naming-rules:
     runs-on: ubuntu-latest
     steps:
-      - name: Check branch name
-        run: |
-          BRANCH_NAME=${GITHUB_REF#refs/heads/}
+    - name: Check branch name
+      run: |
+        BRANCH_NAME=${GITHUB_REF#refs/heads/}
 
-          VALID_PATTERNS="^(feat|fix|chore|refactor|docs)\/[a-z0-9]+(-[a-z0-9]+)*$"
-          if ! [[ $BRANCH_NAME =~ $VALID_PATTERNS ]]; then
-            echo "Branch name invalid"
-            exit 1
-          fi
+        VALID_PATTERNS="^(feat|fix|chore|refactor|docs)\/[a-z0-9]+(-[a-z0-9]+)*$|^v[0-9]+\.[0-9]+\.[0-9]+(-[a-z0-9]+(\.[a-z0-9]+)*(-[a-z0-9]+)*)?$"
+
+        if ! [[ $BRANCH_NAME =~ $VALID_PATTERNS ]]; then
+          echo "Branch name invalid"
+          exit 1
+        fi
