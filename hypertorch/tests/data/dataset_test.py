@@ -813,8 +813,8 @@ def test_split_rejects_unsupported_task_category():
     hdata = HData(
         x=torch.arange(4, dtype=torch.float).unsqueeze(1),
         hyperedge_index=torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long),
-        task=cast(Any, "unsupported"),
     )
+    hdata.task = cast(Any, "unsupported")
     dataset = Dataset.from_hdata(hdata)
 
     with pytest.raises(
@@ -828,8 +828,8 @@ def test_split_with_ratios_rejects_unsupported_task_category():
     hdata = HData(
         x=torch.arange(4, dtype=torch.float).unsqueeze(1),
         hyperedge_index=torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long),
-        task=cast(Any, "unsupported"),
     )
+    hdata.task = cast(Any, "unsupported")
     dataset = Dataset.from_hdata(hdata)
 
     with pytest.raises(
