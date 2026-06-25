@@ -4,8 +4,9 @@ import torch
 
 from itertools import combinations
 from torch import Tensor
-from typing import Any, Literal, TypeAlias, cast
+from typing import Any, Literal, TypeAlias, cast, get_args
 from hypertorch.utils import (
+    StrEnum,
     create_seeded_torch_generator,
     sparse_dropout,
     to_0based_ids,
@@ -425,6 +426,16 @@ class Hypergraph:
         if drop_rate > 0.0:
             matrix = sparse_dropout(matrix, drop_rate)
         return matrix.matmul(x)
+
+
+class GraphReductionStrategyEnum(StrEnum):
+    CLIQUE_EXPANSION = "clique_expansion"
+
+
+GraphReductionStrategyLiteral: TypeAlias = Literal["clique_expansion"]
+
+
+GraphReductionStrategy: TypeAlias = GraphReductionStrategyEnum | GraphReductionStrategyLiteral
 
 
 class HyperedgeIndex:
@@ -909,7 +920,11 @@ class HyperedgeIndex:
         )
         return smoothing_matrix.coalesce()
 
-    def reduce(self, strategy: Literal["clique_expansion"], **kwargs: Any) -> Tensor:
+    def reduce(
+        self,
+        strategy: GraphReductionStrategyEnum | GraphReductionStrategyLiteral,
+        **kwargs: Any,
+    ) -> Tensor:
         """
         Reduce the hypergraph to a graph represented by edge index using the specified strategy.
 
@@ -924,12 +939,12 @@ class HyperedgeIndex:
             ValueError: If ``strategy`` is unsupported.
         """
         match strategy:
-            case "clique_expansion":
+            case GraphReductionStrategyEnum.CLIQUE_EXPANSION:
                 return self.reduce_to_edge_index_on_clique_expansion(**kwargs)
             case _:
                 raise ValueError(
                     f"Unsupported reduction strategy: {strategy}. "
-                    "Supported strategies: ['clique_expansion']"
+                    f"Supported strategies: {get_args(GraphReductionStrategyLiteral)}"
                 )
 
     def reduce_to_edge_index_on_clique_expansion(

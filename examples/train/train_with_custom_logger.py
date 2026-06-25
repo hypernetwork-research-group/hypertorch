@@ -16,7 +16,6 @@ from hypertorch.data import (
     DataLoader,
     LaplacianPositionalEncodingEnricher,
     RandomNegativeSampler,
-    SamplingStrategy,
 )
 
 from typing import Any, ClassVar
@@ -99,7 +98,7 @@ if __name__ == "__main__":
 
     print("Loading and preparing dataset...")
 
-    dataset = AlgebraDataset(sampling_strategy=SamplingStrategy.HYPEREDGE)
+    dataset = AlgebraDataset(sampling_strategy="hyperedge", task="hyperlink-prediction")
     if verbose:
         print(f"Dataset:\n {dataset.hdata}\n")
 

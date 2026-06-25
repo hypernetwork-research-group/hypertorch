@@ -4,7 +4,13 @@ from typing_extensions import NotRequired
 from torchmetrics import MetricCollection
 from hypertorch.models import GCN, SLP
 from hypertorch.nn import HyperedgeAggregator
-from hypertorch.types import EdgeIndex, HData, HyperedgeIndex
+from hypertorch.types import (
+    EdgeIndex,
+    HData,
+    HyperedgeIndex,
+    GraphReductionStrategy,
+    GraphReductionStrategyEnum,
+)
 from hypertorch.utils import ActivationFn, Stage
 
 from hypertorch.hlp.common import HlpModule
@@ -44,7 +50,7 @@ class GCNEncoderConfig(TypedDict):
     add_self_loops: NotRequired[bool]
     normalize: NotRequired[bool]
     cached: NotRequired[bool]
-    graph_reduction_strategy: NotRequired[Literal["clique_expansion"]]
+    graph_reduction_strategy: NotRequired[GraphReductionStrategy]
     num_nodes: NotRequired[int]
     activation_fn: NotRequired[ActivationFn]
     activation_fn_kwargs: NotRequired[dict]
@@ -144,7 +150,10 @@ class GCNHlpModule(HlpModule):
 
         # Reduce hypergraph to graph and remove self-loops
         reduced_edge_index = HyperedgeIndex(hyperedge_index).reduce(
-            strategy=self.encoder_config.get("graph_reduction_strategy", "clique_expansion"),
+            strategy=self.encoder_config.get(
+                "graph_reduction_strategy",
+                GraphReductionStrategyEnum.CLIQUE_EXPANSION,
+            ),
             num_nodes=self.encoder_config.get("num_nodes"),
         )
         edge_index = EdgeIndex(reduced_edge_index).remove_selfloops().item

@@ -1,84 +1,48 @@
 from torchmetrics import MetricCollection
-from torchmetrics.classification import (
-    BinaryAUROC,
-    BinaryAccuracy,
-    BinaryAveragePrecision,
-    BinaryPrecision,
-    BinaryRecall,
-)
-from hypertorch.hlp import MLPHlpModule
-from hypertorch.train import MultiModelTrainer
-from hypertorch.types import ModelConfig
+from torchmetrics.classification import MulticlassAUROC, MulticlassAccuracy, MulticlassF1Score
 from hypertorch.data import (
     AlgebraDataset,
     DataLoader,
     LaplacianPositionalEncodingEnricher,
-    RandomNegativeSampler,
 )
+from hypertorch.nc import MLPNcModule
+from hypertorch.train import MultiModelTrainer
+from hypertorch.types import ModelConfig
+from hypertorch.utils import node_labels_from_node_degrees
 
 
 if __name__ == "__main__":
-    verbose = False
     num_workers = 8
     num_features = 32
+    num_classes = 3
     metrics = MetricCollection(
         {
-            "auc": BinaryAUROC(),
-            "accuracy": BinaryAccuracy(),
-            "avg_precision": BinaryAveragePrecision(),
-            "precision": BinaryPrecision(),
-            "recall": BinaryRecall(),
+            "auc": MulticlassAUROC(num_classes=num_classes),
+            "accuracy": MulticlassAccuracy(num_classes=num_classes),
+            "f1": MulticlassF1Score(num_classes=num_classes),
         }
     )
 
     print("Loading and preparing dataset...")
 
-    dataset = AlgebraDataset(sampling_strategy="hyperedge", task="hyperlink-prediction")
-    if verbose:
-        print(f"Dataset:\n {dataset.hdata}\n")
+    dataset = AlgebraDataset(sampling_strategy="node", task="node-classification")
+    dataset.hdata.y = node_labels_from_node_degrees(
+        node_incidences=dataset.hdata.hyperedge_index[0],
+        num_nodes=dataset.hdata.num_nodes,
+    )
 
-    # Split dataset into train, val and test (70/10/20)
     train_dataset, val_dataset, test_dataset = dataset.split(
         ratios=[0.7, 0.1, 0.2],
         node_space_setting="transductive",
-        cover_all_nodes_in_train_split=True,
         shuffle=True,
         seed=42,
     )
-    if verbose:
-        print(f"Train dataset:\n {train_dataset.hdata}\n")
-        print(f"Val dataset:\n {val_dataset.hdata}\n")
-        print(f"Test dataset:\n {test_dataset.hdata}\n")
-
-    # Add negative samples to all splits
-    for name, ds in [("Train", train_dataset), ("Val", val_dataset), ("Test", test_dataset)]:
-        num_negative_samples = (
-            ds.hdata.num_hyperedges
-            if name in ["Train", "Val"]  # 1:1 ratio of pos:neg samples
-            else int(ds.hdata.num_hyperedges * 0.6)  # 60% negatives for test set
-        )
-        negative_sampler = RandomNegativeSampler(
-            num_negative_samples=num_negative_samples,
-            num_nodes_per_sample=int(ds.stats()["avg_degree_hyperedge"]),
-        )
-        ds_with_negatives = ds.add_negative_samples(negative_sampler, seed=42)
-
-        if name == "Train":
-            train_dataset = ds_with_negatives
-        elif name == "Val":
-            val_dataset = ds_with_negatives
-        else:
-            test_dataset = ds_with_negatives
-
-        if verbose:
-            print(f"{name} dataset after adding negative samples: {ds_with_negatives.hdata}\n")
 
     print("Enriching node features...")
 
     train_dataset.enrich_node_features(
         enricher=LaplacianPositionalEncodingEnricher(
             num_features=num_features,
-            # We are using transductive with all nodes coverage in the train split
             num_nodes=dataset.hdata.num_nodes,
         ),
         enrichment_mode="replace",
@@ -90,14 +54,14 @@ if __name__ == "__main__":
 
     train_loader = DataLoader(
         train_dataset,
-        batch_size=128,  # or 256
+        batch_size=128,
         shuffle=False,
         num_workers=num_workers,
         persistent_workers=True,
     )
     val_loader = DataLoader(
         val_dataset,
-        sample_full_hypergraph=True,
+        batch_size=128,
         shuffle=False,
         num_workers=num_workers,
         persistent_workers=True,
@@ -110,23 +74,22 @@ if __name__ == "__main__":
         persistent_workers=True,
     )
 
-    mean_mlp_module = MLPHlpModule(
-        encoder_config={
+    model = MLPNcModule(
+        classifier_config={
             "in_channels": num_features,
-            "out_channels": num_features,
+            "out_channels": num_classes,
             "hidden_channels": 64,
             "num_layers": 3,
             "drop_rate": 0.3,
         },
-        aggregation="mean",
         metrics=metrics,
     )
 
     configs = [
         ModelConfig(
             name="mlp",
-            version="mean",
-            model=mean_mlp_module,
+            version="node-classification",
+            model=model,
             train_dataloader=train_loader,
             val_dataloader=val_loader,
             test_dataloader=test_loader,

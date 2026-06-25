@@ -2,7 +2,6 @@ from hypertorch.data import (
     AlgebraDataset,
     LaplacianPositionalEncodingEnricher,
     Node2VecEnricher,
-    SamplingStrategy,
     VilLainEnricher,
 )
 
@@ -12,7 +11,7 @@ if __name__ == "__main__":
 
     print("Loading and preparing dataset...")
 
-    dataset = AlgebraDataset(sampling_strategy=SamplingStrategy.HYPEREDGE)
+    dataset = AlgebraDataset(sampling_strategy="hyperedge", task="hyperlink-prediction")
 
     dataset.enrich_node_features(
         enricher=LaplacianPositionalEncodingEnricher(num_features=num_features),

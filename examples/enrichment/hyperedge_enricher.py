@@ -2,7 +2,6 @@ from hypertorch.data import (
     ABHyperedgeWeightsEnricher,
     AlgebraDataset,
     FillValueHyperedgeAttrsEnricher,
-    SamplingStrategy,
     VilLainHyperedgeAttrsEnricher,
 )
 
@@ -10,7 +9,7 @@ from hypertorch.data import (
 if __name__ == "__main__":
     print("Loading and preparing dataset...\n")
 
-    dataset = AlgebraDataset(sampling_strategy=SamplingStrategy.HYPEREDGE)
+    dataset = AlgebraDataset(sampling_strategy="hyperedge", task="hyperlink-prediction")
 
     print("Enriching hyperedge weights...")
 

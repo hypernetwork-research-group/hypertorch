@@ -19,7 +19,7 @@ from torchmetrics.classification import (
 from hypertorch.data import (
     Dataset,
     DataLoader,
-    SamplingStrategy,
+    SamplingStrategyEnum,
     LaplacianPositionalEncodingEnricher,
     NodeEnricher,
     RandomNegativeSampler,
@@ -34,7 +34,7 @@ SEED = 42
 
 @cache
 def __cached_split_dataset(
-    sampling_strategy: SamplingStrategy,
+    sampling_strategy: SamplingStrategyEnum,
     dataset: Dataset | None = None,
     node_space_setting: Literal["transductive", "inductive"] = "transductive",
 ) -> tuple[Dataset, Dataset, Dataset]:
@@ -86,7 +86,7 @@ def common_metrics() -> MetricCollection:
 
 
 def split_dataset(
-    sampling_strategy: SamplingStrategy = SamplingStrategy.HYPEREDGE,
+    sampling_strategy: SamplingStrategyEnum = SamplingStrategyEnum.HYPEREDGE,
     dataset: Dataset | None = None,
     node_space_setting: Literal["transductive", "inductive"] = "transductive",
 ) -> tuple[Dataset, Dataset, Dataset]:

@@ -7,7 +7,7 @@ from hypertorch.data import (
     BaseSampler,
     HyperedgeSampler,
     NodeSampler,
-    SamplingStrategy,
+    SamplingStrategyEnum,
     create_sampler_from_strategy,
 )
 from hypertorch.types import HData
@@ -39,13 +39,27 @@ def test_base_sampler_cannot_be_instantiated():
         BaseSampler()
 
 
-def test_create_sampler_from_strategy_hyperedge():
-    sampler = create_sampler_from_strategy(SamplingStrategy.HYPEREDGE)
+@pytest.mark.parametrize(
+    "sampling_strategy",
+    [
+        pytest.param("hyperedge", id="hyperedge_literal"),
+        pytest.param(SamplingStrategyEnum.HYPEREDGE, id="hyperedge_enum"),
+    ],
+)
+def test_create_sampler_from_strategy_hyperedge(sampling_strategy):
+    sampler = create_sampler_from_strategy(sampling_strategy)
     assert isinstance(sampler, HyperedgeSampler)
 
 
-def test_create_sampler_from_strategy_node():
-    sampler = create_sampler_from_strategy(SamplingStrategy.NODE)
+@pytest.mark.parametrize(
+    "sampling_strategy",
+    [
+        pytest.param("node", id="node_literal"),
+        pytest.param(SamplingStrategyEnum.NODE, id="node_enum"),
+    ],
+)
+def test_create_sampler_from_strategy_node(sampling_strategy):
+    sampler = create_sampler_from_strategy(sampling_strategy)
     assert isinstance(sampler, NodeSampler)
 
 

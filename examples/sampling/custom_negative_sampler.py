@@ -3,7 +3,6 @@ import torch
 from hypertorch.data import (
     Dataset,
     NegativeSampler,
-    SamplingStrategy,
 )
 from hypertorch.types import HData
 
@@ -43,7 +42,11 @@ if __name__ == "__main__":
         num_nodes=5,
         num_hyperedges=5,
     )
-    dataset = Dataset.from_hdata(hdata, sampling_strategy=SamplingStrategy.HYPEREDGE)
+    dataset = Dataset.from_hdata(
+        hdata,
+        sampling_strategy="hyperedge",
+        task="hyperlink-prediction",
+    )
 
     print("Add negative samples to the dataset using CustomNegativeSampler...\n")
 
