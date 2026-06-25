@@ -23,7 +23,7 @@ jobs:
         enable-cache: false
 
     - name: Build release distributions
-      run: make build
+      run: make package
 
     - name: Upload distributions
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
