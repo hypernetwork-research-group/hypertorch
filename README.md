@@ -5,7 +5,7 @@
 | Repo | [![Forks][forks-shield]][forks-url] [![Stargazers][stars-shield]][stars-url] [![Contributors][contributors-shield]][contributors-url] [![Issues][issues-shield]][issues-url] |
 | Package | [![License: MIT][license-shield]][license-url] [![Python][python-shield]][python-url] [![Documentation][docs-shield]][docs-url] |
 | Testing | ![Daily CI][daily-ci-shield] [![codecov][codecov-shield]][codecov-url] [![CodeFactor][codefactor-shield]][codefactor-url] |
-| Contact | ![Discord](https://badgen.net/discord/members/4krTXCWRzD) |
+| Contact | [![Discord][discord-shield]][discord-url] |
 
 ## About the project
 
@@ -137,3 +137,5 @@ Most development discussions take place on GitHub in this repo, via the [GitHub 
 [python-url]: https://www.python.org/downloads/
 [docs-shield]: https://img.shields.io/badge/docs-latest-blue.svg
 [docs-url]: https://hypernetwork-research-group.github.io/hypertorch/
+[discord-shield]: https://img.shields.io/discord/693092516286693387
+[discord-url]: https://discord.gg/4krTXCWRzD
