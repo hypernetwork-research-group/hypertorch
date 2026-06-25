@@ -17,6 +17,7 @@ NODE2VEC_JOINT_MODE = "joint"
 NODE2VEC_PRECOMPUTED_MODE = "precomputed"
 
 Node2VecMode: TypeAlias = Literal["precomputed", "joint"]
+"""Training mode for Node2Vec-based hyperlink prediction encoders."""
 
 
 class Node2VecGCNHlpConfig(TypedDict):
@@ -137,6 +138,7 @@ class Node2VecWalkLoaderState:
 
 
 Node2VecEncoder: TypeAlias = Node2Vec | Node2VecGCN
+"""Supported Node2Vec encoder implementations."""
 
 
 def _get_walk_loader(

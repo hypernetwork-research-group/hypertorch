@@ -23,6 +23,7 @@ from hypertorch.utils import (
 
 
 EnrichmentMode: TypeAlias = Literal["concatenate", "replace"]
+"""Mode used to combine generated features with existing features."""
 
 
 class _VilLainTrainer:
@@ -263,7 +264,11 @@ class HyperedgeEnricher(Enricher, ABC):
 
 
 HyperedgeAttrsEnricher: TypeAlias = HyperedgeEnricher
+"""Type alias for enrichers that generate hyperedge attributes."""
+
+
 HyperedgeWeightsEnricher: TypeAlias = HyperedgeEnricher
+"""Type alias for enrichers that generate hyperedge weights."""
 
 
 class NodeEnricher(Enricher, ABC):

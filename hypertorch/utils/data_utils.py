@@ -52,7 +52,9 @@ MARKDOWN_CHARACTER_ESCAPE_TABLE: dict[str, str] = {
 
 
 class StrEnum(str, Enum):
-    """Python 3.10-compatible subset of enum.StrEnum."""
+    """
+    Python 3.10-compatible subset of enum.StrEnum.
+    """
 
     @classmethod
     def get_args(cls) -> tuple[str, ...]:

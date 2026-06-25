@@ -8,6 +8,7 @@ NegativeSamplingSchedule: TypeAlias = Literal[
     "every_n_epochs",  # Every N epochs (N provided separately)
     "every_epoch",  # Negatives generated every epoch
 ]
+"""Schedule controlling when negative samples are generated during training."""
 
 
 class NegativeSamplingScheduler:

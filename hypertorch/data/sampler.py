@@ -17,9 +17,11 @@ class SamplingStrategyEnum(StrEnum):
 
 
 SamplingStrategyLiteral: TypeAlias = Literal["node", "hyperedge"]
+"""Literal type for supported sampling strategies."""
 
 
 SamplingStrategy: TypeAlias = SamplingStrategyEnum | SamplingStrategyLiteral
+"""Type for supported sampling strategies, either as an enum or a string literal."""
 
 
 class BaseSampler(ABC):

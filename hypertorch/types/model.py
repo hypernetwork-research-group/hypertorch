@@ -10,7 +10,11 @@ if TYPE_CHECKING:
 
 
 CkptStrategy: TypeAlias = Literal["best", "last"]
+"""Checkpoint selection strategy used for model evaluation."""
+
+
 TestResult: TypeAlias = Mapping[str, float]
+"""Mapping from metric names to scalar test results."""
 
 
 class ModelConfig:

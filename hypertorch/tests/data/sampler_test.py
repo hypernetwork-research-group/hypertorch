@@ -1,6 +1,6 @@
-import re
 import pytest
 import torch
+import re
 
 from typing import Any, cast
 from hypertorch.data import (
@@ -315,3 +315,39 @@ def test_sample_empty_hyperedge_index_len(mock_empty_hdata, sampler):
 def test_sample_empty_hyperedge_index_empty_list_raises(mock_empty_hdata, sampler):
     with pytest.raises(ValueError, match=re.escape("Index list cannot be empty.")):
         sampler.sample([], mock_empty_hdata)
+
+
+@pytest.mark.parametrize(
+    "sampler, index",
+    [
+        pytest.param(HyperedgeSampler(), "0", id="hyperedge_string_index"),
+        pytest.param(HyperedgeSampler(), True, id="hyperedge_bool_index"),
+        pytest.param(NodeSampler(), "0", id="node_string_index"),
+        pytest.param(NodeSampler(), False, id="node_bool_index"),
+    ],
+)
+def test_sample_rejects_non_integer_index(mock_four_node_two_hyperedge_hdata, sampler, index):
+    with pytest.raises(
+        TypeError,
+        match=re.escape("Index must be an integer or a list of integers."),
+    ):
+        sampler.sample(cast(Any, index), mock_four_node_two_hyperedge_hdata)
+
+
+@pytest.mark.parametrize(
+    "sampler, index",
+    [
+        pytest.param(HyperedgeSampler(), [0, "1"], id="hyperedge_list_with_string"),
+        pytest.param(HyperedgeSampler(), [0, False], id="hyperedge_list_with_bool"),
+        pytest.param(NodeSampler(), [0, "1"], id="node_list_with_string"),
+        pytest.param(NodeSampler(), [0, True], id="node_list_with_bool"),
+    ],
+)
+def test_sample_rejects_index_list_with_non_integer_items(
+    mock_four_node_two_hyperedge_hdata, sampler, index
+):
+    with pytest.raises(
+        TypeError,
+        match=re.escape("Index list must contain only integers."),
+    ):
+        sampler.sample(cast(Any, index), mock_four_node_two_hyperedge_hdata)

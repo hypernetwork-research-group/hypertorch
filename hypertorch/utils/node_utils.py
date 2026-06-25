@@ -4,7 +4,11 @@ from collections.abc import Sequence
 
 
 NodeSpaceFiller: TypeAlias = float | int | Sequence[float] | Tensor
+"""Value or tensor used to fill missing node features in a node space."""
+
+
 NodeSpaceSetting: TypeAlias = Literal["inductive", "transductive"]
+"""Node-space setting used when preparing hypergraph data."""
 
 
 def assign_hyperedge_label_to_nodes(
