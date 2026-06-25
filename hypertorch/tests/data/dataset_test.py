@@ -4,7 +4,7 @@ import re
 
 from typing import Any, cast
 from unittest.mock import patch, MagicMock
-from hypertorch.types import HData
+from hypertorch.types import HData, TaskEnum
 from hypertorch.data import (
     AlgebraDataset,
     Dataset,
@@ -119,6 +119,7 @@ def test_preloaded_dataset_loads_hdata_when_hdata_is_none():
         dataset_name="algebra",
         hf_sha="2bb641461e00c103fb5ef4fe6a30aad42500fc21",
         save_on_disk=True,
+        task=TaskEnum.HYPERLINK_PREDICTION,
     )
 
 
@@ -441,7 +442,11 @@ def test_from_url(strategy, mock_hdata):
     with patch.object(HIFLoader, "load_from_url", return_value=mock_hdata) as mock_load_from_url:
         dataset = Dataset.from_url(url=url, sampling_strategy=strategy, save_on_disk=True)
 
-    mock_load_from_url.assert_called_once_with(url=url, save_on_disk=True)
+    mock_load_from_url.assert_called_once_with(
+        url=url,
+        task=TaskEnum.HYPERLINK_PREDICTION,
+        save_on_disk=True,
+    )
     assert dataset.hdata is mock_hdata
     assert dataset.sampling_strategy == strategy
 
@@ -459,7 +464,9 @@ def test_from_path(strategy, mock_hdata):
     with patch.object(HIFLoader, "load_from_path", return_value=mock_hdata) as mock_load_from_path:
         dataset = Dataset.from_path(filepath=filepath, sampling_strategy=strategy)
 
-    mock_load_from_path.assert_called_once_with(filepath=filepath)
+    mock_load_from_path.assert_called_once_with(
+        filepath=filepath, task=TaskEnum.HYPERLINK_PREDICTION
+    )
     assert dataset.hdata is mock_hdata
     assert dataset.sampling_strategy == strategy
 
