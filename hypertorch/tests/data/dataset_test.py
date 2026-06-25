@@ -643,6 +643,72 @@ def test_split_with_equal_ratios(mock_hdata_four_nodes):
         assert split.hdata.num_hyperedges > 0
 
 
+def test_split_transductive_node_classification_returns_node_splits():
+    hdata = HData(
+        x=torch.arange(4, dtype=torch.float).unsqueeze(1),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long),
+        y=torch.tensor([10, 11, 12, 13], dtype=torch.long),
+        task=TaskEnum.NODE_CLASSIFICATION,
+    )
+    dataset = Dataset.from_hdata(hdata, sampling_strategy=SamplingStrategyEnum.NODE)
+
+    first_split, second_split = dataset.split([0.5, 0.5], node_space_setting="transductive")
+
+    assert torch.equal(first_split.hdata.x, hdata.x)
+    assert torch.equal(second_split.hdata.x, hdata.x)
+    assert torch.equal(first_split.hdata.hyperedge_index, hdata.hyperedge_index)
+    assert torch.equal(second_split.hdata.hyperedge_index, hdata.hyperedge_index)
+    assert torch.equal(
+        first_split.hdata.target_node_mask,
+        torch.tensor([True, True, False, False], dtype=torch.bool),
+    )
+    assert torch.equal(
+        second_split.hdata.target_node_mask,
+        torch.tensor([False, False, True, True], dtype=torch.bool),
+    )
+    assert torch.equal(first_split.hdata.y, hdata.y)
+    assert torch.equal(second_split.hdata.y, hdata.y)
+    assert first_split.sampling_strategy == SamplingStrategyEnum.NODE
+    assert second_split.sampling_strategy == SamplingStrategyEnum.NODE
+
+
+def test_split_node_classification_returns_node_splits():
+    hdata = HData(
+        x=torch.arange(4, dtype=torch.float).unsqueeze(1),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long),
+        y=torch.tensor([10, 11, 12, 13], dtype=torch.long),
+        task=TaskEnum.NODE_CLASSIFICATION,
+    )
+    dataset = Dataset.from_hdata(hdata, sampling_strategy=SamplingStrategyEnum.NODE)
+
+    first_split, second_split = dataset.split([0.5, 0.5], node_space_setting="inductive")
+
+    assert torch.equal(first_split.hdata.x, torch.tensor([[0], [1]], dtype=torch.float))
+    assert torch.equal(second_split.hdata.x, torch.tensor([[2], [3]], dtype=torch.float))
+    assert torch.equal(
+        first_split.hdata.hyperedge_index,
+        torch.tensor([[0, 1], [0, 0]], dtype=torch.long),
+    )
+    assert torch.equal(
+        second_split.hdata.hyperedge_index,
+        torch.tensor([[0, 1], [0, 0]], dtype=torch.long),
+    )
+    assert torch.equal(first_split.hdata.global_node_ids, torch.tensor([0, 1], dtype=torch.long))
+    assert torch.equal(second_split.hdata.global_node_ids, torch.tensor([2, 3], dtype=torch.long))
+    assert torch.equal(
+        first_split.hdata.target_node_mask,
+        torch.tensor([True, True], dtype=torch.bool),
+    )
+    assert torch.equal(
+        second_split.hdata.target_node_mask,
+        torch.tensor([True, True], dtype=torch.bool),
+    )
+    assert torch.equal(first_split.hdata.y, hdata.y[[0, 1]])
+    assert torch.equal(second_split.hdata.y, hdata.y[[2, 3]])
+    assert first_split.sampling_strategy == SamplingStrategyEnum.NODE
+    assert second_split.sampling_strategy == SamplingStrategyEnum.NODE
+
+
 def test_split_transductive_with_equal_ratios(mock_hdata_transductive_split):
     with patch.object(
         HIFLoader,
@@ -719,6 +785,58 @@ def test_split_with_ratios_returns_final_inductive_ratios(
 
     assert [split.hdata.num_hyperedges for split in splits] == [1, 1, 1]
     assert final_ratios == [0.3333, 0.3333, 0.3333]
+
+
+def test_split_with_ratios_node_classification_returns_final_node_ratios():
+    hdata = HData(
+        x=torch.arange(4, dtype=torch.float).unsqueeze(1),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long),
+        y=torch.tensor([10, 11, 12, 13], dtype=torch.long),
+        task=TaskEnum.NODE_CLASSIFICATION,
+    )
+    dataset = Dataset.from_hdata(hdata, sampling_strategy=SamplingStrategyEnum.NODE)
+
+    splits, final_ratios = dataset.split_with_ratios(
+        [0.25, 0.75],
+        node_space_setting="inductive",
+    )
+
+    assert final_ratios == [0.25, 0.75]
+    assert [split.hdata.num_nodes for split in splits] == [1, 3]
+    assert torch.equal(splits[0].hdata.global_node_ids, torch.tensor([0], dtype=torch.long))
+    assert torch.equal(splits[1].hdata.global_node_ids, torch.tensor([1, 2, 3], dtype=torch.long))
+    assert torch.equal(splits[0].hdata.y, torch.tensor([10], dtype=torch.long))
+    assert torch.equal(splits[1].hdata.y, torch.tensor([11, 12, 13], dtype=torch.long))
+
+
+def test_split_rejects_unsupported_task_category():
+    hdata = HData(
+        x=torch.arange(4, dtype=torch.float).unsqueeze(1),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long),
+        task=cast(Any, "unsupported"),
+    )
+    dataset = Dataset.from_hdata(hdata)
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape("Unsupported task category for task='unsupported'."),
+    ):
+        dataset.split(ratios=[0.5, 0.5])
+
+
+def test_split_with_ratios_rejects_unsupported_task_category():
+    hdata = HData(
+        x=torch.arange(4, dtype=torch.float).unsqueeze(1),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long),
+        task=cast(Any, "unsupported"),
+    )
+    dataset = Dataset.from_hdata(hdata)
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape("Unsupported task category for task='unsupported'."),
+    ):
+        dataset.split_with_ratios(ratios=[0.5, 0.5])
 
 
 def test_split_raises_when_ratios_do_not_sum_to_one(mock_hdata_four_nodes):
