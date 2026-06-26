@@ -28,6 +28,7 @@ Supported models include:
 
 Supported models include:
 
+- `HyperGCN`.
 - `MLP`.
 
 ## Minimal HLP example: Node2Vec + GCN
@@ -92,20 +93,22 @@ model = GCNHlpModule(
 )
 ```
 
-## Minimal example: MLP node classification
+## Minimal example: HyperGCN node classification
 
 ```python
-from hypertorch.nc import MLPNcModule
+from hypertorch.nc import HyperGCNNcModule
 
-model = MLPNcModule(
+model = HyperGCNNcModule(
     classifier_config={
         "in_channels": 32,
         "hidden_channels": 16,
         "out_channels": 3,
-        "num_layers": 2,
-        "drop_rate": 0.1,
+        "drop_rate": 0.5,
+        "use_mediator": False,
+        "fast": False,
     },
-    lr=0.001,
+    lr=0.01,
+    weight_decay=5e-4,
 )
 ```
 

@@ -92,21 +92,21 @@ if __name__ == "__main__":
 
     print("Creating dataloaders...")
 
-    train_loader_full_hypergraph = DataLoader(
+    train_loader = DataLoader(
         train_dataset,
         sample_full_hypergraph=True,
         shuffle=False,
         num_workers=num_workers,
         persistent_workers=True,
     )
-    val_loader_full_hypergraph = DataLoader(
+    val_loader = DataLoader(
         val_dataset,
         sample_full_hypergraph=True,
         shuffle=False,
         num_workers=num_workers,
         persistent_workers=True,
     )
-    test_loader_full_hypergraph = DataLoader(
+    test_loader = DataLoader(
         test_dataset,
         sample_full_hypergraph=True,
         shuffle=False,
@@ -133,7 +133,7 @@ if __name__ == "__main__":
 
     mean_hypergcn_with_mediator_module = HyperGCNHlpModule(
         encoder_config={
-            "in_channels": 32,
+            "in_channels": num_features,
             "hidden_channels": 16,
             "out_channels": 16,
             "bias": True,
@@ -153,17 +153,17 @@ if __name__ == "__main__":
             name="hypergcn",
             version="mean-no-mediator",
             model=mean_hypergcn_no_mediator_module,
-            train_dataloader=train_loader_full_hypergraph,
-            val_dataloader=val_loader_full_hypergraph,
-            test_dataloader=test_loader_full_hypergraph,
+            train_dataloader=train_loader,
+            val_dataloader=val_loader,
+            test_dataloader=test_loader,
         ),
         ModelConfig(
             name="hypergcn",
             version="mean-with-mediator",
             model=mean_hypergcn_with_mediator_module,
-            train_dataloader=train_loader_full_hypergraph,
-            val_dataloader=val_loader_full_hypergraph,
-            test_dataloader=test_loader_full_hypergraph,
+            train_dataloader=train_loader,
+            val_dataloader=val_loader,
+            test_dataloader=test_loader,
         ),
     ]
 
@@ -180,11 +180,7 @@ if __name__ == "__main__":
         devices=1,
         test_devices=1,
     ) as trainer:
-        trainer.fit_all(
-            train_dataloader=train_loader_full_hypergraph,
-            val_dataloader=val_loader_full_hypergraph,
-            verbose=True,
-        )
-        trainer.test_all(dataloader=test_loader_full_hypergraph, verbose=True)
+        trainer.fit_all(train_dataloader=train_loader, val_dataloader=val_loader, verbose=True)
+        trainer.test_all(dataloader=test_loader, verbose=True)
 
     print("Complete!")

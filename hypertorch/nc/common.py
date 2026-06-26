@@ -62,26 +62,6 @@ class NcModule(L.LightningModule):
             self.val_metrics = None
             self.test_metrics = None
 
-    def target_logits_and_labels(self, logits: Tensor, batch: HData) -> tuple[Tensor, Tensor]:
-        """
-        Select supervised node logits and labels from a batch.
-
-        Args:
-            logits: Node logits of shape ``[num_nodes, num_classes]``.
-            batch: Batch containing node labels and an optional target mask.
-
-        Returns:
-            target_logits: Logits for supervised nodes.
-            target_labels: Labels for supervised nodes.
-        """
-        target_node_mask = batch.target_node_mask
-        if target_node_mask is None:
-            target_node_mask = torch.ones(batch.num_nodes, dtype=torch.bool, device=batch.device)
-
-        target_logits = logits[target_node_mask]
-        target_labels = batch.y[target_node_mask]
-        return target_logits, target_labels
-
     def _compute_loss(
         self,
         logits: Tensor,
@@ -180,3 +160,23 @@ class NcModule(L.LightningModule):
             and torch.distributed.is_available()
             and torch.distributed.is_initialized()
         )
+
+    def _target_logits_and_labels(self, logits: Tensor, batch: HData) -> tuple[Tensor, Tensor]:
+        """
+        Select supervised node logits and labels from a batch.
+
+        Args:
+            logits: Node logits of shape ``[num_nodes, num_classes]``.
+            batch: Batch containing node labels and an optional target mask.
+
+        Returns:
+            target_logits: Logits for supervised nodes.
+            target_labels: Labels for supervised nodes.
+        """
+        target_node_mask = batch.target_node_mask
+        if target_node_mask is None:
+            target_node_mask = torch.ones(batch.num_nodes, dtype=torch.bool, device=batch.device)
+
+        target_logits = logits[target_node_mask]
+        target_labels = batch.y[target_node_mask]
+        return target_logits, target_labels
