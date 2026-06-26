@@ -201,7 +201,7 @@ class HyperGCNNcModule(NcModule):
             loss: Computed loss.
         """
         logits = self.forward(batch.x, batch.hyperedge_index)
-        target_logits, target_labels = self.target_logits_and_labels(logits, batch)
+        target_logits, target_labels = self._target_logits_and_labels(logits, batch)
         batch_size = int(target_labels.size(0))
 
         loss = self._compute_loss(target_logits, target_labels, batch_size, stage)
