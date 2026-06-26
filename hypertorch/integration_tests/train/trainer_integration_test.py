@@ -215,6 +215,69 @@ def test_checkpoints_can_be_loaded_and_used(
 
 
 @pytest.mark.integration
+def test_checkpoints_can_be_loaded_and_used_with_different_trainers(
+    tmp_path,
+    mock_tiny_dataloader,
+):
+    model_configs = __distinct_model_configs(num_models=1)
+    trainer = MultiModelTrainer(
+        model_configs=model_configs,
+        default_root_dir=tmp_path,
+        experiment_name=EXPERIMENT_NAME,
+        max_epochs=1,
+        accelerator="auto",
+        devices=1,
+        logger=False,
+        enable_checkpointing=True,
+        enable_progress_bar=False,
+        enable_model_summary=False,
+        log_every_n_steps=1,
+        callbacks=[ModelCheckpoint(save_last=True)],
+    )
+
+    trainer.fit_all(
+        train_dataloader=mock_tiny_dataloader,
+        val_dataloader=mock_tiny_dataloader,
+        verbose=False,
+    )
+
+    assert model_configs[0].trainer is not None
+    checkpoint_callback = model_configs[0].trainer.checkpoint_callback
+    assert isinstance(checkpoint_callback, ModelCheckpoint)
+    checkpoint_path = Path(checkpoint_callback.last_model_path)
+    checkpoint_state_dict = torch.load(checkpoint_path, map_location="cpu")["state_dict"]
+
+    load_model_configs = __distinct_model_configs(num_models=1)
+    load_trainer = MultiModelTrainer(
+        model_configs=load_model_configs,
+        default_root_dir=tmp_path,
+        experiment_name=EXPERIMENT_NAME,
+        max_epochs=1,
+        accelerator="auto",
+        devices=1,
+        logger=False,
+        enable_checkpointing=True,
+        enable_progress_bar=False,
+        enable_model_summary=False,
+        log_every_n_steps=1,
+        callbacks=[ModelCheckpoint(save_last=True)],
+    )
+
+    results = load_trainer.test_all(
+        dataloader=mock_tiny_dataloader,
+        ckpt_path=checkpoint_path,
+        verbose=False,
+        verbose_loop=False,
+    )
+
+    assert set(results) == {"tiny:0"}
+
+    model_state_dict = load_model_configs[0].model.state_dict()
+    for parameter_name, checkpoint_parameter in checkpoint_state_dict.items():
+        assert torch.equal(model_state_dict[parameter_name], checkpoint_parameter)
+
+
+@pytest.mark.integration
 def test_best_checkpoints_can_be_loaded_and_used(
     tmp_path,
     mock_tiny_dataloader,

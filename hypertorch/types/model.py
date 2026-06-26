@@ -2,15 +2,16 @@ from __future__ import annotations
 
 import lightning as L
 
-from typing import TYPE_CHECKING, Literal, TypeAlias
+from pathlib import Path
+from typing import TYPE_CHECKING, TypeAlias
 from collections.abc import Mapping
 
 if TYPE_CHECKING:
     from hypertorch.data import DataLoader
 
 
-CkptStrategy: TypeAlias = Literal["best", "last"]
-"""Checkpoint selection strategy used for model evaluation."""
+CkptStrategy: TypeAlias = str | Path
+"""Checkpoint selection strategy (``"best"`` or ``"last"``) or checkpoint path."""
 
 
 TestResult: TypeAlias = Mapping[str, float]
