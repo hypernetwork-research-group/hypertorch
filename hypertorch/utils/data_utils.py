@@ -2,6 +2,7 @@ import math
 import torch
 
 from collections.abc import Sequence
+from enum import Enum
 from torch import Tensor
 
 
@@ -48,6 +49,25 @@ MARKDOWN_CHARACTER_ESCAPE_TABLE: dict[str, str] = {
     "\n": " ",
     "\t": " ",
 }
+
+
+class StrEnum(str, Enum):
+    """
+    Python 3.10-compatible subset of enum.StrEnum.
+    """
+
+    @classmethod
+    def get_args(cls) -> tuple[str, ...]:
+        """
+        Return the string values for all enum members.
+
+        Returns:
+            values: The enum member values in definition order.
+        """
+        return tuple(member.value for member in cls)
+
+    def __str__(self) -> str:
+        return self.value
 
 
 def clone_optional_tensor(tensor: Tensor | None) -> Tensor | None:

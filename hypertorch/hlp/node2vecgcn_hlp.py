@@ -3,7 +3,7 @@ from typing import Any, Literal, TypedDict
 from typing_extensions import NotRequired
 from torchmetrics import MetricCollection
 from hypertorch.models import GCN, Node2VecGCN, Node2VecConfig, SLP
-from hypertorch.types import EdgeIndex, HData, HyperedgeIndex
+from hypertorch.types import EdgeIndex, HData, HyperedgeIndex, GraphReductionStrategyEnum
 from hypertorch.nn import HyperedgeAggregator
 from hypertorch.utils import Stage
 
@@ -380,7 +380,7 @@ class Node2VecGCNHlpModule(HlpModule):
             edge_index: Reduced graph edge index without self-loops.
         """
         graph_reduction_strategy = self.gcn_hlp_config.get(
-            "graph_reduction_strategy", "clique_expansion"
+            "graph_reduction_strategy", GraphReductionStrategyEnum.CLIQUE_EXPANSION
         )
         reduced_gcn_edge_index = HyperedgeIndex(hyperedge_index).reduce(
             strategy=graph_reduction_strategy,

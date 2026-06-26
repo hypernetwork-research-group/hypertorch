@@ -5,15 +5,20 @@ import torch
 from typing import TYPE_CHECKING, Any
 from torch import Tensor
 from torch.utils.data import Dataset as TorchDataset
-from hypertorch.types import HData
+from hypertorch.types import HData, Task, TaskEnum
 from hypertorch.utils import (
     NodeSpaceFiller,
     NodeSpaceSetting,
 )
 
 from hypertorch.data.hif import HIFLoader, HIFProcessor
-from hypertorch.data.sampler import BaseSampler, SamplingStrategy, create_sampler_from_strategy
-from hypertorch.data.splitter import HyperedgeDatasetSplitter, Splitter
+from hypertorch.data.sampler import (
+    BaseSampler,
+    SamplingStrategy,
+    SamplingStrategyEnum,
+    create_sampler_from_strategy,
+)
+from hypertorch.data.splitter import HyperedgeDatasetSplitter, NodeDatasetSplitter, Splitter
 
 if TYPE_CHECKING:
     from hypertorch.data import (
@@ -36,7 +41,8 @@ class Dataset(TorchDataset):
     def __init__(
         self,
         hdata: HData | None = None,
-        sampling_strategy: SamplingStrategy = SamplingStrategy.HYPEREDGE,
+        sampling_strategy: SamplingStrategy = SamplingStrategyEnum.HYPEREDGE,
+        task: Task = TaskEnum.HYPERLINK_PREDICTION,
     ) -> None:
         """
         Initialize the dataset.
@@ -46,10 +52,13 @@ class Dataset(TorchDataset):
             sampling_strategy: The strategy used for sampling sub-hypergraphs
                 (e.g., by node IDs or hyperedge IDs).
                 If not provided, defaults to ``SamplingStrategy.HYPEREDGE``.
+            task: Learning task used when the HData in input is not provided.
+                Defaults to ``"hyperlink-prediction"``.
         """
         self.__sampler: BaseSampler = create_sampler_from_strategy(sampling_strategy)
         self.sampling_strategy: SamplingStrategy = sampling_strategy
-        self.hdata: HData = hdata if hdata is not None else HData.empty()
+        self.task: Task = task
+        self.hdata: HData = hdata if hdata is not None else HData.empty(task=task)
 
     def __len__(self) -> int:
         """
@@ -88,7 +97,8 @@ class Dataset(TorchDataset):
     def from_hdata(
         cls,
         hdata: HData,
-        sampling_strategy: SamplingStrategy = SamplingStrategy.HYPEREDGE,
+        sampling_strategy: SamplingStrategy = SamplingStrategyEnum.HYPEREDGE,
+        task: Task = TaskEnum.HYPERLINK_PREDICTION,
     ) -> Dataset:
         """
         Create a `Dataset` instance from an `HData` object.
@@ -97,17 +107,20 @@ class Dataset(TorchDataset):
             hdata: `HData` object containing the hypergraph data.
             sampling_strategy: The sampling strategy to use for the dataset. If not provided,
                 defaults to ``SamplingStrategy.HYPEREDGE``.
+            task: Learning task used when the HData. If not provided,
+                defaults to ``"hyperlink-prediction"``.
 
         Returns:
             dataset: The `Dataset` instance with the provided `HData`.
         """
-        return cls(hdata=hdata, sampling_strategy=sampling_strategy)
+        return cls(hdata=hdata, sampling_strategy=sampling_strategy, task=task)
 
     @classmethod
     def from_url(
         cls,
         url: str,
-        sampling_strategy: SamplingStrategy = SamplingStrategy.HYPEREDGE,
+        sampling_strategy: SamplingStrategyEnum = SamplingStrategyEnum.HYPEREDGE,
+        task: Task = TaskEnum.HYPERLINK_PREDICTION,
         save_on_disk: bool = False,
     ) -> Dataset:
         """
@@ -118,20 +131,23 @@ class Dataset(TorchDataset):
             url: The URL to the .json or .json.zst file containing the HIF hypergraph data.
                 sampling_strategy: The sampling strategy to use for the dataset. If not provided,
                 defaults to ``SamplingStrategy.HYPEREDGE``.
+            task: Learning task used when the HData. If not provided,
+                defaults to ``"hyperlink-prediction"``.
             save_on_disk: Whether to save the downloaded file on disk. Defaults to ``False``.
 
         Returns:
             dataset: The `Dataset` instance with the loaded hypergraph data.
         """
-        hdata = HIFLoader.load_from_url(url=url, save_on_disk=save_on_disk)
-        dataset = cls.from_hdata(hdata=hdata, sampling_strategy=sampling_strategy)
+        hdata = HIFLoader.load_from_url(url=url, task=task, save_on_disk=save_on_disk)
+        dataset = cls.from_hdata(hdata=hdata, sampling_strategy=sampling_strategy, task=task)
         return dataset
 
     @classmethod
     def from_path(
         cls,
         filepath: str,
-        sampling_strategy: SamplingStrategy = SamplingStrategy.HYPEREDGE,
+        sampling_strategy: SamplingStrategyEnum = SamplingStrategyEnum.HYPEREDGE,
+        task: TaskEnum = TaskEnum.HYPERLINK_PREDICTION,
     ) -> Dataset:
         """
         Create a `Dataset` instance by loading a hypergraph from a local file path pointing to a
@@ -142,12 +158,14 @@ class Dataset(TorchDataset):
                 HIF hypergraph data.
             sampling_strategy: The sampling strategy to use for the dataset. If not provided,
                 defaults to ``SamplingStrategy.HYPEREDGE``.
+            task: Learning task used when the HData. If not provided,
+                defaults to ``"hyperlink-prediction"``.
 
         Returns:
             dataset: The `Dataset` instance with the loaded hypergraph data.
         """
-        hypergraph = HIFLoader.load_from_path(filepath=filepath)
-        dataset = cls.from_hdata(hdata=hypergraph, sampling_strategy=sampling_strategy)
+        hypergraph = HIFLoader.load_from_path(filepath=filepath, task=task)
+        dataset = cls.from_hdata(hdata=hypergraph, sampling_strategy=sampling_strategy, task=task)
         return dataset
 
     def enrich_node_features(
@@ -256,7 +274,11 @@ class Dataset(TorchDataset):
         Returns:
             dataset: The `Dataset` instance with the provided `HData`.
         """
-        return self.__class__(hdata=hdata, sampling_strategy=self.sampling_strategy)
+        return self.__class__(
+            hdata=hdata,
+            sampling_strategy=self.sampling_strategy,
+            task=self.task,
+        )
 
     def add_negative_samples(
         self,
@@ -313,7 +335,9 @@ class Dataset(TorchDataset):
         splitter: Splitter[Dataset, Any] | None = None,
     ) -> list[Dataset]:
         """
-        Split the dataset by hyperedges into partitions with contiguous 0-based hyperedge IDs.
+        Split the dataset based on task into partitions:
+        - For node classification, splits are based on nodes and their incident hyperedges.
+        - For hyperlink prediction, splits are based on hyperedges and their incident nodes.
 
         Boundaries are computed using cumulative floor to prevent early splits from
         over-consuming edges. The last split absorbs any rounding remainder.
@@ -376,6 +400,20 @@ class Dataset(TorchDataset):
         if ratios is None:
             raise ValueError("'ratios' must be provided when no custom 'splitter' is provided.")
 
+        if self.hdata.is_node_related_task:
+            splits, _ = NodeDatasetSplitter(
+                node_space_setting=node_space_setting,
+                shuffle=shuffle,
+                seed=seed,
+            ).split(
+                to_split=self,
+                ratios=ratios,
+            )
+            return splits
+
+        if not self.hdata.is_hyperedge_related_task:
+            raise ValueError(f"Unsupported task category for task={self.hdata.task!r}.")
+
         splits, _ = HyperedgeDatasetSplitter(
             node_space_setting=node_space_setting,
             shuffle=shuffle,
@@ -398,7 +436,11 @@ class Dataset(TorchDataset):
         train_split_idx: int = 0,
     ) -> tuple[list[Dataset], list[float]]:
         """
-        Split the dataset and return the final hyperedge ratios.
+        Split the dataset based on task and return the final hyperedge ratios:
+        - For node classification, splits are based on nodes and their incident hyperedges.
+          For more details, look at the `NodeDatasetSplitter` class.
+        - For hyperlink prediction, splits are based on hyperedges and their incident nodes.
+          For more details, look at the `HyperedgeDatasetSplitter` class.
 
         Boundaries are computed using cumulative floor to prevent early splits from
         over-consuming edges. The last split absorbs any rounding remainder.
@@ -445,6 +487,19 @@ class Dataset(TorchDataset):
                 hyperedges, or a requested transductive train-cover split cannot
                 cover the full node space.
         """
+        if self.hdata.is_node_related_task:
+            return NodeDatasetSplitter(
+                node_space_setting=node_space_setting,
+                shuffle=shuffle,
+                seed=seed,
+            ).split(
+                to_split=self,
+                ratios=ratios,
+            )
+
+        if not self.hdata.is_hyperedge_related_task:
+            raise ValueError(f"Unsupported task category for task={self.hdata.task!r}.")
+
         return HyperedgeDatasetSplitter(
             node_space_setting=node_space_setting,
             shuffle=shuffle,

@@ -6,7 +6,12 @@ from abc import ABC, abstractmethod
 from torch import Tensor, optim
 from typing import Literal, TypeAlias, cast
 from torch_geometric.nn import Node2Vec as PyGNode2Vec
-from hypertorch.types import EdgeIndex, HyperedgeIndex
+from hypertorch.types import (
+    EdgeIndex,
+    HyperedgeIndex,
+    GraphReductionStrategy,
+    GraphReductionStrategyEnum,
+)
 from hypertorch.models import VilLain
 from hypertorch.utils import (
     validate_is_between,
@@ -18,6 +23,7 @@ from hypertorch.utils import (
 
 
 EnrichmentMode: TypeAlias = Literal["concatenate", "replace"]
+"""Mode used to combine generated features with existing features."""
 
 
 class _VilLainTrainer:
@@ -258,7 +264,11 @@ class HyperedgeEnricher(Enricher, ABC):
 
 
 HyperedgeAttrsEnricher: TypeAlias = HyperedgeEnricher
+"""Type alias for enrichers that generate hyperedge attributes."""
+
+
 HyperedgeWeightsEnricher: TypeAlias = HyperedgeEnricher
+"""Type alias for enrichers that generate hyperedge weights."""
 
 
 class NodeEnricher(Enricher, ABC):
@@ -521,7 +531,9 @@ class Node2VecEnricher(NodeEnricher):
         q: float = 1.0,
         num_negative_samples: int = 1,
         num_nodes: int = 0,
-        graph_reduction_strategy: Literal["clique_expansion"] = "clique_expansion",
+        graph_reduction_strategy: GraphReductionStrategy = (
+            GraphReductionStrategyEnum.CLIQUE_EXPANSION
+        ),
         num_epochs: int = 5,
         learning_rate: float = 0.01,
         batch_size: int = 128,
@@ -563,7 +575,7 @@ class Node2VecEnricher(NodeEnricher):
         self.q: float = q
         self.num_negative_samples: int = num_negative_samples
         self.num_nodes: int = num_nodes
-        self.graph_reduction_strategy: Literal["clique_expansion"] = graph_reduction_strategy
+        self.graph_reduction_strategy: GraphReductionStrategy = graph_reduction_strategy
         self.num_epochs: int = num_epochs
         self.learning_rate: float = learning_rate
         self.batch_size: int = batch_size

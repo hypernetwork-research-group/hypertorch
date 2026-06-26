@@ -10,7 +10,7 @@ from hypertorch.utils import ActivationFn, NormalizationFn, Stage
 from hypertorch.hlp.common import HlpModule
 
 
-class MlpEncoderConfig(TypedDict):
+class MLPEncoderConfig(TypedDict):
     """
     Configuration for the MLP encoder in MLPHlpModule.
 
@@ -47,7 +47,7 @@ class MlpEncoderConfig(TypedDict):
 
 class MLPHlpModule(HlpModule):
     """
-    A LightningModule for MLP-based Hyperedge Link Prediction.
+    A LightningModule for MLP-based Hyperlink Prediction.
 
     Uses an MLP encoder to produce node embeddings, aggregates them per hyperedge
     via mean pooling, and scores each hyperedge with a linear decoder.
@@ -66,7 +66,7 @@ class MLPHlpModule(HlpModule):
 
     def __init__(
         self,
-        encoder_config: MlpEncoderConfig,
+        encoder_config: MLPEncoderConfig,
         aggregation: Literal["mean", "max", "min", "sum"] = "mean",
         loss_fn: nn.Module | None = None,
         lr: float = 0.001,

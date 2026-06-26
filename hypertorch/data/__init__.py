@@ -60,6 +60,8 @@ from .sampler import (
     HyperedgeSampler,
     NodeSampler,
     SamplingStrategy,
+    SamplingStrategyEnum,
+    SamplingStrategyLiteral,
     create_sampler_from_strategy,
 )
 
@@ -67,6 +69,9 @@ from .splitter import (
     HyperedgeDatasetSplitter,
     HyperedgeHDataSplitter,
     HyperedgeIDSplitter,
+    NodeDatasetSplitter,
+    NodeHDataSplitter,
+    NodeIDSplitter,
     Splitter,
 )
 
@@ -109,7 +114,10 @@ __all__ = [
     "NegativeSamplingSchedule",
     "NegativeSamplingScheduler",
     "Node2VecEnricher",
+    "NodeDatasetSplitter",
     "NodeEnricher",
+    "NodeHDataSplitter",
+    "NodeIDSplitter",
     "NodeSampler",
     "PatentDataset",
     "PubmedDataset",
@@ -117,6 +125,8 @@ __all__ = [
     "RestaurantReviewsDataset",
     "SameNodeSpaceNegativeSampler",
     "SamplingStrategy",
+    "SamplingStrategyEnum",
+    "SamplingStrategyLiteral",
     "Splitter",
     "ThreadsAskUbuntuDataset",
     "ThreadsMathsxDataset",

@@ -35,6 +35,7 @@ if __name__ == "__main__":
 
     dataset = Dataset.from_url(
         url="https://raw.githubusercontent.com/hypernetwork-research-group/datasets/main/algebra.json.zst",
+        task="hyperlink-prediction",
     )
 
     if verbose:

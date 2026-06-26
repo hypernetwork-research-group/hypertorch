@@ -12,7 +12,7 @@ from .hgnnp_hlp import HGNNPEncoderConfig, HGNNPHlpModule
 
 from .hypergcn_hlp import HyperGCNHlpModule, HyperGCNEncoderConfig
 
-from .mlp_hlp import MLPHlpModule, MlpEncoderConfig
+from .mlp_hlp import MLPHlpModule, MLPEncoderConfig
 
 from .nhp_hlp import NHPEncoderConfig, NHPHlpModule, NHPRankingLoss
 
@@ -45,8 +45,8 @@ __all__ = [
     "HlpModule",
     "HyperGCNEncoderConfig",
     "HyperGCNHlpModule",
+    "MLPEncoderConfig",
     "MLPHlpModule",
-    "MlpEncoderConfig",
     "NHPEncoderConfig",
     "NHPHlpModule",
     "NHPRankingLoss",

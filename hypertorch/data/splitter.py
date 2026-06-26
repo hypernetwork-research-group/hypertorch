@@ -245,10 +245,9 @@ class HyperedgeHDataSplitter(Splitter["HData", "HData"]):
                 hyperedge_attr=split_hyperedge_attr,
                 num_nodes=to_split.num_nodes,
                 num_hyperedges=len(split_unique_hyperedge_ids),
-                global_node_ids=to_split.global_node_ids.clone()
-                if to_split.global_node_ids is not None
-                else None,
+                global_node_ids=to_split.global_node_ids.clone(),
                 y=split_y,
+                task=to_split.task,
             )
 
         split_unique_node_ids = split_hyperedge_index[0].unique()
@@ -270,6 +269,7 @@ class HyperedgeHDataSplitter(Splitter["HData", "HData"]):
             num_hyperedges=len(split_unique_hyperedge_ids),
             global_node_ids=to_split.global_node_ids[split_unique_node_ids],
             y=split_y,
+            task=to_split.task,
         )
 
 
@@ -546,3 +546,292 @@ class HyperedgeIDSplitter(Splitter["Tensor", tuple[list["Tensor"], list[float]]]
         # Split construction partitions every available hyperedge, so
         # a valid HData has a covering donor whenever the first split still misses a node
         return cast(int, best_split_idx), cast(Tensor, best_hyperedge_id)
+
+
+class NodeDatasetSplitter(Splitter["Dataset", tuple[list["Dataset"], list[float]]]):
+    """
+    Split a node-classification dataset by supervised node IDs.
+
+    Attributes:
+        node_space_setting: Whether to preserve the full graph in every split.
+        shuffle: Whether to shuffle node IDs before splitting.
+        seed: Random seed used when shuffling.
+    """
+
+    def __init__(
+        self,
+        node_space_setting: NodeSpaceSetting = "transductive",
+        shuffle: bool | None = False,
+        seed: int | None = None,
+    ) -> None:
+        """
+        Initialize the node dataset splitter.
+
+        Args:
+            node_space_setting: Whether to preserve the full graph in every split.
+            shuffle: Whether to shuffle node IDs before splitting.
+            seed: Optional random seed for reproducibility.
+        """
+        self.node_space_setting: NodeSpaceSetting = node_space_setting
+        self.shuffle: bool | None = shuffle
+        self.seed: int | None = seed
+        validate_node_space_setting(self.node_space_setting)
+
+    def split(self, to_split: Dataset, **kwargs: Any) -> tuple[list[Dataset], list[float]]:
+        """
+        Split a dataset and return materialized node-classification partitions.
+        """
+        ratios: list[float] = kwargs.get("ratios", [])
+        validate_ratios(ratios)
+
+        hdata = to_split.hdata
+        node_splitter = NodeIDSplitter(num_nodes=hdata.num_nodes, device=hdata.device)
+        node_ids_permutation = node_splitter.get_node_ids_permutation(
+            shuffle=self.shuffle,
+            seed=self.seed,
+        )
+        node_ids_by_split, final_ratios = node_splitter.split(
+            to_split=node_ids_permutation,
+            ratios=ratios,
+        )
+        node_splitter.validate_splits_have_nodes(node_ids_by_split)
+
+        split_datasets: list[Dataset] = []
+        for split_node_ids in node_ids_by_split:
+            split_hdata = NodeHDataSplitter(self.node_space_setting).split(
+                to_split=hdata,
+                split_node_ids=split_node_ids,
+            )
+            split_hdata = split_hdata.to(device=hdata.device)
+            split_dataset = to_split.__class__(
+                hdata=split_hdata,
+                sampling_strategy=to_split.sampling_strategy,
+            )
+            split_datasets.append(split_dataset)
+
+        return split_datasets, final_ratios
+
+
+class NodeHDataSplitter(Splitter["HData", "HData"]):
+    """
+    Materialize an `HData` split from explicit node IDs.
+
+    Attributes:
+        node_space_setting: Whether to preserve the full node space in the split.
+    """
+
+    def __init__(self, node_space_setting: NodeSpaceSetting = "transductive") -> None:
+        """
+        Initialize the node HData splitter.
+
+        Args:
+            node_space_setting: Whether to preserve the full node space in the split.
+        """
+        self.node_space_setting: NodeSpaceSetting = node_space_setting
+        validate_node_space_setting(self.node_space_setting)
+
+    def split(self, to_split: HData, **kwargs: Any) -> HData:
+        """
+        Build an `HData` for a single split from the given node IDs.
+
+        Args:
+            to_split: The original `HData` containing the full hypergraph.
+            kwargs:
+                split_node_ids: The node IDs that should be included in the split,
+                    expected as a keyword argument.
+
+        Returns:
+            hdata: The splitted instance with remapped node and hyperedge IDs.
+        """
+        split_node_ids = kwargs.get("split_node_ids", [])
+        validate_is_non_empty("split_node_ids", split_node_ids)
+
+        if is_transductive_setting(self.node_space_setting):
+            split_target_node_mask = torch.zeros(
+                to_split.num_nodes,
+                dtype=torch.bool,
+                device=to_split.device,
+            )
+            split_target_node_mask[split_node_ids] = True
+
+            split_hyperedge_attr = (
+                to_split.hyperedge_attr.clone() if to_split.hyperedge_attr is not None else None
+            )
+            split_hyperedge_weights = (
+                to_split.hyperedge_weights.clone()
+                if to_split.hyperedge_weights is not None
+                else None
+            )
+
+            return to_split.__class__(
+                x=to_split.x.clone(),
+                hyperedge_index=to_split.hyperedge_index.clone(),
+                hyperedge_weights=split_hyperedge_weights,
+                hyperedge_attr=split_hyperedge_attr,
+                num_nodes=to_split.num_nodes,
+                num_hyperedges=to_split.num_hyperedges,
+                global_node_ids=to_split.global_node_ids.clone(),
+                target_node_mask=split_target_node_mask,
+                y=to_split.y.clone(),
+                task=to_split.task,
+            )
+
+        keep_mask = torch.isin(to_split.hyperedge_index[0], split_node_ids)
+        split_hyperedge_index = to_split.hyperedge_index[:, keep_mask]
+        split_unique_hyperedge_ids = split_hyperedge_index[1].unique(sorted=True)
+
+        split_hyperedge_attr = (
+            to_split.hyperedge_attr[split_unique_hyperedge_ids]
+            if to_split.hyperedge_attr is not None
+            else None
+        )
+        split_hyperedge_weights = (
+            to_split.hyperedge_weights[split_unique_hyperedge_ids]
+            if to_split.hyperedge_weights is not None
+            else None
+        )
+
+        split_unique_node_ids = split_hyperedge_index[0].unique(sorted=True)
+        split_hyperedge_index = (
+            HyperedgeIndex(split_hyperedge_index)
+            .to_0based(
+                node_ids_to_rebase=split_unique_node_ids,
+                hyperedge_ids_to_rebase=split_unique_hyperedge_ids,
+            )
+            .item
+        )
+
+        split_target_node_mask = torch.ones(
+            len(split_unique_node_ids),
+            dtype=torch.bool,
+            device=to_split.device,
+        )
+        return to_split.__class__(
+            x=to_split.x[split_unique_node_ids],
+            hyperedge_index=split_hyperedge_index.clone(),
+            hyperedge_weights=split_hyperedge_weights,
+            hyperedge_attr=split_hyperedge_attr,
+            num_nodes=len(split_unique_node_ids),
+            num_hyperedges=len(split_unique_hyperedge_ids),
+            global_node_ids=to_split.global_node_ids[split_unique_node_ids],
+            y=to_split.y[split_unique_node_ids],
+            task=to_split.task,
+            target_node_mask=split_target_node_mask,
+        )
+
+
+class NodeIDSplitter(Splitter["Tensor", tuple[list["Tensor"], list[float]]]):
+    """
+    Splitter for node-ID based dataset partitioning.
+
+    Attributes:
+        num_nodes: Number of nodes in the source hypergraph.
+        device: Device for generated node ID tensors.
+    """
+
+    def __init__(self, num_nodes: int, device: torch.device) -> None:
+        """
+        Initialize the node ID splitter.
+
+        Args:
+            num_nodes: Number of nodes in the source hypergraph.
+            device: Device for generated node ID tensors.
+        """
+        self.num_nodes: int = num_nodes
+        self.device: torch.device = device
+
+    def get_node_ids_permutation(self, shuffle: bool | None, seed: int | None) -> Tensor:
+        """
+        Return node IDs in deterministic or shuffled order.
+
+        Args:
+            shuffle: Whether to randomly permute the node IDs.
+            seed: Optional random seed used when ``shuffle`` is truthy.
+
+        Returns:
+            node_ids_permutation: Ordered or shuffled node IDs on the HData device.
+        """
+        if shuffle:
+            generator = create_seeded_torch_generator(device=self.device, seed=seed)
+            return torch.randperm(
+                n=self.num_nodes,
+                generator=generator,
+                dtype=torch.long,
+                device=self.device,
+            )
+
+        return torch.arange(self.num_nodes, dtype=torch.long, device=self.device)
+
+    def validate_splits_have_nodes(self, node_ids_by_split: list[Tensor]) -> None:
+        """
+        Validate that every split has at least one node.
+
+        Args:
+            node_ids_by_split: Node IDs assigned to each split.
+
+        Raises:
+            ValueError: If any split is empty after splitting.
+        """
+        empty_split_indices = [
+            split_idx
+            for split_idx, split_node_ids in enumerate(node_ids_by_split)
+            if split_node_ids.numel() == 0
+        ]
+        if len(empty_split_indices) > 0:
+            final_ratios = self.get_split_ratios(node_ids_by_split)
+            raise ValueError(
+                f"Splitting produced splits {empty_split_indices} "
+                f"with no nodes. Final ratios: {final_ratios}."
+            )
+
+    def get_split_ratios(self, node_ids_by_split: list[Tensor]) -> list[float]:
+        """
+        Compute realized split ratios from node counts.
+
+        Args:
+            node_ids_by_split: Node IDs assigned to each split.
+
+        Returns:
+            ratios: Ratios derived from the number of nodes in each split.
+        """
+        num_nodes_by_split = [int(split_node_ids.numel()) for split_node_ids in node_ids_by_split]
+        num_nodes = sum(num_nodes_by_split)
+        if num_nodes == 0:
+            return [0.0 for _ in node_ids_by_split]
+
+        return [round(split_num_nodes / num_nodes, 4) for split_num_nodes in num_nodes_by_split]
+
+    def split(self, to_split: Tensor, **kwargs: Any) -> tuple[list[Tensor], list[float]]:
+        """
+        Split node IDs by cumulative ratio boundaries.
+
+        Early splits use cumulative floor boundaries to avoid over-consuming nodes.
+        The final split receives any remaining nodes caused by rounding.
+
+        Args:
+            to_split: Node IDs to partition.
+            kwargs:
+                ratios: Desired split ratios, used for initial split construction and
+                    as a reference during rebalancing. Expected as a keyword argument.
+
+        Returns:
+            node_ids_by_split: The updated node IDs for each split.
+            ratios: The final split ratios.
+        """
+        ratios: list[float] = kwargs.get("ratios", [])
+        validate_ratios(ratios)
+
+        # Cumulative floor boundaries keep early splits from over-consuming nodes.
+        # The last split absorbs any rounding remainder.
+        num_nodes = int(to_split.size(0))
+
+        start = 0
+        cumulative_ratio = 0.0
+        node_ids_by_split = []
+        for split_idx, ratio in enumerate(ratios):
+            cumulative_ratio += ratio
+            end = num_nodes if split_idx == len(ratios) - 1 else int(cumulative_ratio * num_nodes)
+            node_ids_by_split.append(to_split[start:end])
+            start = end
+
+        return node_ids_by_split, self.get_split_ratios(node_ids_by_split)

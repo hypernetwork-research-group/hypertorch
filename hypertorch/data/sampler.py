@@ -1,18 +1,27 @@
 import torch
 
+from typing import Literal, TypeAlias
 from abc import ABC, abstractmethod
-from enum import Enum
 from torch import Tensor
 from hypertorch.types import HData
+from hypertorch.utils import StrEnum, to_0based_ids
 
 
-class SamplingStrategy(Enum):
+class SamplingStrategyEnum(StrEnum):
     """
     Sampling strategies supported by datasets.
     """
 
     NODE = "node"
     HYPEREDGE = "hyperedge"
+
+
+SamplingStrategyLiteral: TypeAlias = Literal["node", "hyperedge"]
+"""Literal type for supported sampling strategies."""
+
+
+SamplingStrategy: TypeAlias = SamplingStrategyEnum | SamplingStrategyLiteral
+"""Type for supported sampling strategies, either as an enum or a string literal."""
 
 
 class BaseSampler(ABC):
@@ -186,10 +195,14 @@ class HyperedgeSampler(BaseSampler):
         #          -> sampled_hyperedge_index = [[0, 0, 1, 3, 4],
         #                                        [0, 0, 0, 2, 2]]
         sampled_hyperedge_index = self._sample_hyperedge_index(
-            hyperedge_index, sampled_hyperedge_ids
+            hyperedge_index=hyperedge_index,
+            sampled_hyperedge_ids=sampled_hyperedge_ids,
         )
 
-        return HData.from_hyperedge_index(sampled_hyperedge_index)
+        return HData.from_hyperedge_index(
+            hyperedge_index=sampled_hyperedge_index,
+            task=hdata.task,
+        )
 
     def len(self, hdata: HData) -> int:
         """
@@ -240,11 +253,59 @@ class NodeSampler(BaseSampler):
         ids = self._normalize_index(index, self.len(hdata))
         self._validate_bounds(ids, self.len(hdata), "Node ID")
 
+        sampled_hdata, sampled_hyperedge_index, sampled_node_ids = self.__sample_hdata(
+            hdata=hdata,
+            ids_to_sample=ids,
+        )
+        sampled_hdata = self.__sample_task_specific_fields(
+            sampled_hdata=sampled_hdata,
+            sampled_hyperedge_index=sampled_hyperedge_index,
+            sampled_node_ids=sampled_node_ids,
+        )
+        return sampled_hdata
+
+    def len(self, hdata: HData) -> int:
+        """
+        Return the number of nodes in the given HData.
+
+        Args:
+            hdata: The HData to query for the number of nodes.
+
+        Returns:
+            num_nodes: The number of nodes in the HData.
+        """
+        return (
+            int(hdata.target_node_mask.sum(dtype=torch.int).item())
+            if hdata.is_node_related_task
+            else hdata.num_nodes
+        )
+
+    def __sample_hdata(
+        self,
+        hdata: HData,
+        ids_to_sample: list[int],
+    ) -> tuple[HData, Tensor, Tensor]:
+        """
+        Sample nodes from the given HData and return a new HData instance
+        containing only the sampled nodes and their incident hyperedges.
+
+        Args:
+            hdata: The HData to sample from.
+            ids_to_sample: A list of node IDs to sample.
+
+        Returns:
+            sampled_hdata: An HData instance containing only the sampled nodes
+                and their incident hyperedges.
+            sampled_hyperedge_index: A tensor containing the hyperedge index of the
+                sampled hyperedges.
+            sampled_node_ids: A tensor containing the IDs of the sampled nodes.
+        """
+        sampled_node_indexes = torch.tensor(ids_to_sample, dtype=torch.long, device=hdata.device)
+        sampled_node_ids = hdata.sampleable_node_ids[sampled_node_indexes]
+
         hyperedge_index = hdata.hyperedge_index
         node_ids = hyperedge_index[0]
         hyperedge_ids = hyperedge_index[1]
-
-        sampled_node_ids = torch.tensor(ids, dtype=node_ids.dtype, device=node_ids.device)
 
         # Find incidences where the node is in our sampled nodes
         # Example: node_ids = [0, 0, 1, 2, 3, 4], sampled_node_ids = [0, 3]
@@ -264,22 +325,75 @@ class NodeSampler(BaseSampler):
         #          -> sampled_hyperedge_index = [[0, 0, 1, 3, 4],
         #                                        [0, 0, 0, 2, 2]]
         sampled_hyperedge_index = self._sample_hyperedge_index(
-            hyperedge_index, sampled_hyperedge_ids
+            hyperedge_index=hyperedge_index,
+            sampled_hyperedge_ids=sampled_hyperedge_ids,
         )
 
-        return HData.from_hyperedge_index(sampled_hyperedge_index)
+        sampled_hdata = HData.from_hyperedge_index(
+            hyperedge_index=sampled_hyperedge_index,
+            task=hdata.task,
+        )
+        return sampled_hdata, sampled_hyperedge_index, sampled_node_ids
 
-    def len(self, hdata: HData) -> int:
+    def __sample_task_specific_fields(
+        self,
+        sampled_hdata: HData,
+        sampled_hyperedge_index: Tensor,
+        sampled_node_ids: Tensor,
+    ) -> HData:
         """
-        Return the number of nodes in the given HData.
+        Sample task-specific fields for the given sampled HData.
+        For examples, if the task is node-related, it will create a
+        target node mask for the sampled nodes.
 
         Args:
-            hdata: The HData to query for the number of nodes.
+            sampled_hdata: The sampled HData to process.
+            sampled_hyperedge_index: A tensor containing the hyperedge index
+                of the sampled hyperedges.
+            sampled_node_ids: A tensor containing the IDs of the sampled nodes.
 
         Returns:
-            num_nodes: The number of nodes in the HData.
+            sampled_hdata: The HData with task-specific fields sampled.
         """
-        return hdata.num_nodes
+        if sampled_hdata.is_node_related_task:
+            target_node_mask = self.__target_node_mask_for_sample(
+                sampled_hdata=sampled_hdata,
+                sampled_node_ids=sampled_node_ids,
+                sampled_hyperedge_index=sampled_hyperedge_index,
+            )
+            return sampled_hdata.with_target_node_mask(target_node_mask)
+
+        return sampled_hdata
+
+    def __target_node_mask_for_sample(
+        self,
+        sampled_hdata: HData,
+        sampled_node_ids: Tensor,
+        sampled_hyperedge_index: Tensor,
+    ) -> Tensor:
+        sampled_hdata_node_incidences = sampled_hyperedge_index[0]
+        sampled_node_ids_rebased_to_sampled_hdata_indexes = to_0based_ids(
+            original_ids=sampled_node_ids,
+            ids_to_rebase=sampled_hdata_node_incidences,
+        )
+
+        # Mark only the originally sampled seed nodes as targets (target_node_mask=True)
+        # in the sampled HData's local node space. Context nodes added because they share
+        # incident hyperedges remain marked as non-target (target_node_mask=False).
+        # Example: sampled_node_ids = [0, 3],
+        #          sampled_hdata_node_incidences = sampled_hyperedge_index[0] = [0, 0, 1, 3, 4]
+        #          so node_ids in sampled_hdata are [0, 1, 3, 4]
+        #          sampled_node_ids_rebased_to_sampled_hdata_indexes = [0, 2]  # 0 -> 0
+        #                                                                      # 3 -> 2
+        #          target_node_mask = [True, False, True, False]
+        target_node_mask = torch.zeros(
+            sampled_hdata.num_nodes,
+            dtype=torch.bool,
+            device=sampled_hdata.device,
+        )
+        target_node_mask[sampled_node_ids_rebased_to_sampled_hdata_indexes] = True
+
+        return target_node_mask
 
 
 def create_sampler_from_strategy(strategy: SamplingStrategy) -> BaseSampler:
@@ -296,9 +410,9 @@ def create_sampler_from_strategy(strategy: SamplingStrategy) -> BaseSampler:
         ValueError: If ``strategy`` is not a supported `SamplingStrategy`.
     """
     match strategy:
-        case SamplingStrategy.NODE:
+        case SamplingStrategyEnum.NODE:
             return NodeSampler()
-        case SamplingStrategy.HYPEREDGE:
+        case SamplingStrategyEnum.HYPEREDGE:
             return HyperedgeSampler()
         case _:
             raise ValueError(f"Unsupported sampling strategy: {strategy!r}.")

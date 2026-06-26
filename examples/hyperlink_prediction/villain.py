@@ -9,7 +9,7 @@ from torchmetrics.classification import (
 from hypertorch.hlp import VilLainHlpModule
 from hypertorch.train import MultiModelTrainer
 from hypertorch.types import ModelConfig
-from hypertorch.data import CoraDataset, DataLoader, RandomNegativeSampler, SamplingStrategy
+from hypertorch.data import CoraDataset, DataLoader, RandomNegativeSampler
 
 
 if __name__ == "__main__":
@@ -27,7 +27,7 @@ if __name__ == "__main__":
 
     print("Loading and preparing dataset...")
 
-    dataset = CoraDataset(sampling_strategy=SamplingStrategy.HYPEREDGE)
+    dataset = CoraDataset(sampling_strategy="hyperedge", task="hyperlink-prediction")
     if verbose:
         print(f"Dataset:\n {dataset.hdata}\n")
 

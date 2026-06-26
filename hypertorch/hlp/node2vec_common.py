@@ -4,7 +4,12 @@ from typing import Literal, TypeAlias, TypedDict
 from collections.abc import Iterator
 from typing_extensions import NotRequired
 from hypertorch.models import GCNConfig, Node2Vec, Node2VecGCN
-from hypertorch.types import EdgeIndex, HyperedgeIndex
+from hypertorch.types import (
+    EdgeIndex,
+    HyperedgeIndex,
+    GraphReductionStrategy,
+    GraphReductionStrategyEnum,
+)
 from hypertorch.utils import ActivationFn
 
 
@@ -12,6 +17,7 @@ NODE2VEC_JOINT_MODE = "joint"
 NODE2VEC_PRECOMPUTED_MODE = "precomputed"
 
 Node2VecMode: TypeAlias = Literal["precomputed", "joint"]
+"""Training mode for Node2Vec-based hyperlink prediction encoders."""
 
 
 class Node2VecGCNHlpConfig(TypedDict):
@@ -52,7 +58,7 @@ class Node2VecGCNHlpConfig(TypedDict):
     add_self_loops: NotRequired[bool]
     normalize: NotRequired[bool]
     cached: NotRequired[bool]
-    graph_reduction_strategy: NotRequired[Literal["clique_expansion"]]
+    graph_reduction_strategy: NotRequired[GraphReductionStrategy]
     num_nodes: NotRequired[int]
     activation_fn: NotRequired[ActivationFn]
     activation_fn_kwargs: NotRequired[dict]
@@ -110,7 +116,7 @@ class Node2VecHlpConfig(TypedDict):
     num_negative_samples: NotRequired[int]
     num_nodes: NotRequired[int]
     train_hyperedge_index: NotRequired[Tensor]
-    graph_reduction_strategy: NotRequired[Literal["clique_expansion"]]
+    graph_reduction_strategy: NotRequired[GraphReductionStrategy]
     random_walk_batch_size: NotRequired[int]
     node2vec_loss_weight: NotRequired[float]
     sparse: NotRequired[bool]
@@ -132,6 +138,7 @@ class Node2VecWalkLoaderState:
 
 
 Node2VecEncoder: TypeAlias = Node2Vec | Node2VecGCN
+"""Supported Node2Vec encoder implementations."""
 
 
 def _get_walk_loader(
@@ -219,7 +226,9 @@ def _to_node2vec_edge_index(
         raise ValueError(f"Node2Vec in mode {mode} requires train_hyperedge_index.")
 
     reduced_edge_index = HyperedgeIndex(node2vec_config["train_hyperedge_index"]).reduce(
-        strategy=node2vec_config.get("graph_reduction_strategy", "clique_expansion"),
+        strategy=node2vec_config.get(
+            "graph_reduction_strategy", GraphReductionStrategyEnum.CLIQUE_EXPANSION
+        ),
         num_nodes=node2vec_config.get("num_nodes"),
     )
     edge_index_wrapper = EdgeIndex(reduced_edge_index).remove_selfloops()

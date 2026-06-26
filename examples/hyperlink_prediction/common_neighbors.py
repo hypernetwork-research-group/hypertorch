@@ -13,7 +13,6 @@ from hypertorch.data import (
     AlgebraDataset,
     DataLoader,
     RandomNegativeSampler,
-    SamplingStrategy,
 )
 
 
@@ -32,7 +31,7 @@ if __name__ == "__main__":
 
     print("Loading and preparing dataset...")
 
-    dataset = AlgebraDataset(sampling_strategy=SamplingStrategy.HYPEREDGE)
+    dataset = AlgebraDataset(sampling_strategy="hyperedge", task="hyperlink-prediction")
     if verbose:
         print(f"Dataset:\n {dataset.hdata}\n")
 

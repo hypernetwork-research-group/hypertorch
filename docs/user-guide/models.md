@@ -3,7 +3,8 @@
 HyperTorch provides ready-to-use built-in models inspired by the existing literature.
 
 At a high level:
-- `hypertorch.hlp.*` contains ready-to-train hyperlink prediction (HLP) modules (recommended starting point).
+- `hypertorch.hlp.*` contains ready-to-train hyperlink prediction (HLP) modules.
+- `hypertorch.nc.*` contains ready-to-train node classification (NC) modules.
 - `hypertorch.models.*` contains actual models like Node2Vec, GCN, etc.
 - `hypertorch.nn.*` contains layers, enrichers, aggregators, and losses.
 
@@ -23,7 +24,13 @@ Supported models include:
 - `CommonNeighbors` (non-trainable baseline).
 - `VilLain`.
 
-## Minimal example: Node2Vec + GCN
+## Built-in NC modules
+
+Supported models include:
+
+- `MLP`.
+
+## Minimal HLP example: Node2Vec + GCN
 
 ```python
 from torchmetrics import MetricCollection
@@ -82,6 +89,23 @@ model = GCNHlpModule(
     aggregation="mean",
     lr=0.001,
     weight_decay=5e-4,
+)
+```
+
+## Minimal example: MLP node classification
+
+```python
+from hypertorch.nc import MLPNcModule
+
+model = MLPNcModule(
+    classifier_config={
+        "in_channels": 32,
+        "hidden_channels": 16,
+        "out_channels": 3,
+        "num_layers": 2,
+        "drop_rate": 0.1,
+    },
+    lr=0.001,
 )
 ```
 
