@@ -217,11 +217,10 @@ class HlpModule(L.LightningModule):
         Returns:
             True when the attached trainer is multi-process and torch.distributed is initialized.
         """
-        trainer = self._trainer
-        if trainer is None:
+        if self._trainer is None:
             return False
         return (
-            trainer.world_size > 1
+            self._trainer.world_size > 1
             and torch.distributed.is_available()
             and torch.distributed.is_initialized()
         )

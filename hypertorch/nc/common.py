@@ -173,11 +173,10 @@ class NcModule(L.LightningModule):
         """
         Return whether metrics should synchronize for the current trainer.
         """
-        trainer = self._trainer
-        if trainer is None:
+        if self._trainer is None:
             return False
         return (
-            trainer.world_size > 1
+            self._trainer.world_size > 1
             and torch.distributed.is_available()
             and torch.distributed.is_initialized()
         )

@@ -3,7 +3,7 @@ import pytest
 from hypertorch.hlp import GCNHlpModule
 from hypertorch.data import SamplingStrategyEnum
 from hypertorch.integration_tests.common import (
-    common_metrics,
+    hlp_metrics,
     loaders,
     model_configs_with_single_model,
     train_test_loop,
@@ -29,7 +29,7 @@ def test_model_gcn(tmp_path, sampling_strategy, full, batch_size, request):
     test_id = request.node.callspec.id
 
     num_features = NUM_FEATURES
-    metrics = common_metrics()
+    metrics = hlp_metrics()
 
     train_dataset, val_dataset, test_dataset = split_dataset(sampling_strategy)
     train_dataset, val_dataset, test_dataset = add_negatives(
