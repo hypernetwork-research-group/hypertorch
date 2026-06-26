@@ -15,6 +15,9 @@ from torchmetrics.classification import (
     BinaryAveragePrecision,
     BinaryPrecision,
     BinaryRecall,
+    MulticlassAUROC,
+    MulticlassAccuracy,
+    MulticlassF1Score,
 )
 from hypertorch.data import (
     Dataset,
@@ -25,8 +28,8 @@ from hypertorch.data import (
     RandomNegativeSampler,
 )
 from hypertorch.train import MultiModelTrainer
-from hypertorch.types import ModelConfig, HData
-from hypertorch.utils import create_seeded_torch_generator
+from hypertorch.types import ModelConfig, HData, Task, TaskEnum
+from hypertorch.utils import create_seeded_torch_generator, node_labels_from_node_degrees
 
 
 SEED = 42
@@ -37,6 +40,8 @@ def __cached_split_dataset(
     sampling_strategy: SamplingStrategyEnum,
     dataset: Dataset | None = None,
     node_space_setting: Literal["transductive", "inductive"] = "transductive",
+    task: Task = TaskEnum.HYPERLINK_PREDICTION,
+    num_classes: int | None = None,
 ) -> tuple[Dataset, Dataset, Dataset]:
     if dataset is None:
         generator = create_seeded_torch_generator(device=torch.device("cpu"), seed=SEED)
@@ -59,7 +64,13 @@ def __cached_split_dataset(
             dim=1,
         )
 
-        hdata = HData(x=x, hyperedge_index=hyperedge_index)
+        hdata = HData(x=x, hyperedge_index=hyperedge_index, task=task)
+        if hdata.is_node_related_task:
+            hdata.y = node_labels_from_node_degrees(
+                node_incidences=hdata.hyperedge_index[0],
+                num_nodes=hdata.num_nodes,
+                num_classes=num_classes if num_classes is not None else 3,
+            )
         dataset = Dataset.from_hdata(hdata, sampling_strategy=sampling_strategy)
 
     stats = dataset.stats()
@@ -73,7 +84,7 @@ def __cached_split_dataset(
     return train_dataset, val_dataset, test_dataset
 
 
-def common_metrics() -> MetricCollection:
+def hlp_metrics() -> MetricCollection:
     return MetricCollection(
         {
             "auc": BinaryAUROC(),
@@ -85,13 +96,29 @@ def common_metrics() -> MetricCollection:
     )
 
 
+def nc_metrics(num_classes: int) -> MetricCollection:
+    return MetricCollection(
+        {
+            "auc": MulticlassAUROC(num_classes=num_classes),
+            "accuracy": MulticlassAccuracy(num_classes=num_classes),
+            "f1": MulticlassF1Score(num_classes=num_classes),
+        }
+    )
+
+
 def split_dataset(
     sampling_strategy: SamplingStrategyEnum = SamplingStrategyEnum.HYPEREDGE,
     dataset: Dataset | None = None,
     node_space_setting: Literal["transductive", "inductive"] = "transductive",
+    task: Task = TaskEnum.HYPERLINK_PREDICTION,
+    num_classes: int | None = None,
 ) -> tuple[Dataset, Dataset, Dataset]:
     train_dataset, val_dataset, test_dataset = __cached_split_dataset(
-        sampling_strategy, dataset, node_space_setting
+        dataset=dataset,
+        sampling_strategy=sampling_strategy,
+        node_space_setting=node_space_setting,
+        task=task,
+        num_classes=num_classes,
     )
 
     return (

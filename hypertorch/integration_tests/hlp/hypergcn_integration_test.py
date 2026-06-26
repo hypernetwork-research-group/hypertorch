@@ -4,7 +4,7 @@ from hypertorch.hlp import HyperGCNHlpModule
 from hypertorch.data import SamplingStrategyEnum
 from hypertorch.integration_tests.common import (
     SEED,
-    common_metrics,
+    hlp_metrics,
     loaders,
     model_configs_with_single_model,
     train_test_loop,
@@ -29,7 +29,7 @@ NUM_FEATURES = 8
 def test_model_hypergcn_with_mediator(tmp_path, sampling_strategy, full, batch_size, request):
     test_id = request.node.callspec.id
     num_features = NUM_FEATURES
-    metrics = common_metrics()
+    metrics = hlp_metrics()
 
     train_dataset, val_dataset, test_dataset = split_dataset(sampling_strategy)
     train_dataset, val_dataset, test_dataset = add_negatives(
@@ -112,7 +112,7 @@ def test_model_hypergcn_with_mediator(tmp_path, sampling_strategy, full, batch_s
 def test_model_hypergcn_no_mediator(tmp_path, sampling_strategy, full, batch_size, request):
     test_id = request.node.callspec.id
     num_features = NUM_FEATURES
-    metrics = common_metrics()
+    metrics = hlp_metrics()
 
     train_dataset, val_dataset, test_dataset = split_dataset(sampling_strategy)
     train_dataset, val_dataset, test_dataset = add_negatives(

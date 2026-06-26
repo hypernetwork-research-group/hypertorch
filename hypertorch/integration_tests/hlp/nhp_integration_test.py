@@ -3,7 +3,7 @@ import pytest
 from hypertorch.data import SamplingStrategyEnum
 from hypertorch.hlp import NHPHlpModule
 from hypertorch.integration_tests.common import (
-    common_metrics,
+    hlp_metrics,
     loaders,
     train_test_loop,
     split_dataset,
@@ -28,7 +28,7 @@ NUM_FEATURES = 8
 def test_model_nhp(tmp_path, sampling_strategy, full, batch_size, request):
     test_id = request.node.callspec.id
     num_features = NUM_FEATURES
-    metrics = common_metrics()
+    metrics = hlp_metrics()
 
     train_dataset, val_dataset, test_dataset = split_dataset(sampling_strategy)
 

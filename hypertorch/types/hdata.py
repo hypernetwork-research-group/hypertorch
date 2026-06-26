@@ -173,7 +173,7 @@ class HData:
         )
 
         self.task: Task = task
-        self.y = self.__y(y)
+        self.y: Tensor = self.__assign_y_for_task(y)
 
         self.__validate()
 
@@ -1528,7 +1528,7 @@ class HData:
                 f"{tuple(self.hyperedge_index.shape)}."
             )
 
-    def __y(self, y: Tensor | None = None) -> Tensor:
+    def __assign_y_for_task(self, y: Tensor | None = None) -> Tensor:
         """
         Return labels as non-None tensor on the correct device.
 
