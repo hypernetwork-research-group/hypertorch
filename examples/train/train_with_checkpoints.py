@@ -38,6 +38,7 @@ def last_checkpoint_path(config: ModelConfig) -> Path:
 
 if __name__ == "__main__":
     verbose = False
+    experiment_name = "checkpoint_predict"
     num_features = 32
     num_workers = 8
     metrics = MetricCollection(
@@ -126,7 +127,7 @@ if __name__ == "__main__":
 
     with MultiModelTrainer(
         model_configs=[train_config],
-        experiment_name="checkpoint_predict",
+        experiment_name=experiment_name,
         callbacks=[ModelCheckpoint(save_last=True)],
         max_epochs=100,
         accelerator="auto",
@@ -166,10 +167,11 @@ if __name__ == "__main__":
 
     with MultiModelTrainer(
         model_configs=[predict_config],
-        experiment_name="checkpoint_predict_load",
+        experiment_name=experiment_name,
         accelerator="auto",
+        callbacks=[ModelCheckpoint(save_last=True)],
         logger=False,
-        enable_checkpointing=False,
+        enable_checkpointing=True,
         devices=1,
         test_devices=1,
     ):
