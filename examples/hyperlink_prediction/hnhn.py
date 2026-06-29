@@ -89,14 +89,14 @@ if __name__ == "__main__":
 
     train_loader_full_hypergraph = DataLoader(
         train_dataset,
-        sample_full_hypergraph=True,
+        batch_size=64,
         shuffle=False,
         num_workers=num_workers,
         persistent_workers=True,
     )
     val_loader_full_hypergraph = DataLoader(
         val_dataset,
-        sample_full_hypergraph=True,
+        batch_size=64,
         shuffle=False,
         num_workers=num_workers,
         persistent_workers=True,

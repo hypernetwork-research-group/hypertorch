@@ -36,6 +36,11 @@ scripts along with a brief description.
 | [node2vecgcn.py](https://github.com/hypernetwork-research-group/hypertorch/blob/main/examples/hyperlink_prediction/node2vecgcn.py) | Compute Node2Vec embeddings then train Node2Vec+GCN HLP | `make run examples/hyperlink_prediction/node2vecgcn.py` |
 | [node2vecslp.py](https://github.com/hypernetwork-research-group/hypertorch/blob/main/examples/hyperlink_prediction/node2vecslp.py) | Compute Node2Vec embeddings then train Node2Vec+SLP HLP | `make run examples/hyperlink_prediction/node2vecslp.py` |
 | [villain.py](https://github.com/hypernetwork-research-group/hypertorch/blob/main/examples/hyperlink_prediction/villain.py) | VilLain HLP pipeline on `CoraDataset` (negative sampling) | `make run examples/hyperlink_prediction/villain.py` |
+| **Node classification models** |  |  |
+| [hgnn.py](https://github.com/hypernetwork-research-group/hypertorch/blob/main/examples/node_classification/hgnn.py) | HGNN NC pipeline on `AlgebraDataset` (LPE enricher) | `make run examples/node_classification/hgnn.py` |
+| [hgnnp.py](https://github.com/hypernetwork-research-group/hypertorch/blob/main/examples/node_classification/hgnnp.py) | HGNNP NC pipeline on `AlgebraDataset` (LPE enricher) | `make run examples/node_classification/hgnnp.py` |
+| [hypergcn.py](https://github.com/hypernetwork-research-group/hypertorch/blob/main/examples/node_classification/hypergcn.py) | HyperGCN NC pipeline on `AlgebraDataset` (LPE enricher) | `make run examples/node_classification/hypergcn.py` |
+| [mlp.py](https://github.com/hypernetwork-research-group/hypertorch/blob/main/examples/node_classification/mlp.py) | MLP NC pipeline on `AlgebraDataset` (LPE enricher) | `make run examples/node_classification/mlp.py` |
 | **Sampling strategies** |  |  |
 | [custom_negative_sampler.py](https://github.com/hypernetwork-research-group/hypertorch/blob/main/examples/sampling/custom_negative_sampler.py) | Custom negative sampling for HLP | `make run examples/sampling/custom_negative_sampler.py` |
 | [negative_sampler.py](https://github.com/hypernetwork-research-group/hypertorch/blob/main/examples/sampling/negative_sampler.py) | Negative sampling for HLP | `make run examples/sampling/negative_sampler.py` |

@@ -26,7 +26,7 @@ NUM_FEATURES = 8
         pytest.param(SamplingStrategyEnum.NODE, True, 1, id="node_full"),
     ],
 )
-def test_model_cn(tmp_path, sampling_strategy, full, batch_size, request):
+def test_model_common_neighbors(tmp_path, sampling_strategy, full, batch_size, request):
     test_id = request.node.callspec.id
     num_features = NUM_FEATURES
     metrics = hlp_metrics()

@@ -36,7 +36,9 @@ Write `HyperTorch` when referring to the project, repository, organization, or p
 - `hypertorch/`: core package
   - `data/`: dataset loading, sampling, and HIF integration
   - `hlp/`: hyperlink prediction modules
+  - `integration_tests/`: integration tests for the package
   - `models/`: model implementations (e.g., GCN, Node2Vec, etc.)
+  - `nc/`: node classification modules
   - `nn/`: layers, enrichers, aggregators, and losses
   - `train/`: training utilities and trainers
   - `tests/`: test suite
@@ -68,6 +70,8 @@ Write `HyperTorch` when referring to the project, repository, organization, or p
 
 ## Testing standards
 
+### Unit tests
+
 - **Location:** Tests live under `hypertorch/tests/` and should mirror the package layout they exercise.
 - **Execution:** Prefer:
     - `make test`
@@ -78,6 +82,16 @@ Write `HyperTorch` when referring to the project, repository, organization, or p
 - **Fixtures:** Keep fixture scope as small as practical. Put shared fixtures in `conftest.py`.
 - **Coverage:** Add tests for new behavior, edge cases, and failure paths when code changes.
     - Always ensure 100% coverage for new or refactored code. Run `make test` to see coverage reports and identify untested lines.
+
+### Integration tests
+
+- **Location:** Tests live under `hypertorch/integration_tests/` and should exercise multiple components together.
+- **Execution:** Prefer:
+    - `make i-test`
+    - `make si-test T=<path-within-hypertorch/integration_tests>`
+    - `uv run pytest hypertorch/integration_tests/...` only for targeted one-off invocations
+- **Style:** Use pytest function tests. Prefer `pytest.mark.parametrize` with readable `id=` values in `pytest.param(..., id=...)`.
+- **Always add for:** `hlp`, `nc`, and `train` modules.
 
 ## Security model
 

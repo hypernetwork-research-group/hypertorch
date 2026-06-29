@@ -27,7 +27,7 @@ NUM_FEATURES = 8
         pytest.param(SamplingStrategyEnum.NODE, True, 1, id="node_full"),
     ],
 )
-def test_model_mlp_nc(tmp_path, sampling_strategy, full, batch_size, request):
+def test_model_mlp(tmp_path, sampling_strategy, full, batch_size, request):
     test_id = request.node.callspec.id
     metrics = nc_metrics(num_classes=NUM_CLASSES)
 
