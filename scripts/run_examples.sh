@@ -24,6 +24,7 @@ for example in "${examples[@]}"; do
         else
             status=$?
             echo "=== Failed ${example} with exit code ${status} ===" >&2
+            failed_examples+=("${example}")
         fi
     else # Windows
         if uv run python "${example}"; then
@@ -31,9 +32,8 @@ for example in "${examples[@]}"; do
         else
             status=$?
             echo "=== Failed ${example} with exit code ${status} ===" >&2
+            failed_examples+=("${example}")
         fi
-    fi
-        failed_examples+=("${example}")
     fi
 done
 
