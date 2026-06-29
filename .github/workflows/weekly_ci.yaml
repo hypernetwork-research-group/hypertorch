@@ -29,10 +29,13 @@ jobs:
     - name: Install dependencies
       run: |
         make clean && make destroy
-        uv pip install hypertorch lightning
+        uv venv test-env
+        source test-env/bin/activate || source test-env/Scripts/activate
+        uv pip install --no-build-isolation hypertorch
 
     - name: Run examples
       run: |
+        source test-env/bin/activate || source test-env/Scripts/activate
         ./run_examples.sh 2>&1 | tee run_examples_out.txt
 
         if grep -q "^The following examples failed:" run_examples_out.txt; then
