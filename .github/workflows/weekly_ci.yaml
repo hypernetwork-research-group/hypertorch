@@ -115,13 +115,12 @@ jobs:
           source test-env/Scripts/activate
           uv pip install "torch>=2.12,<3.0" --index-url https://download.pytorch.org/whl/cpu
           uv pip install pyg-lib --find-links https://data.pyg.org/whl/torch-2.12.0+cpu.html
-          uv pip install --no-build-isolation hypertorch
+          uv pip install hypertorch
 
     - name: Run examples
       shell: bash
       run: |
-        source test-env/Scripts/activate
-        bash ./scripts/run_examples.sh 2>&1 | tee run_examples_out.txt
+        uv run bash ./scripts/run_examples.sh 2>&1 | tee run_examples_out.txt
 
         if grep -q "^The following examples failed:" run_examples_out.txt; then
           echo "===== Example failures detected ====="
