@@ -120,7 +120,7 @@ jobs:
     - name: Run examples
       shell: bash
       run: |
-        uv run bash ./scripts/run_examples.sh 2>&1 | tee run_examples_out.txt
+        uv run --python test-env bash ./scripts/run_examples.sh 2>&1 | tee run_examples_out.txt
 
         if grep -q "^The following examples failed:" run_examples_out.txt; then
           echo "===== Example failures detected ====="
