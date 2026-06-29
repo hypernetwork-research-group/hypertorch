@@ -18,7 +18,7 @@ failed_examples=()
 
 for example in "${examples[@]}"; do
     echo "=== ${example} ==="
-    if uv run "${example}"; then
+    if uv --active run "${example}"; then
         echo "=== Passed ${example} ==="
     else
         status=$?
