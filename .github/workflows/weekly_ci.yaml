@@ -33,8 +33,9 @@ jobs:
         make clean && make destroy
         uv venv test-env
         source test-env/bin/activate || source test-env/Scripts/activate
-        uv pip install "pyg-lib>=0.6,<1.0"
-        uv pip install --no-build-isolation hypertorch
+        uv pip install torch
+        uv pip install pyg-lib
+        uv pip install hypertorch
 
     - name: Run examples
       shell: bash
