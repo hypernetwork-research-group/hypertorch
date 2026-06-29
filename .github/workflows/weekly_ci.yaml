@@ -9,12 +9,12 @@ permissions:
   contents: read
 
 jobs:
-  test:
+  test-macos:
     runs-on: ${{ matrix.os }}
     continue-on-error: true
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [macos-latest]
         python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
 
     steps:
@@ -40,7 +40,46 @@ jobs:
       shell: bash
       run: |
         source test-env/bin/activate || source test-env/Scripts/activate
-        ./run_examples.sh 2>&1 | tee run_examples_out.txt
+        ./scripts/run_examples.sh 2>&1 | tee run_examples_out.txt
+
+        if grep -q "^The following examples failed:" run_examples_out.txt; then
+          echo "===== Example failures detected ====="
+          sed -n '/^The following examples failed:/,$p' run_examples_out.txt
+          exit 1
+        fi
+
+  test:
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
+    strategy:
+      matrix:
+        os: [ubuntu-latest windows-latest]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+
+    steps:
+    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+      with:
+        persist-credentials: false
+
+    - name: Install uv with Python ${{ matrix.python-version }}
+      uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+          make clean && make destroy
+          uv venv test-env
+          source test-env/bin/activate || source test-env/Scripts/activate
+          uv pip install torch --index-url https://data.pyg.org/whl/torch-2.11.0+cpu.html
+          uv pip install --no-build-isolation hypertorch
+
+    - name: Run examples
+      shell: bash
+      run: |
+        source test-env/bin/activate || source test-env/Scripts/activate
+        ./scripts/run_examples.sh 2>&1 | tee run_examples_out.txt
 
         if grep -q "^The following examples failed:" run_examples_out.txt; then
           echo "===== Example failures detected ====="
