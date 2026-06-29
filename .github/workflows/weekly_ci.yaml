@@ -28,13 +28,16 @@ jobs:
         python-version: ${{ matrix.python-version }}
 
     - name: Install dependencies
+      shell: bash
       run: |
         make clean && make destroy
         uv venv test-env
         source test-env/bin/activate || source test-env/Scripts/activate
+        uv pip install "pyg-lib>=0.6,<1.0"
         uv pip install --no-build-isolation hypertorch
 
     - name: Run examples
+      shell: bash
       run: |
         source test-env/bin/activate || source test-env/Scripts/activate
         ./run_examples.sh 2>&1 | tee run_examples_out.txt
