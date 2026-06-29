@@ -40,12 +40,38 @@ jobs:
       shell: bash
       run: |
         source test-env/bin/activate || source test-env/Scripts/activate
-        ./scripts/run_examples.sh 2>&1 | tee run_examples_out.txt
 
-        if grep -q "^The following examples failed:" run_examples_out.txt; then
-          echo "===== Example failures detected ====="
-          sed -n '/^The following examples failed:/,$p' run_examples_out.txt
-          exit 1
+        script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+        repo_root="$(cd "${script_dir}/.." && pwd)"
+
+        cd "${repo_root}" || exit 1
+
+        examples=(examples/**/*.py)
+
+        if [[ ${#examples[@]} -eq 0 || ! -e "${examples[0]}" ]]; then
+            echo "No Python examples found under examples/." >&2
+            exit 1
+        fi
+
+        failed_examples=()
+
+        for example in "${examples[@]}"; do
+            echo "=== ${example} ==="
+            if uv run "${example}"; then
+                echo "=== Passed ${example} ==="
+            else
+                status=$?
+                echo "=== Failed ${example} with exit code ${status} ===" >&2
+                failed_examples+=("${example}")
+            fi
+        done
+
+        if ((${#failed_examples[@]} > 0)); then
+            echo "The following examples failed:" >&2
+            for example in "${failed_examples[@]}"; do
+                echo "  - ${example}" >&2
+            done
+            exit 1
         fi
 
   test-ubuntu:
