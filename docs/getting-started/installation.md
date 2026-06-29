@@ -20,7 +20,6 @@ uv init
 source test-env/bin/activate || source test-env/Scripts/activate
 
 # install desired torch
-# on macos
 uv pip install torch --index-url https://download.pytorch.org/whl/cpu
 # install desired pyg-lib 
 uv pip install pyg-lib --find-links https://data.pyg.org/whl/torch-2.12.0+cpu.html
