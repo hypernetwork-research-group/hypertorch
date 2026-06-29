@@ -110,11 +110,11 @@ jobs:
     - name: Install dependencies
       shell: bash
       run: |
-          make clean && make destroy
           uv venv
-          uv pip install --system "torch>=2.12,<3.0" --index-url https://download.pytorch.org/whl/cpu
-          uv pip install --system pyg-lib --find-links https://data.pyg.org/whl/torch-2.12.0+cpu.html
-          uv pip install --system hypertorch
+          .\.venv\Scripts\activate
+          uv pip install "torch>=2.12,<3.0" --index-url https://download.pytorch.org/whl/cpu
+          uv pip install pyg-lib --find-links https://data.pyg.org/whl/torch-2.12.0+cpu.html
+          uv pip install hypertorch
           uv run examples/hyperlink_prediction/gcn.py
           uv run bash ./scripts/run_examples.sh 2>&1 | tee run_examples_out.txt
 
