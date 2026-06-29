@@ -18,7 +18,7 @@ failed_examples=()
 
 for example in "${examples[@]}"; do
     echo "=== ${example} ==="
-    if uv run "${example}"; then
+    if uv run python "${example}"; then
         echo "=== Passed ${example} ==="
     else
         status=$?
