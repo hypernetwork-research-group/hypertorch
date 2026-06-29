@@ -30,12 +30,12 @@ jobs:
     - name: Install dependencies
       shell: bash
       run: |
-        make clean && make destroy
-        uv venv test-env
-        source test-env/bin/activate || source test-env/Scripts/activate
-        uv pip install torch
-        uv pip install pyg-lib
-        uv pip install hypertorch
+          make clean && make destroy
+          uv venv test-env
+          source test-env/bin/activate || source test-env/Scripts/activate
+          uv pip install torch --index-url https://download.pytorch.org/whl/cpu
+          uv pip install pyg-lib --index-url https://data.pyg.org/whl/torch-2.12.0+cpu.html
+          uv pip install hypertorch
 
     - name: Run examples
       shell: bash
