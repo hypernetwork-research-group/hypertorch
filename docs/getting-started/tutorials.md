@@ -38,6 +38,7 @@ scripts along with a brief description.
 | [villain.py](https://github.com/hypernetwork-research-group/hypertorch/blob/main/examples/hyperlink_prediction/villain.py) | VilLain HLP pipeline on `CoraDataset` (negative sampling) | `make run examples/hyperlink_prediction/villain.py` |
 | **Node classification models** |  |  |
 | [hgnn.py](https://github.com/hypernetwork-research-group/hypertorch/blob/main/examples/node_classification/hgnn.py) | HGNN NC pipeline on `AlgebraDataset` (LPE enricher) | `make run examples/node_classification/hgnn.py` |
+| [hnhn.py](https://github.com/hypernetwork-research-group/hypertorch/blob/main/examples/node_classification/hnhn.py) | HNHN NC pipeline on `AlgebraDataset` (LPE enricher) | `make run examples/node_classification/hnhn.py` |
 | [hgnnp.py](https://github.com/hypernetwork-research-group/hypertorch/blob/main/examples/node_classification/hgnnp.py) | HGNNP NC pipeline on `AlgebraDataset` (LPE enricher) | `make run examples/node_classification/hgnnp.py` |
 | [hypergcn.py](https://github.com/hypernetwork-research-group/hypertorch/blob/main/examples/node_classification/hypergcn.py) | HyperGCN NC pipeline on `AlgebraDataset` (LPE enricher) | `make run examples/node_classification/hypergcn.py` |
 | [mlp.py](https://github.com/hypernetwork-research-group/hypertorch/blob/main/examples/node_classification/mlp.py) | MLP NC pipeline on `AlgebraDataset` (LPE enricher) | `make run examples/node_classification/mlp.py` |
