@@ -29,6 +29,7 @@ Supported models include:
 Supported models include:
 
 - `HGNN`.
+- `HGNNP`.
 - `HyperGCN`.
 - `MLP`.
 

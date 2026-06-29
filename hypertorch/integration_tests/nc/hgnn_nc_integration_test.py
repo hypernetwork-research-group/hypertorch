@@ -27,7 +27,7 @@ NUM_FEATURES = 8
         pytest.param(SamplingStrategyEnum.NODE, True, 1, id="node_full"),
     ],
 )
-def test_model_hgnn_nc(tmp_path, sampling_strategy, full, batch_size, request):
+def test_model_hgnn(tmp_path, sampling_strategy, full, batch_size, request):
     test_id = request.node.callspec.id
     num_features = NUM_FEATURES
     metrics = nc_metrics(num_classes=NUM_CLASSES)

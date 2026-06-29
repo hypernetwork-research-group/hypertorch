@@ -5,7 +5,7 @@ from hypertorch.data import (
     DataLoader,
     LaplacianPositionalEncodingEnricher,
 )
-from hypertorch.nc import HGNNNcModule
+from hypertorch.nc import HGNNPNcModule
 from hypertorch.train import MultiModelTrainer
 from hypertorch.types import ModelConfig
 from hypertorch.utils import node_labels_from_node_degrees
@@ -74,7 +74,7 @@ if __name__ == "__main__":
         persistent_workers=True,
     )
 
-    model = HGNNNcModule(
+    model = HGNNPNcModule(
         classifier_config={
             "in_channels": num_features,
             "out_channels": num_classes,
@@ -86,7 +86,7 @@ if __name__ == "__main__":
 
     configs = [
         ModelConfig(
-            name="hgnn",
+            name="hgnnp",
             version="node-classification",
             model=model,
             train_dataloader=train_loader,
