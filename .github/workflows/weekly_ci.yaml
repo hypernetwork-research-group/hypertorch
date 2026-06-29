@@ -111,7 +111,7 @@ jobs:
       shell: bash
       run: |
           uv venv
-          source .venv/Scripts/activate  # Use forward slashes and 'source' in bash
+          source .venv/Scripts/activate
           uv pip install "torch>=2.12,<3.0" --index-url https://download.pytorch.org/whl/cpu
           uv pip install pyg-lib --find-links https://data.pyg.org/whl/torch-2.12.0+cpu.html
           uv pip install hypertorch
