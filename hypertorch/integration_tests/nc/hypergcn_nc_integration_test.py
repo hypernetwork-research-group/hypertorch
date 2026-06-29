@@ -30,6 +30,7 @@ NUM_FEATURES = 8
 )
 def test_model_hypergcn_with_mediator(tmp_path, sampling_strategy, full, batch_size, request):
     test_id = request.node.callspec.id
+    num_features = NUM_FEATURES
     metrics = nc_metrics(num_classes=NUM_CLASSES)
 
     train_dataset, val_dataset, test_dataset = split_dataset(
@@ -38,7 +39,7 @@ def test_model_hypergcn_with_mediator(tmp_path, sampling_strategy, full, batch_s
         num_classes=NUM_CLASSES,
     )
 
-    enrich_datasets(train_dataset, val_dataset, test_dataset, num_features=NUM_FEATURES)
+    enrich_datasets(train_dataset, val_dataset, test_dataset, num_features=num_features)
 
     train_loader, val_loader, test_loader = loaders(
         train_dataset, val_dataset, test_dataset, batch_size=batch_size, sample_full_hypergraph=full
@@ -46,7 +47,7 @@ def test_model_hypergcn_with_mediator(tmp_path, sampling_strategy, full, batch_s
 
     hypergcn_nc_module = HyperGCNNcModule(
         classifier_config={
-            "in_channels": NUM_FEATURES,
+            "in_channels": num_features,
             "out_channels": NUM_CLASSES,
             "hidden_channels": 8,
             "drop_rate": 0.3,
@@ -93,6 +94,7 @@ def test_model_hypergcn_with_mediator(tmp_path, sampling_strategy, full, batch_s
 )
 def test_model_hypergcn_no_mediator(tmp_path, sampling_strategy, full, batch_size, request):
     test_id = request.node.callspec.id
+    num_features = NUM_FEATURES
     metrics = nc_metrics(num_classes=NUM_CLASSES)
 
     train_dataset, val_dataset, test_dataset = split_dataset(
@@ -101,7 +103,7 @@ def test_model_hypergcn_no_mediator(tmp_path, sampling_strategy, full, batch_siz
         num_classes=NUM_CLASSES,
     )
 
-    enrich_datasets(train_dataset, val_dataset, test_dataset, num_features=NUM_FEATURES)
+    enrich_datasets(train_dataset, val_dataset, test_dataset, num_features=num_features)
 
     train_loader, val_loader, test_loader = loaders(
         train_dataset, val_dataset, test_dataset, batch_size=batch_size, sample_full_hypergraph=full
@@ -109,7 +111,7 @@ def test_model_hypergcn_no_mediator(tmp_path, sampling_strategy, full, batch_siz
 
     hypergcn_nc_module = HyperGCNNcModule(
         classifier_config={
-            "in_channels": NUM_FEATURES,
+            "in_channels": num_features,
             "out_channels": NUM_CLASSES,
             "hidden_channels": 8,
             "drop_rate": 0.3,

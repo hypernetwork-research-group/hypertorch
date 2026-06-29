@@ -109,7 +109,7 @@ if __name__ == "__main__":
     )
     val_loader = DataLoader(
         val_dataset,
-        sample_full_hypergraph=True,
+        batch_size=128,
         shuffle=False,
         num_workers=num_workers,
         persistent_workers=True,

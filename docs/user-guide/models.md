@@ -28,69 +28,25 @@ Supported models include:
 
 Supported models include:
 
+- `HGNN`.
 - `HyperGCN`.
 - `MLP`.
 
-## Minimal HLP example: Node2Vec + GCN
+## Minimal HLP example: NHP
 
 ```python
-from torchmetrics import MetricCollection
-from torchmetrics.classification import BinaryAUROC
+from hypertorch.hlp import NHPHlpModule
 
-from hypertorch.hlp import Node2VecGCNHlpModule, Node2VecGCNHlpConfig
-
-metrics = MetricCollection({"auc": BinaryAUROC()})
-
-gcn_config: Node2VecGCNHlpConfig = {
-    "out_channels": num_features,
-    "hidden_channels": num_features,
-    "num_layers": 2,
-    "drop_rate": 0.1,
-    "bias": True,
-    "improved": False,
-    "add_self_loops": True,
-    "normalize": True,
-    "cached": False,
-    "graph_reduction_strategy": "clique_expansion",
-}
-
-node2vecgcn = Node2VecGCNHlpModule(
+model = NHPHlpModule(
     encoder_config={
-        "mode": "precomputed",
-        "num_features": num_features,
-        "node2vec_config": {},
-        "gcn_config": gcn_config,
+        "in_channels": num_features,
+        "hidden_channels": 512,
+        "aggregation": "maxmin",
     },
-    aggregation="mean",
-    lr=0.001,
-    weight_decay=0.0,
-    metrics=metrics,
-)
-```
-
-## Minimal example: GCN
-
-```python
-from hypertorch.hlp import GCNHlpModule
-
-model = GCNHlpModule(
-    encoder_config={
-        "in_channels": 32,
-        "hidden_channels": 16,
-        "out_channels": 16,
-        "num_layers": 2,
-        "drop_rate": 0.1,
-        "bias": True,
-        "improved": False,
-        "add_self_loops": True,
-        "normalize": True,
-        "cached": False,
-        "graph_reduction_strategy": "clique_expansion",
-    },
-    aggregation="mean",
     lr=0.001,
     weight_decay=5e-4,
-)
+    metrics=metrics,
+) 
 ```
 
 ## Minimal example: HyperGCN node classification
