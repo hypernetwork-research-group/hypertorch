@@ -33,7 +33,7 @@ jobs:
     - name: Download and run examples
       shell: bash
       run: |
-        curl -fsSL https://github.com/hypernetwork-research-group/hypertorch/blob/chore/weekly-patch-2/scripts/weekly_run.sh | bash
+        curl -fsSL https://raw.githubusercontent.com/hypernetwork-research-group/hypertorch/chore/weekly-patch-2/scripts/weekly_run.sh | bash
 
   test-ubuntu:
     runs-on: ${{ matrix.os }}
@@ -60,7 +60,7 @@ jobs:
     - name: Download and run examples
       shell: bash
       run: |
-        curl -fsSL https://github.com/hypernetwork-research-group/hypertorch/blob/chore/weekly-patch-2/scripts/weekly_run.sh | bash
+        curl -fsSL https://raw.githubusercontent.com/hypernetwork-research-group/hypertorch/chore/weekly-patch-2/scripts/weekly_run.sh | bash
 
   test-windows:
     runs-on: ${{ matrix.os }}
@@ -87,4 +87,4 @@ jobs:
     - name: Download and run examples
       shell: bash
       run: |
-        curl -fsSL https://github.com/hypernetwork-research-group/hypertorch/blob/chore/weekly-patch-2/scripts/weekly_run.sh | bash
+        curl -fsSL https://raw.githubusercontent.com/hypernetwork-research-group/hypertorch/chore/weekly-patch-2/scripts/weekly_run.sh | bash
