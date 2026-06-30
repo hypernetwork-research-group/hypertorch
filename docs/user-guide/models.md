@@ -30,6 +30,7 @@ Supported models include:
 
 - `HGNN`.
 - `HGNNP`.
+- `HNHN`.
 - `HyperGCN`.
 - `MLP`.
 
