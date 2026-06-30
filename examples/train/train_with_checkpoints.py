@@ -133,8 +133,6 @@ if __name__ == "__main__":
         accelerator="auto",
         log_every_n_steps=10,
         enable_checkpointing=True,
-        auto_start_tensorboard=True,
-        auto_wait=True,
     ) as trainer:
         trainer.fit_all(verbose=True)
         checkpoint_path = last_checkpoint_path(train_config)

@@ -1607,8 +1607,6 @@ def test_finalize_calls_wait_when_auto_wait_true(
         mock_model_configs,
         default_root_dir=str(tmp_path),
         experiment_name="experiment_0",
-        auto_start_tensorboard=True,
-        auto_wait=True,
     )
     trainer.finalize()
 
