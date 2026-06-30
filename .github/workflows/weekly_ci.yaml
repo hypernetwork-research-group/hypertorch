@@ -33,7 +33,6 @@ jobs:
     - name: Download and run examples
       shell: bash
       run: |
-        # TODO: move to main script when merged
         curl -fsSL https://github.com/hypernetwork-research-group/hypertorch/blob/chore/weekly-patch-2/scripts/weekly_run.sh | bash
 
   test-ubuntu:
@@ -61,7 +60,6 @@ jobs:
     - name: Download and run examples
       shell: bash
       run: |
-        # TODO: move to main script when merged
         curl -fsSL https://github.com/hypernetwork-research-group/hypertorch/blob/chore/weekly-patch-2/scripts/weekly_run.sh | bash
 
   test-windows:
@@ -89,5 +87,4 @@ jobs:
     - name: Download and run examples
       shell: bash
       run: |
-        # TODO: move to main script when merged
         curl -fsSL https://github.com/hypernetwork-research-group/hypertorch/blob/chore/weekly-patch-2/scripts/weekly_run.sh | bash
