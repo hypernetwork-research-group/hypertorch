@@ -88,21 +88,21 @@ if __name__ == "__main__":
 
     print("Creating dataloaders...")
 
-    train_loader_full_hypergraph = DataLoader(
+    train_loader = DataLoader(
         train_dataset,
         batch_size=64,
         shuffle=False,
         num_workers=num_workers,
         persistent_workers=True,
     )
-    val_loader_full_hypergraph = DataLoader(
+    val_loader = DataLoader(
         val_dataset,
         batch_size=64,
         shuffle=False,
         num_workers=num_workers,
         persistent_workers=True,
     )
-    test_loader_full_hypergraph = DataLoader(
+    test_loader = DataLoader(
         test_dataset,
         sample_full_hypergraph=True,
         shuffle=False,
@@ -110,7 +110,7 @@ if __name__ == "__main__":
         persistent_workers=True,
     )
 
-    mean_hgnn_module = HGNNHlpModule(
+    model = HGNNHlpModule(
         encoder_config={
             "in_channels": num_features,
             "hidden_channels": 16,
@@ -128,11 +128,11 @@ if __name__ == "__main__":
     configs = [
         ModelConfig(
             name="hgnn",
-            version="mean",
-            model=mean_hgnn_module,
-            train_dataloader=train_loader_full_hypergraph,
-            val_dataloader=val_loader_full_hypergraph,
-            test_dataloader=test_loader_full_hypergraph,
+            version="hyperlink-prediction",
+            model=model,
+            train_dataloader=train_loader,
+            val_dataloader=val_loader,
+            test_dataloader=test_loader,
         ),
     ]
 
@@ -150,10 +150,10 @@ if __name__ == "__main__":
         test_devices=1,
     ) as trainer:
         trainer.fit_all(
-            train_dataloader=train_loader_full_hypergraph,
-            val_dataloader=val_loader_full_hypergraph,
+            train_dataloader=train_loader,
+            val_dataloader=val_loader,
             verbose=True,
         )
-        trainer.test_all(dataloader=test_loader_full_hypergraph, verbose=True)
+        trainer.test_all(dataloader=test_loader, verbose=True)
 
     print("Complete!")

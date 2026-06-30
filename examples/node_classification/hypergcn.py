@@ -102,16 +102,16 @@ if __name__ == "__main__":
 
     configs = [
         ModelConfig(
-            name="hypergcn",
-            version="mean-no-mediator",
+            name="hypergcn-no-mediator",
+            version="node-classification",
             model=no_mediator_model,
             train_dataloader=train_loader,
             val_dataloader=val_loader,
             test_dataloader=test_loader,
         ),
         ModelConfig(
-            name="hypergcn",
-            version="mean-with-mediator",
+            name="hypergcn-with-mediator",
+            version="node-classification",
             model=with_mediator_model,
             train_dataloader=train_loader,
             val_dataloader=val_loader,

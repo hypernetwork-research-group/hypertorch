@@ -122,7 +122,7 @@ if __name__ == "__main__":
         persistent_workers=True,
     )
 
-    precomputed_node2vecslp_module = Node2VecSLPHlpModule(
+    node2vecslp_precomputed = Node2VecSLPHlpModule(
         encoder_config={
             "mode": "precomputed",
             "num_features": num_features,
@@ -135,7 +135,7 @@ if __name__ == "__main__":
     )
 
     train_hyperedge_index = train_dataset.hdata.hyperedge_index
-    joint_node2vecslp_module = Node2VecSLPHlpModule(
+    node2vecslp_joint = Node2VecSLPHlpModule(
         encoder_config={
             "mode": "joint",
             "num_features": num_features,
@@ -163,17 +163,17 @@ if __name__ == "__main__":
 
     configs = [
         ModelConfig(
-            name="node2vecslp",
-            version="precomputed",
-            model=precomputed_node2vecslp_module,
+            name="node2vecslp-precomputed",
+            version="hyperlink-prediction",
+            model=node2vecslp_precomputed,
             train_dataloader=train_loader,
             val_dataloader=val_loader,
             test_dataloader=test_loader,
         ),
         ModelConfig(
-            name="node2vecslp",
-            version="joint",
-            model=joint_node2vecslp_module,
+            name="node2vecslp-joint",
+            version="hyperlink-prediction",
+            model=node2vecslp_joint,
             train_dataloader=train_loader,
             val_dataloader=val_loader,
             test_dataloader=test_loader,

@@ -116,7 +116,7 @@ if __name__ == "__main__":
         persistent_workers=True,
     )
 
-    maxmin_nhp_module = NHPHlpModule(
+    model = NHPHlpModule(
         encoder_config={
             "in_channels": num_features,
             "hidden_channels": 512,
@@ -127,30 +127,11 @@ if __name__ == "__main__":
         metrics=metrics,
     )
 
-    mean_nhp_module = NHPHlpModule(
-        encoder_config={
-            "in_channels": num_features,
-            "hidden_channels": 512,
-            "aggregation": "mean",
-        },
-        lr=0.001,
-        weight_decay=5e-4,
-        metrics=metrics,
-    )
-
     configs = [
         ModelConfig(
             name="nhp",
-            version="maxmin",
-            model=maxmin_nhp_module,
-            train_dataloader=train_loader,
-            val_dataloader=val_loader,
-            test_dataloader=test_loader,
-        ),
-        ModelConfig(
-            name="nhp",
-            version="mean",
-            model=mean_nhp_module,
+            version="hyperlink-prediction",
+            model=model,
             train_dataloader=train_loader,
             val_dataloader=val_loader,
             test_dataloader=test_loader,
