@@ -18,22 +18,12 @@ failed_examples=()
 
 for example in "${examples[@]}"; do
     echo "=== ${example} ==="
-    if [[ "$OSTYPE" == "darwin"* || "$OSTYPE" == "linux-gnu"* ]]; then
-        if python3 "${example}"; then
-            echo "=== Passed ${example} ==="
-        else
-            status=$?
-            echo "=== Failed ${example} with exit code ${status} ===" >&2
-            failed_examples+=("${example}")
-        fi
-    else # Windows
-        if uv run python "${example}"; then
-            echo "=== Passed ${example} ==="
-        else
-            status=$?
-            echo "=== Failed ${example} with exit code ${status} ===" >&2
-            failed_examples+=("${example}")
-        fi
+    if make run "${example}"; then
+        echo "=== Passed ${example} ==="
+    else
+        status=$?
+        echo "=== Failed ${example} with exit code ${status} ===" >&2
+        failed_examples+=("${example}")
     fi
 done
 

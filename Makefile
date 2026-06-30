@@ -113,7 +113,7 @@ clean:
 	find . -type f -name "*.pyc" -delete 2>/dev/null || true
 	rm -rf $(PROJECT_NAME).egg-info .$(LINTER)_cache build dist
 	rm -rf .python-version .pytest_cache .coverage
-	rm -rf site docs/site
+	rm -rf site docs/site .cache
 
 destroy: clean
 	@echo '=== Destroying environment ==='
