@@ -12,12 +12,12 @@ At a high level:
 
 Supported models include:
 
-- `MLP`.
 - `GCN`.
 - `HGNN`.
 - `HGNNP`.
 - `HNHN`.
 - `HyperGCN`.
+- `MLP`.
 - `NHP`.
 - `Node2VecGCN`.
 - `Node2VecSLP`.
@@ -28,6 +28,7 @@ Supported models include:
 
 Supported models include:
 
+- `GCN`.
 - `HGNN`.
 - `HGNNP`.
 - `HNHN`.
@@ -48,22 +49,22 @@ model = NHPHlpModule(
     lr=0.001,
     weight_decay=5e-4,
     metrics=metrics,
-) 
+)
 ```
 
-## Minimal example: HyperGCN node classification
+## Minimal example: GCN node classification
 
 ```python
-from hypertorch.nc import HyperGCNNcModule
+from hypertorch.nc import GCNNcModule
 
-model = HyperGCNNcModule(
+model = GCNNcModule(
     classifier_config={
         "in_channels": 32,
         "hidden_channels": 16,
         "out_channels": 3,
-        "drop_rate": 0.5,
-        "use_mediator": False,
-        "fast": False,
+        "num_layers": 2,
+        "drop_rate": 0.3,
+        "graph_reduction_strategy": "clique_expansion",
     },
     lr=0.01,
     weight_decay=5e-4,

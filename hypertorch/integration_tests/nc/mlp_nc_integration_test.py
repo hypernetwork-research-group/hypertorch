@@ -29,7 +29,6 @@ NUM_FEATURES = 8
 )
 def test_model_mlp(tmp_path, sampling_strategy, full, batch_size, request):
     test_id = request.node.callspec.id
-    metrics = nc_metrics(num_classes=NUM_CLASSES)
 
     train_dataset, val_dataset, test_dataset = split_dataset(
         sampling_strategy,
@@ -43,7 +42,7 @@ def test_model_mlp(tmp_path, sampling_strategy, full, batch_size, request):
         train_dataset, val_dataset, test_dataset, batch_size=batch_size, sample_full_hypergraph=full
     )
 
-    mlp_nc_module = MLPNcModule(
+    mlp = MLPNcModule(
         classifier_config={
             "in_channels": NUM_FEATURES,
             "out_channels": NUM_CLASSES,
@@ -51,20 +50,23 @@ def test_model_mlp(tmp_path, sampling_strategy, full, batch_size, request):
             "num_layers": 3,
             "drop_rate": 0.3,
         },
-        metrics=metrics,
+        metrics=nc_metrics(num_classes=NUM_CLASSES),
     )
 
     configs = model_configs_with_single_model(
-        train_loader,
-        val_loader,
-        test_loader,
         name="mlp",
         version="nc",
-        model=mlp_nc_module,
+        model=mlp,
     )
 
-    train_test_loop(configs, path=tmp_path, experiment_name=f"mlp_nc_integration_test_{test_id}")
-
+    train_test_loop(
+        configs=configs,
+        path=tmp_path,
+        experiment_name=f"mlp_nc_integration_test_{test_id}",
+        train_loader=train_loader,
+        val_loader=val_loader,
+        test_loader=test_loader,
+    )
     comparison_path = tmp_path / f"mlp_nc_integration_test_{test_id}" / "comparison"
     assert (comparison_path / "overall.tex").exists()
     assert (comparison_path / "overall.md").exists()

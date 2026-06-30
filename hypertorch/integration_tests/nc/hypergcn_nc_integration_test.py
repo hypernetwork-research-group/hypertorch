@@ -30,8 +30,6 @@ NUM_FEATURES = 8
 )
 def test_model_hypergcn_with_mediator(tmp_path, sampling_strategy, full, batch_size, request):
     test_id = request.node.callspec.id
-    num_features = NUM_FEATURES
-    metrics = nc_metrics(num_classes=NUM_CLASSES)
 
     train_dataset, val_dataset, test_dataset = split_dataset(
         sampling_strategy,
@@ -39,15 +37,15 @@ def test_model_hypergcn_with_mediator(tmp_path, sampling_strategy, full, batch_s
         num_classes=NUM_CLASSES,
     )
 
-    enrich_datasets(train_dataset, val_dataset, test_dataset, num_features=num_features)
+    enrich_datasets(train_dataset, val_dataset, test_dataset, num_features=NUM_FEATURES)
 
     train_loader, val_loader, test_loader = loaders(
         train_dataset, val_dataset, test_dataset, batch_size=batch_size, sample_full_hypergraph=full
     )
 
-    hypergcn_nc_module = HyperGCNNcModule(
+    hypergcn = HyperGCNNcModule(
         classifier_config={
-            "in_channels": num_features,
+            "in_channels": NUM_FEATURES,
             "out_channels": NUM_CLASSES,
             "hidden_channels": 8,
             "drop_rate": 0.3,
@@ -55,20 +53,22 @@ def test_model_hypergcn_with_mediator(tmp_path, sampling_strategy, full, batch_s
             "fast": False,
             "seed": SEED,
         },
-        metrics=metrics,
+        metrics=nc_metrics(num_classes=NUM_CLASSES),
     )
 
     configs = model_configs_with_single_model(
-        train_loader,
-        val_loader,
-        test_loader,
         name="hypergcn",
         version="nc-with-mediator",
-        model=hypergcn_nc_module,
+        model=hypergcn,
     )
 
     train_test_loop(
-        configs, path=tmp_path, experiment_name=f"hypergcn_mediator_nc_integration_{test_id}"
+        configs=configs,
+        path=tmp_path,
+        experiment_name=f"hypergcn_mediator_nc_integration_{test_id}",
+        train_loader=train_loader,
+        val_loader=val_loader,
+        test_loader=test_loader,
     )
 
     comparison_path = tmp_path / f"hypergcn_mediator_nc_integration_{test_id}" / "comparison"
@@ -94,8 +94,6 @@ def test_model_hypergcn_with_mediator(tmp_path, sampling_strategy, full, batch_s
 )
 def test_model_hypergcn_no_mediator(tmp_path, sampling_strategy, full, batch_size, request):
     test_id = request.node.callspec.id
-    num_features = NUM_FEATURES
-    metrics = nc_metrics(num_classes=NUM_CLASSES)
 
     train_dataset, val_dataset, test_dataset = split_dataset(
         sampling_strategy,
@@ -103,15 +101,15 @@ def test_model_hypergcn_no_mediator(tmp_path, sampling_strategy, full, batch_siz
         num_classes=NUM_CLASSES,
     )
 
-    enrich_datasets(train_dataset, val_dataset, test_dataset, num_features=num_features)
+    enrich_datasets(train_dataset, val_dataset, test_dataset, num_features=NUM_FEATURES)
 
     train_loader, val_loader, test_loader = loaders(
         train_dataset, val_dataset, test_dataset, batch_size=batch_size, sample_full_hypergraph=full
     )
 
-    hypergcn_nc_module = HyperGCNNcModule(
+    hypergcn = HyperGCNNcModule(
         classifier_config={
-            "in_channels": num_features,
+            "in_channels": NUM_FEATURES,
             "out_channels": NUM_CLASSES,
             "hidden_channels": 8,
             "drop_rate": 0.3,
@@ -119,20 +117,22 @@ def test_model_hypergcn_no_mediator(tmp_path, sampling_strategy, full, batch_siz
             "fast": False,
             "seed": SEED,
         },
-        metrics=metrics,
+        metrics=nc_metrics(num_classes=NUM_CLASSES),
     )
 
     configs = model_configs_with_single_model(
-        train_loader,
-        val_loader,
-        test_loader,
         name="hypergcn",
         version="nc-no-mediator",
-        model=hypergcn_nc_module,
+        model=hypergcn,
     )
 
     train_test_loop(
-        configs, path=tmp_path, experiment_name=f"hypergcn_no_mediator_nc_integration_{test_id}"
+        configs=configs,
+        path=tmp_path,
+        experiment_name=f"hypergcn_no_mediator_nc_integration_{test_id}",
+        train_loader=train_loader,
+        val_loader=val_loader,
+        test_loader=test_loader,
     )
 
     comparison_path = tmp_path / f"hypergcn_no_mediator_nc_integration_{test_id}" / "comparison"
