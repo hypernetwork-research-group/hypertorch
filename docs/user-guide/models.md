@@ -52,19 +52,18 @@ model = NHPHlpModule(
 )
 ```
 
-## Minimal node classification example: GCN
+## Minimal node classification example: HyperGCN
 
 ```python
-from hypertorch.nc import GCNNcModule
+from hypertorch.nc import HyperGCNNcModule
 
-model = GCNNcModule(
+model = HyperGCNNcModule(
     classifier_config={
         "in_channels": 32,
         "hidden_channels": 16,
         "out_channels": 3,
-        "num_layers": 2,
         "drop_rate": 0.3,
-        "graph_reduction_strategy": "clique_expansion",
+        "use_mediator": False,
     },
     lr=0.01,
     weight_decay=5e-4,
