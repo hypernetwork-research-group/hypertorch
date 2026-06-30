@@ -9,29 +9,7 @@ permissions:
   contents: read
 
 jobs:
-  test-macos:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [macos-latest]
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
-
-    steps:
-    - name: Install uv with Python ${{ matrix.python-version }}
-      uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
-      with:
-        python-version: ${{ matrix.python-version }}
-
-    - name: Download and run examples
-      shell: bash
-      run: |
-        uv venv macos-env
-        source macos-env/bin/activate || source macos-env/Scripts/activate
-        uv pip install "torch>=2.12,<3.0" --index-url https://download.pytorch.org/whl/cpu
-        uv pip install --no-build-isolation hypertorch
-        curl -fsSL https://raw.githubusercontent.com/hypernetwork-research-group/hypertorch/chore/weekly-patch-2/scripts/weekly_run.sh | bash
-
-  test-ubuntu:
+  test-ubuntu-x86:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -54,7 +32,53 @@ jobs:
         uv pip install --no-build-isolation hypertorch
         curl -fsSL https://raw.githubusercontent.com/hypernetwork-research-group/hypertorch/chore/weekly-patch-2/scripts/weekly_run.sh | bash
 
-  test-windows:
+  test-ubuntu-arm:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-24.04-arm]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+
+    steps:
+    - name: Install uv with Python ${{ matrix.python-version }}
+      uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Download and run examples
+      shell: bash
+      run: |
+        uv venv ubuntu-env
+        source ubuntu-env/bin/activate || source ubuntu-env/Scripts/activate
+        uv pip install "torch>=2.11,<2.12" --index-url https://download.pytorch.org/whl/cpu
+        uv pip install torch-cluster --find-links https://data.pyg.org/whl/torch-2.11.0+cpu.html
+        uv pip install --no-build-isolation hypertorch
+        curl -fsSL https://raw.githubusercontent.com/hypernetwork-research-group/hypertorch/chore/weekly-patch-2/scripts/weekly_run.sh | bash
+
+  test-macos-arm:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+
+    steps:
+    - name: Install uv with Python ${{ matrix.python-version }}
+      uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Download and run examples
+      shell: bash
+      run: |
+        uv venv macos-env
+        source macos-env/bin/activate || source macos-env/Scripts/activate
+        uv pip install "torch>=2.12,<3.0" --index-url https://download.pytorch.org/whl/cpu
+        uv pip install pyg-lib --find-links https://data.pyg.org/whl/torch-2.12.0+cpu.html
+        uv pip install --no-build-isolation hypertorch
+        curl -fsSL https://raw.githubusercontent.com/hypernetwork-research-group/hypertorch/chore/weekly-patch-2/scripts/weekly_run.sh | bash
+
+  test-windows-x86:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
