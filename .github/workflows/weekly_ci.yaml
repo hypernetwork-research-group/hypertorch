@@ -22,17 +22,13 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Install dependencies
+    - name: Download and run examples
       shell: bash
       run: |
         uv venv macos-env
         source macos-env/bin/activate || source macos-env/Scripts/activate
         uv pip install "torch>=2.12,<3.0" --index-url https://download.pytorch.org/whl/cpu
         uv pip install --no-build-isolation hypertorch
-
-    - name: Download and run examples
-      shell: bash
-      run: |
         curl -fsSL https://raw.githubusercontent.com/hypernetwork-research-group/hypertorch/chore/weekly-patch-2/scripts/weekly_run.sh | bash
 
   test-ubuntu:
@@ -48,7 +44,7 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Install dependencies
+    - name: Download and run examples
       shell: bash
       run: |
         uv venv ubuntu-env
@@ -56,10 +52,6 @@ jobs:
         uv pip install "torch>=2.12,<3.0" --index-url https://download.pytorch.org/whl/cpu
         uv pip install pyg-lib --find-links https://data.pyg.org/whl/torch-2.12.0+cpu.html
         uv pip install --no-build-isolation hypertorch
-
-    - name: Download and run examples
-      shell: bash
-      run: |
         curl -fsSL https://raw.githubusercontent.com/hypernetwork-research-group/hypertorch/chore/weekly-patch-2/scripts/weekly_run.sh | bash
 
   test-windows:
@@ -75,7 +67,7 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Install dependencies
+    - name: Download and run examples
       shell: bash
       run: |
         uv venv windows-env
@@ -83,8 +75,4 @@ jobs:
         uv pip install "torch>=2.12,<3.0" --index-url https://download.pytorch.org/whl/cpu
         uv pip install pyg-lib --find-links https://data.pyg.org/whl/torch-2.12.0+cpu.html
         uv pip install hypertorch
-
-    - name: Download and run examples
-      shell: bash
-      run: |
         curl -fsSL https://raw.githubusercontent.com/hypernetwork-research-group/hypertorch/chore/weekly-patch-2/scripts/weekly_run.sh | bash
