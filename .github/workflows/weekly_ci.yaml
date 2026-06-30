@@ -17,10 +17,6 @@ jobs:
         python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
 
     steps:
-    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
-      with:
-        persist-credentials: false
-
     - name: Install uv with Python ${{ matrix.python-version }}
       uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
       with:
@@ -29,16 +25,15 @@ jobs:
     - name: Install dependencies
       shell: bash
       run: |
-        make clean && make destroy
-        uv venv test-env
-        source test-env/bin/activate || source test-env/Scripts/activate
-        uv pip install torch --index-url https://download.pytorch.org/whl/cpu
+        uv venv macos-env
+        source macos-env/bin/activate || source macos-env/Scripts/activate
+        uv pip install "torch>=2.12,<3.0" --index-url https://download.pytorch.org/whl/cpu
         uv pip install --no-build-isolation hypertorch
 
     - name: Run examples
       shell: bash
       run: |
-        source test-env/bin/activate || source test-env/Scripts/activate
+        source macos-env/bin/activate || source macos-env/Scripts/activate
 
         ./scripts/run_examples.sh 2>&1 | tee run_examples_out.txt
 
@@ -56,10 +51,6 @@ jobs:
         python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
 
     steps:
-    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
-      with:
-        persist-credentials: false
-
     - name: Install uv with Python ${{ matrix.python-version }}
       uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
       with:
@@ -68,9 +59,8 @@ jobs:
     - name: Install dependencies
       shell: bash
       run: |
-        make clean && make destroy
-        uv venv test-env
-        source test-env/bin/activate || source test-env/Scripts/activate
+        uv venv ubuntu-env
+        source ubuntu-env/bin/activate || source ubuntu-env/Scripts/activate
         uv pip install "torch>=2.12,<3.0" --index-url https://download.pytorch.org/whl/cpu
         uv pip install pyg-lib --find-links https://data.pyg.org/whl/torch-2.12.0+cpu.html
         uv pip install --no-build-isolation hypertorch
@@ -78,7 +68,7 @@ jobs:
     - name: Run examples
       shell: bash
       run: |
-        source test-env/bin/activate || source test-env/Scripts/activate
+        source ubuntu-env/bin/activate || source ubuntu-env/Scripts/activate
         ./scripts/run_examples.sh 2>&1 | tee run_examples_out.txt
 
         if grep -q "^The following examples failed:" run_examples_out.txt; then
@@ -95,10 +85,6 @@ jobs:
         python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
 
     steps:
-    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
-      with:
-        persist-credentials: false
-
     - name: Install uv with Python ${{ matrix.python-version }}
       uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
       with:
@@ -107,8 +93,8 @@ jobs:
     - name: Install dependencies
       shell: bash
       run: |
-        uv venv
-        source .venv/Scripts/activate
+        uv venv windows-env
+        source windows-env/Scripts/activate
         uv pip install "torch>=2.12,<3.0" --index-url https://download.pytorch.org/whl/cpu
         uv pip install pyg-lib --find-links https://data.pyg.org/whl/torch-2.12.0+cpu.html
         uv pip install hypertorch
