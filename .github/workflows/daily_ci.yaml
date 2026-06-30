@@ -27,7 +27,6 @@ jobs:
         make build
 
     - name: Check docstrings
-      continue-on-error: true   # TODO: remove when all docstring issues are fixed
       run: |
         make docstring-check
 
