@@ -4,6 +4,7 @@ from hypertorch.hlp import CommonNeighborsHlpModule
 from hypertorch.types import ModelConfig
 from hypertorch.data import RandomNegativeSampler, SamplingStrategyEnum
 from hypertorch.integration_tests.common import (
+    SEED,
     hlp_metrics,
     loaders,
     train_test_loop,
@@ -34,7 +35,7 @@ def test_model_common_neighbors(tmp_path, sampling_strategy, full, batch_size, r
         num_negative_samples=int(test_dataset.hdata.num_hyperedges * 0.6),
         num_nodes_per_sample=int(test_dataset.stats()["avg_degree_hyperedge"]),
     )
-    test_dataset = test_dataset.add_negative_samples(negative_sampler, seed=42)
+    test_dataset = test_dataset.add_negative_samples(negative_sampler, seed=SEED)
 
     enrich_datasets(train_dataset, val_dataset, test_dataset, num_features=NUM_FEATURES)
 
