@@ -86,7 +86,6 @@ if __name__ == "__main__":
         model_configs=configs,
         max_epochs=0,
         accelerator="auto",
-        log_every_n_steps=10,
         enable_checkpointing=False,
         devices=1,
         test_devices=1,
