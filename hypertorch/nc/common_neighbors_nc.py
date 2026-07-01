@@ -55,7 +55,6 @@ class CommonNeighborsNcModule(NcModule):
             metrics: Optional metric collection for evaluation. Defaults to ``None``.
             metrics_log_kwargs: Additional keyword arguments passed to metric log calls.
                 Defaults to ``None``.
-
         """
         super().__init__(
             classifier=classifier
