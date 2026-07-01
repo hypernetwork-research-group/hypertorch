@@ -1,5 +1,5 @@
 .PHONY: all release build setup setup-tensorboard clean destroy\
-		package \
+		package validate-package \
 		test stest i-test si-test run \
 		check format typecheck lint lint-fix lint-rule lint-rule-fix \
 		docs docs-build docs-serve \
@@ -23,7 +23,12 @@ build: clean setup
 
 package:
 	@echo '=== Building package ==='
-	$(UV) build -o dist
+	$(UV) build --no-sources --out-dir dist
+
+validate-package:
+	@echo '=== Validating package ==='
+	$(UV) run --with $(PROJECT_NAME) --no-project --refresh-package $(PROJECT_NAME) \
+		-- python -c "import $(PROJECT_NAME); print('\033[1;32mPackage validation successful!\033[0m')"
 
 setup:
 	@echo '=== Setup ==='
@@ -113,7 +118,7 @@ clean:
 	find . -type f -name "*.pyc" -delete 2>/dev/null || true
 	rm -rf $(PROJECT_NAME).egg-info .$(LINTER)_cache build dist
 	rm -rf .python-version .pytest_cache .coverage
-	rm -rf site docs/site
+	rm -rf site docs/site .cache
 
 destroy: clean
 	@echo '=== Destroying environment ==='
@@ -128,6 +133,7 @@ help:
 	@echo "  setup                   - Install dependencies"
 	@echo "  setup-tensorboard       - Install optional TensorBoard dependency"
 	@echo "  package                 - Build the package"
+	@echo "  validate-package        - Validate the built package"
 	@echo "  check                   - Run lint and typecheck"
 	@echo "  format                  - Run formatting"
 	@echo "  typecheck               - Run type checking"

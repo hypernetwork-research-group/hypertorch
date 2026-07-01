@@ -16,6 +16,15 @@ After installing uv, you can create a project environment and add HyperTorch wit
 
 ```bash
 uv init
+
+source test-env/bin/activate || source test-env/Scripts/activate
+
+# install desired torch
+uv pip install torch --index-url https://download.pytorch.org/whl/cpu
+# install desired pyg-lib 
+uv pip install pyg-lib --find-links https://data.pyg.org/whl/torch-2.12.0+cpu.html
+
+
 uv add hypertorch # or uv pip install hypertorch
 
 # For optional dependencies
