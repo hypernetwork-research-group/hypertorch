@@ -8,33 +8,34 @@ At a high level:
 - `hypertorch.models.*` contains actual models like Node2Vec, GCN, etc.
 - `hypertorch.nn.*` contains layers, enrichers, aggregators, and losses.
 
-## Built-in HLP modules
+## Built-in hyperlink prediction modules
 
 Supported models include:
 
-- `MLP`.
 - `GCN`.
 - `HGNN`.
 - `HGNNP`.
 - `HNHN`.
 - `HyperGCN`.
+- `MLP`.
 - `NHP`.
 - `Node2VecGCN`.
 - `Node2VecSLP`.
 - `CommonNeighbors` (non-trainable baseline).
 - `VilLain`.
 
-## Built-in NC modules
+## Built-in node classification modules
 
 Supported models include:
 
+- `GCN`.
 - `HGNN`.
 - `HGNNP`.
 - `HNHN`.
 - `HyperGCN`.
 - `MLP`.
 
-## Minimal HLP example: NHP
+## Minimal hyperlink prediction example: NHP
 
 ```python
 from hypertorch.hlp import NHPHlpModule
@@ -48,10 +49,10 @@ model = NHPHlpModule(
     lr=0.001,
     weight_decay=5e-4,
     metrics=metrics,
-) 
+)
 ```
 
-## Minimal example: HyperGCN node classification
+## Minimal node classification example: HyperGCN
 
 ```python
 from hypertorch.nc import HyperGCNNcModule
@@ -61,9 +62,8 @@ model = HyperGCNNcModule(
         "in_channels": 32,
         "hidden_channels": 16,
         "out_channels": 3,
-        "drop_rate": 0.5,
+        "drop_rate": 0.3,
         "use_mediator": False,
-        "fast": False,
     },
     lr=0.01,
     weight_decay=5e-4,

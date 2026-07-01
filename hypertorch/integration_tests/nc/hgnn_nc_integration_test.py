@@ -29,8 +29,6 @@ NUM_FEATURES = 8
 )
 def test_model_hgnn(tmp_path, sampling_strategy, full, batch_size, request):
     test_id = request.node.callspec.id
-    num_features = NUM_FEATURES
-    metrics = nc_metrics(num_classes=NUM_CLASSES)
 
     train_dataset, val_dataset, test_dataset = split_dataset(
         sampling_strategy,
@@ -38,15 +36,15 @@ def test_model_hgnn(tmp_path, sampling_strategy, full, batch_size, request):
         num_classes=NUM_CLASSES,
     )
 
-    enrich_datasets(train_dataset, val_dataset, test_dataset, num_features=num_features)
+    enrich_datasets(train_dataset, val_dataset, test_dataset, num_features=NUM_FEATURES)
 
     train_loader, val_loader, test_loader = loaders(
         train_dataset, val_dataset, test_dataset, batch_size=batch_size, sample_full_hypergraph=full
     )
 
-    hgnn_module = HGNNNcModule(
+    hgnn = HGNNNcModule(
         classifier_config={
-            "in_channels": num_features,
+            "in_channels": NUM_FEATURES,
             "hidden_channels": 8,
             "out_channels": NUM_CLASSES,
             "bias": True,
@@ -55,19 +53,23 @@ def test_model_hgnn(tmp_path, sampling_strategy, full, batch_size, request):
         },
         lr=0.001,
         weight_decay=5e-4,
-        metrics=metrics,
+        metrics=nc_metrics(num_classes=NUM_CLASSES),
     )
 
     configs = model_configs_with_single_model(
-        train_loader,
-        val_loader,
-        test_loader,
         name="hgnn",
         version="nc",
-        model=hgnn_module,
+        model=hgnn,
     )
 
-    train_test_loop(configs, path=tmp_path, experiment_name=f"hgnn_nc_integration_test_{test_id}")
+    train_test_loop(
+        configs=configs,
+        path=tmp_path,
+        experiment_name=f"hgnn_nc_integration_test_{test_id}",
+        train_loader=train_loader,
+        val_loader=val_loader,
+        test_loader=test_loader,
+    )
 
     assert (
         tmp_path / f"hgnn_nc_integration_test_{test_id}" / "comparison" / "overall.tex"

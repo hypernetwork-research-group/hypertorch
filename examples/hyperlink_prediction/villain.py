@@ -86,7 +86,7 @@ if __name__ == "__main__":
         persistent_workers=True,
     )
 
-    node_villain_module = VilLainHlpModule(
+    villain_node = VilLainHlpModule(
         encoder_config={
             "embedding_dim": 128,
             "labels_per_subspace": 8,
@@ -105,7 +105,7 @@ if __name__ == "__main__":
         metrics=metrics,
     )
 
-    hyperedge_villain_module = VilLainHlpModule(
+    villain_hyperedge = VilLainHlpModule(
         encoder_config={
             "embedding_dim": 128,
             "labels_per_subspace": 8,
@@ -125,17 +125,17 @@ if __name__ == "__main__":
 
     configs = [
         ModelConfig(
-            name="villain",
-            version="node_maxmin",
-            model=node_villain_module,
+            name="villain-node",
+            version="hyperlink-prediction",
+            model=villain_node,
             train_dataloader=train_loader,
             val_dataloader=val_loader,
             test_dataloader=test_loader,
         ),
         ModelConfig(
-            name="villain",
-            version="hyperedge",
-            model=hyperedge_villain_module,
+            name="villain-hyperedge",
+            version="hyperlink-prediction",
+            model=villain_hyperedge,
             train_dataloader=train_loader,
             val_dataloader=val_loader,
             test_dataloader=test_loader,

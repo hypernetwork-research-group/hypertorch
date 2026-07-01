@@ -67,7 +67,7 @@ if __name__ == "__main__":
         persistent_workers=True,
     )
 
-    mean_cn_module = CommonNeighborsHlpModule(
+    model = CommonNeighborsHlpModule(
         train_hyperedge_index=train_hyperedge_index,
         aggregation="mean",
         metrics=metrics,
@@ -75,9 +75,9 @@ if __name__ == "__main__":
 
     configs = [
         ModelConfig(
-            name="common_neighbors",
-            version="mean",
-            model=mean_cn_module,
+            name="common-neighbors",
+            version="hyperlink-prediction",
+            model=model,
             is_trainable=False,
             test_dataloader=test_loader,
         ),

@@ -217,12 +217,12 @@ def loaders(
 
 
 def model_configs_with_single_model(
-    train_loader: DataLoader,
-    val_loader: DataLoader,
-    tests_loader: DataLoader,
     name: str,
     version: str,
     model: L.LightningModule,
+    train_loader: DataLoader | None = None,
+    val_loader: DataLoader | None = None,
+    tests_loader: DataLoader | None = None,
     is_trainable: bool = True,
 ) -> list[ModelConfig]:
     configs = [

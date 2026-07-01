@@ -110,7 +110,7 @@ if __name__ == "__main__":
         persistent_workers=True,
     )
 
-    mean_mlp_module = MLPHlpModule(
+    model = MLPHlpModule(
         encoder_config={
             "in_channels": num_features,
             "out_channels": num_features,
@@ -125,8 +125,8 @@ if __name__ == "__main__":
     configs = [
         ModelConfig(
             name="mlp",
-            version="mean",
-            model=mean_mlp_module,
+            version="hyperlink-prediction",
+            model=model,
             train_dataloader=train_loader,
             val_dataloader=val_loader,
             test_dataloader=test_loader,

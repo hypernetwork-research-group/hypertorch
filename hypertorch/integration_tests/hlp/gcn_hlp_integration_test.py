@@ -28,15 +28,12 @@ NUM_FEATURES = 8
 def test_model_gcn(tmp_path, sampling_strategy, full, batch_size, request):
     test_id = request.node.callspec.id
 
-    num_features = NUM_FEATURES
-    metrics = hlp_metrics()
-
     train_dataset, val_dataset, test_dataset = split_dataset(sampling_strategy)
     train_dataset, val_dataset, test_dataset = add_negatives(
         train_dataset, val_dataset, test_dataset
     )
 
-    enrich_datasets(train_dataset, val_dataset, test_dataset, num_features=num_features)
+    enrich_datasets(train_dataset, val_dataset, test_dataset, num_features=NUM_FEATURES)
 
     train_loader, val_loader, test_loader = loaders(
         train_dataset, val_dataset, test_dataset, batch_size=batch_size, sample_full_hypergraph=full
@@ -44,7 +41,7 @@ def test_model_gcn(tmp_path, sampling_strategy, full, batch_size, request):
 
     mean_gcn_module = GCNHlpModule(
         encoder_config={
-            "in_channels": num_features,
+            "in_channels": NUM_FEATURES,
             "hidden_channels": 8,
             "out_channels": 8,
             "num_layers": 2,
@@ -59,25 +56,31 @@ def test_model_gcn(tmp_path, sampling_strategy, full, batch_size, request):
         aggregation="mean",
         lr=0.001,
         weight_decay=5e-4,
-        metrics=metrics,
+        metrics=hlp_metrics(),
     )
 
     configs = model_configs_with_single_model(
-        train_loader,
-        val_loader,
-        test_loader,
         name="gcn",
-        version="mean",
+        version="hlp",
         model=mean_gcn_module,
     )
 
-    train_test_loop(configs, path=tmp_path, experiment_name=f"gcn_integration_test_{test_id}")
+    train_test_loop(
+        configs=configs,
+        path=tmp_path,
+        experiment_name=f"gcn_hlp_integration_test_{test_id}",
+        train_loader=train_loader,
+        val_loader=val_loader,
+        test_loader=test_loader,
+    )
 
-    assert (tmp_path / f"gcn_integration_test_{test_id}" / "comparison" / "overall.tex").exists()
-    assert (tmp_path / f"gcn_integration_test_{test_id}" / "comparison" / "overall.md").exists()
-    assert (tmp_path / f"gcn_integration_test_{test_id}" / "comparison" / "test.tex").exists()
-    assert (tmp_path / f"gcn_integration_test_{test_id}" / "comparison" / "test.md").exists()
-    assert (tmp_path / f"gcn_integration_test_{test_id}" / "comparison" / "train.md").exists()
-    assert (tmp_path / f"gcn_integration_test_{test_id}" / "comparison" / "train.tex").exists()
-    assert (tmp_path / f"gcn_integration_test_{test_id}" / "comparison" / "val.md").exists()
-    assert (tmp_path / f"gcn_integration_test_{test_id}" / "comparison" / "val.tex").exists()
+    assert (
+        tmp_path / f"gcn_hlp_integration_test_{test_id}" / "comparison" / "overall.tex"
+    ).exists()
+    assert (tmp_path / f"gcn_hlp_integration_test_{test_id}" / "comparison" / "overall.md").exists()
+    assert (tmp_path / f"gcn_hlp_integration_test_{test_id}" / "comparison" / "test.tex").exists()
+    assert (tmp_path / f"gcn_hlp_integration_test_{test_id}" / "comparison" / "test.md").exists()
+    assert (tmp_path / f"gcn_hlp_integration_test_{test_id}" / "comparison" / "train.md").exists()
+    assert (tmp_path / f"gcn_hlp_integration_test_{test_id}" / "comparison" / "train.tex").exists()
+    assert (tmp_path / f"gcn_hlp_integration_test_{test_id}" / "comparison" / "val.md").exists()
+    assert (tmp_path / f"gcn_hlp_integration_test_{test_id}" / "comparison" / "val.tex").exists()

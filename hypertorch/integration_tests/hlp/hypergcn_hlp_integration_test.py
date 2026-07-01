@@ -28,23 +28,21 @@ NUM_FEATURES = 8
 )
 def test_model_hypergcn_with_mediator(tmp_path, sampling_strategy, full, batch_size, request):
     test_id = request.node.callspec.id
-    num_features = NUM_FEATURES
-    metrics = hlp_metrics()
 
     train_dataset, val_dataset, test_dataset = split_dataset(sampling_strategy)
     train_dataset, val_dataset, test_dataset = add_negatives(
         train_dataset, val_dataset, test_dataset
     )
 
-    enrich_datasets(train_dataset, val_dataset, test_dataset, num_features=num_features)
+    enrich_datasets(train_dataset, val_dataset, test_dataset, num_features=NUM_FEATURES)
 
     train_loader, val_loader, test_loader = loaders(
         train_dataset, val_dataset, test_dataset, batch_size=batch_size, sample_full_hypergraph=full
     )
 
-    mean_hypergcn_with_mediator_module = HyperGCNHlpModule(
+    hypergcn_with_mediator = HyperGCNHlpModule(
         encoder_config={
-            "in_channels": num_features,
+            "in_channels": NUM_FEATURES,
             "hidden_channels": 8,
             "out_channels": 8,
             "bias": True,
@@ -57,45 +55,50 @@ def test_model_hypergcn_with_mediator(tmp_path, sampling_strategy, full, batch_s
         aggregation="mean",
         lr=0.01,
         weight_decay=5e-4,
-        metrics=metrics,
+        metrics=hlp_metrics(),
     )
 
     configs = model_configs_with_single_model(
-        train_loader,
-        val_loader,
-        test_loader,
         name="hypergcn",
-        version="mean",
-        model=mean_hypergcn_with_mediator_module,
+        version="hlp",
+        model=hypergcn_with_mediator,
     )
 
     train_test_loop(
-        configs, path=tmp_path, experiment_name=f"hypergcn_mediator_integration_test_{test_id}"
+        configs=configs,
+        path=tmp_path,
+        experiment_name=f"hypergcn_mediator_hlp_integration_test_{test_id}",
+        train_loader=train_loader,
+        val_loader=val_loader,
+        test_loader=test_loader,
     )
 
     assert (
-        tmp_path / f"hypergcn_mediator_integration_test_{test_id}" / "comparison" / "overall.tex"
+        tmp_path
+        / f"hypergcn_mediator_hlp_integration_test_{test_id}"
+        / "comparison"
+        / "overall.tex"
     ).exists()
     assert (
-        tmp_path / f"hypergcn_mediator_integration_test_{test_id}" / "comparison" / "overall.md"
+        tmp_path / f"hypergcn_mediator_hlp_integration_test_{test_id}" / "comparison" / "overall.md"
     ).exists()
     assert (
-        tmp_path / f"hypergcn_mediator_integration_test_{test_id}" / "comparison" / "test.tex"
+        tmp_path / f"hypergcn_mediator_hlp_integration_test_{test_id}" / "comparison" / "test.tex"
     ).exists()
     assert (
-        tmp_path / f"hypergcn_mediator_integration_test_{test_id}" / "comparison" / "test.md"
+        tmp_path / f"hypergcn_mediator_hlp_integration_test_{test_id}" / "comparison" / "test.md"
     ).exists()
     assert (
-        tmp_path / f"hypergcn_mediator_integration_test_{test_id}" / "comparison" / "train.md"
+        tmp_path / f"hypergcn_mediator_hlp_integration_test_{test_id}" / "comparison" / "train.md"
     ).exists()
     assert (
-        tmp_path / f"hypergcn_mediator_integration_test_{test_id}" / "comparison" / "train.tex"
+        tmp_path / f"hypergcn_mediator_hlp_integration_test_{test_id}" / "comparison" / "train.tex"
     ).exists()
     assert (
-        tmp_path / f"hypergcn_mediator_integration_test_{test_id}" / "comparison" / "val.md"
+        tmp_path / f"hypergcn_mediator_hlp_integration_test_{test_id}" / "comparison" / "val.md"
     ).exists()
     assert (
-        tmp_path / f"hypergcn_mediator_integration_test_{test_id}" / "comparison" / "val.tex"
+        tmp_path / f"hypergcn_mediator_hlp_integration_test_{test_id}" / "comparison" / "val.tex"
     ).exists()
 
 
@@ -125,7 +128,7 @@ def test_model_hypergcn_no_mediator(tmp_path, sampling_strategy, full, batch_siz
         train_dataset, val_dataset, test_dataset, batch_size=batch_size, sample_full_hypergraph=full
     )
 
-    mean_hypergcn_no_mediator_module = HyperGCNHlpModule(
+    hypergcn_no_mediator = HyperGCNHlpModule(
         encoder_config={
             "in_channels": num_features,
             "hidden_channels": 8,
@@ -144,39 +147,56 @@ def test_model_hypergcn_no_mediator(tmp_path, sampling_strategy, full, batch_siz
     )
 
     configs = model_configs_with_single_model(
-        train_loader,
-        val_loader,
-        test_loader,
         name="hypergcn",
-        version="mean",
-        model=mean_hypergcn_no_mediator_module,
+        version="hlp",
+        model=hypergcn_no_mediator,
     )
 
     train_test_loop(
-        configs, path=tmp_path, experiment_name=f"hypergcn_no_mediator_integration_test_{test_id}"
+        configs=configs,
+        path=tmp_path,
+        experiment_name=f"hypergcn_no_mediator_hlp_integration_test_{test_id}",
+        train_loader=train_loader,
+        val_loader=val_loader,
+        test_loader=test_loader,
     )
 
     assert (
-        tmp_path / f"hypergcn_no_mediator_integration_test_{test_id}" / "comparison" / "overall.tex"
+        tmp_path
+        / f"hypergcn_no_mediator_hlp_integration_test_{test_id}"
+        / "comparison"
+        / "overall.tex"
     ).exists()
     assert (
-        tmp_path / f"hypergcn_no_mediator_integration_test_{test_id}" / "comparison" / "overall.md"
+        tmp_path
+        / f"hypergcn_no_mediator_hlp_integration_test_{test_id}"
+        / "comparison"
+        / "overall.md"
     ).exists()
     assert (
-        tmp_path / f"hypergcn_no_mediator_integration_test_{test_id}" / "comparison" / "test.tex"
+        tmp_path
+        / f"hypergcn_no_mediator_hlp_integration_test_{test_id}"
+        / "comparison"
+        / "test.tex"
     ).exists()
     assert (
-        tmp_path / f"hypergcn_no_mediator_integration_test_{test_id}" / "comparison" / "test.md"
+        tmp_path / f"hypergcn_no_mediator_hlp_integration_test_{test_id}" / "comparison" / "test.md"
     ).exists()
     assert (
-        tmp_path / f"hypergcn_no_mediator_integration_test_{test_id}" / "comparison" / "train.md"
+        tmp_path
+        / f"hypergcn_no_mediator_hlp_integration_test_{test_id}"
+        / "comparison"
+        / "train.md"
     ).exists()
     assert (
-        tmp_path / f"hypergcn_no_mediator_integration_test_{test_id}" / "comparison" / "train.tex"
+        tmp_path
+        / f"hypergcn_no_mediator_hlp_integration_test_{test_id}"
+        / "comparison"
+        / "train.tex"
     ).exists()
     assert (
-        tmp_path / f"hypergcn_no_mediator_integration_test_{test_id}" / "comparison" / "val.md"
+        tmp_path / f"hypergcn_no_mediator_hlp_integration_test_{test_id}" / "comparison" / "val.md"
     ).exists()
     assert (
-        tmp_path / f"hypergcn_no_mediator_integration_test_{test_id}" / "comparison" / "val.tex"
+        tmp_path / f"hypergcn_no_mediator_hlp_integration_test_{test_id}" / "comparison" / "val.tex"
     ).exists()

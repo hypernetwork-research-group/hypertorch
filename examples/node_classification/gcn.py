@@ -5,7 +5,7 @@ from hypertorch.data import (
     DataLoader,
     LaplacianPositionalEncodingEnricher,
 )
-from hypertorch.nc import HyperGCNNcModule
+from hypertorch.nc import GCNNcModule
 from hypertorch.train import MultiModelTrainer
 from hypertorch.types import ModelConfig
 from hypertorch.utils import node_labels_from_node_degrees
@@ -54,14 +54,14 @@ if __name__ == "__main__":
 
     train_loader = DataLoader(
         train_dataset,
-        sample_full_hypergraph=True,
+        batch_size=64,
         shuffle=False,
         num_workers=num_workers,
         persistent_workers=True,
     )
     val_loader = DataLoader(
         val_dataset,
-        sample_full_hypergraph=True,
+        batch_size=64,
         shuffle=False,
         num_workers=num_workers,
         persistent_workers=True,
@@ -74,45 +74,24 @@ if __name__ == "__main__":
         persistent_workers=True,
     )
 
-    no_mediator_model = HyperGCNNcModule(
+    model = GCNNcModule(
         classifier_config={
             "in_channels": num_features,
             "out_channels": num_classes,
-            "hidden_channels": 64,
+            "hidden_channels": 16,
+            "num_layers": 2,
             "drop_rate": 0.3,
-            "use_mediator": False,
-            "fast": False,
-            "seed": 42,
-        },
-        metrics=metrics,
-    )
-
-    with_mediator_model = HyperGCNNcModule(
-        classifier_config={
-            "in_channels": num_features,
-            "out_channels": num_classes,
-            "hidden_channels": 64,
-            "drop_rate": 0.3,
-            "use_mediator": True,
-            "fast": False,
-            "seed": 42,
+            "graph_reduction_strategy": "clique_expansion",
+            "num_nodes": dataset.hdata.num_nodes,
         },
         metrics=metrics,
     )
 
     configs = [
         ModelConfig(
-            name="hypergcn-no-mediator",
+            name="gcn",
             version="node-classification",
-            model=no_mediator_model,
-            train_dataloader=train_loader,
-            val_dataloader=val_loader,
-            test_dataloader=test_loader,
-        ),
-        ModelConfig(
-            name="hypergcn-with-mediator",
-            version="node-classification",
-            model=with_mediator_model,
+            model=model,
             train_dataloader=train_loader,
             val_dataloader=val_loader,
             test_dataloader=test_loader,
@@ -123,10 +102,10 @@ if __name__ == "__main__":
 
     with MultiModelTrainer(
         model_configs=configs,
-        max_epochs=100,
+        max_epochs=60,
         accelerator="auto",
-        log_every_n_steps=10,
-        enable_checkpointing=False,
+        log_every_n_steps=5,
+        auto_wait=True,
         devices=1,
         test_devices=1,
     ) as trainer:

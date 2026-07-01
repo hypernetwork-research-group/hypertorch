@@ -82,6 +82,7 @@ Write `HyperTorch` when referring to the project, repository, organization, or p
 - **Fixtures:** Keep fixture scope as small as practical. Put shared fixtures in `conftest.py`.
 - **Coverage:** Add tests for new behavior, edge cases, and failure paths when code changes.
     - Always ensure 100% coverage for new or refactored code. Run `make test` to see coverage reports and identify untested lines.
+- **Never add for:** `hlp`, `nc`, `models`, and `nn` modules.
 
 ### Integration tests
 

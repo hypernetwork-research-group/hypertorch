@@ -10,7 +10,7 @@ from hypertorch.integration_tests.common import (
     split_dataset,
     train_test_loop,
 )
-from hypertorch.nc import HNHNNcModule
+from hypertorch.nc import GCNNcModule
 
 
 NUM_CLASSES = 3
@@ -27,8 +27,10 @@ NUM_FEATURES = 8
         pytest.param(SamplingStrategyEnum.NODE, True, 1, id="node_full"),
     ],
 )
-def test_model_hnhn(tmp_path, sampling_strategy, full, batch_size, request):
+def test_model_gcn(tmp_path, sampling_strategy, full, batch_size, request):
     test_id = request.node.callspec.id
+    num_features = NUM_FEATURES
+    metrics = nc_metrics(num_classes=NUM_CLASSES)
 
     train_dataset, val_dataset, test_dataset = split_dataset(
         sampling_strategy,
@@ -36,42 +38,40 @@ def test_model_hnhn(tmp_path, sampling_strategy, full, batch_size, request):
         num_classes=NUM_CLASSES,
     )
 
-    enrich_datasets(train_dataset, val_dataset, test_dataset, num_features=NUM_FEATURES)
+    enrich_datasets(train_dataset, val_dataset, test_dataset, num_features=num_features)
 
     train_loader, val_loader, test_loader = loaders(
         train_dataset, val_dataset, test_dataset, batch_size=batch_size, sample_full_hypergraph=full
     )
 
-    hnhn = HNHNNcModule(
+    gcn = GCNNcModule(
         classifier_config={
-            "in_channels": NUM_FEATURES,
+            "in_channels": num_features,
             "hidden_channels": 8,
             "out_channels": NUM_CLASSES,
-            "bias": True,
-            "use_batch_normalization": False,
-            "drop_rate": 0.5,
+            "num_layers": 2,
+            "drop_rate": 0.3,
+            "graph_reduction_strategy": "clique_expansion",
         },
-        lr=0.001,
-        weight_decay=5e-4,
-        metrics=nc_metrics(num_classes=NUM_CLASSES),
+        metrics=metrics,
     )
 
     configs = model_configs_with_single_model(
-        name="hnhn",
+        name="gcn",
         version="nc",
-        model=hnhn,
+        model=gcn,
     )
 
     train_test_loop(
         configs=configs,
         path=tmp_path,
-        experiment_name=f"hnhn_nc_integration_test_{test_id}",
+        experiment_name=f"gcn_nc_integration_test_{test_id}",
         train_loader=train_loader,
         val_loader=val_loader,
         test_loader=test_loader,
     )
 
-    comparison_path = tmp_path / f"hnhn_nc_integration_test_{test_id}" / "comparison"
+    comparison_path = tmp_path / f"gcn_nc_integration_test_{test_id}" / "comparison"
     assert (comparison_path / "overall.tex").exists()
     assert (comparison_path / "overall.md").exists()
     assert (comparison_path / "test.tex").exists()
