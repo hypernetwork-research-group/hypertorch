@@ -31,20 +31,20 @@ def test_model_common_neighbors(tmp_path, sampling_strategy, full, batch_size, r
 
     train_dataset, val_dataset, test_dataset = split_dataset(sampling_strategy)
 
-    train_hyperedge_index = train_dataset.hdata.hyperedge_index
-
     train_dataset, val_dataset, test_dataset = add_negatives(
         train_dataset, val_dataset, test_dataset
     )
 
     enrich_datasets(train_dataset, val_dataset, test_dataset, num_features=NUM_FEATURES)
 
+    train_hdata = train_dataset.hdata.clone()
+
     train_loader, val_loader, test_loader = loaders(
         train_dataset, val_dataset, test_dataset, batch_size=batch_size, sample_full_hypergraph=full
     )
 
     common_neighbors = CommonNeighborsHlpModule(
-        train_hyperedge_index=train_hyperedge_index,
+        train_hdata=train_hdata,
         aggregation="mean",
         metrics=hlp_metrics(),
     )

@@ -44,9 +44,6 @@ if __name__ == "__main__":
         print(f"Train dataset:\n {train_dataset.hdata}\n")
         print(f"Test dataset:\n {test_dataset.hdata}\n")
 
-    # Save train hyperedge index before adding negatives
-    train_hyperedge_index = train_dataset.hdata.hyperedge_index
-
     # Add negative samples only to the test split, since the model is evaluated directly.
     negative_sampler = RandomNegativeSampler(
         num_negative_samples=int(test_dataset.hdata.num_hyperedges * 0.6),
@@ -68,7 +65,7 @@ if __name__ == "__main__":
     )
 
     model = CommonNeighborsHlpModule(
-        train_hyperedge_index=train_hyperedge_index,
+        train_hdata=train_dataset.hdata,
         aggregation="mean",
         metrics=metrics,
     )

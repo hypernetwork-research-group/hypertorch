@@ -1192,6 +1192,29 @@ class HyperedgeIndex:
 
         return self
 
+    def to_global(self, global_node_ids: Tensor | None = None) -> HyperedgeIndex:
+        """
+        Convert hyperedge index to the global format by rebasing node IDs to the original IDs.
+
+        Args:
+            global_node_ids: Tensor of shape ``(num_nodes,)`` containing the original node IDs
+                that need to be rebased to global format.
+                If ``None``, the hyperedge index will remain unchanged. Defaults to ``None``.
+
+        Returns:
+            hyperedge_index: A new `HyperedgeIndex` instance with the hyperedge index
+                converted to global format.
+        """
+        if global_node_ids is None:
+            return self
+
+        hyperedge_ids = self.__hyperedge_index[1]
+        local_node_ids = self.__hyperedge_index[0]
+        global_node_ids = global_node_ids[local_node_ids]
+        global_hyperedge_index = torch.stack((global_node_ids, hyperedge_ids), dim=0)
+        self.__hyperedge_index = global_hyperedge_index.contiguous()
+        return self
+
     def __validate_num_hyperedges(self, num_hyperedges: int | None) -> None:
         """
         Validate that an explicit hyperedge count can contain the index.

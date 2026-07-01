@@ -2,7 +2,7 @@ import torch
 
 from torch import Tensor, nn
 from typing import Literal
-from hypertorch.nn import CommonNeighborsScorer, NeighborScorer
+from hypertorch.nn import CommonNeighborsHyperedgeScorer, NeighborScorer
 from hypertorch.types import Neighborhood
 
 
@@ -29,25 +29,31 @@ class CommonNeighbors(nn.Module):
         """
         super().__init__()
         self.scorer: NeighborScorer = (
-            scorer if scorer is not None else CommonNeighborsScorer(aggregation)
+            scorer if scorer is not None else CommonNeighborsHyperedgeScorer(aggregation)
         )
 
     def forward(
         self,
-        hyperedge_index: Tensor,
+        candidate_nodes: Tensor,
+        hyperedge_index: Tensor | None = None,
         node_to_neighbors: dict[int, Neighborhood] | None = None,
     ) -> Tensor:
         """
         Compute CN scores for all hyperedges in the batch.
 
         Args:
-            hyperedge_index: Tensor containing the hyperedge indices.
+            candidate_nodes: Tensor containing node IDs to score of shape ``(num_nodes,)``.
+            hyperedge_index: Tensor containing the hyperedge indices. Defaults to ``None``.
             node_to_neighbors: Optional mapping from nodes to their neighborhoods.
                 Defaults to ``None``.
 
         Returns:
             scores: A 1-D tensor of shape (num_hyperedges,) with CN scores.
         """
-        scores = self.scorer.score_batch(hyperedge_index, node_to_neighbors)
+        scores = self.scorer.score_batch(
+            candidate_nodes=candidate_nodes,
+            hyperedge_index=hyperedge_index,
+            node_to_neighbors=node_to_neighbors,
+        )
         torch.log1p(scores, out=scores)
         return scores

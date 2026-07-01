@@ -5,7 +5,7 @@ from torch import Tensor, nn
 from typing import Any, Literal
 from torchmetrics import MetricCollection
 from hypertorch.models import CommonNeighbors
-from hypertorch.types import HData, Hypergraph
+from hypertorch.types import HData, HyperedgeIndex, Hypergraph, Neighborhood
 from hypertorch.utils import Stage
 
 from hypertorch.hlp.common import HlpModule
@@ -29,7 +29,7 @@ class CommonNeighborsHlpModule(HlpModule):
 
     def __init__(
         self,
-        train_hyperedge_index: Tensor,
+        train_hdata: HData,
         aggregation: Literal["mean", "min", "sum"] = "mean",
         decoder: nn.Module | None = None,
         loss_fn: nn.Module | None = None,
@@ -40,7 +40,7 @@ class CommonNeighborsHlpModule(HlpModule):
         Initialize the CommonNeighbors HLP module.
 
         Args:
-            train_hyperedge_index: Training hyperedge index used to precompute neighborhoods.
+            train_hdata: Training data used to precompute neighborhoods.
             aggregation: Common-neighbor aggregation method. Defaults to ``"mean"``.
             decoder: Optional decoder module. Defaults to ``CommonNeighbors``.
             loss_fn: Optional loss function. Defaults to ``BCEWithLogitsLoss``.
@@ -57,21 +57,33 @@ class CommonNeighborsHlpModule(HlpModule):
 
         # Pre-compute neighbors of training nodes based on training edges only
         # to create a "known world" for the model to make predictions from
-        self.node_to_neighbors: dict[int, set[int]] = Hypergraph.from_hyperedge_index(
-            train_hyperedge_index
+        self.node_to_neighbors: dict[int, Neighborhood] = Hypergraph.from_hyperedge_index(
+            hyperedge_index=HyperedgeIndex(
+                hyperedge_index=train_hdata.hyperedge_index,
+            )
+            .to_global(global_node_ids=train_hdata.global_node_ids)
+            .item
         ).neighbors_of_all()
 
         # Disable automatic optimization since there is no training
         self.automatic_optimization: bool = False
 
-    def forward(self, hyperedge_index: Tensor) -> Tensor:
+    def forward(self, candidate_nodes: Tensor, hyperedge_index: Tensor) -> Tensor:
         """
         Compute common neighbor scores for the given hyperedges.
 
         Args:
+            candidate_nodes: Tensor containing node IDs to score of shape ``(num_nodes,)``.
             hyperedge_index: Tensor containing incidence information for the hyperedges to score.
+
+        Returns:
+            scores: A 1-D tensor of shape (num_hyperedges,) with CN scores.
         """
-        return self.decoder(hyperedge_index, self.node_to_neighbors)
+        return self.decoder(
+            candidate_nodes=candidate_nodes,
+            hyperedge_index=hyperedge_index,
+            node_to_neighbors=self.node_to_neighbors,
+        )
 
     def on_fit_start(self) -> None:
         """
@@ -135,7 +147,12 @@ class CommonNeighborsHlpModule(HlpModule):
         Returns:
             scores: Predicted hyperedge scores.
         """
-        return self.forward(batch.hyperedge_index)
+        return self.forward(
+            # Use the global node IDs from the batch to predict scores for the hyperedges
+            # as the model is trained on the node IDs from the training data
+            candidate_nodes=batch.global_node_ids,
+            hyperedge_index=batch.hyperedge_index,
+        )
 
     def configure_optimizers(self) -> None:
         """
@@ -158,7 +175,12 @@ class CommonNeighborsHlpModule(HlpModule):
         Returns:
             loss: The computed loss.
         """
-        scores = self.forward(batch.hyperedge_index)
+        scores = self.forward(
+            # Use the global node IDs from the batch to compute scores for the hyperedges
+            # as the model is trained on the node IDs from the training data
+            candidate_nodes=batch.global_node_ids,
+            hyperedge_index=batch.hyperedge_index,
+        )
         labels = batch.y
 
         # We need to use the number of hyperedges as batch size for logging purposes,
