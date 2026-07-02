@@ -256,6 +256,30 @@ def test_to_0based_with_explicit_ids_rebases_using_provided_spaces():
     assert torch.equal(result.item, expected_hyperedge_index)
 
 
+def test_to_global_without_global_node_ids_returns_self_and_preserves_index():
+    hyperedge_index_tensor = torch.tensor([[0, 2, 1, 2], [5, 5, 7, 7]], dtype=torch.long)
+
+    hyperedge_index = HyperedgeIndex(hyperedge_index_tensor)
+    result = hyperedge_index.to_global()
+
+    assert result is hyperedge_index
+    assert torch.equal(result.item, hyperedge_index_tensor)
+
+
+def test_to_global_rebases_nodes_and_preserves_hyperedges():
+    hyperedge_index_tensor = torch.tensor([[0, 2, 1, 2], [5, 5, 7, 7]], dtype=torch.long)
+    global_node_ids = torch.tensor([100, 200, 300], dtype=torch.long)
+
+    hyperedge_index = HyperedgeIndex(hyperedge_index_tensor)
+    result = hyperedge_index.to_global(global_node_ids)
+
+    expected_hyperedge_index = torch.tensor([[100, 300, 200, 300], [5, 5, 7, 7]], dtype=torch.long)
+
+    assert result is hyperedge_index
+    assert torch.equal(result.item, expected_hyperedge_index)
+    assert result.item.is_contiguous()
+
+
 @pytest.mark.parametrize(
     "hyperedge_index_tensor, expected_num_hyperedges",
     [

@@ -1,4 +1,5 @@
 from .common import NcModule
+from .common_neighbors_nc import CommonNeighborsNcModule
 from .gcn_nc import GCNNcConfig, GCNNcModule
 from .hgnn_nc import HGNNNcConfig, HGNNNcModule
 from .hnhn_nc import HNHNNcConfig, HNHNNcModule
@@ -7,6 +8,7 @@ from .hypergcn_nc import HyperGCNNcConfig, HyperGCNNcModule
 from .mlp_nc import MLPNcModule, MLPNcConfig
 
 __all__ = [
+    "CommonNeighborsNcModule",
     "GCNNcConfig",
     "GCNNcModule",
     "HGNNNcConfig",

@@ -12,17 +12,19 @@ The recommended pattern is to pass multiple `ModelConfig` objects to `MultiModel
 ```python
 from hypertorch.types import ModelConfig
 from hypertorch.train import MultiModelTrainer
-from hypertorch.hlp import CommonNeighborsHlpModule, MLPHlpModule
+from hypertorch.hlp import MLPHlpModule, NHPHlpModule
 
 configs = [
     ModelConfig(
-        name="common_neighbors",
-        version="mean",
-        model=CommonNeighborsHlpModule(
-            train_hyperedge_index=train_hyperedge_index,
-            aggregation="mean",
+        name="nhp",
+        version="maxmin",
+        model=NHPHlpModule(
+            encoder_config={
+                "in_channels": 32,
+                "hidden_channels": 64,
+                "aggregation": "maxmin",
+            },
         ),
-        is_trainable=False,
     ),
     ModelConfig(
         name="mlp",

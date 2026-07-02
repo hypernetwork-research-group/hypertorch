@@ -12,6 +12,7 @@ At a high level:
 
 Supported models include:
 
+- `CommonNeighbors` (non-trainable baseline).
 - `GCN`.
 - `HGNN`.
 - `HGNNP`.
@@ -21,13 +22,13 @@ Supported models include:
 - `NHP`.
 - `Node2VecGCN`.
 - `Node2VecSLP`.
-- `CommonNeighbors` (non-trainable baseline).
 - `VilLain`.
 
 ## Built-in node classification modules
 
 Supported models include:
 
+- `CommonNeighbors` (non-trainable baseline).
 - `GCN`.
 - `HGNN`.
 - `HGNNP`.
