@@ -13,6 +13,7 @@ from hypertorch.data import (
     NodeIDSplitter,
     SamplingStrategyEnum,
     SparseHyperedgeDatasetSplitter,
+    SparseHyperedgeHDataSplitter,
     Splitter,
 )
 from hypertorch.types import HData
@@ -60,6 +61,8 @@ def test_hyperedge_hdata_splitter_materializes_transductive_split():
     hdata = HData(
         x=torch.tensor([[10.0], [20.0], [30.0], [40.0]], dtype=torch.float),
         hyperedge_index=torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long),
+        hyperedge_weights=torch.tensor([0.25, 0.75], dtype=torch.float),
+        hyperedge_attr=torch.tensor([[1.0], [2.0]], dtype=torch.float),
         global_node_ids=torch.tensor([100, 200, 300, 400], dtype=torch.long),
         y=torch.tensor([1.0, 0.0], dtype=torch.float),
     )
@@ -76,10 +79,50 @@ def test_hyperedge_hdata_splitter_materializes_transductive_split():
     assert torch.equal(split_hdata.global_node_ids, hdata.global_node_ids)
     assert torch.equal(split_hdata.hyperedge_index, hdata.hyperedge_index)
     assert torch.equal(split_hdata.y, hdata.y)
+    assert split_hdata.hyperedge_weights is not None
+    assert hdata.hyperedge_weights is not None
+    assert torch.equal(split_hdata.hyperedge_weights, hdata.hyperedge_weights)
+    assert split_hdata.hyperedge_attr is not None
+    assert hdata.hyperedge_attr is not None
+    assert torch.equal(split_hdata.hyperedge_attr, hdata.hyperedge_attr)
     assert torch.equal(
         split_hdata.target_hyperedge_mask,
         torch.tensor([False, True], dtype=torch.bool),
     )
+
+
+def test_hyperedge_hdata_splitter_rejects_node_related_task():
+    hdata = HData(
+        x=torch.tensor([[10.0], [20.0]], dtype=torch.float),
+        hyperedge_index=torch.tensor([[0, 1], [0, 0]], dtype=torch.long),
+        task="node-classification",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape("Cannot split dataset with task 'node-classification'"),
+    ):
+        HyperedgeHDataSplitter().split(
+            to_split=hdata,
+            split_hyperedge_ids=torch.tensor([0], dtype=torch.long),
+        )
+
+
+def test_sparse_hyperedge_hdata_splitter_rejects_node_related_task():
+    hdata = HData(
+        x=torch.tensor([[10.0], [20.0]], dtype=torch.float),
+        hyperedge_index=torch.tensor([[0, 1], [0, 0]], dtype=torch.long),
+        task="node-classification",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape("Cannot split dataset with task 'node-classification'"),
+    ):
+        SparseHyperedgeHDataSplitter().split(
+            to_split=hdata,
+            split_hyperedge_ids=torch.tensor([0], dtype=torch.long),
+        )
 
 
 def test_node_hdata_splitter_materializes_inductive_split():
@@ -162,6 +205,22 @@ def test_node_hdata_splitter_rejects_empty_node_ids():
         )
 
 
+def test_node_hdata_splitter_rejects_hyperedge_related_task():
+    hdata = HData(
+        x=torch.tensor([[10.0], [20.0]], dtype=torch.float),
+        hyperedge_index=torch.tensor([[0, 1], [0, 0]], dtype=torch.long),
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape("Cannot split dataset with task 'hyperlink-prediction'"),
+    ):
+        NodeHDataSplitter().split(
+            to_split=hdata,
+            split_node_ids=torch.tensor([0], dtype=torch.long),
+        )
+
+
 def test_hyperedge_dataset_splitter_materializes_datasets_and_final_ratios():
     hdata = HData(
         x=torch.arange(4, dtype=torch.float32).unsqueeze(1),
@@ -232,6 +291,38 @@ def test_hyperedge_dataset_splitter_nested_split_partitions_only_target_hyperedg
     )
 
 
+def test_hyperedge_dataset_splitter_shuffle_is_deterministic_with_seed():
+    hdata = HData(
+        x=torch.arange(6, dtype=torch.float32).unsqueeze(1),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5]], dtype=torch.long),
+    )
+    dataset = Dataset.from_hdata(hdata)
+    splitter = HyperedgeDatasetSplitter(node_space_setting="transductive", shuffle=True, seed=123)
+
+    split_datasets_a, final_ratios_a = splitter.split(to_split=dataset, ratios=[0.5, 0.5])
+    split_datasets_b, final_ratios_b = splitter.split(to_split=dataset, ratios=[0.5, 0.5])
+
+    assert final_ratios_a == final_ratios_b
+    assert [
+        split_dataset.hdata.target_hyperedge_mask.tolist() for split_dataset in split_datasets_a
+    ] == [split_dataset.hdata.target_hyperedge_mask.tolist() for split_dataset in split_datasets_b]
+
+
+def test_hyperedge_dataset_splitter_rejects_node_related_task():
+    hdata = HData(
+        x=torch.arange(4, dtype=torch.float32).unsqueeze(1),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long),
+        task="node-classification",
+    )
+    dataset = Dataset.from_hdata(hdata, sampling_strategy=SamplingStrategyEnum.NODE)
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape("Cannot split dataset with task 'node-classification'"),
+    ):
+        HyperedgeDatasetSplitter().split(to_split=dataset, ratios=[0.5, 0.5])
+
+
 def test_hyperedge_dataset_splitter_raises_when_ratios_do_not_sum_to_one(
     mock_hdata_five_hyperedges,
 ):
@@ -249,11 +340,36 @@ def test_hyperedge_dataset_splitter_ignores_cover_all_nodes_in_train_split(
 ):
     dataset = Dataset.from_hdata(mock_hdata_five_hyperedges)
 
-    HyperedgeDatasetSplitter().split(
+    split_datasets, final_ratios = HyperedgeDatasetSplitter().split(
         to_split=dataset,
         ratios=[0.5, 0.5],
         cover_all_nodes_in_train_split=True,
     )
+
+    assert final_ratios == [0.4, 0.6]
+    assert torch.equal(
+        split_datasets[0].hdata.target_hyperedge_mask,
+        torch.tensor([True, True, False, False, False], dtype=torch.bool),
+    )
+    assert torch.equal(
+        split_datasets[1].hdata.target_hyperedge_mask,
+        torch.tensor([False, False, True, True, True], dtype=torch.bool),
+    )
+
+
+def test_sparse_hyperedge_dataset_splitter_rejects_node_related_task():
+    hdata = HData(
+        x=torch.arange(4, dtype=torch.float32).unsqueeze(1),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long),
+        task="node-classification",
+    )
+    dataset = Dataset.from_hdata(hdata, sampling_strategy=SamplingStrategyEnum.NODE)
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape("Cannot split dataset with task 'node-classification'"),
+    ):
+        SparseHyperedgeDatasetSplitter().split(to_split=dataset, ratios=[0.5, 0.5])
 
 
 def test_sparse_hyperedge_dataset_splitter_uses_train_split_idx_for_transductive_split():
@@ -498,6 +614,20 @@ def test_node_dataset_splitter_nested_split_partitions_only_target_nodes():
         split_datasets[1].hdata.target_node_mask,
         torch.tensor([False, False, True, False], dtype=torch.bool),
     )
+
+
+def test_node_dataset_splitter_rejects_hyperedge_related_task():
+    hdata = HData(
+        x=torch.arange(4, dtype=torch.float32).unsqueeze(1),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long),
+    )
+    dataset = Dataset.from_hdata(hdata)
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape("Cannot split dataset with task 'hyperlink-prediction'"),
+    ):
+        NodeDatasetSplitter().split(to_split=dataset, ratios=[0.5, 0.5])
 
 
 def test_node_dataset_splitter_inductive_shuffle_is_deterministic_with_seed():
