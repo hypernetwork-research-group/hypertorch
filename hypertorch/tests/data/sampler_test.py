@@ -103,6 +103,37 @@ def test_hyperedge_sampling_len(mock_four_node_two_hyperedge_hdata):
     assert sampler.len(mock_four_node_two_hyperedge_hdata) == 2
 
 
+def test_hyperedge_sampling_len_counts_only_target_hyperedges_for_hyperlink_prediction():
+    hdata = HData(
+        x=torch.arange(4, dtype=torch.float).unsqueeze(1),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long),
+        target_hyperedge_mask=torch.tensor([False, True], dtype=torch.bool),
+    )
+
+    assert HyperedgeSampler().len(hdata) == 1
+
+
+def test_hyperedge_sampling_maps_positions_to_target_hyperedge_ids():
+    hdata = HData(
+        x=torch.arange(6, dtype=torch.float).unsqueeze(1),
+        hyperedge_index=torch.tensor(
+            [[0, 1, 2, 3, 4, 5], [0, 0, 1, 1, 2, 2]],
+            dtype=torch.long,
+        ),
+        target_hyperedge_mask=torch.tensor([False, True, True], dtype=torch.bool),
+    )
+
+    # Hyperedge 0 is not a target, hyperedges 1 and 2 are targets
+    # So, sampling hyperedge 0 returns the first target hyperedge (1)
+    # and sampling hyperedge 1 returns the second target hyperedge (2)
+    result = HyperedgeSampler().sample(0, hdata)
+
+    assert torch.equal(
+        result.hyperedge_index,
+        torch.tensor([[2, 3], [1, 1]], dtype=torch.long),
+    )
+
+
 def test_sample_single_node_graph_hyperedge_sampler(mock_single_node_single_hyperedge_hdata):
     sampler = HyperedgeSampler()
     result = sampler.sample(0, mock_single_node_single_hyperedge_hdata)

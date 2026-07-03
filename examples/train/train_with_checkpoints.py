@@ -66,7 +66,7 @@ if __name__ == "__main__":
 
     for name, ds in [("Train", train_dataset), ("Val", val_dataset)]:
         negative_sampler = RandomNegativeSampler(
-            num_negative_samples=ds.hdata.num_hyperedges,
+            num_negative_samples=len(ds),
             num_nodes_per_sample=int(ds.stats()["avg_degree_hyperedge"]),
         )
         ds_with_negatives = ds.add_negative_samples(negative_sampler, seed=42)

@@ -486,6 +486,38 @@ def test_collate_node_classification_when_node_appears_as_both_target_and_contex
     assert batched.task == TaskEnum.NODE_CLASSIFICATION
 
 
+def test_collate_hyperlink_prediction_uses_hyperedge_labels_and_target_mask():
+    x = torch.tensor([[1.0, 1.5], [2.0, 2.5], [3.0, 3.5], [4.0, 4.5]], dtype=torch.float)
+    hyperedge_index = torch.tensor([[0, 1, 2, 3, 0], [0, 0, 1, 1, 2]], dtype=torch.long)
+    y = torch.tensor([1.0, 0.0, 1.0], dtype=torch.float)
+    hdata = HData(x=x, hyperedge_index=hyperedge_index, y=y, task="hyperlink-prediction")
+
+    sample0 = HData(
+        x=torch.empty((0, 0), dtype=torch.float),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long),
+        target_hyperedge_mask=torch.tensor([False, True], dtype=torch.bool),
+    )
+    sample1 = HData(
+        x=torch.empty((0, 0), dtype=torch.float),
+        hyperedge_index=torch.tensor([[0], [2]], dtype=torch.long),
+        num_hyperedges=1,
+        target_hyperedge_mask=torch.tensor([True], dtype=torch.bool),
+    )
+
+    dataset = MagicMock(spec=Dataset)
+    dataset.hdata = hdata
+
+    loader = DataLoader(dataset, batch_size=2)
+    batched = loader.collate([sample0, sample1])
+
+    assert torch.equal(batched.y, y)
+    assert torch.equal(
+        batched.target_hyperedge_mask,
+        torch.tensor([False, True, True], dtype=torch.bool),
+    )
+    assert batched.task == TaskEnum.HYPERLINK_PREDICTION
+
+
 def test_collate_raises_for_unsupported_cached_task_category():
     hdata = HData(
         x=torch.tensor([[1.0], [2.0]], dtype=torch.float),

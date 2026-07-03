@@ -72,6 +72,7 @@ from .splitter import (
     NodeDatasetSplitter,
     NodeHDataSplitter,
     NodeIDSplitter,
+    SparseHyperedgeDatasetSplitter,
     Splitter,
 )
 
@@ -127,6 +128,7 @@ __all__ = [
     "SamplingStrategy",
     "SamplingStrategyEnum",
     "SamplingStrategyLiteral",
+    "SparseHyperedgeDatasetSplitter",
     "Splitter",
     "ThreadsAskUbuntuDataset",
     "ThreadsMathsxDataset",

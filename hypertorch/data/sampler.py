@@ -182,11 +182,12 @@ class HyperedgeSampler(BaseSampler):
 
         hyperedge_index = hdata.hyperedge_index
 
-        sampled_hyperedge_ids = torch.tensor(
+        sampled_hyperedge_indexes = torch.tensor(
             ids,
             dtype=hyperedge_index.dtype,
             device=hyperedge_index.device,
         )
+        sampled_hyperedge_ids = hdata.sampleable_hyperedge_ids[sampled_hyperedge_indexes]
 
         # Example: sampled_hyperedge_ids = [0, 2],
         #          hyperedge_index = [[0, 0, 1, 2, 3, 4],
@@ -206,15 +207,15 @@ class HyperedgeSampler(BaseSampler):
 
     def len(self, hdata: HData) -> int:
         """
-        Return the number of hyperedges in the given HData.
+        Return the number of sampleable hyperedges in the given HData.
 
         Args:
-            hdata: The HData to query for the number of hyperedges.
+            hdata: The HData to query for the number of sampleable hyperedges.
 
         Returns:
-            num_hyperedges: The number of hyperedges in the HData.
+            num_hyperedges: The number of sampleable hyperedges in the HData.
         """
-        return hdata.num_hyperedges
+        return hdata.num_sampleable_hyperedges
 
 
 class NodeSampler(BaseSampler):
@@ -274,11 +275,7 @@ class NodeSampler(BaseSampler):
         Returns:
             num_nodes: The number of nodes in the HData.
         """
-        return (
-            int(hdata.target_node_mask.sum(dtype=torch.int).item())
-            if hdata.is_node_related_task
-            else hdata.num_nodes
-        )
+        return hdata.num_sampleable_nodes
 
     def __sample_hdata(
         self,

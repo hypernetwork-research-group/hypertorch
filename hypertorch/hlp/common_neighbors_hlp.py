@@ -181,13 +181,10 @@ class CommonNeighborsHlpModule(HlpModule):
             candidate_nodes=batch.global_node_ids,
             hyperedge_index=batch.hyperedge_index,
         )
-        labels = batch.y
+        target_scores, target_labels = self._target_scores_and_labels(scores, batch)
+        batch_size = target_labels.size(0)
 
-        # We need to use the number of hyperedges as batch size for logging purposes,
-        # since each hyperedge is a separate prediction
-        batch_size = batch.num_hyperedges
-
-        loss = self._compute_loss(scores, labels, batch_size, stage)
-        self._compute_metrics(scores, labels, batch_size, stage)
+        loss = self._compute_loss(target_scores, target_labels, batch_size, stage)
+        self._compute_metrics(target_scores, target_labels, batch_size, stage)
 
         return loss

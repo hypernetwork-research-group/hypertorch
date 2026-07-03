@@ -42,7 +42,6 @@ if __name__ == "__main__":
     train_dataset, val_dataset, test_dataset = dataset.split(
         ratios=[0.7, 0.1, 0.2],
         node_space_setting="transductive",
-        cover_all_nodes_in_train_split=True,
         shuffle=True,
         seed=42,
     )
@@ -54,10 +53,9 @@ if __name__ == "__main__":
     print("Adding negative samples...")
 
     for name, ds in [("Train", train_dataset), ("Val", val_dataset), ("Test", test_dataset)]:
+        num_positive_samples = len(ds)
         num_negative_samples = (
-            ds.hdata.num_hyperedges
-            if name in ["Train", "Val"]
-            else int(ds.hdata.num_hyperedges * 0.6)
+            num_positive_samples if name in ["Train", "Val"] else int(num_positive_samples * 0.6)
         )
         negative_sampler = RandomNegativeSampler(
             num_negative_samples=num_negative_samples,
@@ -83,7 +81,7 @@ if __name__ == "__main__":
         walk_length=20,
         num_walks_per_node=10,
         num_negative_samples=1,
-        # We are using transductive with all nodes coverage in the train split
+        # Transductive splits keep the full node space.
         num_nodes=dataset.hdata.num_nodes,
         num_epochs=10,
         learning_rate=0.01,
@@ -133,7 +131,7 @@ if __name__ == "__main__":
         "normalize": True,
         "cached": False,
         "graph_reduction_strategy": "clique_expansion",
-        # We are using transductive with all nodes coverage in the train split
+        # Transductive splits keep the full node space.
         "num_nodes": dataset.hdata.num_nodes,
     }
 
@@ -163,7 +161,7 @@ if __name__ == "__main__":
                 "q": 1.0,
                 "num_negative_samples": 1,
                 "train_hyperedge_index": train_hyperedge_index,
-                # We are using transductive with all nodes coverage in the train split
+                # Transductive splits keep the full node space.
                 "num_nodes": dataset.hdata.num_nodes,
                 "graph_reduction_strategy": "clique_expansion",
                 "random_walk_batch_size": 128,

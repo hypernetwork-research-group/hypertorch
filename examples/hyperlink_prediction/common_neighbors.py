@@ -46,7 +46,7 @@ if __name__ == "__main__":
 
     # Add negative samples only to the test split, since the model is evaluated directly.
     negative_sampler = RandomNegativeSampler(
-        num_negative_samples=int(test_dataset.hdata.num_hyperedges * 0.6),
+        num_negative_samples=int(len(test_dataset) * 0.6),
         num_nodes_per_sample=int(test_dataset.stats()["avg_degree_hyperedge"]),
     )
     test_dataset = test_dataset.add_negative_samples(negative_sampler, seed=42)
