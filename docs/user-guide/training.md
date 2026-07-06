@@ -31,43 +31,38 @@ from hypertorch.types import ModelConfig
 from hypertorch.hlp import MLPHlpModule
 
 dataset = AlgebraDataset(sampling_strategy=SamplingStrategy.HYPEREDGE)
-train_ds, test_ds = dataset.split(
-    ratios=[0.8, 0.2],
-    shuffle=True,
-    seed=42,
+train_dataset, val_dataset, test_dataset = dataset.split(
+    ratios=[0.7, 0.1, 0.2],
     node_space_setting="transductive",
-)
-train_ds, val_ds = train_ds.split(
-    ratios=[0.875, 0.125],
     shuffle=True,
-    seed=42,
-    node_space_setting="transductive",
 )
-
 # Add negatives (example strategy; tune per use-case)
-neg = RandomNegativeSampler(
-    num_negative_samples=train_ds.hdata.num_hyperedges,
-    num_nodes_per_sample=int(train_ds.stats()["avg_degree_hyperedge"]),
+negative_sampler = RandomNegativeSampler(
+    num_negative_samples=len(train_dataset),
+    num_nodes_per_sample=int(train_dataset.stats()["avg_degree_hyperedge"]),
 )
-train_ds = train_ds.add_negative_samples(neg, seed=42)
-val_ds = val_ds.add_negative_samples(neg, seed=42)
-test_ds = test_ds.add_negative_samples(neg, seed=42)
+train_dataset = train_dataset.add_negative_samples(negative_sampler)
+val_dataset = val_dataset.add_negative_samples(negative_sampler)
+test_dataset = test_dataset.add_negative_samples(negative_sampler)
 
 # Enrich node features
-train_ds.enrich_node_features(
+train_dataset.enrich_node_features(
     enricher=LaplacianPositionalEncodingEnricher(
         num_features=32,
-        num_nodes=train_ds.hdata.num_nodes,
+        num_nodes=train_dataset.hdata.num_nodes,
     ),
     enrichment_mode="replace",
 )
-val_ds.enrich_node_features_from(train_ds)
-test_ds.enrich_node_features_from(train_ds)
+val_dataset.enrich_node_features_from(train_dataset)
+test_dataset.enrich_node_features_from(train_dataset)
 
 # Dataloaders
-train_loader = DataLoader(train_ds, batch_size=128, shuffle=False)
-val_loader = DataLoader(val_ds, sample_full_hypergraph=True, shuffle=False)
-test_loader = DataLoader(test_ds, sample_full_hypergraph=True, shuffle=False)
+train_loader = DataLoader(
+    train_dataset,
+    sample_full_hypergraph=True,
+)
+val_loader = DataLoader(val_dataset, batch_size=64)
+test_loader = DataLoader(test_dataset, batch_size=64)
 
 # Model(s)
 model = MLPHlpModule(
@@ -93,21 +88,23 @@ with MultiModelTrainer(
     trainer.test_all(dataloader=test_loader)
 ```
 
-Transductive splits keep the full node feature matrix in the first split, but by
-default they do not force the first split's hyperedges to cover every node. Pass
-`cover_all_nodes_in_train_split=True` when the training hyperedges themselves
-must be incident to every node:
+For hyperlink prediction, transductive splits keep the full hypergraph as context in each split and mark the supervised hyperedges with `hdata.target_hyperedge_mask`.
+
+For hyperedge-sampling datasets, `len(dataset)` counts these target hyperedges. Meanwhile, the enrichers use the entire hypergraph to compute node features, using non-target hyperedges as context.
+
+Use `sparse_split_hyperedges=True` to use the sparse split behavior,
+where each split contains only its own hyperedges. Sparse splitting also supports `cover_all_nodes_in_train_split=True` when the training hyperedges must be incident to every node:
 
 ```python
 train_ds, test_ds = dataset.split(
     ratios=[0.8, 0.2],
     node_space_setting="transductive",
     cover_all_nodes_in_train_split=True,
+    sparse_split_hyperedges=True,
 )
 ```
 
-Use `split_with_ratios(...)` instead of `split(...)` when you need the final
-hyperedge ratios after optional rebalancing.
+Use `split_with_ratios(...)` instead of `split(...)` when you need the final target-hyperedge ratios after optional sparse rebalancing.
 
 ## Checkpoint callback options
 

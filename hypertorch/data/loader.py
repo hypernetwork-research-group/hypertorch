@@ -36,8 +36,13 @@ class DataLoader(TorchDataLoader):
                 ``sample_full_hypergraph`` is ``True`` because the full dataset
                 is loaded as one batch.
             shuffle: Whether to reshuffle sample indices at every epoch.
-            sample_full_hypergraph: Whether each batch should contain the dataset's full
-                hypergraph instead of the sampled items.
+            sample_full_hypergraph: Whether each collated batch should ignore the sampled
+                mini-batch subgraphs and return a clone of the dataset's full `HData`.
+                If ``False``, batches contain only the sampled local subgraph.
+                For dense transductive splits, this preserves the full graph as model
+                context while `target_node_mask` or `target_hyperedge_mask` identifies the
+                supervised nodes or hyperedges for the split.
+                Defaults to ``False``.
             drop_last: Whether to drop the final incomplete batch when the dataset size
                 is not divisible by the batch size. If ``True``, drop the last incomplete batch.
                 If ``False``, the last batch will be kept and will be smaller.
@@ -151,7 +156,11 @@ class DataLoader(TorchDataLoader):
         collated_x = self.__cached_dataset_hdata.x[node_ids]
         collated_global_node_ids = self.__cached_dataset_hdata.global_node_ids[node_ids]
 
-        collated_y, collated_target_node_mask = self.__collate_y_and_target_node_mask_for_task(
+        (
+            collated_y,
+            collated_target_node_mask,
+            collated_target_hyperedge_mask,
+        ) = self.__collate_y_and_target_masks_for_task(
             batch=batch,
             hyperedge_index_wrapper=hyperedge_index_wrapper,
         )
@@ -179,19 +188,20 @@ class DataLoader(TorchDataLoader):
             num_hyperedges=hyperedge_index_wrapper.num_hyperedges,
             global_node_ids=collated_global_node_ids,
             target_node_mask=collated_target_node_mask,
+            target_hyperedge_mask=collated_target_hyperedge_mask,
             y=collated_y,
             task=self.__cached_dataset_hdata.task,
         )
 
         return collated_hdata.to(batch[0].device)
 
-    def __collate_y_and_target_node_mask_for_task(
+    def __collate_y_and_target_masks_for_task(
         self,
         batch: list[HData],
         hyperedge_index_wrapper: HyperedgeIndex,
-    ) -> tuple[Tensor, Tensor | None]:
+    ) -> tuple[Tensor, Tensor | None, Tensor | None]:
         """
-        Collates the labels (y) and target node mask for a batch of
+        Collates the labels (y) and target masks for a batch of
         HData instances based on the task type.
 
         Args:
@@ -202,12 +212,15 @@ class DataLoader(TorchDataLoader):
             collated_y: A tensor containing the collated labels for the batch.
             collated_target_node_mask: A tensor containing the collated target node mask
                 for the batch, or ``None`` if not applicable.
+            collated_target_hyperedge_mask: A tensor containing the collated target hyperedge
+                mask for the batch, or ``None`` if not applicable.
         """
         node_ids = hyperedge_index_wrapper.node_ids
         hyperedge_ids = hyperedge_index_wrapper.hyperedge_ids
 
         if self.__cached_dataset_hdata.is_node_related_task:
             collated_y = self.__cached_dataset_hdata.y[node_ids]
+            collated_target_hyperedge_mask = None
 
             target_node_ids_list = [
                 HyperedgeIndex(hdata.hyperedge_index).node_ids[hdata.target_node_mask]
@@ -218,9 +231,16 @@ class DataLoader(TorchDataLoader):
         elif self.__cached_dataset_hdata.is_hyperedge_related_task:
             collated_y = self.__cached_dataset_hdata.y[hyperedge_ids]
             collated_target_node_mask = None
+
+            target_hyperedge_ids_list = [
+                HyperedgeIndex(hdata.hyperedge_index).hyperedge_ids[hdata.target_hyperedge_mask]
+                for hdata in batch
+            ]
+            target_hyperedge_ids = torch.cat(target_hyperedge_ids_list, dim=0)
+            collated_target_hyperedge_mask = torch.isin(hyperedge_ids, target_hyperedge_ids)
         else:
             raise ValueError(
                 f"Unsupported task category for task={self.__cached_dataset_hdata.task!r}."
             )
 
-        return collated_y, collated_target_node_mask
+        return collated_y, collated_target_node_mask, collated_target_hyperedge_mask

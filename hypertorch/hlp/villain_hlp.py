@@ -170,11 +170,10 @@ class VilLainHlpModule(HlpModule):
             global_node_ids=batch.global_node_ids,
             num_hyperedges=batch.num_hyperedges,
         )
+        target_scores, target_labels = self._target_scores_and_labels(scores, batch)
+        batch_size = target_labels.size(0)
 
-        labels = batch.y
-        batch_size = batch.num_hyperedges
-
-        hlp_loss = self.loss_fn(scores, labels)
+        hlp_loss = self.loss_fn(target_scores, target_labels)
         villain_loss, villain_loss_parts = self.__to_villain_encoder().loss(
             hyperedge_index=batch.hyperedge_index,
             node_ids=batch.global_node_ids,
@@ -218,7 +217,7 @@ class VilLainHlpModule(HlpModule):
             **self.metrics_log_kwargs,
         )
 
-        self._compute_metrics(scores, labels, batch_size, Stage.TRAIN)
+        self._compute_metrics(target_scores, target_labels, batch_size, Stage.TRAIN)
         return loss
 
     def validation_step(self, batch: HData, batch_idx: int) -> Tensor:
@@ -289,11 +288,11 @@ class VilLainHlpModule(HlpModule):
             global_node_ids=batch.global_node_ids,
             num_hyperedges=batch.num_hyperedges,
         )
-        labels = batch.y
-        batch_size = batch.num_hyperedges
+        target_scores, target_labels = self._target_scores_and_labels(scores, batch)
+        batch_size = target_labels.size(0)
 
-        loss = self._compute_loss(scores, labels, batch_size, stage)
-        self._compute_metrics(scores, labels, batch_size, stage)
+        loss = self._compute_loss(target_scores, target_labels, batch_size, stage)
+        self._compute_metrics(target_scores, target_labels, batch_size, stage)
         return loss
 
     def __to_villain_encoder(self) -> VilLain:

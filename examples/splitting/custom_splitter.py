@@ -72,11 +72,9 @@ if __name__ == "__main__":
 
     # Split dataset into train, val and test using ratios generated inside CustomSplitter.
     split_datasets = dataset.split(
+        splitter=CustomSplitter(),  # Pass the custom splitter to the split function
         shuffle=True,
         seed=42,
-        node_space_setting="transductive",
-        cover_all_nodes_in_train_split=False,
-        splitter=CustomSplitter(),  # pass the custom splitter to the split function
     )
     first_50, second_25, third_25 = split_datasets
 

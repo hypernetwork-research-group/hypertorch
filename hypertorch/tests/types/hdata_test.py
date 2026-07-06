@@ -183,7 +183,7 @@ def test_init_default_y_is_ones():
 def test_init_hyperlink_prediction_default_y_is_ones():
     x = torch.randn(4, 2, dtype=torch.float)
     hyperedge_index = torch.tensor([[0, 1, 2, 3], [0, 0, 1, 2]], dtype=torch.long)
-    data = HData(x=x, hyperedge_index=hyperedge_index, task=TaskEnum.HYPERLINK_PREDICTION)
+    data = HData(x=x, hyperedge_index=hyperedge_index, task="hyperlink-prediction")
 
     assert data.y.dtype == torch.float
     assert torch.equal(data.y, torch.ones(3, dtype=torch.float))
@@ -193,7 +193,7 @@ def test_init_node_classification_default_y_is_ones_node_labels():
     x = torch.randn(3, 2, dtype=torch.float)
     hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 1]], dtype=torch.long)
 
-    data = HData(x=x, hyperedge_index=hyperedge_index, task=TaskEnum.NODE_CLASSIFICATION)
+    data = HData(x=x, hyperedge_index=hyperedge_index, task="node-classification")
 
     assert data.y.dtype == torch.long
     assert torch.equal(data.y, torch.ones(3, dtype=torch.long))
@@ -252,19 +252,116 @@ def test_sampleable_node_ids_returns_all_nodes_as_default():
     assert torch.equal(data.sampleable_node_ids, torch.tensor([0, 1, 2, 3], dtype=torch.long))
 
 
-def test_sampleable_node_ids_uses_target_node_mask_for_node_classification():
+@pytest.mark.parametrize(
+    "target_node_mask, expected_sampleable_node_ids",
+    [
+        pytest.param(
+            torch.tensor([False, False, True, False], dtype=torch.bool),
+            torch.tensor([2], dtype=torch.long),
+            id="single_target_node",
+        ),
+        pytest.param(
+            torch.tensor([False, True, True, False], dtype=torch.bool),
+            torch.tensor([1, 2], dtype=torch.long),
+            id="subset_of_target_nodes",
+        ),
+        pytest.param(
+            torch.tensor([True, True, True, True], dtype=torch.bool),
+            torch.tensor([0, 1, 2, 3], dtype=torch.long),
+            id="all_target_nodes",
+        ),
+        pytest.param(
+            torch.tensor([False, False, False, False], dtype=torch.bool),
+            torch.tensor([], dtype=torch.long),
+            id="no_target_nodes",
+        ),
+    ],
+)
+def test_sampleable_node_ids_uses_target_node_mask_for_node_classification(
+    target_node_mask, expected_sampleable_node_ids
+):
     x = torch.randn(4, 2, dtype=torch.float)
     hyperedge_index = torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long)
-    target_node_mask = torch.tensor([False, True, False, True], dtype=torch.bool)
 
     data = HData(
         x=x,
         hyperedge_index=hyperedge_index,
         target_node_mask=target_node_mask,
-        task=TaskEnum.NODE_CLASSIFICATION,
+        task="node-classification",
     )
 
-    assert torch.equal(data.sampleable_node_ids, torch.tensor([1, 3], dtype=torch.long))
+    assert torch.equal(data.sampleable_node_ids, expected_sampleable_node_ids)
+
+
+def test_sampleable_node_ids_returns_all_nodes_when_target_node_mask_is_ignored():
+    x = torch.randn(4, 2, dtype=torch.float)
+    hyperedge_index = torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long)
+    target_node_mask = torch.tensor([False, True], dtype=torch.bool)
+
+    data = HData(
+        x=x,
+        hyperedge_index=hyperedge_index,
+        target_node_mask=target_node_mask,
+        task="hyperlink-prediction",  # Hyperedge-related tasks ignore target_node_mask
+    )
+
+    assert torch.equal(data.sampleable_node_ids, torch.tensor([0, 1, 2, 3], dtype=torch.long))
+
+
+@pytest.mark.parametrize(
+    "target_hyperedge_mask, expected_sampleable_hyperedge_ids",
+    [
+        pytest.param(
+            torch.tensor([False, True, False], dtype=torch.bool),
+            torch.tensor([1], dtype=torch.long),
+            id="single_target_hyperedge",
+        ),
+        pytest.param(
+            torch.tensor([True, False, True], dtype=torch.bool),
+            torch.tensor([0, 2], dtype=torch.long),
+            id="subset_of_target_hyperedges",
+        ),
+        pytest.param(
+            torch.tensor([True, True, True], dtype=torch.bool),
+            torch.tensor([0, 1, 2], dtype=torch.long),
+            id="all_target_hyperedges",
+        ),
+        pytest.param(
+            torch.tensor([False, False, False], dtype=torch.bool),
+            torch.tensor([], dtype=torch.long),
+            id="no_target_hyperedges",
+        ),
+    ],
+)
+def test_sampleable_hyperedge_ids_uses_target_hyperedge_mask_for_hyperlink_prediction(
+    target_hyperedge_mask, expected_sampleable_hyperedge_ids
+):
+    x = torch.randn(4, 2, dtype=torch.float)
+    hyperedge_index = torch.tensor([[0, 1, 2, 3], [0, 0, 1, 2]], dtype=torch.long)
+
+    data = HData(
+        x=x,
+        hyperedge_index=hyperedge_index,
+        target_hyperedge_mask=target_hyperedge_mask,
+        task="hyperlink-prediction",
+    )
+
+    assert torch.equal(data.sampleable_hyperedge_ids, expected_sampleable_hyperedge_ids)
+
+
+def test_sampleable_hyperedge_ids_returns_all_hyperedges_when_target_hyperedge_mask_is_ignored():
+    x = torch.randn(4, 2, dtype=torch.float)
+    hyperedge_index = torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long)
+    target_hyperedge_mask = torch.tensor([False, True], dtype=torch.bool)
+
+    data = HData(
+        x=x,
+        hyperedge_index=hyperedge_index,
+        target_hyperedge_mask=target_hyperedge_mask,
+        task="node-classification",  # Node-related tasks ignore target_hyperedge_mask
+    )
+
+    assert torch.equal(data.sampleable_hyperedge_ids, torch.tensor([0, 1], dtype=torch.long))
 
 
 def test_init_stores_hyperedge_attr():
@@ -486,7 +583,7 @@ def test_init_validates_input_values(kwargs, expected_message):
         ),
     ],
 )
-def test_init_node_classification_validates_target_node_mask(target_node_mask, expected_message):
+def test_validates_target_node_mask(target_node_mask, expected_message):
     x = torch.randn(3, 2, dtype=torch.float)
     hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 1]], dtype=torch.long)
 
@@ -495,8 +592,68 @@ def test_init_node_classification_validates_target_node_mask(target_node_mask, e
             x=x,
             hyperedge_index=hyperedge_index,
             target_node_mask=target_node_mask,
-            task=TaskEnum.NODE_CLASSIFICATION,
+            task="node-classification",
         )
+
+
+def test_init_ignores_target_node_mask_validation_for_non_node_tasks():
+    x = torch.randn(3, 2, dtype=torch.float)
+    hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 1]], dtype=torch.long)
+
+    HData(
+        x=x,
+        hyperedge_index=hyperedge_index,
+        target_node_mask=torch.tensor([1], dtype=torch.long),
+        task="hyperlink-prediction",
+    )
+
+
+@pytest.mark.parametrize(
+    "target_hyperedge_mask, expected_message",
+    [
+        pytest.param(
+            torch.tensor([1, 0], dtype=torch.long),
+            "'target_hyperedge_mask' must have dtype torch.bool, got torch.int64.",
+            id="target_hyperedge_mask_not_bool",
+        ),
+        pytest.param(
+            torch.tensor([[True, False]], dtype=torch.bool),
+            "'target_hyperedge_mask' must be a 1D tensor, got shape (1, 2).",
+            id="target_hyperedge_mask_not_1d",
+        ),
+        pytest.param(
+            torch.tensor([True], dtype=torch.bool),
+            (
+                "'target_hyperedge_mask' must have one entry per hyperedge. "
+                "Got size=1 but num_hyperedges=2."
+            ),
+            id="target_hyperedge_mask_wrong_length",
+        ),
+    ],
+)
+def test_init_validates_target_hyperedge_mask(target_hyperedge_mask, expected_message):
+    x = torch.randn(3, 2, dtype=torch.float)
+    hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 1]], dtype=torch.long)
+
+    with pytest.raises(ValueError, match=re.escape(expected_message)):
+        HData(
+            x=x,
+            hyperedge_index=hyperedge_index,
+            target_hyperedge_mask=target_hyperedge_mask,
+            task="hyperlink-prediction",
+        )
+
+
+def test_init_ignores_target_hyperedge_mask_validation_for_non_hyperedge_tasks():
+    x = torch.randn(3, 2, dtype=torch.float)
+    hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 1]], dtype=torch.long)
+
+    HData(
+        x=x,
+        hyperedge_index=hyperedge_index,
+        target_hyperedge_mask=torch.tensor([1], dtype=torch.long),
+        task="node-classification",
+    )
 
 
 def test_init_node_classification_validates_y_length():
@@ -831,6 +988,27 @@ def test_cat_same_node_space_concatenates_labels():
     assert torch.equal(result.y, torch.tensor([1.0, 0.0], dtype=torch.float))
 
 
+def test_cat_same_node_space_concatenates_target_hyperedge_masks():
+    x = torch.randn(4, 2, dtype=torch.float)
+    hdata1 = HData(
+        x=x,
+        hyperedge_index=torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long),
+        target_hyperedge_mask=torch.tensor([False, True], dtype=torch.bool),
+    )
+    hdata2 = HData(
+        x=x,
+        hyperedge_index=torch.tensor([[0, 2], [2, 2]], dtype=torch.long),
+        target_hyperedge_mask=torch.tensor([True], dtype=torch.bool),
+    )
+
+    result = HData.cat_same_node_space([hdata1, hdata2])
+
+    assert torch.equal(
+        result.target_hyperedge_mask,
+        torch.tensor([False, True, True], dtype=torch.bool),
+    )
+
+
 def test_cat_same_node_space_uses_largest_x_when_not_provided():
     x_large = torch.randn(3, 1, dtype=torch.float)
     x_small = torch.randn(2, 1, dtype=torch.float)
@@ -924,12 +1102,12 @@ def test_cat_same_node_space_raises_on_mixed_tasks():
     hyperlink_hdata = HData(
         x=x,
         hyperedge_index=torch.tensor([[0, 1], [0, 0]], dtype=torch.long),
-        task=TaskEnum.HYPERLINK_PREDICTION,
+        task="hyperlink-prediction",
     )
     node_hdata = HData(
         x=x,
         hyperedge_index=torch.tensor([[1, 2], [1, 1]], dtype=torch.long),
-        task=TaskEnum.NODE_CLASSIFICATION,
+        task="node-classification",
     )
 
     with pytest.raises(ValueError, match="All HData instances must have the same task"):
@@ -1070,6 +1248,29 @@ def test_add_negative_samples_combines_positive_and_negative_hyperedges(mock_neg
     sampler_mock.sample.assert_called_once_with(hdata, seed=42)
 
 
+def test_add_negative_samples_preserves_target_hyperedge_masks(mock_negative_sampler):
+    hdata = HData(
+        x=torch.arange(4, dtype=torch.float).unsqueeze(1),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long),
+        target_hyperedge_mask=torch.tensor([False, True], dtype=torch.bool),
+    )
+    sampler, _ = mock_negative_sampler
+
+    result = hdata.add_negative_samples(sampler, seed=42)
+
+    target_by_node_set = {}
+    for hyperedge_id in range(result.num_hyperedges):
+        hyperedge_mask = result.hyperedge_index[1] == hyperedge_id
+        node_set = frozenset(result.hyperedge_index[0][hyperedge_mask].tolist())
+        target_by_node_set[node_set] = bool(result.target_hyperedge_mask[hyperedge_id].item())
+
+    assert target_by_node_set == {
+        frozenset({0, 1}): False,  # original hyperedge 0, not target
+        frozenset({2, 3}): True,  # original hyperedge 1, target
+        frozenset({0, 2}): True,  # new negative hyperedge, target by default
+    }
+
+
 def test_add_negative_samples_returns_new_hdata_and_keeps_source_unchanged(
     mock_negative_sampler,
 ):
@@ -1135,7 +1336,7 @@ def test_add_negative_samples_with_seed_is_reproducible():
         ),
     ],
 )
-def test_split_inductive_counts(
+def test_inductive_split_returns_correct_split(
     split_ids, expected_num_nodes, expected_num_hyperedges, expected_hyperedge_index
 ):
     x = torch.randn(4, 2, dtype=torch.float)
@@ -1154,40 +1355,32 @@ def test_split_inductive_counts(
 
 
 @pytest.mark.parametrize(
-    "split_ids, expected_num_nodes, expected_num_hyperedges, expected_hyperedge_index",
+    "split_ids, expected_target_hyperedge_mask",
     [
         pytest.param(
             torch.tensor([0], dtype=torch.long),
-            4,
-            1,
-            torch.tensor([[0, 1, 2], [0, 0, 0]], dtype=torch.long),
+            torch.tensor([True, False], dtype=torch.bool),
             id="first_hyperedge",
         ),
         pytest.param(
             torch.tensor([1], dtype=torch.long),
-            4,
-            1,
-            torch.tensor([[2, 3], [0, 0]], dtype=torch.long),
+            torch.tensor([False, True], dtype=torch.bool),
             id="second_hyperedge",
         ),
         pytest.param(
             torch.tensor([0, 1], dtype=torch.long),
-            4,
-            2,
-            torch.tensor([[0, 1, 2, 2, 3], [0, 0, 0, 1, 1]], dtype=torch.long),
+            torch.tensor([True, True], dtype=torch.bool),
             id="both_hyperedges",
         ),
         pytest.param(
             torch.tensor([0], dtype=torch.long),
-            4,
-            1,
-            torch.tensor([[0, 1, 2], [0, 0, 0]], dtype=torch.long),
+            torch.tensor([True, False], dtype=torch.bool),
             id="subset_hyperedges",
         ),
     ],
 )
-def test_split_transductive_counts(
-    split_ids, expected_num_nodes, expected_num_hyperedges, expected_hyperedge_index
+def test_transductive_split_keeps_full_hypergraph_and_marks_target_hyperedges(
+    split_ids, expected_target_hyperedge_mask
 ):
     x = torch.randn(4, 2, dtype=torch.float)
     hyperedge_index = torch.tensor([[0, 1, 2, 2, 3], [0, 0, 0, 1, 1]], dtype=torch.long)
@@ -1199,9 +1392,10 @@ def test_split_transductive_counts(
         node_space_setting="transductive",
     )
 
-    assert result.num_nodes == expected_num_nodes
-    assert result.num_hyperedges == expected_num_hyperedges
-    assert torch.equal(result.hyperedge_index, expected_hyperedge_index)
+    assert result.num_nodes == hdata.num_nodes
+    assert result.num_hyperedges == hdata.num_hyperedges
+    assert torch.equal(result.hyperedge_index, hdata.hyperedge_index)
+    assert torch.equal(result.target_hyperedge_mask, expected_target_hyperedge_mask)
 
 
 def test_split_delegates_to_custom_hdata_splitter():
@@ -1283,7 +1477,11 @@ def test_split_subsets_labels():
     hdata = HData(x=x, hyperedge_index=hyperedge_index, y=y)
 
     hyperedge_ids = torch.tensor([1], dtype=torch.long)  # Split by hyperedge 1, which has label 0.0
-    result = HData.split(hdata, split_hyperedge_ids=hyperedge_ids)
+    result = HData.split(
+        hdata,
+        split_hyperedge_ids=hyperedge_ids,
+        node_space_setting="inductive",
+    )
 
     assert torch.equal(result.y, torch.tensor([0.0], dtype=torch.float))
 
@@ -1343,8 +1541,9 @@ def test_split_transductive_keeps_full_x_and_global_node_ids():
     assert torch.equal(result.x, x)
     assert result.global_node_ids is not None
     assert torch.equal(result.global_node_ids, global_node_ids)
-    assert torch.equal(result.hyperedge_index, torch.tensor([[3, 4], [0, 0]], dtype=torch.long))
-    assert torch.equal(result.y, torch.tensor([0.0], dtype=torch.float))
+    assert torch.equal(result.hyperedge_index, hyperedge_index)
+    assert torch.equal(result.y, torch.tensor([1.0, 0.0], dtype=torch.float))
+    assert torch.equal(result.target_hyperedge_mask, torch.tensor([False, True], dtype=torch.bool))
 
 
 def test_split_transductive_handles_none_global_node_ids():
@@ -1381,30 +1580,36 @@ def test_split_transductive_does_not_share_mutable_storage_with_source(
     __assert_mutating_result_keeps_source_tensors_unchanged(hdata, result)
 
 
-def test_split_subsets_edge_attr():
+def test_split_subsets_hyperedge_attr():
     x = torch.randn(4, 2, dtype=torch.float)
     hyperedge_index = torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long)
     edge_attr = torch.tensor([[1.0, 2.0], [3.0, 4.0]], dtype=torch.float)
     hdata = HData(x=x, hyperedge_index=hyperedge_index, hyperedge_attr=edge_attr)
 
-    hyperedge_ids = torch.tensor(
-        [1], dtype=torch.long
-    )  # Split by hyperedge 1, which has hyperedge_attr [3.0, 4.0]
-    result = HData.split(hdata, split_hyperedge_ids=hyperedge_ids)
+    # Split by hyperedge 1, which has hyperedge_attr [3.0, 4.0]
+    hyperedge_ids = torch.tensor([1], dtype=torch.long)
+    result = HData.split(
+        hdata,
+        split_hyperedge_ids=hyperedge_ids,
+        node_space_setting="inductive",
+    )
 
     assert result.hyperedge_attr is not None
     assert torch.equal(result.hyperedge_attr, torch.tensor([[3.0, 4.0]], dtype=torch.float))
 
 
-def test_split_handles_none_edge_attr():
+def test_split_handles_none_hyperedge_attr():
     x = torch.randn(4, 2, dtype=torch.float)
     hyperedge_index = torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long)
     hdata = HData(x=x, hyperedge_index=hyperedge_index, hyperedge_attr=None)
 
-    hyperedge_ids = torch.tensor(
-        [1], dtype=torch.long
-    )  # Split by hyperedge 1, which has hyperedge_attr None
-    result = HData.split(hdata, split_hyperedge_ids=hyperedge_ids)
+    # Split by hyperedge 1, which has hyperedge_attr None
+    hyperedge_ids = torch.tensor([1], dtype=torch.long)
+    result = HData.split(
+        hdata,
+        split_hyperedge_ids=hyperedge_ids,
+        node_space_setting="inductive",
+    )
 
     assert result.hyperedge_attr is None
 
@@ -1416,7 +1621,11 @@ def test_split_subsets_hyperedge_weights():
     hdata = HData(x=x, hyperedge_index=hyperedge_index, hyperedge_weights=hyperedge_weights)
 
     hyperedge_ids = torch.tensor([1], dtype=torch.long)
-    result = HData.split(hdata, split_hyperedge_ids=hyperedge_ids)
+    result = HData.split(
+        hdata,
+        split_hyperedge_ids=hyperedge_ids,
+        node_space_setting="inductive",
+    )
 
     assert result.hyperedge_weights is not None
     assert torch.equal(result.hyperedge_weights, torch.tensor([0.75], dtype=torch.float))
@@ -1469,6 +1678,17 @@ def test_with_y_to_does_not_share_mutable_storage_with_source(hdata_with_all_mut
     __assert_mutating_result_keeps_source_tensors_unchanged(hdata, result)
 
 
+def test_target_node_mask_defaults_to_all_nodes():
+    x = torch.randn(4, 2, dtype=torch.float)
+    hyperedge_index = torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long)
+
+    data = HData(x=x, hyperedge_index=hyperedge_index)
+
+    assert torch.equal(
+        data.target_node_mask, torch.tensor([True, True, True, True], dtype=torch.bool)
+    )
+
+
 def test_with_target_node_mask_replaces_mask_and_preserves_other_fields():
     hdata = HData(
         x=torch.tensor([[1.0], [2.0], [3.0]], dtype=torch.float),
@@ -1478,7 +1698,7 @@ def test_with_target_node_mask_replaces_mask_and_preserves_other_fields():
         global_node_ids=torch.tensor([10, 20, 30], dtype=torch.long),
         target_node_mask=torch.tensor([True, False, False], dtype=torch.bool),
         y=torch.tensor([1, 2, 3], dtype=torch.long),
-        task=TaskEnum.NODE_CLASSIFICATION,
+        task="node-classification",
     )
     target_node_mask = torch.tensor([False, True, True], dtype=torch.bool)
 
@@ -1504,13 +1724,67 @@ def test_with_target_node_mask_does_not_share_mutable_storage_with_source():
         x=torch.randn(3, 2, dtype=torch.float),
         hyperedge_index=torch.tensor([[0, 1, 2], [0, 0, 1]], dtype=torch.long),
         target_node_mask=torch.tensor([True, False, False], dtype=torch.bool),
-        task=TaskEnum.NODE_CLASSIFICATION,
+        task="node-classification",
     )
 
     result = hdata.with_target_node_mask(torch.tensor([False, True, True], dtype=torch.bool))
     result.target_node_mask[0] = True
 
     assert torch.equal(hdata.target_node_mask, torch.tensor([True, False, False], dtype=torch.bool))
+
+
+def test_target_hyperedge_mask_defaults_to_all_hyperedges():
+    x = torch.randn(4, 2, dtype=torch.float)
+    hyperedge_index = torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long)
+
+    data = HData(x=x, hyperedge_index=hyperedge_index)
+
+    assert torch.equal(data.target_hyperedge_mask, torch.tensor([True, True], dtype=torch.bool))
+
+
+def test_with_target_hyperedge_mask_replaces_mask_and_preserves_other_fields():
+    hdata = HData(
+        x=torch.tensor([[1.0], [2.0], [3.0]], dtype=torch.float),
+        hyperedge_index=torch.tensor([[0, 1, 2], [0, 0, 1]], dtype=torch.long),
+        hyperedge_weights=torch.tensor([0.25, 0.75], dtype=torch.float),
+        hyperedge_attr=torch.tensor([[1.0], [2.0]], dtype=torch.float),
+        global_node_ids=torch.tensor([10, 20, 30], dtype=torch.long),
+        target_hyperedge_mask=torch.tensor([True, False], dtype=torch.bool),
+        y=torch.tensor([1.0, 0.0], dtype=torch.float),
+    )
+    target_hyperedge_mask = torch.tensor([False, True], dtype=torch.bool)
+
+    result = hdata.with_target_hyperedge_mask(target_hyperedge_mask)
+
+    assert result is not hdata
+    assert torch.equal(result.target_hyperedge_mask, target_hyperedge_mask)
+    assert torch.equal(result.x, hdata.x)
+    assert torch.equal(result.hyperedge_index, hdata.hyperedge_index)
+    assert result.hyperedge_weights is not None
+    assert hdata.hyperedge_weights is not None
+    assert torch.equal(result.hyperedge_weights, hdata.hyperedge_weights)
+    assert result.hyperedge_attr is not None
+    assert hdata.hyperedge_attr is not None
+    assert torch.equal(result.hyperedge_attr, hdata.hyperedge_attr)
+    assert torch.equal(result.global_node_ids, hdata.global_node_ids)
+    assert torch.equal(result.y, hdata.y)
+    assert result.task == hdata.task
+
+
+def test_with_target_hyperedge_mask_does_not_share_mutable_storage_with_source():
+    hdata = HData(
+        x=torch.randn(3, 2, dtype=torch.float),
+        hyperedge_index=torch.tensor([[0, 1, 2], [0, 0, 1]], dtype=torch.long),
+        target_hyperedge_mask=torch.tensor([True, False], dtype=torch.bool),
+    )
+
+    result = hdata.with_target_hyperedge_mask(torch.tensor([False, True], dtype=torch.bool))
+    result.target_hyperedge_mask[0] = True
+
+    assert torch.equal(
+        hdata.target_hyperedge_mask,
+        torch.tensor([True, False], dtype=torch.bool),
+    )
 
 
 def test_enrich_node_features_replace(mock_hdata):
@@ -1885,6 +2159,7 @@ def test_enrich_hyperedge_weights_concatenate_after_hyperedge_index_expansion():
     )
     hdata.hyperedge_index = torch.tensor([[0, 1, 2, 0], [0, 0, 1, 2]], dtype=torch.long)
     hdata.num_hyperedges = 3
+    hdata.target_hyperedge_mask = torch.tensor([True, True, True], dtype=torch.bool)
     hdata.y = torch.ones(3, dtype=torch.float)
 
     enricher = MagicMock(spec=HyperedgeEnricher)
@@ -2043,7 +2318,14 @@ def test_shuffle_matches_labels_and_attr_with_correct_hyperedge():
     hyperedge_index = torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long)
     y = torch.tensor([1.0, 0.0], dtype=torch.float)
     hyperedge_attr = torch.tensor([[10.0], [20.0]], dtype=torch.float)
-    hdata = HData(x=x, hyperedge_index=hyperedge_index, y=y, hyperedge_attr=hyperedge_attr)
+    target_hyperedge_mask = torch.tensor([False, True], dtype=torch.bool)
+    hdata = HData(
+        x=x,
+        hyperedge_index=hyperedge_index,
+        y=y,
+        hyperedge_attr=hyperedge_attr,
+        target_hyperedge_mask=target_hyperedge_mask,
+    )
 
     shuffled_hdata = hdata.shuffle(seed=42)
 
@@ -2058,6 +2340,10 @@ def test_shuffle_matches_labels_and_attr_with_correct_hyperedge():
             old_nodes = set(hdata.hyperedge_index[0][old_hyperedge_mask].tolist())
             if old_nodes == new_nodes:
                 assert shuffled_hdata.y[new_hyperedge_id] == hdata.y[old_hyperedge_id]
+                assert (
+                    shuffled_hdata.target_hyperedge_mask[new_hyperedge_id]
+                    == hdata.target_hyperedge_mask[old_hyperedge_id]
+                )
                 assert torch.equal(
                     utils.to_non_empty_edgeattr(shuffled_hdata.hyperedge_attr)[new_hyperedge_id],
                     utils.to_non_empty_edgeattr(hdata.hyperedge_attr)[old_hyperedge_id],

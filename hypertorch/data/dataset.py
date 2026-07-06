@@ -18,7 +18,12 @@ from hypertorch.data.sampler import (
     SamplingStrategyEnum,
     create_sampler_from_strategy,
 )
-from hypertorch.data.splitter import HyperedgeDatasetSplitter, NodeDatasetSplitter, Splitter
+from hypertorch.data.splitter import (
+    HyperedgeDatasetSplitter,
+    NodeDatasetSplitter,
+    SparseHyperedgeDatasetSplitter,
+    Splitter,
+)
 
 if TYPE_CHECKING:
     from hypertorch.data import (
@@ -286,7 +291,7 @@ class Dataset(TorchDataset):
         seed: int | None = None,
     ) -> Dataset:
         """
-        Create a new `Dataset` with sampled negative hyperedges added.
+        Create a new Dataset with sampled negative hyperedges added.
 
         Args:
             negative_sampler: Sampler used to generate negative hyperedges from
@@ -295,7 +300,7 @@ class Dataset(TorchDataset):
                 Defaults to ``None``.
 
         Returns:
-            dataset: A new `Dataset` instance with positives and sampled negatives.
+            dataset: A new Dataset instance with positives and sampled negatives.
         """
         hdata_with_negatives = self.hdata.clone()
         hdata_with_negatives = hdata_with_negatives.add_negative_samples(
@@ -330,6 +335,7 @@ class Dataset(TorchDataset):
         shuffle: bool | None = False,
         seed: int | None = None,
         node_space_setting: NodeSpaceSetting = "transductive",
+        sparse_split_hyperedges: bool = False,
         cover_all_nodes_in_train_split: bool = False,
         train_split_idx: int = 0,
         splitter: Splitter[Dataset, Any] | None = None,
@@ -341,19 +347,19 @@ class Dataset(TorchDataset):
 
         Boundaries are computed using cumulative floor to prevent early splits from
         over-consuming edges. The last split absorbs any rounding remainder.
-        In the transductive setting, the first split keeps the full node space
-        and can optionally be rebalanced with real hyperedges from later splits
-        to cover every node.
+        In the transductive setting, node-classification splits keep the full node space on
+        the train split. Hyperlink-prediction splits keep the full hypergraph as context by
+        default and mark supervised hyperedges with ``target_hyperedge_mask``.
 
         Splits that would end with zero hyperedges are rejected.
 
         Use ``split_with_ratios`` to also get the final ratios after splitting.
 
         Examples:
-            Transductive split keeping and covering the full node space on the first split:
+            Transductive split:
             >>> train, test = dataset.split([0.8, 0.2])
             >>> train.hdata.num_nodes == dataset.hdata.num_nodes
-            >>> test.hdata.num_nodes <= dataset.hdata.num_nodes
+            >>> int(train.hdata.target_hyperedge_mask.sum().item()) == len(train)
 
             Inductive split:
             >>> train, test = dataset.split(
@@ -371,13 +377,17 @@ class Dataset(TorchDataset):
             node_space_setting: Whether to preserve the full node space in the splits.
                 ``transductive`` (default) preserves the full node space on the
                 first split. ``inductive`` keeps each split's local node space.
-            cover_all_nodes_in_train_split: Whether a transductive first split
+            sparse_split_hyperedges: Whether hyperlink-prediction splits should use the
+                sparse split behavior. Defaults to ``False``, which keeps the full
+                hypergraph as context in transductive splits and marks supervised hyperedges with
+                ``target_hyperedge_mask``.
+            cover_all_nodes_in_train_split: Whether a transductive sparse hyperedge split
                 should move hyperedges from later splits until every node is
                 incident to one of its selected hyperedges. Ratios are approximate
                 when this coverage requires moving hyperedges into the first split.
             train_split_idx: The index of the split to treat as the train split. Defaults to ``0``,
-                so the first split is the train split that gets the full node space in the
-                transductive setting and is optionally rebalanced to cover all nodes.
+                so the first split is the train split that is optionally rebalanced to cover
+                all nodes in sparse transductive hyperlink-prediction splits.
                 This is used only when ``node_space_setting=="transductive"``
                 and ``cover_all_nodes_in_train_split==True``,
                 to determine which split should be rebalanced to cover all nodes.
@@ -391,8 +401,9 @@ class Dataset(TorchDataset):
 
         Raises:
             ValueError: If ratios do not sum to ``1.0``, a final split has zero
-                hyperedges, or a requested transductive train-cover split cannot
-                cover the full node space.
+                hyperedges, if train coverage is requested for dense hyperlink-prediction
+                splits, or a requested sparse train-cover split cannot cover the full node
+                space.
         """
         if splitter is not None:
             return splitter.split(self)
@@ -414,7 +425,10 @@ class Dataset(TorchDataset):
         if not self.hdata.is_hyperedge_related_task:
             raise ValueError(f"Unsupported task category for task={self.hdata.task!r}.")
 
-        splits, _ = HyperedgeDatasetSplitter(
+        hyperedge_splitter_cls = (
+            SparseHyperedgeDatasetSplitter if sparse_split_hyperedges else HyperedgeDatasetSplitter
+        )
+        splits, _ = hyperedge_splitter_cls(
             node_space_setting=node_space_setting,
             shuffle=shuffle,
             seed=seed,
@@ -434,6 +448,7 @@ class Dataset(TorchDataset):
         node_space_setting: NodeSpaceSetting = "transductive",
         cover_all_nodes_in_train_split: bool = False,
         train_split_idx: int = 0,
+        sparse_split_hyperedges: bool = False,
     ) -> tuple[list[Dataset], list[float]]:
         """
         Split the dataset based on task and return the final hyperedge ratios:
@@ -444,9 +459,9 @@ class Dataset(TorchDataset):
 
         Boundaries are computed using cumulative floor to prevent early splits from
         over-consuming edges. The last split absorbs any rounding remainder.
-        In the transductive setting, the first split keeps the full node space
-        and can optionally be rebalanced with real hyperedges from later splits
-        to cover every node.
+        In the transductive setting, node-classification splits keep the full node space on
+        the train split. Hyperlink-prediction splits keep the full hypergraph as context by
+        default and mark supervised hyperedges with ``target_hyperedge_mask``.
 
         Splits that would end with zero hyperedges are rejected.
 
@@ -463,12 +478,16 @@ class Dataset(TorchDataset):
             node_space_setting: Whether to preserve the full node space in the
                 splits. ``transductive`` (default) preserves the full node space
                 on the first split. ``inductive`` keeps each split's local node space.
-            cover_all_nodes_in_train_split: Whether a transductive first split
+            sparse_split_hyperedges: Whether hyperlink-prediction splits should use the legacy
+                sparse materialization behavior. Defaults to ``False``, which keeps the full
+                hypergraph as context in transductive splits and marks supervised hyperedges
+                with ``target_hyperedge_mask``.
+            cover_all_nodes_in_train_split: Whether a transductive sparse hyperedge split
                 should move hyperedges from later splits until every node is
                 incident to one of its selected hyperedges.
             train_split_idx: The index of the split to treat as the train split. Defaults to ``0``,
-                so the first split is the train split that gets the full node space in the
-                transductive setting and is optionally rebalanced to cover all nodes.
+                so the first split is the train split that is optionally rebalanced to cover
+                all nodes in sparse transductive hyperlink-prediction splits.
                 This is used only when ``node_space_setting=="transductive"``
                 and ``cover_all_nodes_in_train_split==True``,
                 to determine which split should be rebalanced to cover all nodes.
@@ -479,7 +498,7 @@ class Dataset(TorchDataset):
 
         Returns:
             datasets: List of Dataset instances, one per split, each with contiguous IDs.
-            final_ratios: List of floats representing the actual ratios of hyperedges
+            final_ratios: List of floats representing the actual ratios of target hyperedges
                 in each split after splitting and any requested rebalancing.
 
         Raises:
@@ -500,7 +519,10 @@ class Dataset(TorchDataset):
         if not self.hdata.is_hyperedge_related_task:
             raise ValueError(f"Unsupported task category for task={self.hdata.task!r}.")
 
-        return HyperedgeDatasetSplitter(
+        hyperedge_splitter_cls = (
+            SparseHyperedgeDatasetSplitter if sparse_split_hyperedges else HyperedgeDatasetSplitter
+        )
+        return hyperedge_splitter_cls(
             node_space_setting=node_space_setting,
             shuffle=shuffle,
             seed=seed,

@@ -10,7 +10,7 @@ from hypertorch.data import (
     SamplingStrategyEnum,
     create_sampler_from_strategy,
 )
-from hypertorch.types import HData, TaskEnum
+from hypertorch.types import HData
 
 
 @pytest.fixture
@@ -103,6 +103,71 @@ def test_hyperedge_sampling_len(mock_four_node_two_hyperedge_hdata):
     assert sampler.len(mock_four_node_two_hyperedge_hdata) == 2
 
 
+def test_hyperedge_sampling_len_counts_only_target_hyperedges_for_hyperedge_related_tasks():
+    hdata = HData(
+        x=torch.arange(4, dtype=torch.float).unsqueeze(1),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long),
+        target_hyperedge_mask=torch.tensor([False, True], dtype=torch.bool),
+    )
+
+    assert HyperedgeSampler().len(hdata) == 1
+
+
+def test_hyperedge_sampling_maps_positions_to_target_hyperedge_ids():
+    hdata = HData(
+        x=torch.arange(6, dtype=torch.float).unsqueeze(1),
+        hyperedge_index=torch.tensor(
+            [[0, 1, 2, 3, 4, 5], [0, 0, 1, 1, 2, 2]],
+            dtype=torch.long,
+        ),
+        target_hyperedge_mask=torch.tensor([False, True, True], dtype=torch.bool),
+    )
+
+    # Hyperedge 0 is not a target, hyperedges 1 and 2 are targets
+    # So, sampling hyperedge 0 returns the first target hyperedge (1)
+    # and sampling hyperedge 1 returns the second target hyperedge (2)
+    result = HyperedgeSampler().sample(0, hdata)
+
+    assert torch.equal(
+        result.hyperedge_index,
+        torch.tensor([[2, 3], [1, 1]], dtype=torch.long),
+    )
+    assert torch.equal(result.target_hyperedge_mask, torch.tensor([True], dtype=torch.bool))
+
+
+def test_hyperedge_sampling_keeps_target_hyperedge_mask_consistent():
+    hdata = HData(
+        x=torch.arange(6, dtype=torch.float).unsqueeze(1),
+        hyperedge_index=torch.tensor(
+            [[0, 1, 2, 3, 4, 5], [0, 0, 1, 1, 2, 2]],
+            dtype=torch.long,
+        ),
+        target_hyperedge_mask=torch.tensor([False, True, True], dtype=torch.bool),
+    )
+
+    result = HyperedgeSampler().sample([0, 1], hdata)
+
+    assert torch.equal(
+        result.hyperedge_index,
+        torch.tensor([[2, 3, 4, 5], [1, 1, 2, 2]], dtype=torch.long),
+    )
+    assert torch.equal(result.target_hyperedge_mask, torch.tensor([True, True], dtype=torch.bool))
+
+
+def test_hyperedge_sampling_skips_target_hyperedge_mask_when_non_hyperedge_related():
+    hdata = HData(
+        x=torch.arange(4, dtype=torch.float).unsqueeze(1),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long),
+        y=torch.arange(4, dtype=torch.long),
+        task="node-classification",
+    )
+
+    result = HyperedgeSampler().sample(1, hdata)
+
+    assert result.task == "node-classification"
+    assert torch.equal(result.hyperedge_index, torch.tensor([[2, 3], [1, 1]], dtype=torch.long))
+
+
 def test_sample_single_node_graph_hyperedge_sampler(mock_single_node_single_hyperedge_hdata):
     sampler = HyperedgeSampler()
     result = sampler.sample(0, mock_single_node_single_hyperedge_hdata)
@@ -157,37 +222,37 @@ def test_node_sampling_len(mock_four_node_two_hyperedge_hdata):
     assert sampler.len(mock_four_node_two_hyperedge_hdata) == 4
 
 
-def test_node_sampling_len_counts_all_nodes_for_hyperlink_prediction():
+def test_node_sampling_len_counts_all_nodes_for_hyperedge_related_tasks():
     hdata = HData(
         x=torch.arange(5, dtype=torch.float).unsqueeze(1),
         hyperedge_index=torch.tensor([[0, 1, 2, 2, 3, 4], [0, 0, 0, 1, 1, 1]], dtype=torch.long),
         target_node_mask=torch.tensor([False, True, False, True, False], dtype=torch.bool),
         y=torch.arange(2, dtype=torch.float),
-        task=TaskEnum.HYPERLINK_PREDICTION,
+        task="hyperlink-prediction",
     )
 
     assert NodeSampler().len(hdata) == 5
 
 
-def test_node_sampling_len_counts_only_target_nodes_for_node_classification():
+def test_node_sampling_len_counts_only_target_nodes_for_node_related_tasks():
     hdata = HData(
         x=torch.arange(5, dtype=torch.float).unsqueeze(1),
         hyperedge_index=torch.tensor([[0, 1, 2, 2, 3, 4], [0, 0, 0, 1, 1, 1]], dtype=torch.long),
         target_node_mask=torch.tensor([False, True, False, True, False], dtype=torch.bool),
         y=torch.arange(5, dtype=torch.long),
-        task=TaskEnum.NODE_CLASSIFICATION,
+        task="node-classification",
     )
 
     assert NodeSampler().len(hdata) == 2
 
 
-def test_node_sampling_marks_only_seed_targets_in_context_for_node_classification():
+def test_node_sampling_keeps_target_node_mask_consistent():
     hdata = HData(
         x=torch.arange(5, dtype=torch.float).unsqueeze(1),
         hyperedge_index=torch.tensor([[0, 1, 2, 2, 3, 4], [0, 0, 0, 1, 1, 1]], dtype=torch.long),
         target_node_mask=torch.tensor([False, True, False, True, False], dtype=torch.bool),
         y=torch.arange(5, dtype=torch.long),
-        task=TaskEnum.NODE_CLASSIFICATION,
+        task="node-classification",
     )
 
     result = NodeSampler().sample([0, 1], hdata)
@@ -202,17 +267,31 @@ def test_node_sampling_marks_only_seed_targets_in_context_for_node_classificatio
     )
 
 
-def test_node_sampling_validates_target_node_index_bounds_for_node_classification():
+def test_node_sampling_validates_target_node_index_bounds_for_node_related_tasks():
     hdata = HData(
         x=torch.arange(5, dtype=torch.float).unsqueeze(1),
         hyperedge_index=torch.tensor([[0, 1, 2, 2, 3, 4], [0, 0, 0, 1, 1, 1]], dtype=torch.long),
         target_node_mask=torch.tensor([False, True, False, True, False], dtype=torch.bool),
         y=torch.arange(5, dtype=torch.long),
-        task=TaskEnum.NODE_CLASSIFICATION,
+        task="node-classification",
     )
 
     with pytest.raises(IndexError, match=re.escape("Node ID 2 is out of bounds (0, 1).")):
         NodeSampler().sample(2, hdata)
+
+
+def test_node_sampling_skips_target_node_mask_when_non_node_related():
+    hdata = HData(
+        x=torch.arange(4, dtype=torch.float).unsqueeze(1),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long),
+        y=torch.arange(2, dtype=torch.float),
+        task="hyperlink-prediction",
+    )
+
+    result = NodeSampler().sample(1, hdata)
+
+    assert result.task == "hyperlink-prediction"
+    assert torch.equal(result.hyperedge_index, torch.tensor([[0, 1], [0, 0]], dtype=torch.long))
 
 
 def test_sample_single_node_graph_node_sampler(mock_single_node_single_hyperedge_hdata):

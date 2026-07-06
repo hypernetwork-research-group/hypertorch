@@ -73,8 +73,6 @@ def __cached_split_dataset(
             )
         dataset = Dataset.from_hdata(hdata, sampling_strategy=sampling_strategy)
 
-    stats = dataset.stats()
-    print(f"Dataset stats: {stats['num_nodes']}, {stats['num_hyperedges']}")
     train_dataset, val_dataset, test_dataset = dataset.split(
         ratios=[0.7, 0.1, 0.2],
         shuffle=True,

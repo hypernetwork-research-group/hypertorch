@@ -208,9 +208,9 @@ class HNHNHlpModule(HlpModule):
             loss: Computed loss.
         """
         scores = self.forward(batch.x, batch.hyperedge_index)
-        labels = batch.y
-        batch_size = batch.num_hyperedges
+        target_scores, target_labels = self._target_scores_and_labels(scores, batch)
+        batch_size = target_labels.size(0)
 
-        loss = self._compute_loss(scores, labels, batch_size, stage)
-        self._compute_metrics(scores, labels, batch_size, stage)
+        loss = self._compute_loss(target_scores, target_labels, batch_size, stage)
+        self._compute_metrics(target_scores, target_labels, batch_size, stage)
         return loss

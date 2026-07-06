@@ -225,6 +225,26 @@ class HlpModule(L.LightningModule):
             and torch.distributed.is_initialized()
         )
 
+    def _target_scores_and_labels(self, scores: Tensor, batch: HData) -> tuple[Tensor, Tensor]:
+        """
+        Select supervised hyperedge scores and labels from a full-context HLP batch.
+
+        Args:
+            scores: Model scores for all hyperedges in ``batch``.
+            batch: Input HData batch containing ``target_hyperedge_mask``.
+
+        Returns:
+            target_scores: Scores for supervised target hyperedges.
+            target_labels: Labels for supervised target hyperedges.
+
+        Raises:
+            ValueError: If the score tensor does not align with the batch hyperedge mask.
+        """
+        target_hyperedge_mask = batch.target_hyperedge_mask
+        target_scores = scores[target_hyperedge_mask]
+        target_labels = batch.y[target_hyperedge_mask]
+        return target_scores, target_labels
+
     def _should_sample_negatives(self) -> bool:
         """
         Whether to resample negatives for the current epoch.

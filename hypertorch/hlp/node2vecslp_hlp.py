@@ -177,8 +177,8 @@ class Node2VecSLPHlpModule(HlpModule):
             loss: Training loss.
         """
         scores = self.forward(batch.x, batch.hyperedge_index, batch.global_node_ids)
-        labels = batch.y
-        batch_size = batch.num_hyperedges
+        target_scores, target_labels = self._target_scores_and_labels(scores, batch)
+        batch_size = target_labels.size(0)
 
         if self.mode == NODE2VEC_JOINT_MODE:
             # Node2Vec.loss() is already a stochastic objective over sampled walks,
@@ -194,7 +194,7 @@ class Node2VecSLPHlpModule(HlpModule):
             positive_random_walk = positive_random_walk.to(self.device)
             negative_random_walk = negative_random_walk.to(self.device)
 
-            hlp_loss = self.loss_fn(scores, labels)
+            hlp_loss = self.loss_fn(target_scores, target_labels)
             node2vec_loss = _to_node2vec_encoder(self.encoder, self.mode).loss(
                 positive_random_walk,
                 negative_random_walk,
@@ -223,9 +223,9 @@ class Node2VecSLPHlpModule(HlpModule):
                 **self.metrics_log_kwargs,
             )
         else:
-            loss = self._compute_loss(scores, labels, batch_size, Stage.TRAIN)
+            loss = self._compute_loss(target_scores, target_labels, batch_size, Stage.TRAIN)
 
-        self._compute_metrics(scores, labels, batch_size, Stage.TRAIN)
+        self._compute_metrics(target_scores, target_labels, batch_size, Stage.TRAIN)
         return loss
 
     def validation_step(self, batch: HData, batch_idx: int) -> Tensor:
@@ -325,9 +325,9 @@ class Node2VecSLPHlpModule(HlpModule):
             loss: Computed loss.
         """
         scores = self.forward(batch.x, batch.hyperedge_index, batch.global_node_ids)
-        labels = batch.y
-        batch_size = batch.num_hyperedges
+        target_scores, target_labels = self._target_scores_and_labels(scores, batch)
+        batch_size = target_labels.size(0)
 
-        loss = self._compute_loss(scores, labels, batch_size, stage)
-        self._compute_metrics(scores, labels, batch_size, stage)
+        loss = self._compute_loss(target_scores, target_labels, batch_size, stage)
+        self._compute_metrics(target_scores, target_labels, batch_size, stage)
         return loss

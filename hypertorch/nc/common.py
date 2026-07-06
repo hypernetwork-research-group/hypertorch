@@ -174,9 +174,6 @@ class NcModule(L.LightningModule):
             target_labels: Labels for supervised nodes.
         """
         target_node_mask = batch.target_node_mask
-        if target_node_mask is None:
-            target_node_mask = torch.ones(batch.num_nodes, dtype=torch.bool, device=batch.device)
-
         target_logits = logits[target_node_mask]
         target_labels = batch.y[target_node_mask]
         return target_logits, target_labels

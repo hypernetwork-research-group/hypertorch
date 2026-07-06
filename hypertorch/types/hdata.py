@@ -88,6 +88,11 @@ class HData:
             settings where models are trained on the entire hypergraph.
             If ``None``, defaults to a tensor of ones of size ``num_nodes``. It is always
             ignored for hyperedge-related tasks.
+        target_hyperedge_mask: Optional boolean tensor of shape ``[num_hyperedges]`` identifying
+            the supervised hyperedges for tasks learning on hyperedges. This is useful in
+            transductive settings where models are trained on the entire hypergraph.
+            If ``None``, defaults to a tensor of ones of size ``num_hyperedges``. It is always
+            ignored for node-related tasks.
         y: Labels for nodes or hyperedges, it has shape ``[num_hyperedges]`` for tasks learning
             on hyperedges, and shape ``[num_nodes]`` for tasks learning on nodes.
             Used for supervised learning tasks. For unsupervised tasks, this can be ignored.
@@ -107,6 +112,7 @@ class HData:
         num_hyperedges: int | None = None,
         global_node_ids: Tensor | None = None,
         target_node_mask: Tensor | None = None,
+        target_hyperedge_mask: Tensor | None = None,
         y: Tensor | None = None,
         task: Task = TaskEnum.HYPERLINK_PREDICTION,
     ):
@@ -139,6 +145,11 @@ class HData:
                 settings where models are trained on the entire hypergraph.
                 If ``None``, defaults to a tensor of ones of size ``num_nodes``. It is always
                 ignored for hyperedge-related tasks.
+            target_hyperedge_mask: Optional boolean tensor of shape ``[num_hyperedges]``
+                identifying the supervised hyperedges for tasks learning on hyperedges. This is
+                useful in transductive settings where models are trained on the entire hypergraph.
+                If ``None``, defaults to a tensor of ones of size ``num_hyperedges``. It is always
+                ignored for node-related tasks.
             y: Labels for nodes or hyperedges, it has shape ``[num_hyperedges]`` for tasks learning
                 on hyperedges, and shape ``[num_nodes]`` for tasks learning on nodes.
                 Used for supervised learning tasks. For unsupervised tasks, this can be ignored.
@@ -181,6 +192,11 @@ class HData:
             if target_node_mask is not None
             else torch.ones(self.num_nodes, dtype=torch.bool, device=self.x.device)
         )
+        self.target_hyperedge_mask: Tensor = (
+            target_hyperedge_mask
+            if target_hyperedge_mask is not None
+            else torch.ones(self.num_hyperedges, dtype=torch.bool, device=self.x.device)
+        )
 
         self.task: Task = task
         self.y: Tensor = self.__assign_y_for_task(y)
@@ -207,6 +223,11 @@ class HData:
             if self.is_node_related_task
             else f"(ignored for task={self.task!r})"
         )
+        target_hyperedge_mask_shape = (
+            str(self.target_hyperedge_mask.shape)
+            if self.is_hyperedge_related_task
+            else f"(ignored for task={self.task!r})"
+        )
 
         return (
             f"{self.__class__.__name__}(\n"
@@ -215,6 +236,7 @@ class HData:
             f"    x_shape={self.x.shape},\n"
             f"    global_node_ids_shape={self.global_node_ids.shape},\n"
             f"    target_node_mask_shape={target_node_mask_shape},\n"
+            f"    target_hyperedge_mask_shape={target_hyperedge_mask_shape},\n"
             f"    hyperedge_index_shape={self.hyperedge_index.shape},\n"
             f"    hyperedge_weights_shape={hyperedge_weights_shape},\n"
             f"    hyperedge_attr_shape={hyperedge_attr_shape},\n"
@@ -255,6 +277,8 @@ class HData:
                 if not provided explicitly.
                 If ``x`` is provided explicitly, ``global_node_ids`` must be provided explicitly
                 as well to ensure consistency.
+            - ``target_node_mask`` is derived from the instance with the largest number of nodes.
+            - ``target_hyperedge_mask`` is the concatenation of all input hyperedge target masks.
             - ``y`` is the concatenation of all input labels.
 
         Examples:
@@ -306,6 +330,12 @@ class HData:
             if hdata_with_largest_node_space.target_node_mask is not None
             else None
         )
+        new_num_hyperedges = sum(hdata.num_hyperedges for hdata in hdatas)
+        new_target_hyperedge_mask = (
+            torch.cat([hdata.target_hyperedge_mask for hdata in hdatas], dim=0)
+            if hdata_with_largest_node_space.is_hyperedge_related_task
+            else None
+        )
         new_y = (
             # For node-based tasks, we must preserve the labels for the entire node space
             hdata_with_largest_node_space.y.clone()
@@ -334,9 +364,10 @@ class HData:
             hyperedge_weights=new_hyperedge_weights,
             hyperedge_attr=new_hyperedge_attr,
             num_nodes=new_x.size(0),
-            num_hyperedges=new_y.size(0),
+            num_hyperedges=new_num_hyperedges,
             global_node_ids=new_global_node_ids,
             target_node_mask=new_target_node_mask,
+            target_hyperedge_mask=new_target_hyperedge_mask,
             y=new_y,
             task=hdata_with_largest_node_space.task,
         )
@@ -384,6 +415,7 @@ class HData:
             num_hyperedges=0,
             global_node_ids=None,
             target_node_mask=None,
+            target_hyperedge_mask=None,
             y=None,
             task=task,
         )
@@ -428,6 +460,7 @@ class HData:
             hyperedge_attr=None,
             global_node_ids=None,
             target_node_mask=None,
+            target_hyperedge_mask=None,
             y=None,
             task=task,
         )
@@ -515,9 +548,25 @@ class HData:
         return self.task == TaskEnum.NODE_CLASSIFICATION
 
     @property
+    def num_sampleable_nodes(self) -> int:
+        """
+        Return the number of nodes that are eligible for sampling
+        based on this HData instance's task.
+        """
+        return self.sampleable_node_ids.size(0)
+
+    @property
+    def num_sampleable_hyperedges(self) -> int:
+        """
+        Return the number of hyperedges that are eligible for sampling
+        based on this HData instance's task.
+        """
+        return self.sampleable_hyperedge_ids.size(0)
+
+    @property
     def sampleable_node_ids(self) -> Tensor:
         """
-        Return node IDs that are eligible for sampling based on the task of this HData instance.
+        Return node IDs that are eligible for sampling based on this HData instance's task.
         """
         if self.is_node_related_task:
             # as_tuple=False returns a 2-D tensor where each row is the index for a nonzero value
@@ -527,6 +576,16 @@ class HData:
             #          -> flatten() = [1, 3], which are the eligible node IDs
             return self.target_node_mask.nonzero(as_tuple=False).flatten()
         return HyperedgeIndex(self.hyperedge_index).node_ids
+
+    @property
+    def sampleable_hyperedge_ids(self) -> Tensor:
+        """
+        Return hyperedge IDs eligible for sampling based on this HData instance's task.
+        """
+        if self.is_hyperedge_related_task:
+            # Same logic as `sampleable_node_ids`, but for hyperedges
+            return self.target_hyperedge_mask.nonzero(as_tuple=False).flatten()
+        return HyperedgeIndex(self.hyperedge_index).hyperedge_ids
 
     def enrich_node_features(
         self,
@@ -562,6 +621,7 @@ class HData:
             num_hyperedges=self.num_hyperedges,
             global_node_ids=self.global_node_ids.clone(),
             target_node_mask=self.target_node_mask.clone(),
+            target_hyperedge_mask=self.target_hyperedge_mask.clone(),
             y=self.y.clone(),
             task=self.task,
         )
@@ -685,6 +745,7 @@ class HData:
             num_hyperedges=self.num_hyperedges,
             global_node_ids=self.global_node_ids.clone(),
             target_node_mask=self.target_node_mask.clone(),
+            target_hyperedge_mask=self.target_hyperedge_mask.clone(),
             y=self.y.clone(),
             task=self.task,
         )
@@ -731,6 +792,7 @@ class HData:
             num_hyperedges=self.num_hyperedges,
             global_node_ids=self.global_node_ids.clone(),
             target_node_mask=self.target_node_mask.clone(),
+            target_hyperedge_mask=self.target_hyperedge_mask.clone(),
             y=self.y.clone(),
             task=self.task,
         )
@@ -774,6 +836,7 @@ class HData:
             num_hyperedges=self.num_hyperedges,
             global_node_ids=self.global_node_ids.clone(),
             target_node_mask=self.target_node_mask.clone(),
+            target_hyperedge_mask=self.target_hyperedge_mask.clone(),
             y=self.y.clone(),
             task=self.task,
         )
@@ -795,6 +858,7 @@ class HData:
             self.hyperedge_index.device,
             self.global_node_ids.device,
             self.target_node_mask.device,
+            self.target_hyperedge_mask.device,
             self.y.device,
         }
 
@@ -838,6 +902,7 @@ class HData:
             else self.y[hyperedge_index_wrapper.hyperedge_ids]
         )
         target_node_mask = self.target_node_mask[hyperedge_index_wrapper.node_ids]
+        target_hyperedge_mask = self.target_hyperedge_mask[hyperedge_index_wrapper.hyperedge_ids]
 
         global_node_ids = (
             self.global_node_ids[hyperedge_index_wrapper.node_ids]
@@ -864,6 +929,7 @@ class HData:
             num_hyperedges=hyperedge_index_wrapper.num_hyperedges,
             global_node_ids=global_node_ids,
             target_node_mask=target_node_mask,
+            target_hyperedge_mask=target_hyperedge_mask,
             y=y,
             task=self.task,
         )
@@ -944,6 +1010,7 @@ class HData:
         new_hyperedge_weights = (
             self.hyperedge_weights[permutation] if self.hyperedge_weights is not None else None
         )
+        new_target_hyperedge_mask = self.target_hyperedge_mask[permutation]
 
         # Permutate only for tasks where y is related to hyperedges (e.g., hyperlink-prediction)
         # Example: y = [1, 1, 0], permutation = [1, 2, 0]
@@ -959,6 +1026,7 @@ class HData:
             num_hyperedges=self.num_hyperedges,
             global_node_ids=self.global_node_ids.clone(),
             target_node_mask=self.target_node_mask.clone(),
+            target_hyperedge_mask=new_target_hyperedge_mask,
             y=new_y,
             task=self.task,
         )
@@ -979,6 +1047,7 @@ class HData:
             num_hyperedges=self.num_hyperedges,
             global_node_ids=self.global_node_ids.clone(),
             target_node_mask=self.target_node_mask.clone(),
+            target_hyperedge_mask=self.target_hyperedge_mask.clone(),
             y=self.y.clone(),
             task=self.task,
         )
@@ -999,6 +1068,10 @@ class HData:
         self.hyperedge_index = self.hyperedge_index.to(device=device, non_blocking=non_blocking)
         self.global_node_ids = self.global_node_ids.to(device=device, non_blocking=non_blocking)
         self.target_node_mask = self.target_node_mask.to(device=device, non_blocking=non_blocking)
+        self.target_hyperedge_mask = self.target_hyperedge_mask.to(
+            device=device,
+            non_blocking=non_blocking,
+        )
         self.y = self.y.to(device=device, non_blocking=non_blocking)
 
         if self.hyperedge_attr is not None:
@@ -1033,6 +1106,32 @@ class HData:
             num_hyperedges=self.num_hyperedges,
             global_node_ids=self.global_node_ids.clone(),
             target_node_mask=target_node_mask.clone(),
+            target_hyperedge_mask=self.target_hyperedge_mask.clone(),
+            y=self.y.clone(),
+            task=self.task,
+        )
+
+    def with_target_hyperedge_mask(self, target_hyperedge_mask: Tensor) -> HData:
+        """
+        Return a copy of this instance with ``target_hyperedge_mask`` set to the given mask.
+
+        Args:
+            target_hyperedge_mask: Boolean tensor indicating target hyperedges.
+
+        Returns:
+            hdata: A new `HData` instance with the same attributes except for
+                ``target_hyperedge_mask``.
+        """
+        return self.__class__(
+            x=self.x.clone(),
+            hyperedge_index=self.hyperedge_index.clone(),
+            hyperedge_weights=clone_optional_tensor(self.hyperedge_weights),
+            hyperedge_attr=clone_optional_tensor(self.hyperedge_attr),
+            num_nodes=self.num_nodes,
+            num_hyperedges=self.num_hyperedges,
+            global_node_ids=self.global_node_ids.clone(),
+            target_node_mask=self.target_node_mask.clone(),
+            target_hyperedge_mask=target_hyperedge_mask.clone(),
             y=self.y.clone(),
             task=self.task,
         )
@@ -1060,6 +1159,7 @@ class HData:
             num_hyperedges=self.num_hyperedges,
             global_node_ids=self.global_node_ids.clone(),
             target_node_mask=self.target_node_mask.clone(),
+            target_hyperedge_mask=self.target_hyperedge_mask.clone(),
             y=torch.full((y_size,), value, dtype=torch.float, device=self.device),
             task=self.task,
         )
@@ -1304,6 +1404,7 @@ class HData:
         self.__validate_hyperedge_weights()
         self.__validate_global_node_ids()
         self.__validate_target_node_mask()
+        self.__validate_target_hyperedge_mask()
         self.__validate_labels()
         self.__validate_task()
 
@@ -1451,8 +1552,6 @@ class HData:
         Raises:
             ValueError: If the mask is incompatible with the configured task or node count.
         """
-        # We currently only support target_node_mask for node classification tasks
-        # For all other tasks, it is simply ignored
         if not self.is_node_related_task:
             return
 
@@ -1469,6 +1568,33 @@ class HData:
             raise ValueError(
                 f"'target_node_mask' must have one entry per node. "
                 f"Got size={self.target_node_mask.size(0)} but num_nodes={self.num_nodes}."
+            )
+
+    def __validate_target_hyperedge_mask(self) -> None:
+        """
+        Validate the optional supervised-hyperedge mask.
+
+        Raises:
+            ValueError: If the mask is incompatible with the configured task or hyperedge count.
+        """
+        if not self.is_hyperedge_related_task:
+            return
+
+        if self.target_hyperedge_mask.dtype != torch.bool:
+            raise ValueError(
+                "'target_hyperedge_mask' must have dtype torch.bool, "
+                f"got {self.target_hyperedge_mask.dtype}."
+            )
+        if self.target_hyperedge_mask.dim() != 1:
+            raise ValueError(
+                f"'target_hyperedge_mask' must be a 1D tensor, "
+                f"got shape {tuple(self.target_hyperedge_mask.shape)}."
+            )
+        if self.target_hyperedge_mask.size(0) != self.num_hyperedges:
+            raise ValueError(
+                f"'target_hyperedge_mask' must have one entry per hyperedge. "
+                f"Got size={self.target_hyperedge_mask.size(0)} but "
+                f"num_hyperedges={self.num_hyperedges}."
             )
 
     def __validate_task(self) -> None:

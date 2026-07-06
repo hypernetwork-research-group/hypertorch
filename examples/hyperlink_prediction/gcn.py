@@ -42,7 +42,6 @@ if __name__ == "__main__":
     train_dataset, val_dataset, test_dataset = dataset.split(
         ratios=[0.7, 0.1, 0.2],
         node_space_setting="transductive",
-        cover_all_nodes_in_train_split=True,
         shuffle=True,
         seed=42,
     )
@@ -53,10 +52,11 @@ if __name__ == "__main__":
 
     # Add negative samples to all splits
     for name, ds in [("Train", train_dataset), ("Val", val_dataset), ("Test", test_dataset)]:
+        num_positive_samples = len(ds)
         num_negative_samples = (
-            ds.hdata.num_hyperedges
+            num_positive_samples
             if name in ["Train", "Val"]  # 1:1 ratio of pos:neg samples
-            else int(ds.hdata.num_hyperedges * 0.6)  # 60% negatives for test set
+            else int(num_positive_samples * 0.6)  # 60% negatives for test set
         )
         negative_sampler = RandomNegativeSampler(
             num_negative_samples=num_negative_samples,
@@ -79,7 +79,7 @@ if __name__ == "__main__":
     train_dataset.enrich_node_features(
         enricher=LaplacianPositionalEncodingEnricher(
             num_features=num_features,
-            # We are using transductive with all nodes coverage in the train split
+            # Transductive splits keep the full node space.
             num_nodes=dataset.hdata.num_nodes,
         ),
         enrichment_mode="replace",
