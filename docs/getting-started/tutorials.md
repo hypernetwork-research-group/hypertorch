@@ -44,6 +44,7 @@ scripts along with a brief description.
 | [hgnnp.py](https://github.com/hypernetwork-research-group/hypertorch/blob/main/examples/node_classification/hgnnp.py) | HGNNP NC pipeline on `AlgebraDataset` (LPE enricher) | `make run examples/node_classification/hgnnp.py` |
 | [hypergcn.py](https://github.com/hypernetwork-research-group/hypertorch/blob/main/examples/node_classification/hypergcn.py) | HyperGCN NC pipeline on `AlgebraDataset` (LPE enricher) | `make run examples/node_classification/hypergcn.py` |
 | [mlp.py](https://github.com/hypernetwork-research-group/hypertorch/blob/main/examples/node_classification/mlp.py) | MLP NC pipeline on `AlgebraDataset` (LPE enricher) | `make run examples/node_classification/mlp.py` |
+| [villain.py](https://github.com/hypernetwork-research-group/hypertorch/blob/main/examples/node_classification/villain.py) | VilLain NC pipeline on `AlgebraDataset` (degree labels) | `make run examples/node_classification/villain.py` |
 | **Sampling strategies** |  |  |
 | [custom_negative_sampler.py](https://github.com/hypernetwork-research-group/hypertorch/blob/main/examples/sampling/custom_negative_sampler.py) | Custom negative sampling for HLP | `make run examples/sampling/custom_negative_sampler.py` |
 | [negative_sampler.py](https://github.com/hypernetwork-research-group/hypertorch/blob/main/examples/sampling/negative_sampler.py) | Negative sampling for HLP | `make run examples/sampling/negative_sampler.py` |
