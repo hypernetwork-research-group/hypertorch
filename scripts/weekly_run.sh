@@ -7,7 +7,7 @@ TAG_TO_CHECK=$(git tag --sort=-creatordate | head -n 1) #latest tag including be
 COMMIT_TO_CHECK=$(git rev-list -n 1 "$TAG_TO_CHECK")
 
 curl -L \
-  "https://github.com/hypernetwork-research-group/hypertorch/archive/${COMMIT_TO_CHECK}.tar.gz" \
+  "https://github.com/hypernetwork-research-group/hypertorch/archive/refs/tags/${TAG_TO_CHECK}.tar.gz" \
   -o hypertorch.tar.gz
 
 tar -xzf hypertorch.tar.gz --strip-components=1 \
