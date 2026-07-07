@@ -11,6 +11,9 @@ permissions:
 jobs:
   setup-tags:
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.get_tag_commit.outputs.tag }}
+      commit: ${{ steps.get_tag_commit.outputs.commit }}
     steps:
     - name: Checkout repository
       uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
@@ -37,6 +40,9 @@ jobs:
   test-ubuntu-x86:
     needs: setup-tags
     runs-on: ${{ matrix.os }}
+    env:
+      TAG_TO_CHECK: ${{ needs.setup-tags.outputs.tag }}
+      COMMIT_TO_CHECK: ${{ needs.setup-tags.outputs.commit }}
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -61,6 +67,9 @@ jobs:
   test-ubuntu-arm:
     needs: setup-tags
     runs-on: ${{ matrix.os }}
+    env:
+      TAG_TO_CHECK: ${{ needs.setup-tags.outputs.tag }}
+      COMMIT_TO_CHECK: ${{ needs.setup-tags.outputs.commit }}
     strategy:
       matrix:
         os: [ubuntu-24.04-arm]
@@ -85,6 +94,9 @@ jobs:
   test-macos-arm:
     needs: setup-tags
     runs-on: ${{ matrix.os }}
+    env:
+      TAG_TO_CHECK: ${{ needs.setup-tags.outputs.tag }}
+      COMMIT_TO_CHECK: ${{ needs.setup-tags.outputs.commit }}
     strategy:
       matrix:
         os: [macos-latest]
@@ -109,6 +121,9 @@ jobs:
   test-windows-x86:
     needs: setup-tags
     runs-on: ${{ matrix.os }}
+    env:
+      TAG_TO_CHECK: ${{ needs.setup-tags.outputs.tag }}
+      COMMIT_TO_CHECK: ${{ needs.setup-tags.outputs.commit }}
     strategy:
       matrix:
         os: [windows-latest]
