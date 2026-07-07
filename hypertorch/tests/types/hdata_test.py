@@ -1678,6 +1678,49 @@ def test_with_y_to_does_not_share_mutable_storage_with_source(hdata_with_all_mut
     __assert_mutating_result_keeps_source_tensors_unchanged(hdata, result)
 
 
+def test_with_y_replaces_labels_and_preserves_other_fields(mock_hdata):
+    y = torch.tensor([0.0, 0.5, 1.0], dtype=torch.float)
+
+    result = mock_hdata.with_y(y)
+
+    assert result is not mock_hdata
+    assert torch.equal(result.y, y)
+    assert torch.equal(result.x, mock_hdata.x)
+    assert torch.equal(result.hyperedge_index, mock_hdata.hyperedge_index)
+    assert result.hyperedge_attr is not None
+    assert mock_hdata.hyperedge_attr is not None
+    assert torch.equal(result.hyperedge_attr, mock_hdata.hyperedge_attr)
+    assert result.num_nodes == mock_hdata.num_nodes
+    assert result.num_hyperedges == mock_hdata.num_hyperedges
+    assert result.task == mock_hdata.task
+
+
+def test_with_y_none_uses_default_labels(mock_hdata):
+    mock_hdata.y = torch.zeros(mock_hdata.num_hyperedges, dtype=torch.float)
+
+    result = mock_hdata.with_y(None)
+
+    assert torch.equal(result.y, torch.ones(mock_hdata.num_hyperedges, dtype=torch.float))
+
+
+def test_with_y_clones_input_labels(mock_hdata):
+    original_y = torch.tensor([0.0, 0.5, 1.0], dtype=torch.float)
+    cloned_y = original_y.clone()
+
+    result = mock_hdata.with_y(original_y)
+    original_y[0] = 1.0
+
+    assert torch.equal(result.y, cloned_y)
+
+
+def test_with_y_does_not_share_mutable_storage_with_source(hdata_with_all_mutable_tensors):
+    hdata = hdata_with_all_mutable_tensors
+
+    result = hdata.with_y(torch.tensor([0.0, 0.5, 1.0], dtype=torch.float))
+
+    __assert_mutating_result_keeps_source_tensors_unchanged(hdata, result)
+
+
 def test_target_node_mask_defaults_to_all_nodes():
     x = torch.randn(4, 2, dtype=torch.float)
     hyperedge_index = torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long)
@@ -1717,6 +1760,34 @@ def test_with_target_node_mask_replaces_mask_and_preserves_other_fields():
     assert torch.equal(result.global_node_ids, hdata.global_node_ids)
     assert torch.equal(result.y, hdata.y)
     assert result.task == hdata.task
+
+
+def test_with_target_node_mask_none_uses_default_all_nodes():
+    hdata = HData(
+        x=torch.randn(3, 2, dtype=torch.float),
+        hyperedge_index=torch.tensor([[0, 1, 2], [0, 0, 1]], dtype=torch.long),
+        target_node_mask=torch.tensor([True, False, False], dtype=torch.bool),
+        task="node-classification",
+    )
+
+    result = hdata.with_target_node_mask(None)
+
+    assert torch.equal(result.target_node_mask, torch.tensor([True, True, True], dtype=torch.bool))
+
+
+def test_with_target_node_mask_clones_input_mask():
+    hdata = HData(
+        x=torch.randn(3, 2, dtype=torch.float),
+        hyperedge_index=torch.tensor([[0, 1, 2], [0, 0, 1]], dtype=torch.long),
+        task="node-classification",
+    )
+    original_target_node_mask = torch.tensor([False, True, True], dtype=torch.bool)
+    cloned_target_node_mask = original_target_node_mask.clone()
+
+    result = hdata.with_target_node_mask(original_target_node_mask)
+    original_target_node_mask[0] = True
+
+    assert torch.equal(result.target_node_mask, cloned_target_node_mask)
 
 
 def test_with_target_node_mask_does_not_share_mutable_storage_with_source():
@@ -1769,6 +1840,32 @@ def test_with_target_hyperedge_mask_replaces_mask_and_preserves_other_fields():
     assert torch.equal(result.global_node_ids, hdata.global_node_ids)
     assert torch.equal(result.y, hdata.y)
     assert result.task == hdata.task
+
+
+def test_with_target_hyperedge_mask_none_uses_default_all_hyperedges():
+    hdata = HData(
+        x=torch.randn(3, 2, dtype=torch.float),
+        hyperedge_index=torch.tensor([[0, 1, 2], [0, 0, 1]], dtype=torch.long),
+        target_hyperedge_mask=torch.tensor([True, False], dtype=torch.bool),
+    )
+
+    result = hdata.with_target_hyperedge_mask(None)
+
+    assert torch.equal(result.target_hyperedge_mask, torch.tensor([True, True], dtype=torch.bool))
+
+
+def test_with_target_hyperedge_mask_clones_input_mask():
+    hdata = HData(
+        x=torch.randn(3, 2, dtype=torch.float),
+        hyperedge_index=torch.tensor([[0, 1, 2], [0, 0, 1]], dtype=torch.long),
+    )
+    original_target_hyperedge_mask = torch.tensor([False, True], dtype=torch.bool)
+    cloned_target_hyperedge_mask = original_target_hyperedge_mask.clone()
+
+    result = hdata.with_target_hyperedge_mask(original_target_hyperedge_mask)
+    original_target_hyperedge_mask[0] = True
+
+    assert torch.equal(result.target_hyperedge_mask, cloned_target_hyperedge_mask)
 
 
 def test_with_target_hyperedge_mask_does_not_share_mutable_storage_with_source():

@@ -554,6 +554,112 @@ def test_collate_sample_full_hypergraph_returns_cached_hdata(mock_dataset_single
     )
 
 
+def test_collate_sample_full_hypergraph_uses_sampled_target_node_mask():
+    x = torch.tensor(
+        [[1.0, 1.5], [2.0, 2.5], [3.0, 3.5], [4.0, 4.5]],
+        dtype=torch.float,
+    )
+    hyperedge_index = torch.tensor([[0, 1, 2, 2, 3], [0, 0, 1, 1, 1]], dtype=torch.long)
+    y = torch.tensor([10, 11, 12, 13], dtype=torch.long)
+    hdata = HData(
+        x=x,
+        hyperedge_index=hyperedge_index,
+        target_node_mask=torch.tensor([True, True, True, True], dtype=torch.bool),
+        y=y,
+        task="node-classification",
+    )
+
+    sample0 = HData(
+        x=torch.empty((0, 0), dtype=torch.float),
+        hyperedge_index=torch.tensor([[0, 1, 2], [0, 0, 1]], dtype=torch.long),
+        target_node_mask=torch.tensor([False, True, False], dtype=torch.bool),
+        task="node-classification",
+    )
+    sample1 = HData(
+        x=torch.empty((0, 0), dtype=torch.float),
+        hyperedge_index=torch.tensor([[2, 3], [1, 1]], dtype=torch.long),
+        target_node_mask=torch.tensor([False, True], dtype=torch.bool),
+        task="node-classification",
+    )
+
+    dataset = MagicMock(spec=Dataset)
+    dataset.hdata = hdata
+    dataset.__len__.return_value = 2
+
+    loader = DataLoader(dataset, sample_full_hypergraph=True)
+    batched = loader.collate([sample0, sample1])
+
+    assert torch.equal(batched.x, x)
+    assert torch.equal(batched.hyperedge_index, hyperedge_index)
+    assert torch.equal(batched.y, y)
+    assert torch.equal(
+        batched.target_node_mask,
+        torch.tensor([False, True, False, True], dtype=torch.bool),
+    )
+
+
+def test_collate_sample_full_hypergraph_uses_sampled_target_hyperedge_mask():
+    x = torch.tensor([[1.0, 1.5], [2.0, 2.5], [3.0, 3.5], [4.0, 4.5]], dtype=torch.float)
+    hyperedge_index = torch.tensor([[0, 1, 2, 3, 0], [0, 0, 1, 1, 2]], dtype=torch.long)
+    y = torch.tensor([1.0, 0.0, 1.0], dtype=torch.float)
+    hdata = HData(
+        x=x,
+        hyperedge_index=hyperedge_index,
+        target_hyperedge_mask=torch.tensor([True, True, True], dtype=torch.bool),
+        y=y,
+        task="hyperlink-prediction",
+    )
+
+    sample0 = HData(
+        x=torch.empty((0, 0), dtype=torch.float),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long),
+        target_hyperedge_mask=torch.tensor([False, True], dtype=torch.bool),
+    )
+    sample1 = HData(
+        x=torch.empty((0, 0), dtype=torch.float),
+        hyperedge_index=torch.tensor([[0], [2]], dtype=torch.long),
+        num_hyperedges=1,
+        target_hyperedge_mask=torch.tensor([True], dtype=torch.bool),
+    )
+
+    dataset = MagicMock(spec=Dataset)
+    dataset.hdata = hdata
+    dataset.__len__.return_value = 2
+
+    loader = DataLoader(dataset, sample_full_hypergraph=True)
+    batched = loader.collate([sample0, sample1])
+
+    assert torch.equal(batched.x, x)
+    assert torch.equal(batched.hyperedge_index, hyperedge_index)
+    assert torch.equal(batched.y, y)
+    assert torch.equal(
+        batched.target_hyperedge_mask,
+        torch.tensor([False, True, True], dtype=torch.bool),
+    )
+
+
+def test_collate_sample_full_hypergraph_raises_for_unsupported_cached_task_category():
+    hdata = HData(
+        x=torch.tensor([[1.0], [2.0]], dtype=torch.float),
+        hyperedge_index=torch.tensor([[0, 1], [0, 0]], dtype=torch.long),
+    )
+    hdata.task = cast(Any, "unsupported")
+
+    sample = HData.from_hyperedge_index(torch.tensor([[0, 1], [0, 0]], dtype=torch.long))
+
+    dataset = MagicMock(spec=Dataset)
+    dataset.hdata = hdata
+    dataset.__len__.return_value = 1
+
+    loader = DataLoader(dataset, sample_full_hypergraph=True)
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape("Unsupported task category for task='unsupported'."),
+    ):
+        loader.collate([sample])
+
+
 def test_collate_with_explicit_num_nodes_and_edges():
     # num_nodes and num_hyperedges are derived from unique IDs in hyperedge_index
     x = torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]], dtype=torch.float)
