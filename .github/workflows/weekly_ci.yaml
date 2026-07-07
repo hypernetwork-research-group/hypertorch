@@ -25,6 +25,14 @@ jobs:
         COMMIT_TO_CHECK=$(git rev-list -n 1 "$TAG_TO_CHECK")
         echo "TAG_TO_CHECK=$TAG_TO_CHECK" >> $GITHUB_ENV
         echo "COMMIT_TO_CHECK=$COMMIT_TO_CHECK" >> $GITHUB_ENV
+        {
+          echo "## Latest Git Tag"
+          echo ""
+          echo "| Variable | Value |"
+          echo "| --- | --- |"
+          echo "| Tag | \`$TAG_TO_CHECK\` |"
+          echo "| Commit | \`$COMMIT_TO_CHECK\` |"
+        } >> "$GITHUB_STEP_SUMMARY"
 
   test-ubuntu-x86:
     needs: setup-tags
@@ -48,6 +56,13 @@ jobs:
         uv pip install "torch>=2.12,<3.0" --index-url https://download.pytorch.org/whl/cpu
         uv pip install pyg-lib --find-links https://data.pyg.org/whl/torch-2.12.0+cpu.html
         uv pip install --no-build-isolation hypertorch
+        {
+          echo "## Running Examples"
+          echo ""
+          echo "Running examples from the latest tag \`$TAG_TO_CHECK\` (commit \`$COMMIT_TO_CHECK\`)."
+          echo "curling https://raw.githubusercontent.com/hypernetwork-research-group/hypertorch/${COMMIT_TO_CHECK}/scripts/weekly_run.sh and executing it."
+        } >> "$GITHUB_STEP_SUMMARY"
+
         curl -fsSL https://raw.githubusercontent.com/hypernetwork-research-group/hypertorch/${COMMIT_TO_CHECK}/scripts/weekly_run.sh | bash
 
   test-ubuntu-arm:
