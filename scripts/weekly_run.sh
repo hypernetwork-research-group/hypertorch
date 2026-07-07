@@ -2,8 +2,16 @@
 
 set -uo pipefail
 
-curl -L https://github.com/hypernetwork-research-group/hypertorch/archive/refs/heads/main.tar.gz -o hypertorch.tar.gz
-tar -xzf hypertorch.tar.gz --strip-components=1 hypertorch-main/examples
+# TAG_TO_CHECK=$(git tag --sort=-creatordate | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1) #TODO: when first stable release, change to latest tag not beta
+TAG_TO_CHECK=$(git tag --sort=-creatordate | head -n 1) #latest tag including beta
+COMMIT_TO_CHECK=$(git rev-list -n 1 "$TAG_TO_CHECK")
+
+curl -L \
+  "https://github.com/hypernetwork-research-group/hypertorch/archive/${COMMIT_TO_CHECK}.tar.gz" \
+  -o hypertorch.tar.gz
+
+tar -xzf hypertorch.tar.gz --strip-components=1 \
+  "hypertorch-${COMMIT_TO_CHECK}/examples"
 
 examples=(examples/**/*.py)
 
