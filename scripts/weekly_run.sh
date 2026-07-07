@@ -6,12 +6,15 @@ set -uo pipefail
 TAG_TO_CHECK="$1" #latest tag including beta
 COMMIT_TO_CHECK="$2"
 
+# remove first character 'v' from TAG_TO_CHECK
+TAG_WITHOUT_V="${TAG_TO_CHECK:1}"
+
 curl -L \
   "https://github.com/hypernetwork-research-group/hypertorch/archive/refs/tags/${TAG_TO_CHECK}.tar.gz" \
   -o hypertorch.tar.gz
 
 tar -xzf hypertorch.tar.gz --strip-components=1 \
-  "hypertorch-${COMMIT_TO_CHECK}/examples"
+  "hypertorch-${TAG_WITHOUT_V}/examples"
 
 examples=(examples/**/*.py)
 
