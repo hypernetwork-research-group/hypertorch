@@ -62,7 +62,9 @@ jobs:
         uv pip install "torch>=2.12,<3.0" --index-url https://download.pytorch.org/whl/cpu
         uv pip install pyg-lib --find-links https://data.pyg.org/whl/torch-2.12.0+cpu.html
         uv pip install --no-build-isolation hypertorch
-        curl -fsSL https://raw.githubusercontent.com/hypernetwork-research-group/hypertorch/${COMMIT_TO_CHECK}/scripts/weekly_run.sh ${TAG_TO_CHECK} ${COMMIT_TO_CHECK} | bash
+        curl -fsSL \
+          "https://raw.githubusercontent.com/hypernetwork-research-group/hypertorch/${COMMIT_TO_CHECK}/scripts/weekly_run.sh" \
+          | bash -s -- "$TAG_TO_CHECK" "$COMMIT_TO_CHECK"
 
   test-ubuntu-arm:
     needs: setup-tags
@@ -89,7 +91,9 @@ jobs:
         uv pip install "torch>=2.11,<2.12" --index-url https://download.pytorch.org/whl/cpu
         uv pip install torch-cluster --find-links https://data.pyg.org/whl/torch-2.11.0+cpu.html
         uv pip install --no-build-isolation hypertorch
-        curl -fsSL https://raw.githubusercontent.com/hypernetwork-research-group/hypertorch/${COMMIT_TO_CHECK}/scripts/weekly_run.sh ${TAG_TO_CHECK} ${COMMIT_TO_CHECK} | bash
+        curl -fsSL \
+          "https://raw.githubusercontent.com/hypernetwork-research-group/hypertorch/${COMMIT_TO_CHECK}/scripts/weekly_run.sh" \
+          | bash -s -- "$TAG_TO_CHECK" "$COMMIT_TO_CHECK"
 
   test-macos-arm:
     needs: setup-tags
@@ -116,7 +120,9 @@ jobs:
         uv pip install "torch>=2.12,<3.0" --index-url https://download.pytorch.org/whl/cpu
         uv pip install pyg-lib --find-links https://data.pyg.org/whl/torch-2.12.0+cpu.html
         uv pip install --no-build-isolation hypertorch
-        curl -fsSL https://raw.githubusercontent.com/hypernetwork-research-group/hypertorch/${COMMIT_TO_CHECK}/scripts/weekly_run.sh ${TAG_TO_CHECK} ${COMMIT_TO_CHECK} | bash
+        curl -fsSL \
+          "https://raw.githubusercontent.com/hypernetwork-research-group/hypertorch/${COMMIT_TO_CHECK}/scripts/weekly_run.sh" \
+          | bash -s -- "$TAG_TO_CHECK" "$COMMIT_TO_CHECK"
 
   test-windows-x86:
     needs: setup-tags
@@ -143,4 +149,6 @@ jobs:
         uv pip install "torch>=2.12,<3.0" --index-url https://download.pytorch.org/whl/cpu
         uv pip install pyg-lib --find-links https://data.pyg.org/whl/torch-2.12.0+cpu.html
         uv pip install hypertorch
-        curl -fsSL https://raw.githubusercontent.com/hypernetwork-research-group/hypertorch/${COMMIT_TO_CHECK}/scripts/weekly_run.sh ${TAG_TO_CHECK} ${COMMIT_TO_CHECK} | bash
+        curl -fsSL \
+          "https://raw.githubusercontent.com/hypernetwork-research-group/hypertorch/${COMMIT_TO_CHECK}/scripts/weekly_run.sh" \
+          | bash -s -- "$TAG_TO_CHECK" "$COMMIT_TO_CHECK"

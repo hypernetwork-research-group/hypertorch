@@ -3,8 +3,8 @@
 set -uo pipefail
 
 # TAG_TO_CHECK=$(git tag --sort=-creatordate | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1) #TODO: when first stable release, change to latest tag not beta
-TAG_TO_CHECK=$1 #latest tag including beta
-COMMIT_TO_CHECK=$2
+TAG_TO_CHECK="$1" #latest tag including beta
+COMMIT_TO_CHECK="$2"
 
 curl -L \
   "https://github.com/hypernetwork-research-group/hypertorch/archive/refs/tags/${TAG_TO_CHECK}.tar.gz" \
