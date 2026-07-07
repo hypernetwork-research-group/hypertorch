@@ -23,6 +23,8 @@ jobs:
       run: |
         TAG_TO_CHECK=$(git tag --sort=-creatordate | head -n 1) # latest tag including beta
         COMMIT_TO_CHECK=$(git rev-list -n 1 "$TAG_TO_CHECK")
+        echo "tag=$TAG_TO_CHECK" >> "$GITHUB_OUTPUT"
+        echo "commit=$COMMIT_TO_CHECK" >> "$GITHUB_OUTPUT"
         {
           echo "## Latest Git Tag"
           echo ""
@@ -54,8 +56,6 @@ jobs:
         uv pip install "torch>=2.12,<3.0" --index-url https://download.pytorch.org/whl/cpu
         uv pip install pyg-lib --find-links https://data.pyg.org/whl/torch-2.12.0+cpu.html
         uv pip install --no-build-isolation hypertorch
-        TAG_TO_CHECK=$(git tag --sort=-creatordate | head -n 1) # latest tag including beta
-        COMMIT_TO_CHECK=$(git rev-list -n 1 "$TAG_TO_CHECK")
         curl -fsSL https://raw.githubusercontent.com/hypernetwork-research-group/hypertorch/${COMMIT_TO_CHECK}/scripts/weekly_run.sh | bash
 
   test-ubuntu-arm:
@@ -80,8 +80,6 @@ jobs:
         uv pip install "torch>=2.11,<2.12" --index-url https://download.pytorch.org/whl/cpu
         uv pip install torch-cluster --find-links https://data.pyg.org/whl/torch-2.11.0+cpu.html
         uv pip install --no-build-isolation hypertorch
-        TAG_TO_CHECK=$(git tag --sort=-creatordate | head -n 1) # latest tag including beta
-        COMMIT_TO_CHECK=$(git rev-list -n 1 "$TAG_TO_CHECK")
         curl -fsSL https://raw.githubusercontent.com/hypernetwork-research-group/hypertorch/${COMMIT_TO_CHECK}/scripts/weekly_run.sh | bash
 
   test-macos-arm:
@@ -106,8 +104,6 @@ jobs:
         uv pip install "torch>=2.12,<3.0" --index-url https://download.pytorch.org/whl/cpu
         uv pip install pyg-lib --find-links https://data.pyg.org/whl/torch-2.12.0+cpu.html
         uv pip install --no-build-isolation hypertorch
-        TAG_TO_CHECK=$(git tag --sort=-creatordate | head -n 1) # latest tag including beta
-        COMMIT_TO_CHECK=$(git rev-list -n 1 "$TAG_TO_CHECK")
         curl -fsSL https://raw.githubusercontent.com/hypernetwork-research-group/hypertorch/${COMMIT_TO_CHECK}/scripts/weekly_run.sh | bash
 
   test-windows-x86:
@@ -132,6 +128,4 @@ jobs:
         uv pip install "torch>=2.12,<3.0" --index-url https://download.pytorch.org/whl/cpu
         uv pip install pyg-lib --find-links https://data.pyg.org/whl/torch-2.12.0+cpu.html
         uv pip install hypertorch
-        TAG_TO_CHECK=$(git tag --sort=-creatordate | head -n 1) # latest tag including beta
-        COMMIT_TO_CHECK=$(git rev-list -n 1 "$TAG_TO_CHECK")
         curl -fsSL https://raw.githubusercontent.com/hypernetwork-research-group/hypertorch/${COMMIT_TO_CHECK}/scripts/weekly_run.sh | bash
