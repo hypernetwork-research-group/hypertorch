@@ -23,8 +23,6 @@ jobs:
       run: |
         TAG_TO_CHECK=$(git tag --sort=-creatordate | head -n 1) # latest tag including beta
         COMMIT_TO_CHECK=$(git rev-list -n 1 "$TAG_TO_CHECK")
-        echo "TAG_TO_CHECK=$TAG_TO_CHECK" >> $GITHUB_ENV
-        echo "COMMIT_TO_CHECK=$COMMIT_TO_CHECK" >> $GITHUB_ENV
         {
           echo "## Latest Git Tag"
           echo ""
