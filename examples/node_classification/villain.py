@@ -1,6 +1,6 @@
 from torchmetrics import MetricCollection
 from torchmetrics.classification import MulticlassAUROC, MulticlassAccuracy, MulticlassF1Score
-from hypertorch.data import AlgebraDataset, DataLoader
+from hypertorch.data import CoraDataset, DataLoader
 from hypertorch.nc import VilLainNcModule
 from hypertorch.train import MultiModelTrainer
 from hypertorch.types import ModelConfig
@@ -21,7 +21,7 @@ if __name__ == "__main__":
 
     print("Loading and preparing dataset...")
 
-    dataset = AlgebraDataset(sampling_strategy="node", task="node-classification")
+    dataset = CoraDataset(sampling_strategy="node", task="node-classification")
     dataset.hdata.y = node_labels_from_node_degrees(
         node_incidences=dataset.hdata.hyperedge_index[0],
         num_nodes=dataset.hdata.num_nodes,
@@ -73,7 +73,8 @@ if __name__ == "__main__":
             "generation_steps": 28,
             "tau": 1.0,
             "eps": 1e-10,
-            "villain_loss_weight": 1.0,
+            # 40% weight on the VilLain loss, 60% weight on the classifier loss
+            "villain_loss_weight": 0.4,
             # Transductive splits keep global node IDs available for the full node space.
             "num_nodes": dataset.hdata.num_nodes,
         },
