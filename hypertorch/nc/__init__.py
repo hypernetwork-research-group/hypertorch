@@ -6,6 +6,7 @@ from .hnhn_nc import HNHNNcConfig, HNHNNcModule
 from .hgnnp_nc import HGNNPNcConfig, HGNNPNcModule
 from .hypergcn_nc import HyperGCNNcConfig, HyperGCNNcModule
 from .mlp_nc import MLPNcModule, MLPNcConfig
+from .villain_nc import VilLainNcClassifierConfig, VilLainNcEncoderConfig, VilLainNcModule
 
 __all__ = [
     "CommonNeighborsNcModule",
@@ -22,4 +23,7 @@ __all__ = [
     "MLPNcConfig",
     "MLPNcModule",
     "NcModule",
+    "VilLainNcClassifierConfig",
+    "VilLainNcEncoderConfig",
+    "VilLainNcModule",
 ]
