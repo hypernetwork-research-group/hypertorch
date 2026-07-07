@@ -27,7 +27,7 @@ jobs:
         echo "COMMIT_TO_CHECK=$COMMIT_TO_CHECK" >> $GITHUB_ENV
 
   test-ubuntu-x86:
-    depends-on: setup-tags
+    needs: setup-tags
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -51,7 +51,7 @@ jobs:
         curl -fsSL https://raw.githubusercontent.com/hypernetwork-research-group/hypertorch/${COMMIT_TO_CHECK}/scripts/weekly_run.sh | bash
 
   test-ubuntu-arm:
-    depends-on: setup-tags
+    needs: setup-tags
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -75,7 +75,7 @@ jobs:
         curl -fsSL https://raw.githubusercontent.com/hypernetwork-research-group/hypertorch/${COMMIT_TO_CHECK}/scripts/weekly_run.sh | bash
 
   test-macos-arm:
-    depends-on: setup-tags
+    needs: setup-tags
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -99,7 +99,7 @@ jobs:
         curl -fsSL https://raw.githubusercontent.com/hypernetwork-research-group/hypertorch/${COMMIT_TO_CHECK}/scripts/weekly_run.sh | bash
 
   test-windows-x86:
-    depends-on: setup-tags
+    needs: setup-tags
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
