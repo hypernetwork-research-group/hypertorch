@@ -1086,7 +1086,7 @@ class HData:
         self.device = device if isinstance(device, torch.device) else torch.device(device)
         return self
 
-    def with_target_node_mask(self, target_node_mask: Tensor) -> HData:
+    def with_target_node_mask(self, target_node_mask: Tensor | None) -> HData:
         """
         Return a copy of this instance with a ``target_node_mask`` attribute set to the given mask.
 
@@ -1105,13 +1105,13 @@ class HData:
             num_nodes=self.num_nodes,
             num_hyperedges=self.num_hyperedges,
             global_node_ids=self.global_node_ids.clone(),
-            target_node_mask=target_node_mask.clone(),
+            target_node_mask=clone_optional_tensor(target_node_mask),
             target_hyperedge_mask=self.target_hyperedge_mask.clone(),
             y=self.y.clone(),
             task=self.task,
         )
 
-    def with_target_hyperedge_mask(self, target_hyperedge_mask: Tensor) -> HData:
+    def with_target_hyperedge_mask(self, target_hyperedge_mask: Tensor | None) -> HData:
         """
         Return a copy of this instance with ``target_hyperedge_mask`` set to the given mask.
 
@@ -1131,8 +1131,33 @@ class HData:
             num_hyperedges=self.num_hyperedges,
             global_node_ids=self.global_node_ids.clone(),
             target_node_mask=self.target_node_mask.clone(),
-            target_hyperedge_mask=target_hyperedge_mask.clone(),
+            target_hyperedge_mask=clone_optional_tensor(target_hyperedge_mask),
             y=self.y.clone(),
+            task=self.task,
+        )
+
+    def with_y(self, y: Tensor | None) -> HData:
+        """
+        Return a copy of this instance with a y attribute set to the given value.
+
+        Args:
+            y: The value to set for all entries in the y attribute.
+
+        Returns:
+            hdata: A new `HData` instance with the same attributes except for y,
+                which is set to a tensor of the given value.
+        """
+        return self.__class__(
+            x=self.x.clone(),
+            hyperedge_index=self.hyperedge_index.clone(),
+            hyperedge_weights=clone_optional_tensor(self.hyperedge_weights),
+            hyperedge_attr=clone_optional_tensor(self.hyperedge_attr),
+            num_nodes=self.num_nodes,
+            num_hyperedges=self.num_hyperedges,
+            global_node_ids=self.global_node_ids.clone(),
+            target_node_mask=self.target_node_mask.clone(),
+            target_hyperedge_mask=self.target_hyperedge_mask.clone(),
+            y=clone_optional_tensor(y),
             task=self.task,
         )
 

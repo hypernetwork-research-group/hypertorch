@@ -111,7 +111,8 @@ if __name__ == "__main__":
             "generation_steps": 28,
             "tau": 1.0,
             "eps": 1e-10,
-            "villain_loss_weight": 1.0,
+            # 40% weight on the VilLain loss, 60% weight on the classifier loss
+            "villain_loss_weight": 0.4,
             # Transductive splits keep the full node space.
             "num_nodes": dataset.hdata.num_nodes,
         },

@@ -145,7 +145,7 @@ class DataLoader(TorchDataLoader):
             hdata: A single `HData` object containing the collated data.
         """
         if self.__sample_full_hypergraph:
-            return self.__cached_dataset_hdata.clone().to(batch[0].device)
+            return self.__collate_full_hypergraph(batch)
 
         collated_hyperedge_index = torch.cat([data.hyperedge_index for data in batch], dim=1)
         hyperedge_index_wrapper = HyperedgeIndex(collated_hyperedge_index).remove_duplicate_edges()
@@ -195,6 +195,38 @@ class DataLoader(TorchDataLoader):
 
         return collated_hdata.to(batch[0].device)
 
+    def __collate_full_hypergraph(self, batch: list[HData]) -> HData:
+        """
+        Return the full hypergraph with target masks and labels rebuilt from the sampled batch.
+
+        The sampled HData instances identify the current training targets, while the cached
+        dataset HData provides the full hypergraph context.
+
+        Args:
+            batch: List of HData objects to collate.
+
+        Returns:
+            hdata: A single HData object containing the full hypergraph
+                with target masks and labels updated from the sampled batch.
+        """
+        hyperedge_index_wrapper = HyperedgeIndex(self.__cached_dataset_hdata.hyperedge_index)
+
+        (
+            collated_y,
+            collated_target_node_mask,
+            collated_target_hyperedge_mask,
+        ) = self.__collate_y_and_target_masks_for_task(
+            batch=batch,
+            hyperedge_index_wrapper=hyperedge_index_wrapper,
+        )
+        collated_hdata = self.__cached_dataset_hdata.clone()
+        return (
+            collated_hdata.with_y(collated_y)
+            .with_target_node_mask(collated_target_node_mask)
+            .with_target_hyperedge_mask(collated_target_hyperedge_mask)
+            .to(batch[0].device)
+        )
+
     def __collate_y_and_target_masks_for_task(
         self,
         batch: list[HData],
@@ -223,8 +255,8 @@ class DataLoader(TorchDataLoader):
             collated_target_hyperedge_mask = None
 
             target_node_ids_list = [
-                HyperedgeIndex(hdata.hyperedge_index).node_ids[hdata.target_node_mask]
-                for hdata in batch
+                HyperedgeIndex(batch_hdata.hyperedge_index).node_ids[batch_hdata.target_node_mask]
+                for batch_hdata in batch
             ]
             target_node_ids = torch.cat(target_node_ids_list, dim=0)
             collated_target_node_mask = torch.isin(node_ids, target_node_ids)

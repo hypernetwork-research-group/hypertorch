@@ -69,6 +69,25 @@ class Dataset(TorchDataset):
         """
         Return the number of sampleable items in the dataset.
 
+        Note:
+            The length of the dataset is determined by the sampling strategy. If the strategy is
+            based on nodes, the length corresponds to the number of sampleable nodes.
+            If the strategy is based on hyperedges, the length corresponds to the
+            number of sampleable hyperedges.
+
+        Examples:
+            Assuming `sampling_strategy="node"`:
+            >>> len(original_dataset)  # Returns the number of total nodes in the dataset
+            >>> len(sampled_dataset)   # Returns the number of sampled nodes in the dataset
+            ...                        # If sampled nodes are fewer than total nodes,
+            ...                        # this will be less than the original dataset length
+
+            Assuming `sampling_strategy="hyperedge"`:
+            >>> len(original_dataset)  # Returns the number of total hyperedges in the dataset
+            >>> len(sampled_dataset)   # Returns the number of sampled hyperedges in the dataset
+            ...                        # If sampled hyperedges are fewer than total hyperedges,
+            ...                        # this will be less than the original dataset length
+
         Returns:
             length: Number of sampleable nodes or hyperedges, depending on the sampling strategy.
         """
