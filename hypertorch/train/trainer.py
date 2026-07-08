@@ -9,7 +9,7 @@ import lightning as L
 import torch
 
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 from collections.abc import Iterable, Mapping
 from lightning.pytorch.accelerators import Accelerator
 from lightning.pytorch.callbacks import Callback, ModelCheckpoint
@@ -213,15 +213,46 @@ class MultiModelTrainer:
 
         self.auto_start_tensorboard: bool = auto_start_tensorboard
         self.tensorboard_port: int = tensorboard_port
-        self.__checkpoint_callback_kwargs: dict[str, Any] = (
+        self.__shared_checkpoint_callback_kwargs: dict[str, Any] = (
             checkpoint_callback_kwargs if checkpoint_callback_kwargs is not None else {}
         )
 
+        shared_trainer_options: dict[str, Any] = {
+            "accelerator": accelerator,
+            "devices": devices,
+            "strategy": strategy,
+            "num_nodes": num_nodes,
+            "precision": precision,
+            "max_epochs": max_epochs,
+            "min_epochs": min_epochs,
+            "max_steps": max_steps,
+            "min_steps": min_steps,
+            "check_val_every_n_epoch": check_val_every_n_epoch,
+            "logger": logger,
+            "default_root_dir": default_root_dir,
+            "enable_autolog_hparams": enable_autolog_hparams,
+            "log_every_n_steps": log_every_n_steps,
+            "profiler": profiler,
+            "fast_dev_run": fast_dev_run,
+            "enable_checkpointing": enable_checkpointing,
+            "enable_progress_bar": enable_progress_bar,
+            "enable_model_summary": enable_model_summary,
+            "callbacks": callbacks,
+            **kwargs,
+        }
+
         full_model_name_counts = self.__full_model_name_counts(model_configs)
         for model_index, model_config in enumerate(model_configs):
+            model_options = dict(model_config.trainer_kwargs or {})
+            model_test_devices = model_options.pop("test_devices", test_devices)
+            model_checkpoint_callback_kwargs = model_options.pop(
+                "checkpoint_callback_kwargs",
+                None,
+            )
+
             should_create_trainer = model_config.trainer is None
             should_create_test_trainer = (
-                model_config.test_trainer is None and test_devices is not None
+                model_config.test_trainer is None and model_test_devices is not None
             )
             should_create_at_least_one_trainer = should_create_trainer or should_create_test_trainer
 
@@ -229,57 +260,35 @@ class MultiModelTrainer:
                 has_duplicate_full_model_name = (
                     full_model_name_counts[model_config.full_model_name()] > 1
                 )
-                model_logger = self.__setup_logger(model_config, logger)
-                model_callbacks = self.__setup_callbacks(
+
+                trainer_options = {**shared_trainer_options, **model_options}
+                trainer_options["logger"] = self.__setup_logger(
+                    model_config=model_config,
+                    logger=cast(
+                        Logger | Iterable[Logger] | bool | None,
+                        trainer_options["logger"],
+                    ),
+                )
+                trainer_options["callbacks"] = self.__setup_callbacks(
                     model_config=model_config,
                     model_index=model_index,
                     has_duplicate_full_model_name=has_duplicate_full_model_name,
-                    callbacks=callbacks,
-                    enable_checkpointing=enable_checkpointing,
+                    callbacks=cast(
+                        list[Callback] | Callback | None,
+                        trainer_options["callbacks"],
+                    ),
+                    enable_checkpointing=cast(bool, trainer_options["enable_checkpointing"]),
+                    checkpoint_callback_kwargs=self.__merge_checkpoint_callback_kwargs(
+                        model_checkpoint_callback_kwargs
+                    ),
                 )
 
-                def __trainer_for(
-                    trainer_devices: list[int] | str | int,
-                    model_logger: Logger | Iterable[Logger] | bool | None,
-                    model_callbacks: list[Callback] | Callback | None,
-                ) -> L.Trainer:
-                    return L.Trainer(
-                        accelerator=accelerator,
-                        devices=trainer_devices,
-                        strategy=strategy,
-                        num_nodes=num_nodes,
-                        precision=precision,
-                        max_epochs=max_epochs,
-                        min_epochs=min_epochs,
-                        max_steps=max_steps,
-                        min_steps=min_steps,
-                        check_val_every_n_epoch=check_val_every_n_epoch,
-                        logger=model_logger,
-                        default_root_dir=default_root_dir,
-                        enable_autolog_hparams=enable_autolog_hparams,
-                        log_every_n_steps=log_every_n_steps,
-                        profiler=profiler,
-                        fast_dev_run=fast_dev_run,
-                        enable_checkpointing=enable_checkpointing,
-                        enable_progress_bar=enable_progress_bar,
-                        enable_model_summary=enable_model_summary,
-                        callbacks=copy.deepcopy(model_callbacks),
-                        **kwargs,
-                    )
-
                 if should_create_trainer:
-                    model_config.trainer = __trainer_for(
-                        trainer_devices=devices,
-                        model_logger=model_logger,
-                        model_callbacks=model_callbacks,
-                    )
+                    model_config.trainer = self.__setup_trainer(trainer_options)
 
                 if should_create_test_trainer:
-                    model_config.test_trainer = __trainer_for(
-                        trainer_devices=test_devices if test_devices is not None else devices,
-                        model_logger=model_logger,
-                        model_callbacks=model_callbacks,
-                    )
+                    test_trainer_options = {**trainer_options, "devices": model_test_devices}
+                    model_config.test_trainer = self.__setup_trainer(test_trainer_options)
 
         print(f"Initialized trainer(models: {len(model_configs)}, log_dir: {self.log_dir})")
         self.__auto_start_tensorboard_if_enabled()
@@ -627,6 +636,7 @@ class MultiModelTrainer:
         model_config: ModelConfig,
         model_index: int,
         has_duplicate_full_model_name: bool,
+        checkpoint_callback_kwargs: Mapping[str, Any],
     ) -> Path:
         """
         Resolve the checkpoint directory for a model configuration.
@@ -635,11 +645,12 @@ class MultiModelTrainer:
             model_config: Model configuration that owns the checkpoints.
             model_index: Index of the model in ``model_configs``.
             has_duplicate_full_model_name: Whether the full model name is duplicated.
+            checkpoint_callback_kwargs: Resolved ModelCheckpoint keyword arguments.
 
         Returns:
             checkpoint_dir: Directory for model checkpoints.
         """
-        provided_dirpath: str | Path | None = self.__checkpoint_callback_kwargs.get("dirpath")
+        provided_dirpath: str | Path | None = checkpoint_callback_kwargs.get("dirpath")
         if provided_dirpath is not None:
             return Path(provided_dirpath)
 
@@ -686,6 +697,24 @@ class MultiModelTrainer:
                 full_model_name_counts.get(full_model_name, 0) + 1
             )
         return full_model_name_counts
+
+    def __merge_checkpoint_callback_kwargs(
+        self,
+        model_checkpoint_callback_kwargs: Mapping[str, Any] | None,
+    ) -> dict[str, Any]:
+        """
+        Merge shared and per-model ModelCheckpoint keyword arguments.
+
+        Args:
+            model_checkpoint_callback_kwargs: Optional per-model keyword arguments.
+
+        Returns:
+            checkpoint_callback_kwargs: Merged shared and per-model keyword arguments.
+        """
+        checkpoint_callback_kwargs = copy.deepcopy(self.__shared_checkpoint_callback_kwargs)
+        if model_checkpoint_callback_kwargs is not None:
+            checkpoint_callback_kwargs.update(model_checkpoint_callback_kwargs)
+        return checkpoint_callback_kwargs
 
     def __next_experiment_name(self, save_dir: Path) -> Path:
         """
@@ -813,6 +842,7 @@ class MultiModelTrainer:
         has_duplicate_full_model_name: bool,
         callbacks: list[Callback] | Callback | None,
         enable_checkpointing: bool,
+        checkpoint_callback_kwargs: dict[str, Any],
     ) -> list[Callback] | Callback | None:
         """
         Resolve callbacks for a model configuration.
@@ -823,12 +853,12 @@ class MultiModelTrainer:
             has_duplicate_full_model_name: Whether the full model name is duplicated.
             callbacks: User-provided callbacks.
             enable_checkpointing: Whether checkpointing is enabled.
+            checkpoint_callback_kwargs: Resolved default checkpoint callback keyword arguments.
 
         Returns:
             callbacks: Resolved callbacks for the trainer.
         """
         model_callbacks = copy.deepcopy(callbacks)
-
         if not enable_checkpointing:
             return model_callbacks
 
@@ -836,6 +866,7 @@ class MultiModelTrainer:
             model_config=model_config,
             model_index=model_index,
             has_duplicate_full_model_name=has_duplicate_full_model_name,
+            checkpoint_callback_kwargs=checkpoint_callback_kwargs,
         )
         callback_list = self.__to_callback_list(model_callbacks)
         checkpoint_callbacks = [
@@ -843,7 +874,7 @@ class MultiModelTrainer:
         ]
 
         if len(checkpoint_callbacks) < 1:
-            checkpoint_callback_kwargs = copy.deepcopy(self.__checkpoint_callback_kwargs)
+            checkpoint_callback_kwargs = copy.deepcopy(checkpoint_callback_kwargs)
             checkpoint_callback_kwargs["dirpath"] = checkpoint_dir
             callback_list.append(ModelCheckpoint(**checkpoint_callback_kwargs))
             return callback_list
@@ -852,6 +883,20 @@ class MultiModelTrainer:
             if callback.dirpath is None:
                 callback.dirpath = str(checkpoint_dir)
         return callback_list
+
+    def __setup_trainer(self, options: Mapping[str, Any]) -> L.Trainer:
+        """
+        Create a Lightning Trainer with resolved shared and per-model settings.
+
+        Args:
+            options: Merged keyword arguments for the Lightning Trainer.
+
+        Returns:
+            trainer: Configured Lightning Trainer.
+        """
+        trainer_options = dict(options)
+        trainer_options["callbacks"] = copy.deepcopy(trainer_options["callbacks"])
+        return L.Trainer(**trainer_options)
 
     def __should_skip_test_on_current_rank(
         self,

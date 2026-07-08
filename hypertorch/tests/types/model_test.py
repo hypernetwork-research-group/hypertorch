@@ -1,5 +1,6 @@
 import pytest
 
+from types import MappingProxyType
 from unittest.mock import MagicMock
 from hypertorch.types import ModelConfig
 
@@ -63,3 +64,38 @@ def test_model_config_for_nontrainable_models(mock_model):
     model_config = ModelConfig(name="model", model=mock_model, is_trainable=False)
 
     assert model_config.is_trainable is False
+
+
+def test_model_config_initialization_with_trainer_overrides(mock_model, tmp_path):
+    callback = MagicMock()
+    checkpoint_callback_kwargs = {"filename": "model-{epoch}", "save_last": True}
+    trainer_kwargs = MappingProxyType(
+        {
+            "devices": 1,
+            "test_devices": 1,
+            "max_epochs": 3,
+            "log_every_n_steps": 5,
+            "check_val_every_n_epoch": 2,
+            "callbacks": [callback],
+            "enable_checkpointing": False,
+            "checkpoint_callback_kwargs": checkpoint_callback_kwargs,
+            "default_root_dir": tmp_path,
+        }
+    )
+
+    model_config = ModelConfig(
+        name="model",
+        model=mock_model,
+        trainer_kwargs=trainer_kwargs,
+    )
+
+    assert model_config.trainer_kwargs is trainer_kwargs
+    assert model_config.trainer_kwargs["devices"] == 1
+    assert model_config.trainer_kwargs["test_devices"] == 1
+    assert model_config.trainer_kwargs["max_epochs"] == 3
+    assert model_config.trainer_kwargs["log_every_n_steps"] == 5
+    assert model_config.trainer_kwargs["check_val_every_n_epoch"] == 2
+    assert model_config.trainer_kwargs["callbacks"] == [callback]
+    assert model_config.trainer_kwargs["enable_checkpointing"] is False
+    assert model_config.trainer_kwargs["checkpoint_callback_kwargs"] is checkpoint_callback_kwargs
+    assert model_config.trainer_kwargs["default_root_dir"] == tmp_path

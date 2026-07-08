@@ -106,6 +106,59 @@ train_ds, test_ds = dataset.split(
 
 Use `split_with_ratios(...)` instead of `split(...)` when you need the final target-hyperedge ratios after optional sparse rebalancing.
 
+## Per-model trainer options
+
+`MultiModelTrainer` values are shared defaults. Set per-model trainer options on an
+individual `ModelConfig` through `trainer_kwargs` when one model needs different
+training settings:
+
+```python
+configs = [
+    ModelConfig(
+        name="fast_baseline",
+        version="mean",
+        model=baseline_model,
+        trainer_kwargs={
+            "max_epochs": 20,
+            "log_every_n_steps": 5,
+            "enable_checkpointing": False,
+        },
+    ),
+    ModelConfig(
+        name="larger_model",
+        version="maxmin",
+        model=larger_model,
+        trainer_kwargs={
+            "max_epochs": 100,
+            "check_val_every_n_epoch": 2,
+            "enable_checkpointing": True,
+        },
+    ),
+    ModelConfig(
+        name="shared_defaults",
+        version="mean",
+        model=shared_model,
+    )
+]
+
+with MultiModelTrainer(
+    model_configs=configs,
+    max_epochs=50,
+    log_every_n_steps=10,
+    enable_checkpointing=True,
+) as trainer:
+    trainer.fit_all(train_dataloader=train_loader, val_dataloader=val_loader)
+```
+
+Per-model values override the shared values used to create that model's trainer.
+If a key is not present in `trainer_kwargs`, the shared `MultiModelTrainer` value
+is used. In the code above:
+- `fast_baseline` will train for 20 epochs, logging every 5 steps, and will not checkpoint.
+- `larger_model` will train for 100 epochs, validating every 2 epochs, and will checkpoint.
+- `shared_defaults` will train for 50 epochs, logging every 10 steps, and will checkpoint (the shared defaults).
+
+It is possible to use the same keys that `MultiModelTrainer` accepts for Lightning `Trainer` construction.
+
 ## Checkpoint callback options
 
 When checkpointing is enabled and you do not pass your own Lightning
@@ -125,6 +178,25 @@ trainer = MultiModelTrainer(
 
 Pass `dirpath` in `checkpoint_callback_kwargs` to override the default per-model
 checkpoint directory.
+
+For one model only, put `checkpoint_callback_kwargs` inside that model's
+`trainer_kwargs`:
+
+```python
+configs = [
+    ModelConfig(
+        name="weights_only",
+        version="mean",
+        model=model,
+        trainer_kwargs={
+            "checkpoint_callback_kwargs": {
+                "filename": "weights-only-{epoch}",
+                "save_weights_only": True,
+            },
+        },
+    )
+]
+```
 
 ## Next steps
 
