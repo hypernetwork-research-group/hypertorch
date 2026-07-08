@@ -49,6 +49,19 @@ class TinyBinaryClassifier(L.LightningModule):
         return optim.SGD(self.parameters(), lr=0.01)
 
 
+class EpochStartTrackingTinyBinaryClassifier(TinyBinaryClassifier):
+    def __init__(self, epoch_starts: list[int], fail_at_epoch_start: int | None = None) -> None:
+        super().__init__()
+        self.epoch_starts = epoch_starts
+        self.fail_at_epoch_start = fail_at_epoch_start
+
+    def on_train_epoch_start(self) -> None:
+        current_epoch = int(self.trainer.current_epoch)
+        self.epoch_starts.append(current_epoch)
+        if self.fail_at_epoch_start == current_epoch:
+            raise RuntimeError(f"Intentional training failure at epoch {current_epoch}.")
+
+
 @pytest.fixture
 def mock_tiny_dataloader() -> DataLoader:
     x = torch.tensor(
@@ -278,6 +291,110 @@ def test_checkpoints_can_be_loaded_and_used_with_different_trainers(
 
 
 @pytest.mark.integration
+def test_retry_uses_existing_model_checkpoints_after_partial_multi_model_failure(
+    tmp_path,
+    mock_tiny_dataloader,
+):
+    max_epochs = 5
+    failure_epoch = 3
+
+    first_initial_epoch_starts: list[int] = []
+    second_initial_epoch_starts: list[int] = []
+    initial_model_configs = [
+        ModelConfig(
+            name="resumable",
+            version="first",
+            model=EpochStartTrackingTinyBinaryClassifier(epoch_starts=first_initial_epoch_starts),
+        ),
+        ModelConfig(
+            name="resumable",
+            version="second",
+            model=EpochStartTrackingTinyBinaryClassifier(
+                epoch_starts=second_initial_epoch_starts,
+                fail_at_epoch_start=failure_epoch,
+            ),
+        ),
+    ]
+
+    initial_trainer = MultiModelTrainer(
+        model_configs=initial_model_configs,
+        default_root_dir=tmp_path,
+        experiment_name=EXPERIMENT_NAME,
+        max_epochs=max_epochs,
+        accelerator="auto",
+        devices=1,
+        logger=False,
+        enable_checkpointing=True,
+        enable_progress_bar=False,
+        enable_model_summary=False,
+        log_every_n_steps=1,
+        callbacks=[ModelCheckpoint(save_last=True)],
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match=f"Intentional training failure at epoch {failure_epoch}.",
+    ):
+        initial_trainer.fit_all(
+            train_dataloader=mock_tiny_dataloader,
+            val_dataloader=mock_tiny_dataloader,
+            verbose=False,
+        )
+
+    experiment_dir = tmp_path / EXPERIMENT_NAME
+    first_model_checkpoint = __last_checkpoint_path(experiment_dir, "resumable", "first")
+    second_model_checkpoint = __last_checkpoint_path(experiment_dir, "resumable", "second")
+    first_resume_epoch = torch.load(first_model_checkpoint, map_location="cpu")["epoch"] + 1
+    second_resume_epoch = torch.load(second_model_checkpoint, map_location="cpu")["epoch"] + 1
+
+    assert first_initial_epoch_starts == [0, 1, 2, 3, 4]
+    assert second_initial_epoch_starts == [0, 1, 2, 3]
+    assert first_resume_epoch == max_epochs
+    assert second_resume_epoch == failure_epoch
+
+    first_retry_epoch_starts: list[int] = []
+    second_retry_epoch_starts: list[int] = []
+    retry_model_configs = [
+        ModelConfig(
+            name="resumable",
+            version="first",
+            model=EpochStartTrackingTinyBinaryClassifier(first_retry_epoch_starts),
+        ),
+        ModelConfig(
+            name="resumable",
+            version="second",
+            model=EpochStartTrackingTinyBinaryClassifier(second_retry_epoch_starts),
+        ),
+    ]
+
+    retry_trainer = MultiModelTrainer(
+        model_configs=retry_model_configs,
+        default_root_dir=tmp_path,
+        experiment_name=EXPERIMENT_NAME,
+        max_epochs=max_epochs,
+        accelerator="auto",
+        devices=1,
+        logger=False,
+        enable_checkpointing=True,
+        enable_progress_bar=False,
+        enable_model_summary=False,
+        log_every_n_steps=1,
+        callbacks=[ModelCheckpoint(save_last=True)],
+    )
+
+    with pytest.warns(UserWarning, match="Checkpoint directory .* exists and is not empty"):
+        retry_trainer.fit_all(
+            train_dataloader=mock_tiny_dataloader,
+            val_dataloader=mock_tiny_dataloader,
+            ckpt_path="last",
+            verbose=False,
+        )
+
+    assert first_retry_epoch_starts == []
+    assert second_retry_epoch_starts == [3, 4]
+
+
+@pytest.mark.integration
 def test_best_checkpoints_can_be_loaded_and_used(
     tmp_path,
     mock_tiny_dataloader,
@@ -456,7 +573,6 @@ def test_checkpoint_callback_kwargs_configure_default_checkpoint_callback(
         verbose=False,
     )
 
-    print(list(custom_checkpoint_dir.glob("*.ckpt")))
     checkpoint_paths = list(custom_checkpoint_dir.glob("weights-only-*.ckpt"))
     assert len(checkpoint_paths) == 1
 
@@ -493,6 +609,14 @@ def __duplicate_model_configs(num_models: int = 2) -> list[ModelConfig]:
         )
         for _ in range(num_models)
     ]
+
+
+def __last_checkpoint_path(
+    experiment_dir: Path,
+    model_name: str,
+    model_version: str,
+) -> Path:
+    return experiment_dir / model_name / f"version_{model_version}" / "checkpoints" / "last.ckpt"
 
 
 def __assert_default_logger_outputs(experiment_dir: Path, model_configs: list[ModelConfig]) -> None:
