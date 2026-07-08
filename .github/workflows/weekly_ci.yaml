@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 jobs:
-  retrieve-latest-tag:
+  retrieve-latest-tag-and-weekly-script-url:
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.get_tag_commit.outputs.tag }}
@@ -21,7 +21,7 @@ jobs:
         fetch-depth: 0
         persist-credentials: false
 
-    - name: Get latest tag and commit
+    - name: Export latest tag, commit, and weekly script URL
       id: get_tag_commit
       run: |
         TAG_TO_CHECK=$(git tag --sort=-creatordate | head -n 1) # latest tag including beta
@@ -39,11 +39,11 @@ jobs:
         } >> "$GITHUB_STEP_SUMMARY"
 
   test-ubuntu-x86:
-    needs: retrieve-latest-tag
+    needs: retrieve-latest-tag-and-weekly-script-url
     runs-on: ${{ matrix.os }}
     env:
-      TAG_TO_CHECK: ${{ needs.retrieve-latest-tag.outputs.tag }}
-      WEEKLY_SCRIPT_URL: ${{ needs.retrieve-latest-tag.outputs.weekly_script_url }}
+      TAG_TO_CHECK: ${{ needs.retrieve-latest-tag-and-weekly-script-url.outputs.tag }}
+      WEEKLY_SCRIPT_URL: ${{ needs.retrieve-latest-tag-and-weekly-script-url.outputs.weekly_script_url }}
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -63,16 +63,14 @@ jobs:
         uv pip install "torch>=2.12,<3.0" --index-url https://download.pytorch.org/whl/cpu
         uv pip install pyg-lib --find-links https://data.pyg.org/whl/torch-2.12.0+cpu.html
         uv pip install --no-build-isolation hypertorch
-        curl -fsSL \
-          "$WEEKLY_SCRIPT_URL" \
-          | bash -s -- "$TAG_TO_CHECK"
+        curl -fsSL "$WEEKLY_SCRIPT_URL" | bash -s -- "$TAG_TO_CHECK"
 
   test-ubuntu-arm:
-    needs: retrieve-latest-tag
+    needs: retrieve-latest-tag-and-weekly-script-url
     runs-on: ${{ matrix.os }}
     env:
-      TAG_TO_CHECK: ${{ needs.retrieve-latest-tag.outputs.tag }}
-      WEEKLY_SCRIPT_URL: ${{ needs.retrieve-latest-tag.outputs.weekly_script_url }}
+      TAG_TO_CHECK: ${{ needs.retrieve-latest-tag-and-weekly-script-url.outputs.tag }}
+      WEEKLY_SCRIPT_URL: ${{ needs.retrieve-latest-tag-and-weekly-script-url.outputs.weekly_script_url }}
     strategy:
       matrix:
         os: [ubuntu-24.04-arm]
@@ -92,16 +90,14 @@ jobs:
         uv pip install "torch>=2.11,<2.12" --index-url https://download.pytorch.org/whl/cpu
         uv pip install torch-cluster --find-links https://data.pyg.org/whl/torch-2.11.0+cpu.html
         uv pip install --no-build-isolation hypertorch
-        curl -fsSL \
-          "$WEEKLY_SCRIPT_URL" \
-          | bash -s -- "$TAG_TO_CHECK"
+        curl -fsSL "$WEEKLY_SCRIPT_URL" | bash -s -- "$TAG_TO_CHECK"
 
   test-macos-arm:
-    needs: retrieve-latest-tag
+    needs: retrieve-latest-tag-and-weekly-script-url
     runs-on: ${{ matrix.os }}
     env:
-      TAG_TO_CHECK: ${{ needs.retrieve-latest-tag.outputs.tag }}
-      WEEKLY_SCRIPT_URL: ${{ needs.retrieve-latest-tag.outputs.weekly_script_url }}
+      TAG_TO_CHECK: ${{ needs.retrieve-latest-tag-and-weekly-script-url.outputs.tag }}
+      WEEKLY_SCRIPT_URL: ${{ needs.retrieve-latest-tag-and-weekly-script-url.outputs.weekly_script_url }}
     strategy:
       matrix:
         os: [macos-latest]
@@ -121,16 +117,14 @@ jobs:
         uv pip install "torch>=2.12,<3.0" --index-url https://download.pytorch.org/whl/cpu
         uv pip install pyg-lib --find-links https://data.pyg.org/whl/torch-2.12.0+cpu.html
         uv pip install --no-build-isolation hypertorch
-        curl -fsSL \
-          "$WEEKLY_SCRIPT_URL" \
-          | bash -s -- "$TAG_TO_CHECK"
+        curl -fsSL "$WEEKLY_SCRIPT_URL" | bash -s -- "$TAG_TO_CHECK"
 
   test-windows-x86:
-    needs: retrieve-latest-tag
+    needs: retrieve-latest-tag-and-weekly-script-url
     runs-on: ${{ matrix.os }}
     env:
-      TAG_TO_CHECK: ${{ needs.retrieve-latest-tag.outputs.tag }}
-      WEEKLY_SCRIPT_URL: ${{ needs.retrieve-latest-tag.outputs.weekly_script_url }}
+      TAG_TO_CHECK: ${{ needs.retrieve-latest-tag-and-weekly-script-url.outputs.tag }}
+      WEEKLY_SCRIPT_URL: ${{ needs.retrieve-latest-tag-and-weekly-script-url.outputs.weekly_script_url }}
     strategy:
       matrix:
         os: [windows-latest]
@@ -150,6 +144,4 @@ jobs:
         uv pip install "torch>=2.12,<3.0" --index-url https://download.pytorch.org/whl/cpu
         uv pip install pyg-lib --find-links https://data.pyg.org/whl/torch-2.12.0+cpu.html
         uv pip install hypertorch
-        curl -fsSL \
-          "$WEEKLY_SCRIPT_URL" \
-          | bash -s -- "$TAG_TO_CHECK"
+        curl -fsSL "$WEEKLY_SCRIPT_URL" | bash -s -- "$TAG_TO_CHECK"
