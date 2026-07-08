@@ -4,7 +4,6 @@ set -uo pipefail
 
 # TAG_TO_CHECK=$(git tag --sort=-creatordate | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1) #TODO: when first stable release, change to latest tag not beta
 TAG_TO_CHECK="$1" #latest tag including beta
-COMMIT_TO_CHECK="$2"
 
 # remove first character 'v' from TAG_TO_CHECK
 TAG_WITHOUT_V="${TAG_TO_CHECK:1}"

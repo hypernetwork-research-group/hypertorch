@@ -9,11 +9,11 @@ permissions:
   contents: read
 
 jobs:
-  setup-tags:
+  retrieve-latest-tag:
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.get_tag_commit.outputs.tag }}
-      commit: ${{ steps.get_tag_commit.outputs.commit }}
+      weekly_script_url: ${{ steps.get_tag_commit.outputs.weekly_script_url }}
     steps:
     - name: Checkout repository
       uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
@@ -26,8 +26,9 @@ jobs:
       run: |
         TAG_TO_CHECK=$(git tag --sort=-creatordate | head -n 1) # latest tag including beta
         COMMIT_TO_CHECK=$(git rev-list -n 1 "$TAG_TO_CHECK")
+        WEEKLY_SCRIPT_URL="https://raw.githubusercontent.com/hypernetwork-research-group/hypertorch/${COMMIT_TO_CHECK}/scripts/weekly_run.sh"
         echo "tag=$TAG_TO_CHECK" >> "$GITHUB_OUTPUT"
-        echo "commit=$COMMIT_TO_CHECK" >> "$GITHUB_OUTPUT"
+        echo "weekly_script_url=$WEEKLY_SCRIPT_URL" >> "$GITHUB_OUTPUT"
         {
           echo "## Latest Git Tag"
           echo ""
@@ -38,11 +39,11 @@ jobs:
         } >> "$GITHUB_STEP_SUMMARY"
 
   test-ubuntu-x86:
-    needs: setup-tags
+    needs: retrieve-latest-tag
     runs-on: ${{ matrix.os }}
     env:
-      TAG_TO_CHECK: ${{ needs.setup-tags.outputs.tag }}
-      COMMIT_TO_CHECK: ${{ needs.setup-tags.outputs.commit }}
+      TAG_TO_CHECK: ${{ needs.retrieve-latest-tag.outputs.tag }}
+      WEEKLY_SCRIPT_URL: ${{ needs.retrieve-latest-tag.outputs.weekly_script_url }}
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -63,15 +64,15 @@ jobs:
         uv pip install pyg-lib --find-links https://data.pyg.org/whl/torch-2.12.0+cpu.html
         uv pip install --no-build-isolation hypertorch
         curl -fsSL \
-          "https://raw.githubusercontent.com/hypernetwork-research-group/hypertorch/${COMMIT_TO_CHECK}/scripts/weekly_run.sh" \
-          | bash -s -- "$TAG_TO_CHECK" "$COMMIT_TO_CHECK"
+          "$WEEKLY_SCRIPT_URL" \
+          | bash -s -- "$TAG_TO_CHECK"
 
   test-ubuntu-arm:
-    needs: setup-tags
+    needs: retrieve-latest-tag
     runs-on: ${{ matrix.os }}
     env:
-      TAG_TO_CHECK: ${{ needs.setup-tags.outputs.tag }}
-      COMMIT_TO_CHECK: ${{ needs.setup-tags.outputs.commit }}
+      TAG_TO_CHECK: ${{ needs.retrieve-latest-tag.outputs.tag }}
+      WEEKLY_SCRIPT_URL: ${{ needs.retrieve-latest-tag.outputs.weekly_script_url }}
     strategy:
       matrix:
         os: [ubuntu-24.04-arm]
@@ -92,15 +93,15 @@ jobs:
         uv pip install torch-cluster --find-links https://data.pyg.org/whl/torch-2.11.0+cpu.html
         uv pip install --no-build-isolation hypertorch
         curl -fsSL \
-          "https://raw.githubusercontent.com/hypernetwork-research-group/hypertorch/${COMMIT_TO_CHECK}/scripts/weekly_run.sh" \
-          | bash -s -- "$TAG_TO_CHECK" "$COMMIT_TO_CHECK"
+          "$WEEKLY_SCRIPT_URL" \
+          | bash -s -- "$TAG_TO_CHECK"
 
   test-macos-arm:
-    needs: setup-tags
+    needs: retrieve-latest-tag
     runs-on: ${{ matrix.os }}
     env:
-      TAG_TO_CHECK: ${{ needs.setup-tags.outputs.tag }}
-      COMMIT_TO_CHECK: ${{ needs.setup-tags.outputs.commit }}
+      TAG_TO_CHECK: ${{ needs.retrieve-latest-tag.outputs.tag }}
+      WEEKLY_SCRIPT_URL: ${{ needs.retrieve-latest-tag.outputs.weekly_script_url }}
     strategy:
       matrix:
         os: [macos-latest]
@@ -121,15 +122,15 @@ jobs:
         uv pip install pyg-lib --find-links https://data.pyg.org/whl/torch-2.12.0+cpu.html
         uv pip install --no-build-isolation hypertorch
         curl -fsSL \
-          "https://raw.githubusercontent.com/hypernetwork-research-group/hypertorch/${COMMIT_TO_CHECK}/scripts/weekly_run.sh" \
-          | bash -s -- "$TAG_TO_CHECK" "$COMMIT_TO_CHECK"
+          "$WEEKLY_SCRIPT_URL" \
+          | bash -s -- "$TAG_TO_CHECK"
 
   test-windows-x86:
-    needs: setup-tags
+    needs: retrieve-latest-tag
     runs-on: ${{ matrix.os }}
     env:
-      TAG_TO_CHECK: ${{ needs.setup-tags.outputs.tag }}
-      COMMIT_TO_CHECK: ${{ needs.setup-tags.outputs.commit }}
+      TAG_TO_CHECK: ${{ needs.retrieve-latest-tag.outputs.tag }}
+      WEEKLY_SCRIPT_URL: ${{ needs.retrieve-latest-tag.outputs.weekly_script_url }}
     strategy:
       matrix:
         os: [windows-latest]
@@ -150,5 +151,5 @@ jobs:
         uv pip install pyg-lib --find-links https://data.pyg.org/whl/torch-2.12.0+cpu.html
         uv pip install hypertorch
         curl -fsSL \
-          "https://raw.githubusercontent.com/hypernetwork-research-group/hypertorch/${COMMIT_TO_CHECK}/scripts/weekly_run.sh" \
-          | bash -s -- "$TAG_TO_CHECK" "$COMMIT_TO_CHECK"
+          "$WEEKLY_SCRIPT_URL" \
+          | bash -s -- "$TAG_TO_CHECK"
