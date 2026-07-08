@@ -422,7 +422,8 @@ class Dataset(TorchDataset):
             ValueError: If ratios do not sum to ``1.0``, a final split has zero
                 hyperedges, if train coverage is requested for dense hyperlink-prediction
                 splits, or a requested sparse train-cover split cannot cover the full node
-                space.
+                space. If the task is node-related, raises a ValueError if
+                sparse hyperedge splitting or train coverage is requested.
         """
         if splitter is not None:
             return splitter.split(self)
@@ -431,6 +432,12 @@ class Dataset(TorchDataset):
             raise ValueError("'ratios' must be provided when no custom 'splitter' is provided.")
 
         if self.hdata.is_node_related_task:
+            self.__validate_hyperedge_split_only_parameter(
+                sparse_split_hyperedges=sparse_split_hyperedges,
+                cover_all_nodes_in_train_split=cover_all_nodes_in_train_split,
+                train_split_idx=train_split_idx,
+            )
+
             splits, _ = NodeDatasetSplitter(
                 node_space_setting=node_space_setting,
                 shuffle=shuffle,
@@ -523,9 +530,16 @@ class Dataset(TorchDataset):
         Raises:
             ValueError: If ratios do not sum to ``1.0``, a final split has zero
                 hyperedges, or a requested transductive train-cover split cannot
-                cover the full node space.
+                cover the full node space. If the task is node-related, raises a ValueError if
+                sparse hyperedge splitting or train coverage is requested.
         """
         if self.hdata.is_node_related_task:
+            self.__validate_hyperedge_split_only_parameter(
+                sparse_split_hyperedges=sparse_split_hyperedges,
+                cover_all_nodes_in_train_split=cover_all_nodes_in_train_split,
+                train_split_idx=train_split_idx,
+            )
+
             return NodeDatasetSplitter(
                 node_space_setting=node_space_setting,
                 shuffle=shuffle,
@@ -638,3 +652,29 @@ class Dataset(TorchDataset):
             stats: A dictionary containing various statistics about the hypergraph.
         """
         return self.hdata.stats()
+
+    def __validate_hyperedge_split_only_parameter(
+        self,
+        sparse_split_hyperedges: bool,
+        cover_all_nodes_in_train_split: bool,
+        train_split_idx: int,
+    ):
+        if sparse_split_hyperedges:
+            raise ValueError(
+                "Sparse hyperedge splitting is not applicable to node-related tasks. "
+                f"Got sparse_split_hyperedges={sparse_split_hyperedges} "
+                f"for task={self.hdata.task!r}."
+            )
+        if cover_all_nodes_in_train_split:
+            raise ValueError(
+                "Train coverage is not applicable to node-related tasks. "
+                "Do not set 'cover_all_nodes_in_train_split'. "
+                f"Got cover_all_nodes_in_train_split={cover_all_nodes_in_train_split} "
+                f"for task={self.hdata.task!r}."
+            )
+        if train_split_idx != 0:
+            raise ValueError(
+                "Train coverage is not applicable to node-related tasks. "
+                f"Got train_split_idx={train_split_idx} (should be omitted or 0) "
+                f"for task={self.hdata.task!r}."
+            )
