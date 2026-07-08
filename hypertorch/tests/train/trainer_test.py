@@ -1,6 +1,7 @@
 import pytest
 import re
 
+from types import MappingProxyType
 from unittest.mock import MagicMock, patch
 from lightning.pytorch.callbacks import Callback
 from lightning.pytorch.callbacks import ModelCheckpoint
@@ -29,6 +30,7 @@ def mock_model_configs():
         model_config.train_dataloader = None
         model_config.val_dataloader = None
         model_config.test_dataloader = None
+        model_config.trainer_kwargs = None
 
         model_configs.append(model_config)
 
@@ -495,6 +497,32 @@ def test_init_creates_test_trainers_with_test_devices(
 @patch("hypertorch.train.trainer.CSVLogger")
 @patch("hypertorch.train.trainer.MarkdownTableLogger")
 @patch("hypertorch.train.trainer.LaTexTableLogger")
+def test_init_creates_test_trainer_with_model_config_test_devices(
+    mock_latex_logger_cls,
+    mock_md_logger_cls,
+    mock_csv_logger_cls,
+    mock_trainer_cls,
+    mock_model_configs,
+):
+    mock_model_configs[0].trainer_kwargs = {"test_devices": 1}
+
+    MultiModelTrainer(mock_model_configs, devices="auto", test_devices=None)
+
+    assert mock_trainer_cls.call_count == len(mock_model_configs) + 1
+    assert mock_trainer_cls.call_args_list[0].kwargs["devices"] == "auto"  # fit trainer of conf 0
+    assert mock_trainer_cls.call_args_list[1].kwargs["devices"] == 1  # test trainer of conf 0
+    assert mock_trainer_cls.call_args_list[2].kwargs["devices"] == "auto"  # fit trainer of conf 1
+    assert mock_model_configs[0].test_trainer is not None
+    assert mock_model_configs[1].test_trainer is None
+
+
+@patch(
+    "hypertorch.train.trainer.L.Trainer",
+    side_effect=lambda *args, **kwargs: new_mock_trainer(),
+)
+@patch("hypertorch.train.trainer.CSVLogger")
+@patch("hypertorch.train.trainer.MarkdownTableLogger")
+@patch("hypertorch.train.trainer.LaTexTableLogger")
 def test_test_all_uses_auto_created_test_trainer_when_test_devices_is_set(
     mock_latex_logger_cls,
     mock_md_logger_cls,
@@ -938,6 +966,201 @@ def test_init_passes_custom_logger_to_all_models(mock_trainer_cls, mock_model_co
 
     for call_args in mock_trainer_cls.call_args_list:
         assert call_args.kwargs["logger"] is custom_logger
+
+
+@patch("hypertorch.train.trainer.L.Trainer")
+@patch("hypertorch.train.trainer.CSVLogger")
+@patch("hypertorch.train.trainer.MarkdownTableLogger")
+@patch("hypertorch.train.trainer.LaTexTableLogger")
+def test_init_uses_model_config_trainer_overrides(
+    mock_latex_logger_cls,
+    mock_md_logger_cls,
+    mock_csv_logger_cls,
+    mock_trainer_cls,
+    mock_model_configs,
+    tmp_path,
+):
+    model_logger = MagicMock()
+    shared_logger = MagicMock()
+    model_root_dir = tmp_path / "model_root"
+    shared_root_dir = tmp_path / "shared_root"
+
+    model_overrides = {
+        "accelerator": "cpu",
+        "devices": 1,
+        "strategy": "auto",
+        "num_nodes": 2,
+        "precision": "bf16-mixed",
+        "max_epochs": 3,
+        "min_epochs": 1,
+        "max_steps": 20,
+        "min_steps": 2,
+        "check_val_every_n_epoch": 2,
+        "logger": model_logger,
+        "default_root_dir": model_root_dir,
+        "enable_autolog_hparams": False,
+        "log_every_n_steps": 5,
+        "profiler": "simple",
+        "fast_dev_run": True,
+        "enable_progress_bar": False,
+        "enable_model_summary": False,
+    }
+    mock_model_configs[0].trainer_kwargs = MappingProxyType(
+        {
+            **model_overrides,
+            "limit_train_batches": 1,
+            "num_sanity_val_steps": 0,
+        }
+    )
+
+    MultiModelTrainer(
+        mock_model_configs,
+        accelerator="auto",
+        devices="auto",
+        strategy="ddp",
+        num_nodes=1,
+        precision=32,
+        max_epochs=10,
+        min_epochs=None,
+        max_steps=-1,
+        min_steps=None,
+        check_val_every_n_epoch=1,
+        logger=shared_logger,
+        default_root_dir=shared_root_dir,
+        enable_autolog_hparams=True,
+        log_every_n_steps=50,
+        profiler=None,
+        fast_dev_run=False,
+        enable_progress_bar=True,
+        enable_model_summary=True,
+        limit_train_batches=0.5,
+    )
+
+    # First model config gets model overrides
+    first_call = mock_trainer_cls.call_args_list[0].kwargs
+    assert first_call["logger"] is model_logger
+    assert first_call["enable_autolog_hparams"] is False
+    assert first_call["fast_dev_run"] is True
+    assert first_call["enable_progress_bar"] is False
+    assert first_call["enable_model_summary"] is False
+    for key, expected in model_overrides.items():
+        if key not in {
+            "logger",
+            "enable_autolog_hparams",
+            "fast_dev_run",
+            "enable_progress_bar",
+            "enable_model_summary",
+        }:
+            assert first_call[key] == expected
+    # Model config overrides should take precedence over defaults for first config
+    assert first_call["limit_train_batches"] == 1
+    assert first_call["num_sanity_val_steps"] == 0
+
+    # Second model config receives the shared settings from MultiModelTrainer init
+    second_call = mock_trainer_cls.call_args_list[1].kwargs
+    assert second_call["logger"] is shared_logger
+    assert second_call["enable_autolog_hparams"] is True
+    assert second_call["fast_dev_run"] is False
+    assert second_call["enable_progress_bar"] is True
+    assert second_call["enable_model_summary"] is True
+    for key, expected in {
+        "accelerator": "auto",
+        "devices": "auto",
+        "strategy": "ddp",
+        "num_nodes": 1,
+        "precision": 32,
+        "max_epochs": 10,
+        "min_epochs": None,
+        "max_steps": -1,
+        "min_steps": None,
+        "check_val_every_n_epoch": 1,
+        "default_root_dir": shared_root_dir,
+        "log_every_n_steps": 50,
+        "profiler": None,
+    }.items():
+        assert second_call[key] == expected
+    # MultiModelTrainer defaults should be used for config 1 since it has no overrides
+    assert second_call["limit_train_batches"] == 0.5
+    assert "num_sanity_val_steps" not in second_call
+
+
+@patch("hypertorch.train.trainer.L.Trainer")
+@patch("hypertorch.train.trainer.CSVLogger")
+@patch("hypertorch.train.trainer.MarkdownTableLogger")
+@patch("hypertorch.train.trainer.LaTexTableLogger")
+def test_init_uses_model_config_callbacks_and_checkpoint_kwargs(
+    mock_latex_logger_cls,
+    mock_md_logger_cls,
+    mock_csv_logger_cls,
+    mock_trainer_cls,
+    mock_model_configs,
+):
+    mock_model_configs[0].trainer_kwargs = {
+        "callbacks": [Callback()],
+        "checkpoint_callback_kwargs": {
+            "filename": "model-{epoch}",
+            "save_last": True,
+        },
+    }
+
+    MultiModelTrainer(
+        mock_model_configs,
+        enable_checkpointing=True,
+        callbacks=[Callback()],
+        checkpoint_callback_kwargs={
+            "filename": "shared-{epoch}",
+            "save_weights_only": True,
+        },
+    )
+
+    first_callbacks = mock_trainer_cls.call_args_list[0].kwargs["callbacks"]
+    first_checkpoint_callbacks = [
+        callback for callback in first_callbacks if isinstance(callback, ModelCheckpoint)
+    ]
+    assert len(first_callbacks) == 2
+    assert len(first_checkpoint_callbacks) == 1
+    assert first_checkpoint_callbacks[0].filename == "model-{epoch}"
+    assert first_checkpoint_callbacks[0].save_last is True
+    assert first_checkpoint_callbacks[0].save_weights_only is True
+
+    second_callbacks = mock_trainer_cls.call_args_list[1].kwargs["callbacks"]
+    second_checkpoint_callbacks = [
+        callback for callback in second_callbacks if isinstance(callback, ModelCheckpoint)
+    ]
+    assert len(second_callbacks) == 2
+    assert len(second_checkpoint_callbacks) == 1
+    assert second_checkpoint_callbacks[0].filename == "shared-{epoch}"
+    assert second_checkpoint_callbacks[0].save_weights_only is True
+
+
+@patch("hypertorch.train.trainer.L.Trainer")
+@patch("hypertorch.train.trainer.CSVLogger")
+@patch("hypertorch.train.trainer.MarkdownTableLogger")
+@patch("hypertorch.train.trainer.LaTexTableLogger")
+def test_init_uses_model_config_enable_checkpointing(
+    mock_latex_logger_cls,
+    mock_md_logger_cls,
+    mock_csv_logger_cls,
+    mock_trainer_cls,
+    mock_model_configs,
+):
+    mock_model_configs[0].trainer_kwargs = {"enable_checkpointing": False}
+
+    MultiModelTrainer(
+        mock_model_configs,
+        enable_checkpointing=True,
+    )
+
+    first_call = mock_trainer_cls.call_args_list[0].kwargs
+    assert first_call["enable_checkpointing"] is False
+    assert first_call["callbacks"] is None
+
+    second_call = mock_trainer_cls.call_args_list[1].kwargs
+    second_checkpoint_callbacks = [
+        callback for callback in second_call["callbacks"] if isinstance(callback, ModelCheckpoint)
+    ]
+    assert second_call["enable_checkpointing"] is True
+    assert len(second_checkpoint_callbacks) == 1
 
 
 @patch("hypertorch.train.trainer.L.Trainer")
