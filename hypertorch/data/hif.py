@@ -399,14 +399,14 @@ class HIFLoader:
 
         if url.endswith(".json.zst"):
             hif_data = from_zst_bytes_to_json(response.content)
-            hdata, hypergraph = cls.__process_hif_data(hif_data=hif_data, task=task)
+            hdata, hif_hypergraph = cls.__process_hif_data(hif_data=hif_data, task=task)
             if save_on_disk:
                 write_dataset_to_disk_as_zst(
                     dataset_name=os.path.basename(url), content=response.content
                 )
         else:  # json
             hif_data = from_bytes_to_json(response.content)
-            hdata, hypergraph = cls.__process_hif_data(hif_data=hif_data, task=task)
+            hdata, hif_hypergraph = cls.__process_hif_data(hif_data=hif_data, task=task)
             if save_on_disk:
                 compressed_hif_data = compress_json_bytes_as_zst(response.content)
 
@@ -414,11 +414,13 @@ class HIFLoader:
                     dataset_name=os.path.basename(url), content=compressed_hif_data
                 )
 
-        return hdata, hypergraph
+        return hdata, hif_hypergraph
 
     @classmethod
     def load_from_path(
-        cls, filepath: str, task: Task = TaskEnum.HYPERLINK_PREDICTION
+        cls,
+        filepath: str,
+        task: Task = TaskEnum.HYPERLINK_PREDICTION,
     ) -> tuple[HData, HIFHypergraph]:
         """
         Load a hypergraph from a local file path pointing to a .json or .json.zst file in HIF

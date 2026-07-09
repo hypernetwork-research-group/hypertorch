@@ -196,10 +196,12 @@ class Dataset(TorchDataset):
         Returns:
             dataset: The `Dataset` instance with the loaded hypergraph data.
         """
-        hdata, hypergraph = HIFLoader.load_from_url(url=url, task=task, save_on_disk=save_on_disk)
+        hdata, hif_hypergraph = HIFLoader.load_from_url(
+            url=url, task=task, save_on_disk=save_on_disk
+        )
         dataset = cls.from_hdata(
             hdata=hdata,
-            hif_hypergraph=hypergraph,
+            hif_hypergraph=hif_hypergraph,
             sampling_strategy=sampling_strategy,
             task=task,
         )
@@ -227,10 +229,10 @@ class Dataset(TorchDataset):
         Returns:
             dataset: The `Dataset` instance with the loaded hypergraph data.
         """
-        hdata, hypergraph = HIFLoader.load_from_path(filepath=filepath, task=task)
+        hdata, hif_hypergraph = HIFLoader.load_from_path(filepath=filepath, task=task)
         dataset = cls.from_hdata(
             hdata=hdata,
-            hif_hypergraph=hypergraph,
+            hif_hypergraph=hif_hypergraph,
             sampling_strategy=sampling_strategy,
             task=task,
         )
