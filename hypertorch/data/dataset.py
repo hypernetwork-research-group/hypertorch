@@ -80,6 +80,54 @@ class Dataset(TorchDataset):
         validate_task(self.task)
 
         self.hdata: HData = hdata if hdata is not None else HData.empty(task=task)
+        self.hif_hypergraph: HIFHypergraph | None = hif_hypergraph if hif_hypergraph is not None else None
+
+    @property
+    def hif_hypergraph(self) -> HIFHypergraph:
+        """
+        Return the original HIF hypergraph, if available.
+
+        Returns:
+            The HIF hypergraph from which the dataset was created, if available.
+
+        Raises:
+            ValueError: If no HIF hypergraph is available. This can be due to the dataset being
+                created from a preprocessed HData without the original HIF hypergraph,
+                or due to operations like splitting or sampling that do not preserve
+                the original HIF hypergraph.
+        """
+        if self.__hif_hypergraph is None:
+            raise ValueError(
+                "HIF hypergraph is not available. This may occur if the dataset was created "
+                "from a preprocessed HData without providing the original HIF hypergraph. "
+                "It can also be a consequence of operations like splitting or sampling, "
+                "which do not preserve the original HIF hypergraph."
+            )
+        return self.__hif_hypergraph
+
+    @hif_hypergraph.setter
+    def hif_hypergraph(self, hif_hypergraph: HIFHypergraph | None) -> None:
+        self.__hif_hypergraph = hif_hypergraph
+
+    @property
+    def is_hyperedge_related_task(self) -> bool:
+        """
+        Check if the task uses hyperedge-level targets and operations.
+
+        Returns:
+            is_hyperedge_related: True if the task is hyperedge-related, False otherwise.
+        """
+        return is_hyperedge_related_task(self.task)
+
+    @property
+    def is_node_related_task(self) -> bool:
+        """
+        Check if the task uses node-level targets and operations.
+
+        Returns:
+            is_node_related: True if the task is node-related, False otherwise.
+        """
+        return is_node_related_task(self.task)
 
     @property
     def hif_hypergraph(self) -> HIFHypergraph:
@@ -187,6 +235,7 @@ class Dataset(TorchDataset):
         hif_hypergraph: HIFHypergraph | None = None,
         sampling_strategy: SamplingStrategy = SamplingStrategyEnum.HYPEREDGE,
         task: Task = TaskEnum.HYPERLINK_PREDICTION,
+        hif: HIFHypergraph | None = None,
     ) -> Dataset:
         """
         Create a `Dataset` instance from an `HData` object.
@@ -199,6 +248,7 @@ class Dataset(TorchDataset):
                 defaults to ``SamplingStrategy.HYPEREDGE``.
             task: Learning task used when the HData. If not provided,
                 defaults to ``"hyperlink-prediction"``.
+            hif: The original hypergraph. If not provided, defaults to ``None``.
 
         Returns:
             dataset: The `Dataset` instance with the provided `HData`.

@@ -81,6 +81,7 @@ class _PreloadedDataset(Dataset):
                 task=task,
                 save_on_disk=save_on_disk,
             )
+            self.hdata = hdata
 
     def __validate(self) -> None:
         """
