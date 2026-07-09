@@ -54,13 +54,15 @@ jobs:
       uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
       with:
         python-version: ${{ matrix.python-version }}
+        enable-cache: "false"
+        ignore-empty-workdir: "true"
 
     - name: Download and run examples
       shell: bash
       run: |
         uv venv ubuntu-env
-        source ubuntu-env/bin/activate || source ubuntu-env/Scripts/activate
-        uv pip install "torch>=2.12,<3.0" --index-url https://download.pytorch.org/whl/cpu
+        source ubuntu-env/bin/activate
+        uv pip install "torch>=2.12.0,<2.13.0" --index-url https://download.pytorch.org/whl/cpu
         uv pip install pyg-lib --find-links https://data.pyg.org/whl/torch-2.12.0+cpu.html
         uv pip install --no-build-isolation hypertorch
         curl -fsSL "$WEEKLY_SCRIPT_URL" | bash -s -- "$TAG_TO_CHECK"
@@ -81,13 +83,15 @@ jobs:
       uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
       with:
         python-version: ${{ matrix.python-version }}
+        enable-cache: "false"
+        ignore-empty-workdir: "true"
 
     - name: Download and run examples
       shell: bash
       run: |
         uv venv ubuntu-env
         source ubuntu-env/bin/activate || source ubuntu-env/Scripts/activate
-        uv pip install "torch>=2.11,<2.12" --index-url https://download.pytorch.org/whl/cpu
+        uv pip install "torch>=2.11.0,<2.12.0" --index-url https://download.pytorch.org/whl/cpu
         uv pip install torch-cluster --find-links https://data.pyg.org/whl/torch-2.11.0+cpu.html
         uv pip install --no-build-isolation hypertorch
         curl -fsSL "$WEEKLY_SCRIPT_URL" | bash -s -- "$TAG_TO_CHECK"
@@ -108,13 +112,15 @@ jobs:
       uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
       with:
         python-version: ${{ matrix.python-version }}
+        enable-cache: "false"
+        ignore-empty-workdir: "true"
 
     - name: Download and run examples
       shell: bash
       run: |
         uv venv macos-env
         source macos-env/bin/activate || source macos-env/Scripts/activate
-        uv pip install "torch>=2.12,<3.0" --index-url https://download.pytorch.org/whl/cpu
+        uv pip install "torch>=2.12.0,<3.0.0" --index-url https://download.pytorch.org/whl/cpu
         uv pip install pyg-lib --find-links https://data.pyg.org/whl/torch-2.12.0+cpu.html
         uv pip install --no-build-isolation hypertorch
         curl -fsSL "$WEEKLY_SCRIPT_URL" | bash -s -- "$TAG_TO_CHECK"
@@ -135,13 +141,15 @@ jobs:
       uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
       with:
         python-version: ${{ matrix.python-version }}
+        enable-cache: "false"
+        ignore-empty-workdir: "true"
 
     - name: Download and run examples
       shell: bash
       run: |
         uv venv windows-env
         source windows-env/Scripts/activate
-        uv pip install "torch>=2.12,<3.0" --index-url https://download.pytorch.org/whl/cpu
+        uv pip install "torch>=2.12.0,<2.13.0" --index-url https://download.pytorch.org/whl/cpu
         uv pip install pyg-lib --find-links https://data.pyg.org/whl/torch-2.12.0+cpu.html
         uv pip install hypertorch
         curl -fsSL "$WEEKLY_SCRIPT_URL" | bash -s -- "$TAG_TO_CHECK"
