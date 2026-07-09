@@ -73,14 +73,12 @@ class _PreloadedDataset(Dataset):
             task=task,
         )
         if hdata is None:
-            hdata, hif_hypergraph = HIFLoader.load_by_name(
+            self.hdata, self.hif_hypergraph = HIFLoader.load_by_name(
                 dataset_name=self.DATASET_NAME,
                 hf_sha=self.HF_SHA,
                 task=task,
                 save_on_disk=save_on_disk,
             )
-            self.hdata = hdata
-            self.hif_hypergraph = hif_hypergraph
 
     def __validate(self) -> None:
         """

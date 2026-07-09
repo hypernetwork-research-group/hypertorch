@@ -65,7 +65,7 @@ class Dataset(TorchDataset):
         self.sampling_strategy: SamplingStrategy = sampling_strategy
         self.task: Task = task
         self.hdata: HData = hdata if hdata is not None else HData.empty(task=task)
-        self.hif_hypergraph: HIFHypergraph | None = (
+        self.__hif_hypergraph: HIFHypergraph | None = (
             hif_hypergraph if hif_hypergraph is not None else None
         )
 
@@ -80,29 +80,17 @@ class Dataset(TorchDataset):
         Raises:
             ValueError: If no HIF hypergraph is available.
         """
-        if self._hif_hypergraph is None:
+        if self.__hif_hypergraph is None:
             raise ValueError(
                 "HIF hypergraph is not available. "
                 "This may occur if the dataset was created from HData without "
                 "providing the original HIF hypergraph."
             )
-        return self._hif_hypergraph
+        return self.__hif_hypergraph
 
     @hif_hypergraph.setter
     def hif_hypergraph(self, value: HIFHypergraph | None) -> None:
-        self._hif_hypergraph = value
-
-    @classmethod
-    def with_hif_hypergraph(cls, hif_hypergraph: HIFHypergraph) -> Dataset:
-        return cls(
-            hif_hypergraph=hif_hypergraph,
-        )
-
-    @classmethod
-    def with_hdata(cls, hdata: HData) -> Dataset:
-        return cls(
-            hdata=hdata,
-        )
+        self.__hif_hypergraph = value
 
     def __len__(self) -> int:
         """
