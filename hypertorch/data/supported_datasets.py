@@ -61,6 +61,8 @@ class _PreloadedDataset(Dataset):
 
         Args:
             hdata: Optional preloaded data. If ``None``, data is loaded from ``DATASET_NAME``.
+            hif_hypergraph: Optional preloaded HIF hypergraph. If hdata is ``None``, data is loaded
+                from ``DATASET_NAME``.
             sampling_strategy: Sampling strategy used by the dataset.
             task: Task type for the dataset. Defaults to ``"hyperlink-prediction"``.
             save_on_disk: Whether downloaded data should be cached on disk.

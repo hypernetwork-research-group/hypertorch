@@ -142,35 +142,13 @@ class HIFProcessor:
 
         hyperedge_index = torch.tensor([node_ids, hyperedge_ids], dtype=torch.long)
 
-        hypergraph_hif = HIFHypergraph.empty()
-        hypergraph_hif.network_type = hypergraph.network_type
-
-        hypergraph_hif.incidences = [
-            {"node": node_id, "edge": hyperedge_id}
-            for node_id, hyperedge_id in zip(node_ids, hyperedge_ids, strict=True)
-        ]
-        hypergraph_hif.nodes = [
-            {
-                "node": node_id,
-                "attrs": dict(hypergraph.nodes[node_idx].get("attrs") or {}),
-            }
-            for node_idx, node_id in enumerate(node_id_to_idx.keys())
-        ]
-
-        hypergraph_hif.hyperedges = [
-            {
-                "edge": hyperedge_id,
-                "attrs": dict(hypergraph.hyperedges[hyperedge_idx].get("attrs") or {}),
-            }
-            for hyperedge_idx, hyperedge_id in enumerate(hyperedge_id_to_idx_pre_self_loop.keys())
-        ]
-        # add self loop
-        hypergraph_hif.hyperedges.extend(
-            {
-                "edge": hyperedge_id,
-                "attrs": {},
-            }
-            for hyperedge_idx, hyperedge_id in enumerate(self_loop_hyperedges)
+        hif_hypergraph = cls.__hif_after_process(
+            hypergraph=hypergraph,
+            node_id_to_idx=node_id_to_idx,
+            node_ids=node_ids,
+            hyperedge_ids=hyperedge_ids,
+            hyperedge_id_to_idx_pre_self_loop=hyperedge_id_to_idx_pre_self_loop,
+            self_loop_hyperedges=self_loop_hyperedges,
         )
 
         hdata = HData(
@@ -183,7 +161,7 @@ class HIFProcessor:
             task=task,
         )
 
-        return (hdata, hypergraph_hif)
+        return (hdata, hif_hypergraph)
 
     @classmethod
     def __collect_attr_keys(cls, attr_keys: list[dict[str, Any]]) -> list[str]:
@@ -203,6 +181,49 @@ class HIFProcessor:
                     unique_keys.append(key)
 
         return unique_keys
+
+    @classmethod
+    def __hif_after_process(
+        cls,
+        hypergraph: HIFHypergraph,
+        node_id_to_idx: dict[Any, int],
+        node_ids: list[int],
+        hyperedge_ids: list[int],
+        hyperedge_id_to_idx_pre_self_loop: dict[Any, int],
+        self_loop_hyperedges: list[int],
+    ) -> HIFHypergraph:
+        hif_hypergraph = HIFHypergraph.empty()
+        hif_hypergraph.network_type = hypergraph.network_type
+
+        hif_hypergraph.incidences = [
+            {"node": node_id, "edge": hyperedge_id}
+            for node_id, hyperedge_id in zip(node_ids, hyperedge_ids, strict=True)
+        ]
+        hif_hypergraph.nodes = [
+            {
+                "node": node_id,
+                "attrs": dict(hypergraph.nodes[node_idx].get("attrs") or {}),
+            }
+            for node_idx, node_id in enumerate(node_id_to_idx.keys())
+        ]
+
+        hif_hypergraph.hyperedges = [
+            {
+                "edge": hyperedge_id,
+                "attrs": dict(hypergraph.hyperedges[hyperedge_idx].get("attrs") or {}),
+            }
+            for hyperedge_idx, hyperedge_id in enumerate(hyperedge_id_to_idx_pre_self_loop.keys())
+        ]
+        # add self loop
+        hif_hypergraph.hyperedges.extend(
+            {
+                "edge": hyperedge_id,
+                "attrs": {},
+            }
+            for hyperedge_idx, hyperedge_id in enumerate(self_loop_hyperedges)
+        )
+
+        return hif_hypergraph
 
     @classmethod
     def __process_hyperedge_attr(
@@ -470,10 +491,12 @@ class HIFLoader:
         if response.status_code == 200:
             dataset_bytes = response.content
             hif_data = from_zst_bytes_to_json(dataset_bytes)
-            hdata = cls.__process_hif_data(hif_data=hif_data, dataset_name=dataset_name, task=task)
+            hdata, hif_hypergraph = cls.__process_hif_data(
+                hif_data=hif_data, dataset_name=dataset_name, task=task
+            )
             if save_on_disk:
                 write_zst_file_to_disk(zst_filename=zst_filename, content=dataset_bytes)
-            return hdata
+            return hdata, hif_hypergraph
 
         warnings.warn(
             f"GitHub raw download failed for dataset {dataset_name!r} "
@@ -508,7 +531,9 @@ class HIFLoader:
             ) from e
 
         hif_data = from_zst_file_to_json(downloaded_path)
-        hdata = cls.__process_hif_data(hif_data=hif_data, dataset_name=dataset_name, task=task)
+        hdata, hif_hypergraph = cls.__process_hif_data(
+            hif_data=hif_data, dataset_name=dataset_name, task=task
+        )
         if save_on_disk:
             try:
                 os.makedirs(os.path.dirname(zst_filename), exist_ok=True)
@@ -531,7 +556,7 @@ class HIFLoader:
                     category=UserWarning,
                     stacklevel=2,
                 )
-        return hdata
+        return hdata, hif_hypergraph
 
     @classmethod
     def __process_hif_data(
