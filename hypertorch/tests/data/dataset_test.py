@@ -110,7 +110,7 @@ def mock_negative_sampler() -> tuple[NegativeSampler, MagicMock]:
 
 def test_preloaded_dataset_loads_hdata_when_hdata_is_none():
     mock_hdata = MagicMock(spec=HData)
-    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata) as mock_load:
+    with patch.object(HIFLoader, "load_by_name", return_value=(mock_hdata, None)) as mock_load:
         dataset = AlgebraDataset(hdata=None)
 
     assert dataset.hdata == mock_hdata
@@ -131,7 +131,7 @@ def test_preloaded_dataset_loads_hdata_when_hdata_is_none():
 )
 def test_dataset_is_available_with_all_strategies(strategy, expected_len, mock_hdata_four_nodes):
 
-    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_four_nodes):
+    with patch.object(HIFLoader, "load_by_name", return_value=(mock_hdata_four_nodes, None)):
         dataset = AlgebraDataset(sampling_strategy=strategy)
 
         assert dataset.DATASET_NAME == "algebra"
@@ -139,7 +139,9 @@ def test_dataset_is_available_with_all_strategies(strategy, expected_len, mock_h
 
 
 def test_dataset_process_no_incidences(mock_hdata_isolated_hyperedges):
-    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_isolated_hyperedges):
+    with patch.object(
+        HIFLoader, "load_by_name", return_value=(mock_hdata_isolated_hyperedges, None)
+    ):
         dataset = AlgebraDataset()
 
         assert dataset.hdata is not None
@@ -150,7 +152,9 @@ def test_dataset_process_no_incidences(mock_hdata_isolated_hyperedges):
 
 
 def test_dataset_process_with_hyperedge_attributes(mock_hdata_with_hyperedge_attr):
-    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_with_hyperedge_attr):
+    with patch.object(
+        HIFLoader, "load_by_name", return_value=(mock_hdata_with_hyperedge_attr, None)
+    ):
         dataset = AlgebraDataset()
 
     assert dataset.hdata is not None
@@ -160,7 +164,7 @@ def test_dataset_process_with_hyperedge_attributes(mock_hdata_with_hyperedge_att
 
 
 def test_dataset_process_without_hyperedge_attributes(mock_hdata):
-    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata):
+    with patch.object(HIFLoader, "load_by_name", return_value=(mock_hdata, None)):
         dataset = AlgebraDataset()
 
     assert dataset.hdata is not None
@@ -168,7 +172,9 @@ def test_dataset_process_without_hyperedge_attributes(mock_hdata):
 
 
 def test_dataset_process_with_hyperedge_weights(mock_hdata_with_hyperedge_weights):
-    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_with_hyperedge_weights):
+    with patch.object(
+        HIFLoader, "load_by_name", return_value=(mock_hdata_with_hyperedge_weights, None)
+    ):
         dataset = AlgebraDataset()
 
     assert dataset.hdata is not None
@@ -180,7 +186,7 @@ def test_dataset_process_with_hyperedge_weights(mock_hdata_with_hyperedge_weight
 
 
 def test_dataset_process_without_hyperedge_weights(mock_hdata):
-    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata):
+    with patch.object(HIFLoader, "load_by_name", return_value=(mock_hdata, None)):
         dataset = AlgebraDataset()
 
     assert dataset.hdata is not None
@@ -188,7 +194,7 @@ def test_dataset_process_without_hyperedge_weights(mock_hdata):
 
 
 def test_dataset_process_hyperedge_index_in_correct_format(mock_hdata_four_nodes):
-    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_four_nodes):
+    with patch.object(HIFLoader, "load_by_name", return_value=(mock_hdata_four_nodes, None)):
         dataset = AlgebraDataset()
 
     assert dataset.hdata.hyperedge_index.shape == (2, 4)
@@ -208,7 +214,7 @@ def test_dataset_process_hyperedge_index_in_correct_format(mock_hdata_four_nodes
     ],
 )
 def test_getitem_index_list_empty(mock_hdata, strategy):
-    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata):
+    with patch.object(HIFLoader, "load_by_name", return_value=(mock_hdata, None)):
         dataset = AlgebraDataset(sampling_strategy=strategy)
 
     with pytest.raises(ValueError, match=re.escape("Index list cannot be empty.")):
@@ -235,7 +241,7 @@ def test_getitem_index_list_empty(mock_hdata, strategy):
 def test_getitem_raises_when_index_list_larger_than_max(
     mock_hdata_four_nodes, strategy, index_list, expected_message
 ):
-    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_four_nodes):
+    with patch.object(HIFLoader, "load_by_name", return_value=(mock_hdata_four_nodes, None)):
         dataset = AlgebraDataset(sampling_strategy=strategy)
 
     with pytest.raises(ValueError, match=expected_message):
@@ -262,7 +268,7 @@ def test_getitem_raises_when_index_list_larger_than_max(
 def test_getitem_raises_when_index_out_of_bounds(
     mock_hdata_four_nodes, strategy, index, expected_message
 ):
-    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_four_nodes):
+    with patch.object(HIFLoader, "load_by_name", return_value=(mock_hdata_four_nodes, None)):
         dataset = AlgebraDataset(sampling_strategy=strategy)
 
     with pytest.raises(IndexError, match=expected_message):
@@ -282,7 +288,9 @@ def test_getitem_raises_when_index_out_of_bounds(
 def test_getitem_single_index(
     mock_hdata_isolated_hyperedges, strategy, index, expected_shape, expected_num_hyperedges
 ):
-    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_isolated_hyperedges):
+    with patch.object(
+        HIFLoader, "load_by_name", return_value=(mock_hdata_isolated_hyperedges, None)
+    ):
         dataset = AlgebraDataset(sampling_strategy=strategy)
 
     data = dataset[index]
@@ -304,7 +312,7 @@ def test_getitem_single_index(
 def test_getitem_when_list_index_provided(
     mock_hdata_four_nodes, strategy, index, expected_shape, expected_num_hyperedges
 ):
-    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_four_nodes):
+    with patch.object(HIFLoader, "load_by_name", return_value=(mock_hdata_four_nodes, None)):
         dataset = AlgebraDataset(sampling_strategy=strategy)
 
     data = dataset[index]
@@ -321,7 +329,9 @@ def test_getitem_when_list_index_provided(
     ],
 )
 def test_getitem_with_hyperedge_attr(mock_hdata_with_hyperedge_attr, strategy):
-    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_with_hyperedge_attr):
+    with patch.object(
+        HIFLoader, "load_by_name", return_value=(mock_hdata_with_hyperedge_attr, None)
+    ):
         dataset = AlgebraDataset(sampling_strategy=strategy)
 
     data = dataset[0]
@@ -343,7 +353,7 @@ def test_getitem_with_hyperedge_attr(mock_hdata_with_hyperedge_attr, strategy):
     ],
 )
 def test_getitem_without_hyperedge_attr(mock_hdata, strategy):
-    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata):
+    with patch.object(HIFLoader, "load_by_name", return_value=(mock_hdata, None)):
         dataset = AlgebraDataset(sampling_strategy=strategy)
 
     data = dataset[0]
@@ -363,7 +373,9 @@ def test_getitem_with_multiple_hyperedge_attr(
     mock_hdata_multiple_hyperedge_attrs_and_weights, strategy, index
 ):
     with patch.object(
-        HIFLoader, "load_by_name", return_value=mock_hdata_multiple_hyperedge_attrs_and_weights
+        HIFLoader,
+        "load_by_name",
+        return_value=(mock_hdata_multiple_hyperedge_attrs_and_weights, None),
     ):
         dataset = AlgebraDataset(sampling_strategy=strategy)
 
@@ -384,7 +396,9 @@ def test_getitem_with_multiple_hyperedge_attr(
     ],
 )
 def test_getitem_with_hyperedge_weights(mock_hdata_with_hyperedge_weights, strategy):
-    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_with_hyperedge_weights):
+    with patch.object(
+        HIFLoader, "load_by_name", return_value=(mock_hdata_with_hyperedge_weights, None)
+    ):
         dataset = AlgebraDataset(sampling_strategy=strategy)
 
     data = dataset[0]
@@ -406,7 +420,7 @@ def test_getitem_with_hyperedge_weights(mock_hdata_with_hyperedge_weights, strat
     ],
 )
 def test_getitem_without_hyperedge_weights(mock_hdata, strategy):
-    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata):
+    with patch.object(HIFLoader, "load_by_name", return_value=(mock_hdata, None)):
         dataset = AlgebraDataset(sampling_strategy=strategy)
 
     data = dataset[0]
@@ -440,7 +454,9 @@ def test_from_hdata(strategy, expected_len, mock_hdata):
 def test_from_url(strategy, mock_hdata):
     url = "https://example.com/sample.json.zst"
 
-    with patch.object(HIFLoader, "load_from_url", return_value=mock_hdata) as mock_load_from_url:
+    with patch.object(
+        HIFLoader, "load_from_url", return_value=(mock_hdata, None)
+    ) as mock_load_from_url:
         dataset = Dataset.from_url(url=url, sampling_strategy=strategy, save_on_disk=True)
 
     mock_load_from_url.assert_called_once_with(
@@ -464,7 +480,9 @@ def test_from_url(strategy, mock_hdata):
 def test_from_path(strategy, mock_hdata):
     filepath = "/abc/sample.json.zst"
 
-    with patch.object(HIFLoader, "load_from_path", return_value=mock_hdata) as mock_load_from_path:
+    with patch.object(
+        HIFLoader, "load_from_path", return_value=(mock_hdata, None)
+    ) as mock_load_from_path:
         dataset = Dataset.from_path(filepath=filepath, sampling_strategy=strategy)
 
     mock_load_from_path.assert_called_once_with(filepath=filepath, task="hyperlink-prediction")
@@ -629,7 +647,7 @@ def test_remove_hyperedges_with_fewer_than_k_nodes(hyperedge_index, k, expected_
 
 
 def test_split_with_equal_ratios(mock_hdata_four_nodes):
-    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_four_nodes):
+    with patch.object(HIFLoader, "load_by_name", return_value=(mock_hdata_four_nodes, None)):
         dataset = AlgebraDataset()
 
     splits = dataset.split([0.5, 0.5], node_space_setting="inductive")
@@ -715,7 +733,7 @@ def test_split_transductive_with_equal_ratios(mock_hdata_transductive_split):
     with patch.object(
         HIFLoader,
         "load_by_name",
-        return_value=mock_hdata_transductive_split,
+        return_value=(mock_hdata_transductive_split, None),
     ):
         dataset = AlgebraDataset()
 
@@ -734,7 +752,9 @@ def test_split_transductive_with_equal_ratios(mock_hdata_transductive_split):
 
 def test_split_inductive_three_way(mock_hdata_multiple_hyperedge_attrs_and_weights):
     with patch.object(
-        HIFLoader, "load_by_name", return_value=mock_hdata_multiple_hyperedge_attrs_and_weights
+        HIFLoader,
+        "load_by_name",
+        return_value=(mock_hdata_multiple_hyperedge_attrs_and_weights, None),
     ):
         dataset = AlgebraDataset()
 
@@ -756,7 +776,7 @@ def test_split_transductive_three_way(
     with patch.object(
         HIFLoader,
         "load_by_name",
-        return_value=mock_hdata_transductive_multiple_hyperedges_attrs_and_weights,
+        return_value=(mock_hdata_transductive_multiple_hyperedges_attrs_and_weights, None),
     ):
         dataset = AlgebraDataset()
 
@@ -776,7 +796,9 @@ def test_split_inductive_with_ratios_returns_final_inductive_ratios(
     mock_hdata_multiple_hyperedge_attrs_and_weights,
 ):
     with patch.object(
-        HIFLoader, "load_by_name", return_value=mock_hdata_multiple_hyperedge_attrs_and_weights
+        HIFLoader,
+        "load_by_name",
+        return_value=(mock_hdata_multiple_hyperedge_attrs_and_weights, None),
     ):
         dataset = AlgebraDataset()
 
@@ -919,7 +941,7 @@ def test_split_with_ratios_rejects_unsupported_task_category():
 
 
 def test_split_raises_when_ratios_do_not_sum_to_one(mock_hdata_four_nodes):
-    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_four_nodes):
+    with patch.object(HIFLoader, "load_by_name", return_value=(mock_hdata_four_nodes, None)):
         dataset = AlgebraDataset()
 
     with pytest.raises(ValueError, match=re.escape("'ratios' must sum to 1.0")):
@@ -939,7 +961,7 @@ def test_split_raises_when_ratios_do_not_sum_to_one(mock_hdata_four_nodes):
 def test_split_validates_ratio_values(
     mock_hdata_four_nodes, ratios, expected_exception, expected_message
 ):
-    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_four_nodes):
+    with patch.object(HIFLoader, "load_by_name", return_value=(mock_hdata_four_nodes, None)):
         dataset = AlgebraDataset()
 
     with pytest.raises(expected_exception, match=re.escape(expected_message)):
@@ -947,7 +969,7 @@ def test_split_validates_ratio_values(
 
 
 def test_split_raises_on_invalid_node_space_setting(mock_hdata_four_nodes):
-    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_four_nodes):
+    with patch.object(HIFLoader, "load_by_name", return_value=(mock_hdata_four_nodes, None)):
         dataset = AlgebraDataset()
 
     with pytest.raises(
@@ -960,7 +982,7 @@ def test_split_raises_on_invalid_node_space_setting(mock_hdata_four_nodes):
 
 
 def test_split_raises_when_a_split_has_zero_hyperedges(mock_hdata_four_nodes):
-    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_four_nodes):
+    with patch.object(HIFLoader, "load_by_name", return_value=(mock_hdata_four_nodes, None)):
         dataset = AlgebraDataset()
 
     with pytest.raises(
@@ -973,7 +995,7 @@ def test_split_raises_when_a_split_has_zero_hyperedges(mock_hdata_four_nodes):
 def test_split_with_shuffle_produces_deterministic_results_when_seed_provided(
     mock_hdata_four_nodes,
 ):
-    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_four_nodes):
+    with patch.object(HIFLoader, "load_by_name", return_value=(mock_hdata_four_nodes, None)):
         dataset = AlgebraDataset()
 
     splits_a = dataset.split(
@@ -1005,7 +1027,7 @@ def test_split_transductive_with_shuffle_produces_deterministic_results_when_see
     with patch.object(
         HIFLoader,
         "load_by_name",
-        return_value=mock_hdata_transductive_split,
+        return_value=(mock_hdata_transductive_split, None),
     ):
         dataset = AlgebraDataset()
 
@@ -1029,7 +1051,7 @@ def test_split_transductive_with_shuffle_produces_deterministic_results_when_see
 def test_split_with_shuffle_when_no_seed_provided(
     mock_hdata_four_nodes,
 ):
-    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_four_nodes):
+    with patch.object(HIFLoader, "load_by_name", return_value=(mock_hdata_four_nodes, None)):
         dataset = AlgebraDataset()
 
     splits = dataset.split([0.5, 0.5], shuffle=True, node_space_setting="inductive")
@@ -1050,7 +1072,7 @@ def test_split_transductive_with_shuffle_when_no_seed_provided(
     with patch.object(
         HIFLoader,
         "load_by_name",
-        return_value=mock_hdata_transductive_split,
+        return_value=(mock_hdata_transductive_split, None),
     ):
         dataset = AlgebraDataset()
 
@@ -1068,7 +1090,9 @@ def test_split_transductive_with_shuffle_when_no_seed_provided(
 
 def test_split_preserves_hyperedge_attr(mock_hdata_multiple_hyperedge_attrs_and_weights):
     with patch.object(
-        HIFLoader, "load_by_name", return_value=mock_hdata_multiple_hyperedge_attrs_and_weights
+        HIFLoader,
+        "load_by_name",
+        return_value=(mock_hdata_multiple_hyperedge_attrs_and_weights, None),
     ):
         dataset = AlgebraDataset()
 
@@ -1085,7 +1109,7 @@ def test_split_transductive_preserves_hyperedge_attr(
     with patch.object(
         HIFLoader,
         "load_by_name",
-        return_value=mock_hdata_transductive_multiple_hyperedges_attrs_and_weights,
+        return_value=(mock_hdata_transductive_multiple_hyperedges_attrs_and_weights, None),
     ):
         dataset = AlgebraDataset()
 
@@ -1097,7 +1121,7 @@ def test_split_transductive_preserves_hyperedge_attr(
 
 
 def test_split_without_hyperedge_attr(mock_hdata_four_nodes):
-    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_four_nodes):
+    with patch.object(HIFLoader, "load_by_name", return_value=(mock_hdata_four_nodes, None)):
         dataset = AlgebraDataset()
 
     splits = dataset.split([0.5, 0.5], node_space_setting="inductive")
@@ -1110,7 +1134,7 @@ def test_split_transductive_without_hyperedge_attr(mock_hdata_transductive_split
     with patch.object(
         HIFLoader,
         "load_by_name",
-        return_value=mock_hdata_transductive_split,
+        return_value=(mock_hdata_transductive_split, None),
     ):
         dataset = AlgebraDataset()
 
@@ -1122,7 +1146,9 @@ def test_split_transductive_without_hyperedge_attr(mock_hdata_transductive_split
 
 def test_split_preserves_hyperedge_weights(mock_hdata_multiple_hyperedge_attrs_and_weights):
     with patch.object(
-        HIFLoader, "load_by_name", return_value=mock_hdata_multiple_hyperedge_attrs_and_weights
+        HIFLoader,
+        "load_by_name",
+        return_value=(mock_hdata_multiple_hyperedge_attrs_and_weights, None),
     ):
         dataset = AlgebraDataset()
 
@@ -1139,7 +1165,7 @@ def test_split_transductive_preserves_hyperedge_weights(
     with patch.object(
         HIFLoader,
         "load_by_name",
-        return_value=mock_hdata_transductive_multiple_hyperedges_attrs_and_weights,
+        return_value=(mock_hdata_transductive_multiple_hyperedges_attrs_and_weights, None),
     ):
         dataset = AlgebraDataset()
 
@@ -1151,7 +1177,7 @@ def test_split_transductive_preserves_hyperedge_weights(
 
 
 def test_split_without_hyperedge_weights(mock_hdata_four_nodes):
-    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_four_nodes):
+    with patch.object(HIFLoader, "load_by_name", return_value=(mock_hdata_four_nodes, None)):
         dataset = AlgebraDataset()
 
     splits = dataset.split([0.5, 0.5], node_space_setting="inductive")
@@ -1164,7 +1190,7 @@ def test_split_transductive_without_hyperedge_weights(mock_hdata_transductive_sp
     with patch.object(
         HIFLoader,
         "load_by_name",
-        return_value=mock_hdata_transductive_split,
+        return_value=(mock_hdata_transductive_split, None),
     ):
         dataset = AlgebraDataset()
 
@@ -1186,7 +1212,7 @@ def test_to_device(mock_hdata):
 
 
 def test_default_sampling_strategy_is_hyperedge(mock_hdata_four_nodes):
-    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_four_nodes):
+    with patch.object(HIFLoader, "load_by_name", return_value=(mock_hdata_four_nodes, None)):
         dataset = AlgebraDataset()
 
     # Default strategy is HYPEREDGE, so len should be num_hyperedges (2), not num_nodes (4)
@@ -1195,7 +1221,7 @@ def test_default_sampling_strategy_is_hyperedge(mock_hdata_four_nodes):
 
 
 def test_explicit_node_sampling_strategy(mock_hdata_four_nodes):
-    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_four_nodes):
+    with patch.object(HIFLoader, "load_by_name", return_value=(mock_hdata_four_nodes, None)):
         dataset = AlgebraDataset(sampling_strategy=SamplingStrategyEnum.NODE)
 
     # NODE strategy, so len should be num_nodes (4), not num_hyperedges (2)
@@ -1211,7 +1237,7 @@ def test_explicit_node_sampling_strategy(mock_hdata_four_nodes):
     ],
 )
 def test_split_preserves_sampling_strategy(mock_hdata_four_nodes, strategy):
-    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata_four_nodes):
+    with patch.object(HIFLoader, "load_by_name", return_value=(mock_hdata_four_nodes, None)):
         dataset = AlgebraDataset(sampling_strategy=strategy)
 
     splits = dataset.split([0.5, 0.5], node_space_setting="inductive")
@@ -1234,7 +1260,7 @@ def test_split_transductive_preserves_sampling_strategy(
     with patch.object(
         HIFLoader,
         "load_by_name",
-        return_value=mock_hdata_transductive_split,
+        return_value=(mock_hdata_transductive_split, None),
     ):
         dataset = AlgebraDataset(sampling_strategy=strategy)
 
@@ -1867,7 +1893,7 @@ def test_sparse_split_raises_when_train_split_idx_provided_but_not_transductive(
 
 
 def test_transform_node_attrs_adds_padding_zero_when_attr_keys_padding(mock_hdata):
-    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata):
+    with patch.object(HIFLoader, "load_by_name", return_value=(mock_hdata, None)):
 
         class TestDataset(Dataset):
             DATASET_NAME = "TEST"
@@ -1897,7 +1923,7 @@ def test_transform_node_attrs_adds_padding_zero_when_attr_keys_padding(mock_hdat
 
 
 def test_transform_hyperedge_attrs_adds_padding_zero_when_attr_keys_padding(mock_hdata):
-    with patch.object(HIFLoader, "load_by_name", return_value=mock_hdata):
+    with patch.object(HIFLoader, "load_by_name", return_value=(mock_hdata, None)):
 
         class TestDataset(Dataset):
             DATASET_NAME = "TEST"

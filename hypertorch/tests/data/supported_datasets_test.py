@@ -54,7 +54,7 @@ def test_get_dataset_by_name_returns_dataset_instance():
 
     with patch(
         "hypertorch.data.supported_datasets.HIFLoader.load_by_name",
-        return_value=expected_hdata,
+        return_value=(expected_hdata, None),
     ):
         dataset = get_dataset_by_name(dataset_name)
 

@@ -46,7 +46,7 @@ class Dataset(TorchDataset):
     def __init__(
         self,
         hdata: HData | None = None,
-        hif: HIFHypergraph | None = None,
+        hif_hypergraph: HIFHypergraph | None = None,
         sampling_strategy: SamplingStrategy = SamplingStrategyEnum.HYPEREDGE,
         task: Task = TaskEnum.HYPERLINK_PREDICTION,
     ) -> None:
@@ -65,7 +65,44 @@ class Dataset(TorchDataset):
         self.sampling_strategy: SamplingStrategy = sampling_strategy
         self.task: Task = task
         self.hdata: HData = hdata if hdata is not None else HData.empty(task=task)
-        self.hif: HIFHypergraph | None = hif if hif is not None else None
+        self.hif_hypergraph: HIFHypergraph | None = (
+            hif_hypergraph if hif_hypergraph is not None else None
+        )
+
+    @property
+    def hif_hypergraph(self) -> HIFHypergraph:
+        """
+        Return the original HIF hypergraph if available.
+
+        Returns:
+            The original HIF hypergraph.
+
+        Raises:
+            ValueError: If no HIF hypergraph is available.
+        """
+        if self._hif_hypergraph is None:
+            raise ValueError(
+                "HIF hypergraph is not available. "
+                "This may occur if the dataset was created from HData without "
+                "providing the original HIF hypergraph."
+            )
+        return self._hif_hypergraph
+
+    @hif_hypergraph.setter
+    def hif_hypergraph(self, value: HIFHypergraph | None) -> None:
+        self._hif_hypergraph = value
+
+    @classmethod
+    def with_hif_hypergraph(cls, hif_hypergraph: HIFHypergraph) -> Dataset:
+        return cls(
+            hif_hypergraph=hif_hypergraph,
+        )
+
+    @classmethod
+    def with_hdata(cls, hdata: HData) -> Dataset:
+        return cls(
+            hdata=hdata,
+        )
 
     def __len__(self) -> int:
         """
@@ -125,7 +162,7 @@ class Dataset(TorchDataset):
         hdata: HData,
         sampling_strategy: SamplingStrategy = SamplingStrategyEnum.HYPEREDGE,
         task: Task = TaskEnum.HYPERLINK_PREDICTION,
-        hif: HIFHypergraph | None = None,
+        hif_hypergraph: HIFHypergraph | None = None,
     ) -> Dataset:
         """
         Create a `Dataset` instance from an `HData` object.
@@ -136,12 +173,17 @@ class Dataset(TorchDataset):
                 defaults to ``SamplingStrategy.HYPEREDGE``.
             task: Learning task used when the HData. If not provided,
                 defaults to ``"hyperlink-prediction"``.
-            hif: The original hypergraph. If not provided, defaults to ``None``.
+            hif_hypergraph: The original hypergraph. If not provided, defaults to ``None``.
 
         Returns:
             dataset: The `Dataset` instance with the provided `HData`.
         """
-        return cls(hdata=hdata, sampling_strategy=sampling_strategy, task=task, hif=hif)
+        return cls(
+            hdata=hdata,
+            sampling_strategy=sampling_strategy,
+            task=task,
+            hif_hypergraph=hif_hypergraph,
+        )
 
     @classmethod
     def from_url(
@@ -168,7 +210,7 @@ class Dataset(TorchDataset):
         """
         hdata, hypergraph = HIFLoader.load_from_url(url=url, task=task, save_on_disk=save_on_disk)
         dataset = cls.from_hdata(
-            hdata=hdata, sampling_strategy=sampling_strategy, task=task, hif=hypergraph
+            hdata=hdata, sampling_strategy=sampling_strategy, task=task, hif_hypergraph=hypergraph
         )
         return dataset
 
@@ -196,7 +238,7 @@ class Dataset(TorchDataset):
         """
         hdata, hypergraph = HIFLoader.load_from_path(filepath=filepath, task=task)
         dataset = cls.from_hdata(
-            hdata=hdata, sampling_strategy=sampling_strategy, task=task, hif=hypergraph
+            hdata=hdata, sampling_strategy=sampling_strategy, task=task, hif_hypergraph=hypergraph
         )
         return dataset
 

@@ -1,6 +1,7 @@
+import copy
 import os
-import shutil
 import requests
+import shutil
 import torch
 import warnings
 
@@ -114,12 +115,15 @@ class HIFProcessor:
             hyperedge_ids.append(hyperedge_id_to_idx[hyperedge_id])
             nodes_with_incidences.add(node_id_to_idx[node_id])
 
+        hyperedge_id_to_idx_pre_self_loop = copy.deepcopy(hyperedge_id_to_idx)
+        self_loop_hyperedges = []
         # Handle isolated nodes by assigning them to a new unique hyperedge (self-loop)
         for node_idx in range(num_nodes):
             if node_idx not in nodes_with_incidences:
                 new_hyperedge_id = len(hyperedge_id_to_idx)
                 # Unique dummy key to reserve the index in hyperedge_set
                 hyperedge_id_to_idx[f"__self_loop_{node_idx}__"] = new_hyperedge_id
+                self_loop_hyperedges.append(new_hyperedge_id)
                 node_ids.append(node_idx)
                 hyperedge_ids.append(new_hyperedge_id)
 
@@ -138,18 +142,48 @@ class HIFProcessor:
 
         hyperedge_index = torch.tensor([node_ids, hyperedge_ids], dtype=torch.long)
 
-        return (
-            HData(
-                x=x,
-                hyperedge_index=hyperedge_index,
-                hyperedge_weights=hyperedge_weights,
-                hyperedge_attr=hyperedge_attr,
-                num_nodes=num_nodes,
-                num_hyperedges=num_hyperedges,
-                task=task,
-            ),
-            hypergraph,
+        hypergraph_hif = HIFHypergraph.empty()
+        hypergraph_hif.network_type = hypergraph.network_type
+
+        hypergraph_hif.incidences = [
+            {"node": node_id, "edge": hyperedge_id}
+            for node_id, hyperedge_id in zip(node_ids, hyperedge_ids, strict=True)
+        ]
+        hypergraph_hif.nodes = [
+            {
+                "node": node_id,
+                "attrs": dict(hypergraph.nodes[node_idx].get("attrs") or {}),
+            }
+            for node_idx, node_id in enumerate(node_id_to_idx.keys())
+        ]
+
+        hypergraph_hif.hyperedges = [
+            {
+                "edge": hyperedge_id,
+                "attrs": dict(hypergraph.hyperedges[hyperedge_idx].get("attrs") or {}),
+            }
+            for hyperedge_idx, hyperedge_id in enumerate(hyperedge_id_to_idx_pre_self_loop.keys())
+        ]
+        # add self loop
+        hypergraph_hif.hyperedges.extend(
+            {
+                "edge": hyperedge_id,
+                "attrs": {},
+            }
+            for hyperedge_idx, hyperedge_id in enumerate(self_loop_hyperedges)
         )
+
+        hdata = HData(
+            x=x,
+            hyperedge_index=hyperedge_index,
+            hyperedge_weights=hyperedge_weights,
+            hyperedge_attr=hyperedge_attr,
+            num_nodes=num_nodes,
+            num_hyperedges=num_hyperedges,
+            task=task,
+        )
+
+        return (hdata, hypergraph_hif)
 
     @classmethod
     def __collect_attr_keys(cls, attr_keys: list[dict[str, Any]]) -> list[str]:
