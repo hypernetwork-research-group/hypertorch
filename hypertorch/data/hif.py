@@ -69,12 +69,13 @@ class HIFProcessor:
         cls,
         hypergraph: HIFHypergraph,
         task: Task = TaskEnum.HYPERLINK_PREDICTION,
-    ) -> HData:
+    ) -> tuple[HData, HIFHypergraph]:
         """
         Process the loaded hypergraph into `HData` format, mapping HIF structure to tensors.
 
         Returns:
             hdata: The processed hypergraph data.
+            hypergraph: The original hypergraph.
 
         Raises:
             ValueError: If HIF node IDs are not unique or an incidence references an
@@ -137,14 +138,17 @@ class HIFProcessor:
 
         hyperedge_index = torch.tensor([node_ids, hyperedge_ids], dtype=torch.long)
 
-        return HData(
-            x=x,
-            hyperedge_index=hyperedge_index,
-            hyperedge_weights=hyperedge_weights,
-            hyperedge_attr=hyperedge_attr,
-            num_nodes=num_nodes,
-            num_hyperedges=num_hyperedges,
-            task=task,
+        return (
+            HData(
+                x=x,
+                hyperedge_index=hyperedge_index,
+                hyperedge_weights=hyperedge_weights,
+                hyperedge_attr=hyperedge_attr,
+                num_nodes=num_nodes,
+                num_hyperedges=num_hyperedges,
+                task=task,
+            ),
+            hypergraph,
         )
 
     @classmethod
@@ -300,7 +304,7 @@ class HIFLoader:
         url: str,
         task: Task = TaskEnum.HYPERLINK_PREDICTION,
         save_on_disk: bool = False,
-    ) -> HData:
+    ) -> tuple[HData, HIFHypergraph]:
         """
         Load a hypergraph from a given URL pointing to a .json or .json.zst file in HIF format.
 
@@ -311,6 +315,7 @@ class HIFLoader:
 
         Returns:
             hdata: The loaded hypergraph object.
+            hypergraph: The original hypergraph.
 
         Raises:
             ValueError: If the URL cannot be downloaded, has an unsupported file format,
@@ -339,14 +344,14 @@ class HIFLoader:
 
         if url.endswith(".json.zst"):
             hif_data = from_zst_bytes_to_json(response.content)
-            hdata = cls.__process_hif_data(hif_data=hif_data, task=task)
+            hdata, hypergraph = cls.__process_hif_data(hif_data=hif_data, task=task)
             if save_on_disk:
                 write_dataset_to_disk_as_zst(
                     dataset_name=os.path.basename(url), content=response.content
                 )
         else:  # json
             hif_data = from_bytes_to_json(response.content)
-            hdata = cls.__process_hif_data(hif_data=hif_data, task=task)
+            hdata, hypergraph = cls.__process_hif_data(hif_data=hif_data, task=task)
             if save_on_disk:
                 compressed_hif_data = compress_json_bytes_as_zst(response.content)
 
@@ -354,10 +359,12 @@ class HIFLoader:
                     dataset_name=os.path.basename(url), content=compressed_hif_data
                 )
 
-        return hdata
+        return hdata, hypergraph
 
     @classmethod
-    def load_from_path(cls, filepath: str, task: Task = TaskEnum.HYPERLINK_PREDICTION) -> HData:
+    def load_from_path(
+        cls, filepath: str, task: Task = TaskEnum.HYPERLINK_PREDICTION
+    ) -> tuple[HData, HIFHypergraph]:
         """
         Load a hypergraph from a local file path pointing to a .json or .json.zst file in HIF
         format.
@@ -369,6 +376,7 @@ class HIFLoader:
 
         Returns:
             hdata: The loaded hypergraph object.
+            hypergraph: The original hypergraph.
 
         Raises:
             ValueError: If ``filepath`` does not exist or has an unsupported file format.
@@ -394,7 +402,7 @@ class HIFLoader:
         hf_sha: str | None = None,
         task: Task = TaskEnum.HYPERLINK_PREDICTION,
         save_on_disk: bool = False,
-    ) -> HData:
+    ) -> tuple[HData, HIFHypergraph]:
         """
         Load a supported dataset by name.
 
@@ -497,7 +505,7 @@ class HIFLoader:
         hif_data: dict[str, Any],
         dataset_name: str | None = None,
         task: Task = TaskEnum.HYPERLINK_PREDICTION,
-    ) -> HData:
+    ) -> tuple[HData, HIFHypergraph]:
         """
         Validate and process parsed HIF data.
 

@@ -67,12 +67,13 @@ class _PreloadedDataset(Dataset):
         self.__validate()
         super().__init__(hdata=hdata, sampling_strategy=sampling_strategy, task=task)
         if hdata is None:
-            self.hdata = HIFLoader.load_by_name(
+            hdata, _ = HIFLoader.load_by_name(
                 dataset_name=self.DATASET_NAME,
                 hf_sha=self.HF_SHA,
                 task=task,
                 save_on_disk=save_on_disk,
             )
+            self.hdata = hdata
 
     def __validate(self) -> None:
         """

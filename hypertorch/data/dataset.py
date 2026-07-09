@@ -5,7 +5,7 @@ import torch
 from typing import TYPE_CHECKING, Any
 from torch import Tensor
 from torch.utils.data import Dataset as TorchDataset
-from hypertorch.types import HData, Task, TaskEnum
+from hypertorch.types import HData, HIFHypergraph, Task, TaskEnum
 from hypertorch.utils import (
     NodeSpaceFiller,
     NodeSpaceSetting,
@@ -46,6 +46,7 @@ class Dataset(TorchDataset):
     def __init__(
         self,
         hdata: HData | None = None,
+        hif: HIFHypergraph | None = None,
         sampling_strategy: SamplingStrategy = SamplingStrategyEnum.HYPEREDGE,
         task: Task = TaskEnum.HYPERLINK_PREDICTION,
     ) -> None:
@@ -64,6 +65,7 @@ class Dataset(TorchDataset):
         self.sampling_strategy: SamplingStrategy = sampling_strategy
         self.task: Task = task
         self.hdata: HData = hdata if hdata is not None else HData.empty(task=task)
+        self.hif: HIFHypergraph | None = hif if hif is not None else None
 
     def __len__(self) -> int:
         """
@@ -123,6 +125,7 @@ class Dataset(TorchDataset):
         hdata: HData,
         sampling_strategy: SamplingStrategy = SamplingStrategyEnum.HYPEREDGE,
         task: Task = TaskEnum.HYPERLINK_PREDICTION,
+        hif: HIFHypergraph | None = None,
     ) -> Dataset:
         """
         Create a `Dataset` instance from an `HData` object.
@@ -133,11 +136,12 @@ class Dataset(TorchDataset):
                 defaults to ``SamplingStrategy.HYPEREDGE``.
             task: Learning task used when the HData. If not provided,
                 defaults to ``"hyperlink-prediction"``.
+            hif: The original hypergraph. If not provided, defaults to ``None``.
 
         Returns:
             dataset: The `Dataset` instance with the provided `HData`.
         """
-        return cls(hdata=hdata, sampling_strategy=sampling_strategy, task=task)
+        return cls(hdata=hdata, sampling_strategy=sampling_strategy, task=task, hif=hif)
 
     @classmethod
     def from_url(
@@ -162,8 +166,10 @@ class Dataset(TorchDataset):
         Returns:
             dataset: The `Dataset` instance with the loaded hypergraph data.
         """
-        hdata = HIFLoader.load_from_url(url=url, task=task, save_on_disk=save_on_disk)
-        dataset = cls.from_hdata(hdata=hdata, sampling_strategy=sampling_strategy, task=task)
+        hdata, hypergraph = HIFLoader.load_from_url(url=url, task=task, save_on_disk=save_on_disk)
+        dataset = cls.from_hdata(
+            hdata=hdata, sampling_strategy=sampling_strategy, task=task, hif=hypergraph
+        )
         return dataset
 
     @classmethod
@@ -188,8 +194,10 @@ class Dataset(TorchDataset):
         Returns:
             dataset: The `Dataset` instance with the loaded hypergraph data.
         """
-        hypergraph = HIFLoader.load_from_path(filepath=filepath, task=task)
-        dataset = cls.from_hdata(hdata=hypergraph, sampling_strategy=sampling_strategy, task=task)
+        hdata, hypergraph = HIFLoader.load_from_path(filepath=filepath, task=task)
+        dataset = cls.from_hdata(
+            hdata=hdata, sampling_strategy=sampling_strategy, task=task, hif=hypergraph
+        )
         return dataset
 
     def enrich_node_features(
