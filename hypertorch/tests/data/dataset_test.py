@@ -811,6 +811,83 @@ def test_split_inductive_with_ratios_node_classification_returns_final_node_rati
     assert torch.equal(splits[1].hdata.y, torch.tensor([11, 12, 13], dtype=torch.long))
 
 
+@pytest.mark.parametrize(
+    ("kwargs", "expected_message"),
+    [
+        pytest.param(
+            {"sparse_split_hyperedges": True},
+            "Sparse hyperedge splitting is not applicable to node-related tasks. "
+            "Got sparse_split_hyperedges=True for task='node-classification'.",
+            id="sparse-hyperedge-split",
+        ),
+        pytest.param(
+            {"cover_all_nodes_in_train_split": True},
+            "Train coverage is not applicable to node-related tasks. "
+            "Do not set 'cover_all_nodes_in_train_split'. "
+            "Got cover_all_nodes_in_train_split=True for task='node-classification'.",
+            id="train-coverage",
+        ),
+        pytest.param(
+            {"train_split_idx": 1},
+            "Train coverage is not applicable to node-related tasks. "
+            "Got train_split_idx=1 (should be omitted or 0) for task='node-classification'.",
+            id="train-split-idx",
+        ),
+    ],
+)
+def test_node_classification_split_rejects_hyperedge_only_options(kwargs, expected_message):
+    hdata = HData(
+        x=torch.arange(4, dtype=torch.float).unsqueeze(1),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long),
+        y=torch.tensor([10, 11, 12, 13], dtype=torch.long),
+        task="node-classification",
+    )
+    dataset = Dataset.from_hdata(hdata, sampling_strategy="node")
+
+    with pytest.raises(ValueError, match=re.escape(expected_message)):
+        dataset.split(ratios=[0.5, 0.5], **kwargs)
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "expected_message"),
+    [
+        pytest.param(
+            {"sparse_split_hyperedges": True},
+            "Sparse hyperedge splitting is not applicable to node-related tasks. "
+            "Got sparse_split_hyperedges=True for task='node-classification'.",
+            id="sparse-hyperedge-split",
+        ),
+        pytest.param(
+            {"cover_all_nodes_in_train_split": True},
+            "Train coverage is not applicable to node-related tasks. "
+            "Do not set 'cover_all_nodes_in_train_split'. "
+            "Got cover_all_nodes_in_train_split=True for task='node-classification'.",
+            id="train-coverage",
+        ),
+        pytest.param(
+            {"train_split_idx": 1},
+            "Train coverage is not applicable to node-related tasks. "
+            "Got train_split_idx=1 (should be omitted or 0) for task='node-classification'.",
+            id="train-split-idx",
+        ),
+    ],
+)
+def test_node_classification_split_with_ratios_rejects_hyperedge_only_options(
+    kwargs,
+    expected_message,
+):
+    hdata = HData(
+        x=torch.arange(4, dtype=torch.float).unsqueeze(1),
+        hyperedge_index=torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long),
+        y=torch.tensor([10, 11, 12, 13], dtype=torch.long),
+        task="node-classification",
+    )
+    dataset = Dataset.from_hdata(hdata, sampling_strategy="node")
+
+    with pytest.raises(ValueError, match=re.escape(expected_message)):
+        dataset.split_with_ratios(ratios=[0.5, 0.5], **kwargs)
+
+
 def test_split_rejects_unsupported_task_category():
     hdata = HData(
         x=torch.arange(4, dtype=torch.float).unsqueeze(1),
