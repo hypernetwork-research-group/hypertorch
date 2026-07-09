@@ -75,7 +75,7 @@ test:
 
 stest:
 	@echo '=== Running single unit test for $(T) ==='
-	$(UV) run $(PYTEST) -n $(PYTEST_WORKERS) -s $(PROJECT_NAME)/tests/$(T)
+	$(UV) run $(PYTEST) -s $(PROJECT_NAME)/tests/$(T)
 
 i-test:
 	@echo '=== Running integration tests in parallel ==='

@@ -235,7 +235,7 @@ class Dataset(TorchDataset):
         hif_hypergraph: HIFHypergraph | None = None,
         sampling_strategy: SamplingStrategy = SamplingStrategyEnum.HYPEREDGE,
         task: Task = TaskEnum.HYPERLINK_PREDICTION,
-        hif: HIFHypergraph | None = None,
+        hif_hypergraph: HIFHypergraph | None = None,
     ) -> Dataset:
         """
         Create a `Dataset` instance from an `HData` object.
@@ -248,7 +248,7 @@ class Dataset(TorchDataset):
                 defaults to ``SamplingStrategy.HYPEREDGE``.
             task: Learning task used when the HData. If not provided,
                 defaults to ``"hyperlink-prediction"``.
-            hif: The original hypergraph. If not provided, defaults to ``None``.
+            hif_hypergraph: The original hypergraph. If not provided, defaults to ``None``.
 
         Returns:
             dataset: The `Dataset` instance with the provided `HData`.

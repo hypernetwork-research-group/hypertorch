@@ -82,6 +82,7 @@ class _PreloadedDataset(Dataset):
                 save_on_disk=save_on_disk,
             )
             self.hdata = hdata
+            self.hif_hypergraph = hif_hypergraph
 
     def __validate(self) -> None:
         """
