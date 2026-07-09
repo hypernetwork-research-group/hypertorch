@@ -148,29 +148,29 @@ class Dataset(TorchDataset):
     def from_hdata(
         cls,
         hdata: HData,
+        hif_hypergraph: HIFHypergraph | None = None,
         sampling_strategy: SamplingStrategy = SamplingStrategyEnum.HYPEREDGE,
         task: Task = TaskEnum.HYPERLINK_PREDICTION,
-        hif_hypergraph: HIFHypergraph | None = None,
     ) -> Dataset:
         """
         Create a `Dataset` instance from an `HData` object.
 
         Args:
             hdata: `HData` object containing the hypergraph data.
+            hif_hypergraph: The original hypergraph. If not provided, defaults to ``None``,
             sampling_strategy: The sampling strategy to use for the dataset. If not provided,
                 defaults to ``SamplingStrategy.HYPEREDGE``.
             task: Learning task used when the HData. If not provided,
                 defaults to ``"hyperlink-prediction"``.
-            hif_hypergraph: The original hypergraph. If not provided, defaults to ``None``.
 
         Returns:
             dataset: The `Dataset` instance with the provided `HData`.
         """
         return cls(
             hdata=hdata,
+            hif_hypergraph=hif_hypergraph,
             sampling_strategy=sampling_strategy,
             task=task,
-            hif_hypergraph=hif_hypergraph,
         )
 
     @classmethod
@@ -198,7 +198,10 @@ class Dataset(TorchDataset):
         """
         hdata, hypergraph = HIFLoader.load_from_url(url=url, task=task, save_on_disk=save_on_disk)
         dataset = cls.from_hdata(
-            hdata=hdata, sampling_strategy=sampling_strategy, task=task, hif_hypergraph=hypergraph
+            hdata=hdata,
+            hif_hypergraph=hypergraph,
+            sampling_strategy=sampling_strategy,
+            task=task,
         )
         return dataset
 
@@ -226,7 +229,10 @@ class Dataset(TorchDataset):
         """
         hdata, hypergraph = HIFLoader.load_from_path(filepath=filepath, task=task)
         dataset = cls.from_hdata(
-            hdata=hdata, sampling_strategy=sampling_strategy, task=task, hif_hypergraph=hypergraph
+            hdata=hdata,
+            hif_hypergraph=hypergraph,
+            sampling_strategy=sampling_strategy,
+            task=task,
         )
         return dataset
 
