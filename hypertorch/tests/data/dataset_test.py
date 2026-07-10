@@ -4,7 +4,7 @@ import re
 
 from typing import Any, cast
 from unittest.mock import patch, MagicMock
-from hypertorch.types import HData, HIFHypergraph
+from hypertorch.types import HData, HIFHypergraph, TaskEnum
 from hypertorch.data import (
     AlgebraDataset,
     Dataset,
@@ -223,6 +223,37 @@ def test_dataset_property_raise_error_when_hif_hypergraph_is_none(mock_hdata):
 
     with pytest.raises(ValueError, match=re.escape("HIF hypergraph is not available.")):
         _ = dataset.hif_hypergraph
+
+
+@pytest.mark.parametrize(
+    "task, expected_is_hyperedge_related, expected_is_node_related",
+    [
+        pytest.param("hyperlink-prediction", True, False, id="hyperlink_prediction_literal"),
+        pytest.param(
+            TaskEnum.HYPERLINK_PREDICTION,
+            True,
+            False,
+            id="hyperlink_prediction_enum",
+        ),
+        pytest.param("node-classification", False, True, id="node_classification_literal"),
+        pytest.param(
+            TaskEnum.NODE_CLASSIFICATION,
+            False,
+            True,
+            id="node_classification_enum",
+        ),
+    ],
+)
+def test_dataset_task_category_properties(
+    mock_hdata,
+    task,
+    expected_is_hyperedge_related,
+    expected_is_node_related,
+):
+    dataset = Dataset(hdata=mock_hdata, task=task)
+
+    assert dataset.is_hyperedge_related_task is expected_is_hyperedge_related
+    assert dataset.is_node_related_task is expected_is_node_related
 
 
 def test_dataset_process_hyperedge_index_in_correct_format(mock_hdata_four_nodes):

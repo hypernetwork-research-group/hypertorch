@@ -142,7 +142,7 @@ class HIFProcessor:
 
         hyperedge_index = torch.tensor([node_ids, hyperedge_ids], dtype=torch.long)
 
-        hif_hypergraph = cls.__hif_after_process(
+        hif_hypergraph = cls.__to_hif_hypergraph_after_process(
             hypergraph=hypergraph,
             node_id_to_idx=node_id_to_idx,
             node_ids=node_ids,
@@ -183,7 +183,7 @@ class HIFProcessor:
         return unique_keys
 
     @classmethod
-    def __hif_after_process(
+    def __to_hif_hypergraph_after_process(
         cls,
         hypergraph: HIFHypergraph,
         node_id_to_idx: dict[Any, int],
@@ -207,6 +207,7 @@ class HIFProcessor:
             for node_idx, node_id in enumerate(node_id_to_idx.keys())
         ]
 
+        # Add original hyperedges that were present in the hypergraph, but not self-loops
         hif_hypergraph.hyperedges = [
             {
                 "edge": hyperedge_id,
@@ -214,13 +215,12 @@ class HIFProcessor:
             }
             for hyperedge_idx, hyperedge_id in enumerate(hyperedge_id_to_idx_pre_self_loop.keys())
         ]
-        # add self loop
+
+        # Add self loops that were added to the hyperedge_set,
+        # but were not present in the original hypergraph
         hif_hypergraph.hyperedges.extend(
-            {
-                "edge": hyperedge_id,
-                "attrs": {},
-            }
-            for hyperedge_idx, hyperedge_id in enumerate(self_loop_hyperedges)
+            {"edge": hyperedge_id, "attrs": {}}
+            for _, hyperedge_id in enumerate(self_loop_hyperedges)
         )
 
         return hif_hypergraph
@@ -402,7 +402,8 @@ class HIFLoader:
             hdata, hif_hypergraph = cls.__process_hif_data(hif_data=hif_data, task=task)
             if save_on_disk:
                 write_dataset_to_disk_as_zst(
-                    dataset_name=os.path.basename(url), content=response.content
+                    dataset_name=os.path.basename(url),
+                    content=response.content,
                 )
         else:  # json
             hif_data = from_bytes_to_json(response.content)
@@ -411,7 +412,8 @@ class HIFLoader:
                 compressed_hif_data = compress_json_bytes_as_zst(response.content)
 
                 write_dataset_to_disk_as_zst(
-                    dataset_name=os.path.basename(url), content=compressed_hif_data
+                    dataset_name=os.path.basename(url),
+                    content=compressed_hif_data,
                 )
 
         return hdata, hif_hypergraph
@@ -494,7 +496,9 @@ class HIFLoader:
             dataset_bytes = response.content
             hif_data = from_zst_bytes_to_json(dataset_bytes)
             hdata, hif_hypergraph = cls.__process_hif_data(
-                hif_data=hif_data, dataset_name=dataset_name, task=task
+                hif_data=hif_data,
+                dataset_name=dataset_name,
+                task=task,
             )
             if save_on_disk:
                 write_zst_file_to_disk(zst_filename=zst_filename, content=dataset_bytes)
@@ -534,7 +538,9 @@ class HIFLoader:
 
         hif_data = from_zst_file_to_json(downloaded_path)
         hdata, hif_hypergraph = cls.__process_hif_data(
-            hif_data=hif_data, dataset_name=dataset_name, task=task
+            hif_data=hif_data,
+            dataset_name=dataset_name,
+            task=task,
         )
         if save_on_disk:
             try:

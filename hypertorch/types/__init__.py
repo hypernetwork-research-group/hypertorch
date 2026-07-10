@@ -10,9 +10,18 @@ from .hypergraph import (
     Neighborhood,
 )
 
-from .hdata import HData, Task, TaskEnum, TaskLiteral
+from .hdata import HData
 
 from .model import CkptStrategy, ModelConfig, TestResult
+
+from .task import (
+    Task,
+    TaskEnum,
+    TaskLiteral,
+    is_hyperedge_related_task,
+    is_node_related_task,
+    validate_task,
+)
 
 __all__ = [
     "CkptStrategy",
@@ -31,4 +40,7 @@ __all__ = [
     "TaskEnum",
     "TaskLiteral",
     "TestResult",
+    "is_hyperedge_related_task",
+    "is_node_related_task",
+    "validate_task",
 ]
