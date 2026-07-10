@@ -4,7 +4,7 @@ import re
 
 from typing import Any, cast
 from unittest.mock import patch, MagicMock
-from hypertorch.types import HData
+from hypertorch.types import HData, HIFHypergraph
 from hypertorch.data import (
     AlgebraDataset,
     Dataset,
@@ -23,6 +23,17 @@ def mock_hdata() -> HData:
     x = torch.ones((3, 1), dtype=torch.float)
     hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 1]], dtype=torch.long)
     return HData(x=x, hyperedge_index=hyperedge_index)
+
+
+@pytest.fixture
+def mock_hif_hypergraph() -> HIFHypergraph:
+    hif_hypergraph = HIFHypergraph.empty()
+    hif_hypergraph.network_type = "undirected"
+    hif_hypergraph.metadata = {}
+    hif_hypergraph.incidences = []
+    hif_hypergraph.nodes = []
+    hif_hypergraph.hyperedges = []
+    return hif_hypergraph
 
 
 @pytest.fixture
@@ -191,6 +202,27 @@ def test_dataset_process_without_hyperedge_weights(mock_hdata):
 
     assert dataset.hdata is not None
     assert dataset.hdata.hyperedge_weights is None
+
+
+def test_dataset_property_returns_correct_values(mock_hdata, mock_hif_hypergraph):
+    with patch.object(HIFLoader, "load_by_name", return_value=(mock_hdata, mock_hif_hypergraph)):
+        dataset = AlgebraDataset()
+
+    hif_hypergraph = dataset.hif_hypergraph
+    assert hif_hypergraph is not None
+    assert hif_hypergraph.network_type == "undirected"
+    assert hif_hypergraph.metadata == {}
+    assert hif_hypergraph.incidences == []
+    assert hif_hypergraph.nodes == []
+    assert hif_hypergraph.hyperedges == []
+
+
+def test_dataset_property_raise_error_when_hif_hypergraph_is_none(mock_hdata):
+    with patch.object(HIFLoader, "load_by_name", return_value=(mock_hdata, None)):
+        dataset = AlgebraDataset()
+
+    with pytest.raises(ValueError, match=re.escape("HIF hypergraph is not available.")):
+        _ = dataset.hif_hypergraph
 
 
 def test_dataset_process_hyperedge_index_in_correct_format(mock_hdata_four_nodes):
