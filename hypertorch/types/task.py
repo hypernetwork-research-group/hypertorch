@@ -1,5 +1,4 @@
 from typing import Literal, TypeAlias, get_args
-
 from hypertorch.utils import StrEnum
 
 
