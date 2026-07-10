@@ -3,7 +3,8 @@ from torch.utils.data import DataLoader
 from typing import Literal, TypeAlias, TypedDict
 from collections.abc import Iterator
 from typing_extensions import NotRequired
-from hypertorch.models import GCNConfig, Node2Vec, Node2VecGCN
+from hypertorch.models.gcn import GCN, GCNConfig
+from hypertorch.models.node2vec import Node2Vec, Node2VecConfig, Node2VecGCN
 from hypertorch.types import (
     EdgeIndex,
     HyperedgeIndex,
@@ -17,10 +18,10 @@ NODE2VEC_JOINT_MODE = "joint"
 NODE2VEC_PRECOMPUTED_MODE = "precomputed"
 
 Node2VecMode: TypeAlias = Literal["precomputed", "joint"]
-"""Training mode for Node2Vec-based hyperlink prediction encoders."""
+"""Training mode for Node2Vec-based encoders."""
 
 
-class Node2VecGCNHlpConfig(TypedDict):
+class Node2VecGCNEncoderConfig(TypedDict):
     """
     Configuration for the GCN model.
 
@@ -64,7 +65,7 @@ class Node2VecGCNHlpConfig(TypedDict):
     activation_fn_kwargs: NotRequired[dict]
 
 
-class Node2VecHlpConfig(TypedDict):
+class Node2VecEncoderConfig(TypedDict):
     """
     Configuration for the Node2Vec encoder.
 
@@ -101,9 +102,9 @@ class Node2VecHlpConfig(TypedDict):
         random_walk_batch_size: Batch size used by the walk sampler in joint mode.
         node2vec_loss_weight: Weight applied to the Node2Vec walk loss in joint mode.
             This is to decide how much the loss of Node2Vec contributes to the overall loss in
-            joint training, relative to the HLP loss.
+            joint training, relative to the task loss.
             Defaults to ``1.0`` (equal weighting). Set to a higher value to prioritize learning
-            good node embeddings, or a lower value to prioritize the HLP loss.
+            good node embeddings, or a lower value to prioritize the task loss.
             Ignored in precomputed mode.
         sparse: Whether to use sparse gradients in the Node2Vec encoder. Defaults to ``False``.
     """
@@ -141,7 +142,64 @@ Node2VecEncoder: TypeAlias = Node2Vec | Node2VecGCN
 """Supported Node2Vec encoder implementations."""
 
 
-def _get_walk_loader(
+def build_gcn_encoder(embedding_dim: int, gcn_config: Node2VecGCNEncoderConfig) -> GCN:
+    """
+    Build a GCN encoder for precomputed mode.
+
+    Args:
+        embedding_dim: Input embedding dimension.
+        gcn_config: GCN configuration.
+
+    Returns:
+        encoder: GCN encoder.
+    """
+    return GCN(**to_gcn_config(embedding_dim, gcn_config))
+
+
+def build_node2vec_encoder(
+    embedding_dim: int,
+    node2vec_config: Node2VecEncoderConfig,
+    mode: Node2VecMode,
+) -> Node2Vec:
+    """
+    Build a joint-mode Node2Vec encoder.
+
+    Args:
+        embedding_dim: Node2Vec embedding dimension.
+        node2vec_config: Node2Vec configuration.
+        mode: Node2Vec training mode used in validation errors.
+
+    Returns:
+        encoder: Node2Vec encoder.
+    """
+    return Node2Vec(**to_model_node2vec_config(embedding_dim, node2vec_config, mode))
+
+
+def build_node2vecgcn_encoder(
+    embedding_dim: int,
+    node2vec_config: Node2VecEncoderConfig,
+    gcn_config: Node2VecGCNEncoderConfig,
+    mode: Node2VecMode,
+) -> Node2VecGCN:
+    """
+    Build a joint-mode Node2Vec-GCN encoder.
+
+    Args:
+        embedding_dim: Node2Vec embedding dimension.
+        node2vec_config: Node2Vec configuration.
+        gcn_config: GCN configuration.
+        mode: Node2Vec training mode used in validation errors.
+
+    Returns:
+        encoder: Joint Node2Vec-GCN encoder.
+    """
+    return Node2VecGCN(
+        node2vec_config=to_model_node2vec_config(embedding_dim, node2vec_config, mode),
+        gcn_config=to_gcn_config(embedding_dim, gcn_config),
+    )
+
+
+def get_walk_loader(
     mode: Node2VecMode,
     encoder: nn.Module | None,
     batch_size: int,
@@ -163,7 +221,7 @@ def _get_walk_loader(
         return None
 
     if state.walk_loader is None:
-        state.walk_loader = _to_node2vec_encoder(encoder, mode).loader(
+        state.walk_loader = to_node2vec_encoder(encoder, mode).loader(
             batch_size=batch_size,
             shuffle=True,
         )
@@ -172,7 +230,7 @@ def _get_walk_loader(
     return state.walk_loader
 
 
-def _next_walk_batch(
+def next_walk_batch(
     mode: Node2VecMode,
     encoder: nn.Module | None,
     batch_size: int,
@@ -193,7 +251,7 @@ def _next_walk_batch(
     Raises:
         ValueError: If the joint-mode walk loader cannot be initialized.
     """
-    _get_walk_loader(mode, encoder, batch_size, state)
+    get_walk_loader(mode, encoder, batch_size, state)
     if state.walk_loader is None or state.cached_walk_loader_iterator is None:
         raise ValueError("Joint Node2Vec mode could not initialize the walk loader.")
 
@@ -204,15 +262,15 @@ def _next_walk_batch(
         return next(state.cached_walk_loader_iterator)
 
 
-def _to_node2vec_edge_index(
-    node2vec_config: Node2VecHlpConfig,
+def to_node2vec_edge_index(
+    node2vec_config: Node2VecEncoderConfig,
     mode: Node2VecMode,
 ) -> tuple[Tensor, int]:
     """
     Build the Node2Vec graph edge index from a training hypergraph.
 
     Args:
-        node2vec_config: Node2Vec HLP configuration.
+        node2vec_config: Shared Node2Vec configuration.
         mode: Node2Vec training mode.
 
     Returns:
@@ -236,37 +294,97 @@ def _to_node2vec_edge_index(
     return edge_index_wrapper.item, num_nodes
 
 
-def _to_gcn_config(embedding_dim: int, gcn_hlp_config: Node2VecGCNHlpConfig) -> GCNConfig:
+def to_gcn_edge_index(
+    hyperedge_index: Tensor,
+    gcn_config: Node2VecGCNEncoderConfig,
+) -> Tensor:
     """
-    Convert an HLP GCN config into a model GCN config.
+    Reduce a hyperedge index to the graph edge index used by GCN.
+
+    Args:
+        hyperedge_index: Hyperedge incidence tensor.
+        gcn_config: GCN configuration.
+
+    Returns:
+        edge_index: Reduced graph edge index without self-loops.
+    """
+    graph_reduction_strategy = gcn_config.get(
+        "graph_reduction_strategy", GraphReductionStrategyEnum.CLIQUE_EXPANSION
+    )
+    reduced_gcn_edge_index = HyperedgeIndex(hyperedge_index).reduce(
+        strategy=graph_reduction_strategy,
+        num_nodes=gcn_config.get("num_nodes"),
+    )
+    return EdgeIndex(reduced_gcn_edge_index).remove_selfloops().item
+
+
+def to_gcn_config(embedding_dim: int, gcn_config: Node2VecGCNEncoderConfig) -> GCNConfig:
+    """
+    Convert a shared GCN config into a model GCN config.
 
     Args:
         embedding_dim: Node2Vec embedding dimension used as GCN input size.
-        gcn_hlp_config: HLP-side GCN configuration.
+        gcn_config: Shared GCN configuration.
 
     Returns:
         gcn_config: Model-side GCN configuration.
     """
-    gcn_config: GCNConfig = {
+    model_gcn_config: GCNConfig = {
         "in_channels": embedding_dim,
-        "out_channels": gcn_hlp_config["out_channels"],
-        "hidden_channels": gcn_hlp_config.get("hidden_channels", embedding_dim),
-        "num_layers": gcn_hlp_config.get("num_layers", 2),
-        "drop_rate": gcn_hlp_config.get("drop_rate", 0.0),
-        "bias": gcn_hlp_config.get("bias", True),
-        "improved": gcn_hlp_config.get("improved", False),
-        "add_self_loops": gcn_hlp_config.get("add_self_loops", True),
-        "normalize": gcn_hlp_config.get("normalize", True),
-        "cached": gcn_hlp_config.get("cached", False),
+        "out_channels": gcn_config["out_channels"],
+        "hidden_channels": gcn_config.get("hidden_channels", embedding_dim),
+        "num_layers": gcn_config.get("num_layers", 2),
+        "drop_rate": gcn_config.get("drop_rate", 0.0),
+        "bias": gcn_config.get("bias", True),
+        "improved": gcn_config.get("improved", False),
+        "add_self_loops": gcn_config.get("add_self_loops", True),
+        "normalize": gcn_config.get("normalize", True),
+        "cached": gcn_config.get("cached", False),
     }
-    if "activation_fn" in gcn_hlp_config:
-        gcn_config["activation_fn"] = gcn_hlp_config["activation_fn"]
-    if "activation_fn_kwargs" in gcn_hlp_config:
-        gcn_config["activation_fn_kwargs"] = gcn_hlp_config["activation_fn_kwargs"]
-    return gcn_config
+    if "activation_fn" in gcn_config:
+        model_gcn_config["activation_fn"] = gcn_config["activation_fn"]
+    if "activation_fn_kwargs" in gcn_config:
+        model_gcn_config["activation_fn_kwargs"] = gcn_config["activation_fn_kwargs"]
+    return model_gcn_config
 
 
-def _to_node2vec_encoder(encoder: nn.Module | None, mode: Node2VecMode) -> Node2VecEncoder:
+def to_model_node2vec_config(
+    embedding_dim: int,
+    node2vec_config: Node2VecEncoderConfig,
+    mode: Node2VecMode,
+) -> Node2VecConfig:
+    """
+    Convert a shared Node2Vec config into a model Node2Vec config.
+
+    Args:
+        embedding_dim: Node2Vec embedding dimension.
+        node2vec_config: Shared Node2Vec configuration.
+        mode: Node2Vec training mode used in validation errors.
+
+    Returns:
+        node2vec_config: Model-side Node2Vec configuration.
+    """
+    validate_walk_length_and_context_size(
+        walk_length=node2vec_config.get("walk_length", 20),
+        context_size=node2vec_config.get("context_size", 10),
+    )
+    edge_index, num_nodes = to_node2vec_edge_index(node2vec_config, mode)
+
+    return {
+        "edge_index": edge_index,
+        "embedding_dim": embedding_dim,
+        "walk_length": node2vec_config.get("walk_length", 20),
+        "context_size": node2vec_config.get("context_size", 10),
+        "num_walks_per_node": node2vec_config.get("num_walks_per_node", 10),
+        "p": node2vec_config.get("p", 1.0),
+        "q": node2vec_config.get("q", 1.0),
+        "num_negative_samples": node2vec_config.get("num_negative_samples", 1),
+        "num_nodes": num_nodes,
+        "sparse": node2vec_config.get("sparse", False),
+    }
+
+
+def to_node2vec_encoder(encoder: nn.Module | None, mode: Node2VecMode) -> Node2VecEncoder:
     """
     Validate and return a Node2Vec-compatible encoder.
 
@@ -287,7 +405,28 @@ def _to_node2vec_encoder(encoder: nn.Module | None, mode: Node2VecMode) -> Node2
     return encoder
 
 
-def _validate_global_node_ids(
+def to_node2vecgcn_encoder(encoder: nn.Module | None, mode: Node2VecMode) -> Node2VecGCN:
+    """
+    Validate and return a Node2Vec-GCN encoder.
+
+    Args:
+        encoder: Optional encoder module.
+        mode: Node2Vec training mode used in error messages.
+
+    Returns:
+        encoder: Node2Vec-GCN encoder.
+
+    Raises:
+        ValueError: If the encoder is missing or incompatible.
+    """
+    if encoder is None or not isinstance(encoder, Node2VecGCN):
+        raise ValueError(
+            f"Node2Vec-GCN in mode {mode} requires a Node2VecGCN encoder, but none was provided."
+        )
+    return encoder
+
+
+def validate_global_node_ids(
     num_embeddings: int,
     global_node_ids: Tensor | None,
     mode: Node2VecMode,
@@ -319,7 +458,7 @@ def _validate_global_node_ids(
         )
 
 
-def _validate_walk_length_and_context_size(walk_length: int, context_size: int) -> None:
+def validate_walk_length_and_context_size(walk_length: int, context_size: int) -> None:
     """
     Validate Node2Vec walk and context lengths.
 

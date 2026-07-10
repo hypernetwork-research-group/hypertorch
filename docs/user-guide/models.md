@@ -35,6 +35,8 @@ Supported models include:
 - `HNHN`.
 - `HyperGCN`.
 - `MLP`.
+- `Node2VecGCN`.
+- `Node2VecSLP`.
 - `VilLain`.
 
 ## Minimal hyperlink prediction example: NHP
