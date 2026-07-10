@@ -21,6 +21,8 @@ dependencies = [
   "torch-geometric>=2.7.0,<2.8.0",
   "torch-cluster>=1.6.3,<2.0.0 ; (sys_platform == 'linux' and platform_machine == 'aarch64')",
   "zstandard>=0.25.0,<1.0.0",
+  "pandas>=2.3.3,<3.0.0",
+  "hypernetx>=2.4.0,<3.0.0",
 ]
 
 [project.optional-dependencies]

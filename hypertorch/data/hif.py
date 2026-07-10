@@ -82,7 +82,7 @@ class HIFProcessor:
         """
         num_nodes = len(hypergraph.nodes)
         x = cls.__process_x(hypergraph, num_nodes)
-
+        y = cls.__process_y(hypergraph, num_nodes)
         # Remap node IDs to 0-based contiguous IDs (using indices) matching the x tensor order
         node_id_to_idx = {node.get("node"): idx for idx, node in enumerate(hypergraph.nodes)}
         if len(node_id_to_idx) != num_nodes:
@@ -142,10 +142,31 @@ class HIFProcessor:
             hyperedge_index=hyperedge_index,
             hyperedge_weights=hyperedge_weights,
             hyperedge_attr=hyperedge_attr,
+            y=y,
             num_nodes=num_nodes,
             num_hyperedges=num_hyperedges,
             task=task,
         )
+
+    @classmethod
+    def __process_y(cls, hypergraph: HIFHypergraph, num_nodes: int) -> Tensor | None:
+        """
+        Build the node label tensor from HIF node attributes.
+        """
+        node_label_keys = cls.__collect_attr_keys(
+            [node.get("label", {}) for node in hypergraph.nodes]
+        )
+
+        if node_label_keys:
+            y = torch.stack(
+                [
+                    cls.transform_attrs(node.get("label", {}), attr_keys=node_label_keys)
+                    for node in hypergraph.nodes
+                ]
+            )
+            return y  # shape [num_nodes, num_node_features]
+
+        return None  # No node labels present
 
     @classmethod
     def __collect_attr_keys(cls, attr_keys: list[dict[str, Any]]) -> list[str]:
