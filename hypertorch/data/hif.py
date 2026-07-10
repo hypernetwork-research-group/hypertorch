@@ -1,6 +1,7 @@
+import copy
 import os
-import shutil
 import requests
+import shutil
 import torch
 import warnings
 
@@ -69,12 +70,13 @@ class HIFProcessor:
         cls,
         hypergraph: HIFHypergraph,
         task: Task = TaskEnum.HYPERLINK_PREDICTION,
-    ) -> HData:
+    ) -> tuple[HData, HIFHypergraph]:
         """
         Process the loaded hypergraph into `HData` format, mapping HIF structure to tensors.
 
         Returns:
             hdata: The processed hypergraph data.
+            hypergraph: The original hypergraph.
 
         Raises:
             ValueError: If HIF node IDs are not unique or an incidence references an
@@ -113,12 +115,15 @@ class HIFProcessor:
             hyperedge_ids.append(hyperedge_id_to_idx[hyperedge_id])
             nodes_with_incidences.add(node_id_to_idx[node_id])
 
+        hyperedge_id_to_idx_pre_self_loop = copy.deepcopy(hyperedge_id_to_idx)
+        self_loop_hyperedges = []
         # Handle isolated nodes by assigning them to a new unique hyperedge (self-loop)
         for node_idx in range(num_nodes):
             if node_idx not in nodes_with_incidences:
                 new_hyperedge_id = len(hyperedge_id_to_idx)
                 # Unique dummy key to reserve the index in hyperedge_set
                 hyperedge_id_to_idx[f"__self_loop_{node_idx}__"] = new_hyperedge_id
+                self_loop_hyperedges.append(new_hyperedge_id)
                 node_ids.append(node_idx)
                 hyperedge_ids.append(new_hyperedge_id)
 
@@ -137,7 +142,16 @@ class HIFProcessor:
 
         hyperedge_index = torch.tensor([node_ids, hyperedge_ids], dtype=torch.long)
 
-        return HData(
+        hif_hypergraph = cls.__to_hif_hypergraph_after_process(
+            hypergraph=hypergraph,
+            node_id_to_idx=node_id_to_idx,
+            node_ids=node_ids,
+            hyperedge_ids=hyperedge_ids,
+            hyperedge_id_to_idx_pre_self_loop=hyperedge_id_to_idx_pre_self_loop,
+            self_loop_hyperedges=self_loop_hyperedges,
+        )
+
+        hdata = HData(
             x=x,
             hyperedge_index=hyperedge_index,
             hyperedge_weights=hyperedge_weights,
@@ -146,6 +160,8 @@ class HIFProcessor:
             num_hyperedges=num_hyperedges,
             task=task,
         )
+
+        return (hdata, hif_hypergraph)
 
     @classmethod
     def __collect_attr_keys(cls, attr_keys: list[dict[str, Any]]) -> list[str]:
@@ -165,6 +181,49 @@ class HIFProcessor:
                     unique_keys.append(key)
 
         return unique_keys
+
+    @classmethod
+    def __to_hif_hypergraph_after_process(
+        cls,
+        hypergraph: HIFHypergraph,
+        node_id_to_idx: dict[Any, int],
+        node_ids: list[int],
+        hyperedge_ids: list[int],
+        hyperedge_id_to_idx_pre_self_loop: dict[Any, int],
+        self_loop_hyperedges: list[int],
+    ) -> HIFHypergraph:
+        hif_hypergraph = HIFHypergraph.empty()
+        hif_hypergraph.network_type = hypergraph.network_type
+
+        hif_hypergraph.incidences = [
+            {"node": node_id, "edge": hyperedge_id}
+            for node_id, hyperedge_id in zip(node_ids, hyperedge_ids, strict=True)
+        ]
+        hif_hypergraph.nodes = [
+            {
+                "node": node_id,
+                "attrs": dict(hypergraph.nodes[node_idx].get("attrs") or {}),
+            }
+            for node_idx, node_id in enumerate(node_id_to_idx.keys())
+        ]
+
+        # Add original hyperedges that were present in the hypergraph, but not self-loops
+        hif_hypergraph.hyperedges = [
+            {
+                "edge": hyperedge_id,
+                "attrs": dict(hypergraph.hyperedges[hyperedge_idx].get("attrs") or {}),
+            }
+            for hyperedge_idx, hyperedge_id in enumerate(hyperedge_id_to_idx_pre_self_loop.keys())
+        ]
+
+        # Add self loops that were added to the hyperedge_set,
+        # but were not present in the original hypergraph
+        hif_hypergraph.hyperedges.extend(
+            {"edge": hyperedge_id, "attrs": {}}
+            for _, hyperedge_id in enumerate(self_loop_hyperedges)
+        )
+
+        return hif_hypergraph
 
     @classmethod
     def __process_hyperedge_attr(
@@ -300,7 +359,7 @@ class HIFLoader:
         url: str,
         task: Task = TaskEnum.HYPERLINK_PREDICTION,
         save_on_disk: bool = False,
-    ) -> HData:
+    ) -> tuple[HData, HIFHypergraph]:
         """
         Load a hypergraph from a given URL pointing to a .json or .json.zst file in HIF format.
 
@@ -311,6 +370,7 @@ class HIFLoader:
 
         Returns:
             hdata: The loaded hypergraph object.
+            hypergraph: The original hypergraph.
 
         Raises:
             ValueError: If the URL cannot be downloaded, has an unsupported file format,
@@ -339,25 +399,31 @@ class HIFLoader:
 
         if url.endswith(".json.zst"):
             hif_data = from_zst_bytes_to_json(response.content)
-            hdata = cls.__process_hif_data(hif_data=hif_data, task=task)
+            hdata, hif_hypergraph = cls.__process_hif_data(hif_data=hif_data, task=task)
             if save_on_disk:
                 write_dataset_to_disk_as_zst(
-                    dataset_name=os.path.basename(url), content=response.content
+                    dataset_name=os.path.basename(url),
+                    content=response.content,
                 )
         else:  # json
             hif_data = from_bytes_to_json(response.content)
-            hdata = cls.__process_hif_data(hif_data=hif_data, task=task)
+            hdata, hif_hypergraph = cls.__process_hif_data(hif_data=hif_data, task=task)
             if save_on_disk:
                 compressed_hif_data = compress_json_bytes_as_zst(response.content)
 
                 write_dataset_to_disk_as_zst(
-                    dataset_name=os.path.basename(url), content=compressed_hif_data
+                    dataset_name=os.path.basename(url),
+                    content=compressed_hif_data,
                 )
 
-        return hdata
+        return hdata, hif_hypergraph
 
     @classmethod
-    def load_from_path(cls, filepath: str, task: Task = TaskEnum.HYPERLINK_PREDICTION) -> HData:
+    def load_from_path(
+        cls,
+        filepath: str,
+        task: Task = TaskEnum.HYPERLINK_PREDICTION,
+    ) -> tuple[HData, HIFHypergraph]:
         """
         Load a hypergraph from a local file path pointing to a .json or .json.zst file in HIF
         format.
@@ -369,6 +435,7 @@ class HIFLoader:
 
         Returns:
             hdata: The loaded hypergraph object.
+            hypergraph: The original hypergraph.
 
         Raises:
             ValueError: If ``filepath`` does not exist or has an unsupported file format.
@@ -394,7 +461,7 @@ class HIFLoader:
         hf_sha: str | None = None,
         task: Task = TaskEnum.HYPERLINK_PREDICTION,
         save_on_disk: bool = False,
-    ) -> HData:
+    ) -> tuple[HData, HIFHypergraph]:
         """
         Load a supported dataset by name.
 
@@ -428,10 +495,14 @@ class HIFLoader:
         if response.status_code == 200:
             dataset_bytes = response.content
             hif_data = from_zst_bytes_to_json(dataset_bytes)
-            hdata = cls.__process_hif_data(hif_data=hif_data, dataset_name=dataset_name, task=task)
+            hdata, hif_hypergraph = cls.__process_hif_data(
+                hif_data=hif_data,
+                dataset_name=dataset_name,
+                task=task,
+            )
             if save_on_disk:
                 write_zst_file_to_disk(zst_filename=zst_filename, content=dataset_bytes)
-            return hdata
+            return hdata, hif_hypergraph
 
         warnings.warn(
             f"GitHub raw download failed for dataset {dataset_name!r} "
@@ -466,7 +537,11 @@ class HIFLoader:
             ) from e
 
         hif_data = from_zst_file_to_json(downloaded_path)
-        hdata = cls.__process_hif_data(hif_data=hif_data, dataset_name=dataset_name, task=task)
+        hdata, hif_hypergraph = cls.__process_hif_data(
+            hif_data=hif_data,
+            dataset_name=dataset_name,
+            task=task,
+        )
         if save_on_disk:
             try:
                 os.makedirs(os.path.dirname(zst_filename), exist_ok=True)
@@ -489,7 +564,7 @@ class HIFLoader:
                     category=UserWarning,
                     stacklevel=2,
                 )
-        return hdata
+        return hdata, hif_hypergraph
 
     @classmethod
     def __process_hif_data(
@@ -497,7 +572,7 @@ class HIFLoader:
         hif_data: dict[str, Any],
         dataset_name: str | None = None,
         task: Task = TaskEnum.HYPERLINK_PREDICTION,
-    ) -> HData:
+    ) -> tuple[HData, HIFHypergraph]:
         """
         Validate and process parsed HIF data.
 

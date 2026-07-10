@@ -316,7 +316,7 @@ def test_load_from_path_processes_hypergraph_cases(
     json_path = __write_hif_json(tmp_path, hypergraph, filename=f"{fixture_name}.json")
 
     with patch("hypertorch.data.hif.validate_hif_data", return_value=True):
-        hdata = HIFLoader.load_from_path(json_path)
+        hdata, _ = HIFLoader.load_from_path(json_path)
 
     assert hdata.num_nodes == expected_nodes
     assert hdata.num_hyperedges == expected_hyperedges
@@ -335,7 +335,7 @@ def test_load_from_path_reads_utf8_json(tmp_path):
     json_path = __write_hif_json(tmp_path, hypergraph, filename="utf8.json")
 
     with patch("hypertorch.data.hif.validate_hif_data", return_value=True):
-        hdata = HIFLoader.load_from_path(json_path)
+        hdata, _ = HIFLoader.load_from_path(json_path)
 
     assert hdata.num_nodes == 1
     assert hdata.num_hyperedges == 1
@@ -353,7 +353,7 @@ def test_load_from_path_zst_uses_decompress(tmp_path, mock_hypergraph):
         ) as mock_from_zst_file_to_json,
         patch("hypertorch.data.hif.validate_hif_data", return_value=True),
     ):
-        hdata = HIFLoader.load_from_path(str(zst_path))
+        hdata, _ = HIFLoader.load_from_path(str(zst_path))
 
     mock_from_zst_file_to_json.assert_called_once_with(str(zst_path))
     assert hdata.num_nodes == 2
@@ -387,7 +387,7 @@ def test_load_from_url_processes_zst_and_saves_to_disk(tmp_path, mock_hypergraph
         mock_response.status_code = 200
         mock_response.content = b"mock-zst-content"
 
-        hdata = HIFLoader.load_from_url(url, save_on_disk=True)
+        hdata, _ = HIFLoader.load_from_url(url, save_on_disk=True)
 
     mock_from_zst_bytes_to_json.assert_called_once_with(b"mock-zst-content")
     mock_write_to_disk.assert_called_once_with(
@@ -415,7 +415,7 @@ def test_load_from_url_processes_zst_and_not_saves_to_disk(tmp_path, mock_hyperg
         mock_response.status_code = 200
         mock_response.content = b"mock-zst-content"
 
-        hdata = HIFLoader.load_from_url(url, save_on_disk=False)
+        hdata, _ = HIFLoader.load_from_url(url, save_on_disk=False)
 
     mock_from_zst_bytes_to_json.assert_called_once_with(b"mock-zst-content")
     mock_write_to_disk.assert_not_called()
@@ -444,7 +444,7 @@ def test_load_from_url_processes_json_and_saves_compressed_copy(tmp_path, mock_h
         mock_response.status_code = 200
         mock_response.content = json.dumps(payload).encode("utf-8")
 
-        hdata = HIFLoader.load_from_url(url, save_on_disk=True)
+        hdata, _ = HIFLoader.load_from_url(url, save_on_disk=True)
 
     mock_read_json_bytes.assert_called_once_with(json.dumps(payload).encode("utf-8"))
     mock_compress.assert_called_once_with(json.dumps(payload).encode("utf-8"))
@@ -473,7 +473,7 @@ def test_load_from_url_processes_zst_without_saving_to_disk(tmp_path, mock_hyper
         mock_response.status_code = 200
         mock_response.content = b"mock-zst-content"
 
-        hdata = HIFLoader.load_from_url(url, save_on_disk=False)
+        hdata, _ = HIFLoader.load_from_url(url, save_on_disk=False)
 
     mock_write_to_disk.assert_not_called()
     mock_from_zst_bytes_to_json.assert_called_once_with(b"mock-zst-content")
@@ -499,7 +499,7 @@ def test_load_from_url_processes_json_without_saving_to_disk(tmp_path, mock_hype
         mock_response.status_code = 200
         mock_response.content = json.dumps(payload).encode("utf-8")
 
-        hdata = HIFLoader.load_from_url(url, save_on_disk=False)
+        hdata, _ = HIFLoader.load_from_url(url, save_on_disk=False)
 
     mock_read_json_bytes.assert_called_once_with(json.dumps(payload).encode("utf-8"))
     mock_compress.assert_not_called()
@@ -521,7 +521,7 @@ def test_load_from_path_processes_node_numeric_attrs_into_features(tmp_path):
     json_path = __write_hif_json(tmp_path, hypergraph, filename="nodes_with_attrs.json")
 
     with patch("hypertorch.data.hif.validate_hif_data", return_value=True):
-        hdata = HIFLoader.load_from_path(json_path)
+        hdata, _ = HIFLoader.load_from_path(json_path)
 
     assert hdata.x.shape == (2, 2)
     assert torch.allclose(hdata.x[0], torch.tensor([1.0, 0.5], dtype=torch.float))
@@ -549,12 +549,12 @@ def test_load_skips_download_when_file_exists(tmp_path, mock_hypergraph):
         ) as mock_from_zst_file_to_json,
         patch("hypertorch.data.hif.validate_hif_data", return_value=True),
     ):
-        result = HIFLoader.load_by_name("algebra", save_on_disk=True)
+        hdata, _ = HIFLoader.load_by_name("algebra", save_on_disk=True)
 
     mock_get.assert_not_called()
     mock_from_zst_file_to_json.assert_called_once()
-    assert result.num_nodes == 2
-    assert result.num_hyperedges == 1
+    assert hdata.num_nodes == 2
+    assert hdata.num_hyperedges == 1
 
 
 def test_hifloader_falls_back_to_hf_hub_download_when_github_raw_download_fails(
@@ -614,11 +614,11 @@ def test_load_saves_downloaded_dataset_on_disk(tmp_path, mock_hypergraph):
         mock_response.status_code = 200
         mock_response.content = b"downloaded-content"
 
-        result = HIFLoader.load_by_name("algebra", save_on_disk=True)
+        hdata, _ = HIFLoader.load_by_name("algebra", save_on_disk=True)
 
     mock_save_zst_file.assert_called_once()
-    assert result.num_nodes == 2
-    assert result.num_hyperedges == 1
+    assert hdata.num_nodes == 2
+    assert hdata.num_hyperedges == 1
 
 
 def test_load_skips_saving_downloaded_dataset_when_save_on_disk_is_false(tmp_path, mock_hypergraph):
@@ -635,11 +635,11 @@ def test_load_skips_saving_downloaded_dataset_when_save_on_disk_is_false(tmp_pat
         mock_response.status_code = 200
         mock_response.content = b"downloaded-content"
 
-        result = HIFLoader.load_by_name("algebra", save_on_disk=False)
+        hdata, _ = HIFLoader.load_by_name("algebra", save_on_disk=False)
 
     mock_save_zst_file.assert_not_called()
-    assert result.num_nodes == 2
-    assert result.num_hyperedges == 1
+    assert hdata.num_nodes == 2
+    assert hdata.num_hyperedges == 1
 
 
 def test_hifloader_download_raises_when_network_error():
@@ -676,7 +676,7 @@ def test_load_by_name_uses_hf_revision_when_github_download_fails(tmp_path, mock
         patch("hypertorch.data.hif.os.getenv", return_value=None),
         pytest.warns(UserWarning, match="GitHub raw download failed"),
     ):
-        result = HIFLoader.load_by_name("algebra", hf_sha=hf_sha, save_on_disk=False)
+        hdata, _ = HIFLoader.load_by_name("algebra", hf_sha=hf_sha, save_on_disk=False)
 
     mock_hf_hub_download.assert_called_once_with(
         repo_id="HypernetworkRG/algebra",
@@ -686,8 +686,8 @@ def test_load_by_name_uses_hf_revision_when_github_download_fails(tmp_path, mock
         cache_dir=str(tmp_path / "hf_cache"),
         token=None,
     )
-    assert result.num_nodes == 2
-    assert result.num_hyperedges == 1
+    assert hdata.num_nodes == 2
+    assert hdata.num_hyperedges == 1
     assert not (tmp_path / "hf_cache" / "datasets--HypernetworkRG--algebra").exists()
     assert not (tmp_path / "hf_cache" / ".locks" / "datasets--HypernetworkRG--algebra").exists()
 
@@ -715,7 +715,7 @@ def test_load_by_name_skips_cache_cleanup_when_hf_cache_dir_is_missing(tmp_path,
         patch("hypertorch.data.hif.os.getenv", return_value=None),
         pytest.warns(UserWarning, match="GitHub raw download failed"),
     ):
-        result = HIFLoader.load_by_name("algebra", hf_sha=hf_sha, save_on_disk=False)
+        hdata, _ = HIFLoader.load_by_name("algebra", hf_sha=hf_sha, save_on_disk=False)
 
     mock_hf_hub_download.assert_called_once_with(
         repo_id="HypernetworkRG/algebra",
@@ -726,8 +726,8 @@ def test_load_by_name_skips_cache_cleanup_when_hf_cache_dir_is_missing(tmp_path,
         token=None,
     )
     mock_rmtree.assert_not_called()
-    assert result.num_nodes == 2
-    assert result.num_hyperedges == 1
+    assert hdata.num_nodes == 2
+    assert hdata.num_hyperedges == 1
 
 
 def test_load_by_name_cleans_hf_cache_and_locks(tmp_path, mock_hypergraph):
@@ -750,14 +750,14 @@ def test_load_by_name_cleans_hf_cache_and_locks(tmp_path, mock_hypergraph):
         patch("hypertorch.data.hif.shutil.rmtree") as mock_rmtree,
         pytest.warns(UserWarning, match="GitHub raw download failed"),
     ):
-        result = HIFLoader.load_by_name("algebra", hf_sha=hf_sha, save_on_disk=False)
+        hdata, _ = HIFLoader.load_by_name("algebra", hf_sha=hf_sha, save_on_disk=False)
 
     cache_root = tmp_path / "hf_cache"
     path_prefix = "datasets--HypernetworkRG--algebra"
     mock_rmtree.assert_any_call(os.path.join(cache_root, path_prefix))
     mock_rmtree.assert_any_call(os.path.join(cache_root, ".locks", path_prefix))
-    assert result.num_nodes == 2
-    assert result.num_hyperedges == 1
+    assert hdata.num_nodes == 2
+    assert hdata.num_hyperedges == 1
 
 
 def test_load_by_name_raises_when_hf_sha_is_missing_on_fallback():
@@ -800,13 +800,13 @@ def test_load_by_name_reads_hf_download_and_saves_its_content(tmp_path, mock_hyp
         patch("hypertorch.data.hif.__file__", str(tmp_path / "hif.py")),
         pytest.warns(UserWarning, match="GitHub raw download failed"),
     ):
-        result = HIFLoader.load_by_name("algebra", hf_sha=hf_sha, save_on_disk=True)
+        hdata, _ = HIFLoader.load_by_name("algebra", hf_sha=hf_sha, save_on_disk=True)
 
     saved = tmp_path / "datasets" / "algebra.json.zst"
     assert saved.exists()
     assert saved.read_bytes() == hf_content
-    assert result.num_nodes == 2
-    assert result.num_hyperedges == 1
+    assert hdata.num_nodes == 2
+    assert hdata.num_hyperedges == 1
 
 
 def test_load_by_name_raises_warn_when_fail_to_cleanup_hf_cache(tmp_path, mock_hypergraph):
@@ -836,10 +836,10 @@ def test_load_by_name_raises_warn_when_fail_to_cleanup_hf_cache(tmp_path, mock_h
         pytest.warns(UserWarning, match="Failed to clean up Hugging Face Hub cache"),
         pytest.warns(UserWarning, match="GitHub raw download failed"),
     ):
-        result = HIFLoader.load_by_name("algebra", hf_sha=hf_sha, save_on_disk=False)
+        hdata, _ = HIFLoader.load_by_name("algebra", hf_sha=hf_sha, save_on_disk=False)
 
-    assert result.num_nodes == 2
-    assert result.num_hyperedges == 1
+    assert hdata.num_nodes == 2
+    assert hdata.num_hyperedges == 1
 
 
 def test_load_by_name_raises_when_downloaded_hf_file_cannot_be_read(tmp_path):

@@ -1,5 +1,5 @@
 from typing import ClassVar
-from hypertorch.types import HData, Task, TaskEnum
+from hypertorch.types import HData, Task, TaskEnum, HIFHypergraph
 from hypertorch.data.hif import HIFLoader
 from hypertorch.data.dataset import Dataset
 from hypertorch.data.sampler import SamplingStrategy, SamplingStrategyEnum
@@ -51,6 +51,7 @@ class _PreloadedDataset(Dataset):
     def __init__(
         self,
         hdata: HData | None = None,
+        hif_hypergraph: HIFHypergraph | None = None,
         sampling_strategy: SamplingStrategy = SamplingStrategyEnum.HYPEREDGE,
         task: Task = TaskEnum.HYPERLINK_PREDICTION,
         save_on_disk: bool = True,
@@ -60,14 +61,21 @@ class _PreloadedDataset(Dataset):
 
         Args:
             hdata: Optional preloaded data. If ``None``, data is loaded from ``DATASET_NAME``.
+            hif_hypergraph: Optional preloaded HIF hypergraph. If hdata is ``None``, data is loaded
+                from ``DATASET_NAME``.
             sampling_strategy: Sampling strategy used by the dataset.
             task: Task type for the dataset. Defaults to ``"hyperlink-prediction"``.
             save_on_disk: Whether downloaded data should be cached on disk.
         """
         self.__validate()
-        super().__init__(hdata=hdata, sampling_strategy=sampling_strategy, task=task)
+        super().__init__(
+            hdata=hdata,
+            hif_hypergraph=hif_hypergraph,
+            sampling_strategy=sampling_strategy,
+            task=task,
+        )
         if hdata is None:
-            self.hdata = HIFLoader.load_by_name(
+            self.hdata, self.hif_hypergraph = HIFLoader.load_by_name(
                 dataset_name=self.DATASET_NAME,
                 hf_sha=self.HF_SHA,
                 task=task,

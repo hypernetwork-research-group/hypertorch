@@ -5,7 +5,15 @@ import torch
 from typing import TYPE_CHECKING, Any
 from torch import Tensor
 from torch.utils.data import Dataset as TorchDataset
-from hypertorch.types import HData, Task, TaskEnum
+from hypertorch.types import (
+    HData,
+    HIFHypergraph,
+    Task,
+    TaskEnum,
+    is_hyperedge_related_task,
+    is_node_related_task,
+    validate_task,
+)
 from hypertorch.utils import (
     NodeSpaceFiller,
     NodeSpaceSetting,
@@ -46,6 +54,7 @@ class Dataset(TorchDataset):
     def __init__(
         self,
         hdata: HData | None = None,
+        hif_hypergraph: HIFHypergraph | None = None,
         sampling_strategy: SamplingStrategy = SamplingStrategyEnum.HYPEREDGE,
         task: Task = TaskEnum.HYPERLINK_PREDICTION,
     ) -> None:
@@ -54,6 +63,7 @@ class Dataset(TorchDataset):
 
         Args:
             hdata: The processed hypergraph data in HData format.
+            hif_hypergraph: The original HIF hypergraph. If not provided, defaults to ``None``.
             sampling_strategy: The strategy used for sampling sub-hypergraphs
                 (e.g., by node IDs or hyperedge IDs).
                 If not provided, defaults to ``SamplingStrategy.HYPEREDGE``.
@@ -61,9 +71,62 @@ class Dataset(TorchDataset):
                 Defaults to ``"hyperlink-prediction"``.
         """
         self.__sampler: BaseSampler = create_sampler_from_strategy(sampling_strategy)
+        self.__hif_hypergraph: HIFHypergraph | None = (
+            hif_hypergraph if hif_hypergraph is not None else None
+        )
+
         self.sampling_strategy: SamplingStrategy = sampling_strategy
         self.task: Task = task
+        validate_task(self.task)
+
         self.hdata: HData = hdata if hdata is not None else HData.empty(task=task)
+
+    @property
+    def hif_hypergraph(self) -> HIFHypergraph:
+        """
+        Return the original HIF hypergraph, if available.
+
+        Returns:
+            The HIF hypergraph from which the dataset was created, if available.
+
+        Raises:
+            ValueError: If no HIF hypergraph is available. This can be due to the dataset being
+                created from a preprocessed HData without the original HIF hypergraph,
+                or due to operations like splitting or sampling that do not preserve
+                the original HIF hypergraph.
+        """
+        if self.__hif_hypergraph is None:
+            raise ValueError(
+                "HIF hypergraph is not available. This may occur if the dataset was created "
+                "from a preprocessed HData without providing the original HIF hypergraph. "
+                "It can also be a consequence of operations like splitting or sampling, "
+                "which do not preserve the original HIF hypergraph."
+            )
+        return self.__hif_hypergraph
+
+    @hif_hypergraph.setter
+    def hif_hypergraph(self, hif_hypergraph: HIFHypergraph | None) -> None:
+        self.__hif_hypergraph = hif_hypergraph
+
+    @property
+    def is_hyperedge_related_task(self) -> bool:
+        """
+        Check if the task uses hyperedge-level targets and operations.
+
+        Returns:
+            is_hyperedge_related: True if the task is hyperedge-related, False otherwise.
+        """
+        return is_hyperedge_related_task(self.task)
+
+    @property
+    def is_node_related_task(self) -> bool:
+        """
+        Check if the task uses node-level targets and operations.
+
+        Returns:
+            is_node_related: True if the task is node-related, False otherwise.
+        """
+        return is_node_related_task(self.task)
 
     def __len__(self) -> int:
         """
@@ -121,6 +184,7 @@ class Dataset(TorchDataset):
     def from_hdata(
         cls,
         hdata: HData,
+        hif_hypergraph: HIFHypergraph | None = None,
         sampling_strategy: SamplingStrategy = SamplingStrategyEnum.HYPEREDGE,
         task: Task = TaskEnum.HYPERLINK_PREDICTION,
     ) -> Dataset:
@@ -129,6 +193,8 @@ class Dataset(TorchDataset):
 
         Args:
             hdata: `HData` object containing the hypergraph data.
+            hif_hypergraph: The original HIF hypergraph.
+                If not provided, defaults to ``None``.
             sampling_strategy: The sampling strategy to use for the dataset. If not provided,
                 defaults to ``SamplingStrategy.HYPEREDGE``.
             task: Learning task used when the HData. If not provided,
@@ -137,7 +203,12 @@ class Dataset(TorchDataset):
         Returns:
             dataset: The `Dataset` instance with the provided `HData`.
         """
-        return cls(hdata=hdata, sampling_strategy=sampling_strategy, task=task)
+        return cls(
+            hdata=hdata,
+            hif_hypergraph=hif_hypergraph,
+            sampling_strategy=sampling_strategy,
+            task=task,
+        )
 
     @classmethod
     def from_url(
@@ -162,8 +233,17 @@ class Dataset(TorchDataset):
         Returns:
             dataset: The `Dataset` instance with the loaded hypergraph data.
         """
-        hdata = HIFLoader.load_from_url(url=url, task=task, save_on_disk=save_on_disk)
-        dataset = cls.from_hdata(hdata=hdata, sampling_strategy=sampling_strategy, task=task)
+        hdata, hif_hypergraph = HIFLoader.load_from_url(
+            url=url,
+            task=task,
+            save_on_disk=save_on_disk,
+        )
+        dataset = cls.from_hdata(
+            hdata=hdata,
+            hif_hypergraph=hif_hypergraph,
+            sampling_strategy=sampling_strategy,
+            task=task,
+        )
         return dataset
 
     @classmethod
@@ -188,8 +268,13 @@ class Dataset(TorchDataset):
         Returns:
             dataset: The `Dataset` instance with the loaded hypergraph data.
         """
-        hypergraph = HIFLoader.load_from_path(filepath=filepath, task=task)
-        dataset = cls.from_hdata(hdata=hypergraph, sampling_strategy=sampling_strategy, task=task)
+        hdata, hif_hypergraph = HIFLoader.load_from_path(filepath=filepath, task=task)
+        dataset = cls.from_hdata(
+            hdata=hdata,
+            hif_hypergraph=hif_hypergraph,
+            sampling_strategy=sampling_strategy,
+            task=task,
+        )
         return dataset
 
     def enrich_node_features(

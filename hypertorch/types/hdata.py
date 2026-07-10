@@ -3,12 +3,11 @@ from __future__ import annotations
 import torch
 
 from torch import Tensor
-from typing import TYPE_CHECKING, Any, Literal, TypeAlias, get_args
+from typing import TYPE_CHECKING, Any
 from collections.abc import Sequence
 from hypertorch.utils import (
     NodeSpaceFiller,
     NodeSpaceSetting,
-    StrEnum,
     clone_optional_tensor,
     create_seeded_torch_generator,
     empty_hyperedgeindex,
@@ -24,6 +23,13 @@ from hypertorch.utils import (
 )
 
 from hypertorch.types.hypergraph import HyperedgeIndex
+from hypertorch.types.task import (
+    Task,
+    TaskEnum,
+    is_hyperedge_related_task,
+    is_node_related_task,
+    validate_task,
+)
 
 if TYPE_CHECKING:
     from hypertorch.data import (
@@ -33,23 +39,6 @@ if TYPE_CHECKING:
         NodeEnricher,
         Splitter,
     )
-
-
-class TaskEnum(StrEnum):
-    """
-    Enum for supported hypergraph learning tasks.
-    """
-
-    HYPERLINK_PREDICTION = "hyperlink-prediction"
-    NODE_CLASSIFICATION = "node-classification"
-
-
-TaskLiteral: TypeAlias = Literal["hyperlink-prediction", "node-classification"]
-"""Literal type for supported hypergraph learning tasks."""
-
-
-Task: TypeAlias = TaskEnum | TaskLiteral
-"""Type for supported hypergraph learning tasks, either as a TaskEnum or a string literal."""
 
 
 class HData:
@@ -533,8 +522,7 @@ class HData:
         Returns:
             is_hyperedge_related: True if the task is hyperedge-related, False otherwise.
         """
-        # For now, we only support hyperlink prediction as a hyperedge-related task
-        return self.task == TaskEnum.HYPERLINK_PREDICTION
+        return is_hyperedge_related_task(self.task)
 
     @property
     def is_node_related_task(self) -> bool:
@@ -544,8 +532,7 @@ class HData:
         Returns:
             is_node_related: True if the task is node-related, False otherwise.
         """
-        # For now, we only support node classification as a node-related task
-        return self.task == TaskEnum.NODE_CLASSIFICATION
+        return is_node_related_task(self.task)
 
     @property
     def num_sampleable_nodes(self) -> int:
@@ -1431,7 +1418,7 @@ class HData:
         self.__validate_target_node_mask()
         self.__validate_target_hyperedge_mask()
         self.__validate_labels()
-        self.__validate_task()
+        validate_task(self.task)
 
     def __validate_enrichment_mode(self, enrichment_mode: EnrichmentMode | None) -> None:
         """
@@ -1621,17 +1608,6 @@ class HData:
                 f"Got size={self.target_hyperedge_mask.size(0)} but "
                 f"num_hyperedges={self.num_hyperedges}."
             )
-
-    def __validate_task(self) -> None:
-        """
-        Validate the learning task.
-
-        Raises:
-            ValueError: If the task is unsupported.
-        """
-        valid_tasks = get_args(TaskLiteral)
-        if self.task not in valid_tasks:
-            raise ValueError(f"'task' must be one of {valid_tasks}, got {self.task!r}.")
 
     def __validate_x(self) -> None:
         """
