@@ -144,6 +144,16 @@ def mock_hypergraph() -> HIFHypergraph:
 
 
 @pytest.fixture
+def mock_hypergraph_with_labels() -> HIFHypergraph:
+    return HIFHypergraph(
+        network_type="undirected",
+        nodes=[{"node": "0", "attrs": {"label": "A"}}, {"node": "1", "attrs": {"label": "B"}}],
+        hyperedges=[{"edge": "0", "attrs": {"weight": 1.0}}],
+        incidences=[{"node": "0", "edge": "0"}, {"node": "1", "edge": "0"}],
+    )
+
+
+@pytest.fixture
 def mock_hdata() -> HData:
     x = torch.ones((2, 1), dtype=torch.float)
     hyperedge_index = torch.tensor([[0, 1], [0, 0]], dtype=torch.long)
@@ -1031,3 +1041,13 @@ def test_hifloader_download_failure_when_hf_token_is_invalid(tmp_path):
         cache_dir=str(tmp_path / "hf_cache"),
         token="invalid_token",
     )
+
+
+def test_process_hypergraph_with_label_values(mock_hypergraph_with_labels):
+    hdata = HIFProcessor.process_hypergraph(mock_hypergraph_with_labels)
+
+    assert hdata.y is not None
+    print("jdhnfakjhfkajsfh\n\n\n\n\n")
+    print(hdata.y)
+    assert hdata.y.shape[0] == hdata.num_nodes
+    assert torch.all(hdata.y == torch.tensor([0, 1], dtype=torch.long))

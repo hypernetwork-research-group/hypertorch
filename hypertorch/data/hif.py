@@ -154,13 +154,16 @@ class HIFProcessor:
         Build the node label tensor from HIF node attributes.
         """
         node_label_keys = cls.__collect_attr_keys(
-            [node.get("label", {}) for node in hypergraph.nodes]
+            [node.get("attrs", {}).get("label", {}) for node in hypergraph.nodes]
         )
+        print(f"node_label_keys: {node_label_keys}")
 
         if node_label_keys:
             y = torch.stack(
                 [
-                    cls.transform_attrs(node.get("label", {}), attr_keys=node_label_keys)
+                    cls.transform_attrs(
+                        node.get("attrs", {}).get("label", {}), attr_keys=node_label_keys
+                    )
                     for node in hypergraph.nodes
                 ]
             )
