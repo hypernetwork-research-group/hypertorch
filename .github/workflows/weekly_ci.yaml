@@ -9,8 +9,41 @@ permissions:
   contents: read
 
 jobs:
+  retrieve-latest-tag-and-weekly-script-url:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.get_tag_commit.outputs.tag }}
+      weekly_script_url: ${{ steps.get_tag_commit.outputs.weekly_script_url }}
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+      with:
+        fetch-depth: 0
+        persist-credentials: false
+
+    - name: Export latest tag, commit, and weekly script URL
+      id: get_tag_commit
+      run: |
+        TAG_TO_CHECK=$(git tag --sort=-creatordate | head -n 1) # latest tag including beta
+        COMMIT_TO_CHECK=$(git rev-list -n 1 "$TAG_TO_CHECK")
+        WEEKLY_SCRIPT_URL="https://raw.githubusercontent.com/hypernetwork-research-group/hypertorch/${COMMIT_TO_CHECK}/scripts/weekly_run.sh"
+        echo "tag=$TAG_TO_CHECK" >> "$GITHUB_OUTPUT"
+        echo "weekly_script_url=$WEEKLY_SCRIPT_URL" >> "$GITHUB_OUTPUT"
+        {
+          echo "## Latest Git Tag"
+          echo ""
+          echo "| Variable | Value |"
+          echo "| --- | --- |"
+          echo "| Tag | \`$TAG_TO_CHECK\` |"
+          echo "| Commit | \`$COMMIT_TO_CHECK\` |"
+        } >> "$GITHUB_STEP_SUMMARY"
+
   test-ubuntu-x86:
+    needs: retrieve-latest-tag-and-weekly-script-url
     runs-on: ${{ matrix.os }}
+    env:
+      TAG_TO_CHECK: ${{ needs.retrieve-latest-tag-and-weekly-script-url.outputs.tag }}
+      WEEKLY_SCRIPT_URL: ${{ needs.retrieve-latest-tag-and-weekly-script-url.outputs.weekly_script_url }}
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -21,19 +54,25 @@ jobs:
       uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
       with:
         python-version: ${{ matrix.python-version }}
+        enable-cache: "false"
+        ignore-empty-workdir: "true"
 
     - name: Download and run examples
       shell: bash
       run: |
         uv venv ubuntu-env
-        source ubuntu-env/bin/activate || source ubuntu-env/Scripts/activate
-        uv pip install "torch>=2.12,<3.0" --index-url https://download.pytorch.org/whl/cpu
+        source ubuntu-env/bin/activate
+        uv pip install "torch>=2.12.0,<2.13.0" --index-url https://download.pytorch.org/whl/cpu
         uv pip install pyg-lib --find-links https://data.pyg.org/whl/torch-2.12.0+cpu.html
         uv pip install --no-build-isolation hypertorch
-        curl -fsSL https://raw.githubusercontent.com/hypernetwork-research-group/hypertorch/main/scripts/weekly_run.sh | bash
+        curl -fsSL "$WEEKLY_SCRIPT_URL" | bash -s -- "$TAG_TO_CHECK"
 
   test-ubuntu-arm:
+    needs: retrieve-latest-tag-and-weekly-script-url
     runs-on: ${{ matrix.os }}
+    env:
+      TAG_TO_CHECK: ${{ needs.retrieve-latest-tag-and-weekly-script-url.outputs.tag }}
+      WEEKLY_SCRIPT_URL: ${{ needs.retrieve-latest-tag-and-weekly-script-url.outputs.weekly_script_url }}
     strategy:
       matrix:
         os: [ubuntu-24.04-arm]
@@ -44,19 +83,25 @@ jobs:
       uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
       with:
         python-version: ${{ matrix.python-version }}
+        enable-cache: "false"
+        ignore-empty-workdir: "true"
 
     - name: Download and run examples
       shell: bash
       run: |
         uv venv ubuntu-env
         source ubuntu-env/bin/activate || source ubuntu-env/Scripts/activate
-        uv pip install "torch>=2.11,<2.12" --index-url https://download.pytorch.org/whl/cpu
+        uv pip install "torch>=2.11.0,<2.12.0" --index-url https://download.pytorch.org/whl/cpu
         uv pip install torch-cluster --find-links https://data.pyg.org/whl/torch-2.11.0+cpu.html
         uv pip install --no-build-isolation hypertorch
-        curl -fsSL https://raw.githubusercontent.com/hypernetwork-research-group/hypertorch/main/scripts/weekly_run.sh | bash
+        curl -fsSL "$WEEKLY_SCRIPT_URL" | bash -s -- "$TAG_TO_CHECK"
 
   test-macos-arm:
+    needs: retrieve-latest-tag-and-weekly-script-url
     runs-on: ${{ matrix.os }}
+    env:
+      TAG_TO_CHECK: ${{ needs.retrieve-latest-tag-and-weekly-script-url.outputs.tag }}
+      WEEKLY_SCRIPT_URL: ${{ needs.retrieve-latest-tag-and-weekly-script-url.outputs.weekly_script_url }}
     strategy:
       matrix:
         os: [macos-latest]
@@ -67,19 +112,25 @@ jobs:
       uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
       with:
         python-version: ${{ matrix.python-version }}
+        enable-cache: "false"
+        ignore-empty-workdir: "true"
 
     - name: Download and run examples
       shell: bash
       run: |
         uv venv macos-env
         source macos-env/bin/activate || source macos-env/Scripts/activate
-        uv pip install "torch>=2.12,<3.0" --index-url https://download.pytorch.org/whl/cpu
+        uv pip install "torch>=2.12.0,<2.13.0" --index-url https://download.pytorch.org/whl/cpu
         uv pip install pyg-lib --find-links https://data.pyg.org/whl/torch-2.12.0+cpu.html
         uv pip install --no-build-isolation hypertorch
-        curl -fsSL https://raw.githubusercontent.com/hypernetwork-research-group/hypertorch/main/scripts/weekly_run.sh | bash
+        curl -fsSL "$WEEKLY_SCRIPT_URL" | bash -s -- "$TAG_TO_CHECK"
 
   test-windows-x86:
+    needs: retrieve-latest-tag-and-weekly-script-url
     runs-on: ${{ matrix.os }}
+    env:
+      TAG_TO_CHECK: ${{ needs.retrieve-latest-tag-and-weekly-script-url.outputs.tag }}
+      WEEKLY_SCRIPT_URL: ${{ needs.retrieve-latest-tag-and-weekly-script-url.outputs.weekly_script_url }}
     strategy:
       matrix:
         os: [windows-latest]
@@ -90,13 +141,15 @@ jobs:
       uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
       with:
         python-version: ${{ matrix.python-version }}
+        enable-cache: "false"
+        ignore-empty-workdir: "true"
 
     - name: Download and run examples
       shell: bash
       run: |
         uv venv windows-env
         source windows-env/Scripts/activate
-        uv pip install "torch>=2.12,<3.0" --index-url https://download.pytorch.org/whl/cpu
+        uv pip install "torch>=2.12.0,<2.13.0" --index-url https://download.pytorch.org/whl/cpu
         uv pip install pyg-lib --find-links https://data.pyg.org/whl/torch-2.12.0+cpu.html
         uv pip install hypertorch
-        curl -fsSL https://raw.githubusercontent.com/hypernetwork-research-group/hypertorch/main/scripts/weekly_run.sh | bash
+        curl -fsSL "$WEEKLY_SCRIPT_URL" | bash -s -- "$TAG_TO_CHECK"
