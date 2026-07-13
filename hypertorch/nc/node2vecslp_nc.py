@@ -40,7 +40,7 @@ class Node2VecSLPEncoderConfig(TypedDict):
 
 class Node2VecSLPClassifierConfig(TypedDict):
     """
-    Configuration for the Node2Vec-SLP node classification module.
+    Configuration for the Node2Vec-SLP classifier module.
 
     Attributes:
         out_channels: Number of node classes.
@@ -59,7 +59,7 @@ class Node2VecSLPNcModule(NcModule):
 
     Attributes:
         encoder: Optional Node2Vec encoder inherited from ``NcModule``.
-        classifier: SLP classifier inherited from ``NcModule``.
+        classifier: Classifier inherited from ``NcModule``.
         loss_fn: Loss function inherited from ``NcModule``.
         metrics_log_kwargs: Metric logging keyword arguments inherited from ``NcModule``.
         train_metrics: Optional training metrics inherited from ``NcModule``.
