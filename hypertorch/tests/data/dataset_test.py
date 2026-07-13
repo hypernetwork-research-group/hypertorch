@@ -56,6 +56,17 @@ def mock_hypergraph_with_labels() -> HIFHypergraph:
 
 
 @pytest.fixture
+def mock_hypergraph_with_mixed_labels() -> HIFHypergraph:
+    return HIFHypergraph(
+        network_type="undirected",
+        metadata={"label_map": {"A": 0, "B": 1.0}},
+        nodes=[{"node": "0", "attrs": {"label": "A"}}, {"node": "1", "attrs": {"label": "B"}}],
+        hyperedges=[{"edge": "0", "attrs": {"weight": 1.0}}],
+        incidences=[{"node": "0", "edge": "0"}, {"node": "1", "edge": "0"}],
+    )
+
+
+@pytest.fixture
 def mock_hdata_with_hyperedge_attr() -> HData:
     x = torch.ones((3, 1), dtype=torch.float)
     hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 1]], dtype=torch.long)
@@ -2077,6 +2088,27 @@ def test_to_human_readable_y_convert_correct_tensor(
         return_value=(mock_hdata_with_labels, mock_hypergraph_with_labels),
     ):
         dataset = AlgebraDataset(task=TaskEnum.NODE_CLASSIFICATION)
+
+    readable = dataset.to_human_readable_y(dataset.hdata.y)
+    assert readable == ["A", "B"]
+
+
+@pytest.mark.parametrize(
+    "task",
+    [
+        pytest.param(TaskEnum.NODE_CLASSIFICATION, id="node_classification_strategy"),
+        pytest.param(TaskEnum.HYPERLINK_PREDICTION, id="hyperlink_prediction_strategy"),
+    ],
+)
+def test_to_human_readable_y_convert_correct_tensor_with_mixed_labels(
+    task, mock_hdata_with_labels, mock_hypergraph_with_mixed_labels
+):
+    with patch.object(
+        HIFLoader,
+        "load_by_name",
+        return_value=(mock_hdata_with_labels, mock_hypergraph_with_mixed_labels),
+    ):
+        dataset = AlgebraDataset(task=task)
 
     readable = dataset.to_human_readable_y(dataset.hdata.y)
     print(readable)
