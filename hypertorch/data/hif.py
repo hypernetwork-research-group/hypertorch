@@ -84,6 +84,7 @@ class HIFProcessor:
         """
         num_nodes = len(hypergraph.nodes)
         x = cls.__process_x(hypergraph, num_nodes)
+        y, map_label_to_index = cls.__process_y(hypergraph, num_nodes)
 
         # Remap node IDs to 0-based contiguous IDs (using indices) matching the x tensor order
         node_id_to_idx = {node.get("node"): idx for idx, node in enumerate(hypergraph.nodes)}
@@ -149,6 +150,7 @@ class HIFProcessor:
             hyperedge_ids=hyperedge_ids,
             hyperedge_id_to_idx_pre_self_loop=hyperedge_id_to_idx_pre_self_loop,
             self_loop_hyperedges=self_loop_hyperedges,
+            map_label_to_index=map_label_to_index,
         )
 
         hdata = HData(
@@ -159,9 +161,32 @@ class HIFProcessor:
             num_nodes=num_nodes,
             num_hyperedges=num_hyperedges,
             task=task,
+            y=y,
         )
 
         return (hdata, hif_hypergraph)
+
+    @classmethod
+    def __process_y(
+        cls, hypergraph: HIFHypergraph, num_nodes: int
+    ) -> tuple[Tensor | None, dict[str, int] | None]:
+        """
+        Build the node label tensor from HIF node attributes.
+        """
+        list_attr_label = [node.get("attrs", {}).get("label", None) for node in hypergraph.nodes]
+        unique_labels = set(list_attr_label)
+        if len(unique_labels) > 0 and any(label is not None for label in unique_labels):
+            map_label_to_index = {label: idx for idx, label in enumerate(unique_labels)}
+            y = torch.tensor(
+                [map_label_to_index[label] for label in list_attr_label], dtype=torch.float16
+            )
+            if len(y) != num_nodes:
+                raise ValueError(
+                    f"Node label tensor length {len(y)} does not match number of nodes {num_nodes}."
+                )
+            return y, map_label_to_index
+
+        return None, None  # No node labels present
 
     @classmethod
     def __collect_attr_keys(cls, attr_keys: list[dict[str, Any]]) -> list[str]:
@@ -191,6 +216,7 @@ class HIFProcessor:
         hyperedge_ids: list[int],
         hyperedge_id_to_idx_pre_self_loop: dict[Any, int],
         self_loop_hyperedges: list[int],
+        map_label_to_index: dict[str, int] | None = None,
     ) -> HIFHypergraph:
         hif_hypergraph = HIFHypergraph.empty()
         hif_hypergraph.network_type = hypergraph.network_type
@@ -222,6 +248,9 @@ class HIFProcessor:
             {"edge": hyperedge_id, "attrs": {}}
             for _, hyperedge_id in enumerate(self_loop_hyperedges)
         )
+
+        if map_label_to_index is not None:
+            hif_hypergraph.metadata = {"label_map": map_label_to_index}
 
         return hif_hypergraph
 
