@@ -131,33 +131,6 @@ class Dataset(TorchDataset):
         """
         return is_node_related_task(self.task)
 
-    @property
-    def hif_hypergraph(self) -> HIFHypergraph:
-        """
-        Return the original HIF hypergraph, if available.
-
-        Returns:
-            The HIF hypergraph from which the dataset was created, if available.
-
-        Raises:
-            ValueError: If no HIF hypergraph is available. This can be due to the dataset being
-                created from a preprocessed HData without the original HIF hypergraph,
-                or due to operations like splitting or sampling that do not preserve
-                the original HIF hypergraph.
-        """
-        if self.__hif_hypergraph is None:
-            raise ValueError(
-                "HIF hypergraph is not available. This may occur if the dataset was created "
-                "from a preprocessed HData without providing the original HIF hypergraph. "
-                "It can also be a consequence of operations like splitting or sampling, "
-                "which do not preserve the original HIF hypergraph."
-            )
-        return self.__hif_hypergraph
-
-    @hif_hypergraph.setter
-    def hif_hypergraph(self, hif_hypergraph: HIFHypergraph | None) -> None:
-        self.__hif_hypergraph = hif_hypergraph
-
     def __len__(self) -> int:
         """
         Return the number of sampleable items in the dataset.
@@ -698,11 +671,9 @@ class Dataset(TorchDataset):
         """
         Convert numeric labels in `y` to human-readable string labels using the label map
         """
-        label_map = self.hif_hypergraph.metadata.get("label_map")
-        if label_map is None:
-            raise ValueError("Label map not found in HIF hypergraph metadata.")
-        index_to_label = {idx: label for label, idx in label_map.items()}
-        return [index_to_label.get(idx.item(), "Unknown") for idx in y]
+        label_map: dict[str, int | float] = self.hif_hypergraph.metadata["label_map"]
+        index_to_label: dict[int | float, str] = {idx: label for label, idx in label_map.items()}
+        return [index_to_label[label.item()] for label in y]
 
     def transform_node_attrs(
         self,

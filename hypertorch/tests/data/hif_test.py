@@ -7,7 +7,7 @@ import os
 
 from unittest.mock import patch
 from hypertorch.data import HIFLoader, HIFProcessor
-from hypertorch.types import HData, HIFHypergraph
+from hypertorch.types import HData, HIFHypergraph, TaskEnum
 
 
 @pytest.fixture(autouse=True)
@@ -138,6 +138,26 @@ def mock_hypergraph() -> HIFHypergraph:
     return HIFHypergraph(
         network_type="undirected",
         nodes=[{"node": "0", "attrs": {}}, {"node": "1", "attrs": {}}],
+        hyperedges=[{"edge": "0", "attrs": {"weight": 1.0}}],
+        incidences=[{"node": "0", "edge": "0"}, {"node": "1", "edge": "0"}],
+    )
+
+
+@pytest.fixture
+def mock_hypergraph_with_labels() -> HIFHypergraph:
+    return HIFHypergraph(
+        network_type="undirected",
+        nodes=[{"node": "0", "attrs": {"label": "A"}}, {"node": "1", "attrs": {"label": "B"}}],
+        hyperedges=[{"edge": "0", "attrs": {"weight": 1.0}}],
+        incidences=[{"node": "0", "edge": "0"}, {"node": "1", "edge": "0"}],
+    )
+
+
+@pytest.fixture
+def mock_hypergraph_with_missing_labels() -> HIFHypergraph:
+    return HIFHypergraph(
+        network_type="undirected",
+        nodes=[{"node": "0", "attrs": {"label": "classification"}}, {"node": "1", "attrs": {}}],
         hyperedges=[{"edge": "0", "attrs": {"weight": 1.0}}],
         incidences=[{"node": "0", "edge": "0"}, {"node": "1", "edge": "0"}],
     )
@@ -1031,3 +1051,36 @@ def test_hifloader_download_failure_when_hf_token_is_invalid(tmp_path):
         cache_dir=str(tmp_path / "hf_cache"),
         token="invalid_token",
     )
+
+
+def test_process_hypergraph_with_label_values(mock_hypergraph_with_labels):
+    hdata, hif_hypergraph = HIFProcessor.process_hypergraph(
+        mock_hypergraph_with_labels, task=TaskEnum.NODE_CLASSIFICATION
+    )
+    assert hif_hypergraph is not None
+    assert hif_hypergraph.metadata == {
+        "label_map": {"A": 0, "B": 1},
+    }
+    assert hdata.y is not None
+    assert hdata.y.shape[0] == hdata.num_nodes
+    assert torch.all(hdata.y == torch.tensor([0, 1], dtype=torch.long))
+
+
+def test_process_hypergraph_with_missing_labels(mock_hypergraph_with_missing_labels):
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            pattern="Node label attribute is missing for some nodes in the hypergraph."
+        ),
+    ):
+        HIFProcessor.process_hypergraph(
+            mock_hypergraph_with_missing_labels, task=TaskEnum.NODE_CLASSIFICATION
+        )
+
+
+def test_process_hypergraph_without_labels(mock_sample_hypergraph):
+    hdata, _ = HIFProcessor.process_hypergraph(
+        mock_sample_hypergraph, task=TaskEnum.NODE_CLASSIFICATION
+    )
+
+    assert torch.all(hdata.y == torch.tensor([1, 1], dtype=torch.long))

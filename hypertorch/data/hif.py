@@ -8,7 +8,13 @@ import warnings
 from huggingface_hub import hf_hub_download
 from typing import Any
 from torch import Tensor
-from hypertorch.types import HData, HIFHypergraph, Task, TaskEnum
+from hypertorch.types import (
+    HData,
+    HIFHypergraph,
+    Task,
+    TaskEnum,
+    is_node_related_task,
+)
 from hypertorch.utils import (
     compress_json_bytes_as_zst,
     from_bytes_to_json,
@@ -84,7 +90,10 @@ class HIFProcessor:
         """
         num_nodes = len(hypergraph.nodes)
         x = cls.__process_x(hypergraph, num_nodes)
-        y, map_label_to_index = cls.__process_y(hypergraph, num_nodes)
+        if is_node_related_task(task):
+            y, map_label_to_index = cls.__process_y(hypergraph, num_nodes, dtype=torch.long)
+        else:
+            y, map_label_to_index = None, None
 
         # Remap node IDs to 0-based contiguous IDs (using indices) matching the x tensor order
         node_id_to_idx = {node.get("node"): idx for idx, node in enumerate(hypergraph.nodes)}
@@ -168,25 +177,31 @@ class HIFProcessor:
 
     @classmethod
     def __process_y(
-        cls, hypergraph: HIFHypergraph, num_nodes: int
-    ) -> tuple[Tensor | None, dict[str, int] | None]:
+        cls,
+        hypergraph: HIFHypergraph,
+        num_nodes: int,
+        dtype: torch.dtype,
+    ) -> tuple[Tensor | None, dict[str, int | float] | None]:
         """
         Build the node label tensor from HIF node attributes.
         """
         list_attr_label = [node.get("attrs", {}).get("label", None) for node in hypergraph.nodes]
-        unique_labels = set(list_attr_label)
-        if len(unique_labels) > 0 and any(label is not None for label in unique_labels):
-            map_label_to_index = {label: idx for idx, label in enumerate(unique_labels)}
-            y = torch.tensor(
-                [map_label_to_index[label] for label in list_attr_label], dtype=torch.float16
-            )
-            if len(y) != num_nodes:
-                raise ValueError(
-                    f"Node label tensor length {len(y)} does not match number of nodes {num_nodes}."
-                )
+        if all(label is None for label in list_attr_label):
+            return None, None
+
+        if (
+            len(list_attr_label) > 0
+            and all(label is not None for label in list_attr_label)
+            and len(list_attr_label) == num_nodes
+        ):
+            sorted_unique_labels = sorted(set(list_attr_label))
+            map_label_to_index: dict[str, int | float] = {
+                label: idx for idx, label in enumerate(sorted_unique_labels)
+            }
+            y = torch.tensor([map_label_to_index[label] for label in list_attr_label], dtype=dtype)
             return y, map_label_to_index
 
-        return None, None  # No node labels present
+        raise ValueError("Node label attribute is missing for some nodes in the hypergraph.")
 
     @classmethod
     def __collect_attr_keys(cls, attr_keys: list[dict[str, Any]]) -> list[str]:
@@ -216,7 +231,7 @@ class HIFProcessor:
         hyperedge_ids: list[int],
         hyperedge_id_to_idx_pre_self_loop: dict[Any, int],
         self_loop_hyperedges: list[int],
-        map_label_to_index: dict[str, int] | None = None,
+        map_label_to_index: dict[str, int | float] | None = None,
     ) -> HIFHypergraph:
         hif_hypergraph = HIFHypergraph.empty()
         hif_hypergraph.network_type = hypergraph.network_type

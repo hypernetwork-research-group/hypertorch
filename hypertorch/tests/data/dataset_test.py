@@ -37,6 +37,25 @@ def mock_hif_hypergraph() -> HIFHypergraph:
 
 
 @pytest.fixture
+def mock_hdata_with_labels() -> HData:
+    x = torch.ones((2, 1), dtype=torch.float)
+    hyperedge_index = torch.tensor([[0, 1], [0, 0]], dtype=torch.long)
+    y = torch.tensor([0, 1], dtype=torch.long)
+    return HData(x=x, hyperedge_index=hyperedge_index, y=y, task="node-classification")
+
+
+@pytest.fixture
+def mock_hypergraph_with_labels() -> HIFHypergraph:
+    return HIFHypergraph(
+        network_type="undirected",
+        metadata={"label_map": {"A": 0, "B": 1}},
+        nodes=[{"node": "0", "attrs": {"label": "A"}}, {"node": "1", "attrs": {"label": "B"}}],
+        hyperedges=[{"edge": "0", "attrs": {"weight": 1.0}}],
+        incidences=[{"node": "0", "edge": "0"}, {"node": "1", "edge": "0"}],
+    )
+
+
+@pytest.fixture
 def mock_hdata_with_hyperedge_attr() -> HData:
     x = torch.ones((3, 1), dtype=torch.float)
     hyperedge_index = torch.tensor([[0, 1, 2], [0, 0, 1]], dtype=torch.long)
@@ -2017,3 +2036,47 @@ def test_transform_hyperedge_attrs_adds_padding_zero_when_attr_keys_padding(mock
         assert torch.allclose(
             result, torch.tensor([1.5, 10.0], dtype=torch.float)
         )  # capacity, weight (insertion order)
+
+
+def test_property_hif_hypergraph_returns_correct_values(mock_hdata, mock_hif_hypergraph):
+    with patch.object(HIFLoader, "load_by_name", return_value=(mock_hdata, mock_hif_hypergraph)):
+        dataset = AlgebraDataset()
+
+    hif = dataset.hif_hypergraph
+    assert hif.metadata == mock_hif_hypergraph.metadata
+    assert hif.nodes == mock_hif_hypergraph.nodes
+    assert hif.hyperedges == mock_hif_hypergraph.hyperedges
+    assert hif.incidences == mock_hif_hypergraph.incidences
+    assert hif.network_type == mock_hif_hypergraph.network_type
+
+
+def test_property_hif_hypergraph_raises_error_when_hif_hypergraph_is_not_loaded(
+    mock_hdata, mock_hif_hypergraph
+):
+    with patch.object(HIFLoader, "load_by_name", return_value=(mock_hdata, None)):
+        dataset = AlgebraDataset()
+
+    with pytest.raises(ValueError, match=re.escape("HIF hypergraph is not available.")):
+        _ = dataset.hif_hypergraph
+
+
+def test_set_hif_hypergraph_sets_hif_hypergraph(mock_hdata, mock_hif_hypergraph):
+    with patch.object(HIFLoader, "load_by_name", return_value=(mock_hdata, None)):
+        dataset = AlgebraDataset()
+
+    dataset.hif_hypergraph = mock_hif_hypergraph
+    assert dataset.hif_hypergraph == mock_hif_hypergraph
+
+
+def test_to_human_readable_y_convert_correct_tensor(
+    mock_hdata_with_labels, mock_hypergraph_with_labels
+):
+    with patch.object(
+        HIFLoader,
+        "load_by_name",
+        return_value=(mock_hdata_with_labels, mock_hypergraph_with_labels),
+    ):
+        dataset = AlgebraDataset(task=TaskEnum.NODE_CLASSIFICATION)
+
+    readable = dataset.to_human_readable_y(dataset.hdata.y)
+    print(readable)
