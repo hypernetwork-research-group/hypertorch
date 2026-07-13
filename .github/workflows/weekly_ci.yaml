@@ -2,7 +2,7 @@ name: Weekly CI
 
 on:
   schedule:
-  - cron: "0 0 * * 0"  # every week at 00:00 CET (6:00 PM EST)
+  - cron: "0 0 * * 0"   # every week at 00:00 CET (6:00 PM EST)
   workflow_dispatch:
 
 permissions:
@@ -64,7 +64,7 @@ jobs:
         source ubuntu-env/bin/activate
         uv pip install "torch>=2.12.0,<2.13.0" --index-url https://download.pytorch.org/whl/cpu
         uv pip install pyg-lib --find-links https://data.pyg.org/whl/torch-2.12.0+cpu.html
-        uv pip install --no-build-isolation hypertorch
+        uv pip install hypertorch
         curl -fsSL "$WEEKLY_SCRIPT_URL" | bash -s -- "$TAG_TO_CHECK"
 
   test-ubuntu-arm:
@@ -93,7 +93,7 @@ jobs:
         source ubuntu-env/bin/activate || source ubuntu-env/Scripts/activate
         uv pip install "torch>=2.11.0,<2.12.0" --index-url https://download.pytorch.org/whl/cpu
         uv pip install torch-cluster --find-links https://data.pyg.org/whl/torch-2.11.0+cpu.html
-        uv pip install --no-build-isolation hypertorch
+        uv pip install hypertorch
         curl -fsSL "$WEEKLY_SCRIPT_URL" | bash -s -- "$TAG_TO_CHECK"
 
   test-macos-arm:
@@ -122,7 +122,7 @@ jobs:
         source macos-env/bin/activate || source macos-env/Scripts/activate
         uv pip install "torch>=2.12.0,<2.13.0" --index-url https://download.pytorch.org/whl/cpu
         uv pip install pyg-lib --find-links https://data.pyg.org/whl/torch-2.12.0+cpu.html
-        uv pip install --no-build-isolation hypertorch
+        uv pip install hypertorch
         curl -fsSL "$WEEKLY_SCRIPT_URL" | bash -s -- "$TAG_TO_CHECK"
 
   test-windows-x86:
