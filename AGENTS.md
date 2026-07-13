@@ -8,13 +8,11 @@ functions, classes, or CLI/package internals.
 Write `HyperTorch` when referring to the project, repository,
 organization, or published package in prose.
 
-## Environment setup
+## Environment setup and commands
 
 - Install `uv` and `make`.
-- Run `make` when to build and test the project.
+- Run `make` to build and test the project.
 - Run `make release` to also run integration tests on top of `make`.
-
-## Commands
 
 See `Makefile` for supported commands. Use `make help` to list all available commands.
 

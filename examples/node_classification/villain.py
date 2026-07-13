@@ -80,9 +80,6 @@ if __name__ == "__main__":
         },
         classifier_config={
             "out_channels": num_classes,
-            "hidden_channels": 64,
-            "num_layers": 2,
-            "drop_rate": 0.3,
         },
         lr=0.01,
         weight_decay=0.0,

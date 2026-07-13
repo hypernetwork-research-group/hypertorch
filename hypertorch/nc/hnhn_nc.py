@@ -9,7 +9,7 @@ from hypertorch.utils import Stage
 from hypertorch.nc.common import NcModule
 
 
-class HNHNNcConfig(TypedDict):
+class HNHNClassifierConfig(TypedDict):
     """
     Configuration for the HNHN classifier in ``HNHNNcModule``.
 
@@ -53,7 +53,7 @@ class HNHNNcModule(NcModule):
 
     def __init__(
         self,
-        classifier_config: HNHNNcConfig,
+        classifier_config: HNHNClassifierConfig,
         loss_fn: nn.Module | None = None,
         lr: float = 0.01,
         weight_decay: float = 5e-4,

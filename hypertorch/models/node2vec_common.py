@@ -1,10 +1,8 @@
 from torch import Tensor, nn
 from torch.utils.data import DataLoader
-from typing import Literal, TypeAlias, TypedDict
 from collections.abc import Iterator
+from typing import Literal, TypeAlias, TypedDict
 from typing_extensions import NotRequired
-from hypertorch.models.gcn import GCN, GCNConfig
-from hypertorch.models.node2vec import Node2Vec, Node2VecConfig, Node2VecGCN
 from hypertorch.types import (
     EdgeIndex,
     HyperedgeIndex,
@@ -13,9 +11,13 @@ from hypertorch.types import (
 )
 from hypertorch.utils import ActivationFn
 
+from hypertorch.models.gcn import GCN, GCNConfig
+from hypertorch.models.node2vec import Node2Vec, Node2VecConfig, Node2VecGCN
+
 
 NODE2VEC_JOINT_MODE = "joint"
 NODE2VEC_PRECOMPUTED_MODE = "precomputed"
+
 
 Node2VecMode: TypeAlias = Literal["precomputed", "joint"]
 """Training mode for Node2Vec-based encoders."""
@@ -363,6 +365,10 @@ def to_model_node2vec_config(
 
     Returns:
         node2vec_config: Model-side Node2Vec configuration.
+
+    Raises:
+        ValueError: If walk length is smaller than context size,
+            or if ``train_hyperedge_index`` is missing in joint mode.
     """
     validate_walk_length_and_context_size(
         walk_length=node2vec_config.get("walk_length", 20),

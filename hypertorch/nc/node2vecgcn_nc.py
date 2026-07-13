@@ -24,18 +24,17 @@ from hypertorch.types import HData
 from hypertorch.utils import Stage
 
 
-class Node2VecGCNEncoderConfig(TypedDict):
+class Node2VecGCNClassifierConfig(TypedDict):
     """
     Configuration for the Node2Vec-GCN node classification module.
 
     Attributes:
         mode: Whether to use precomputed node embeddings from ``x`` or train a Node2Vec
             encoder jointly inside the module. Defaults to ``"joint"``.
-        num_features: Dimension of the Node2Vec embeddings consumed by GCN.
-        node2vec_config: Shared Node2Vec configuration used in joint mode, or metadata for
-            validating precomputed embeddings.
-        gcn_config: Configuration for the GCN classifier. ``out_channels`` is the number of
-            node classes.
+        num_features: Dimension of the Node2Vec embeddings, which is also used by the GCN.
+        node2vec_config: Shared Node2Vec configuration used in joint mode. It is ignored
+            in precomputed mode. So, it can be provided as an empty dictionary: ``{}``.
+        gcn_config: Configuration for the GCN classifier.
     """
 
     mode: NotRequired[Node2VecMode]
@@ -74,7 +73,7 @@ class Node2VecGCNNcModule(NcModule):
 
     def __init__(
         self,
-        classifier_config: Node2VecGCNEncoderConfig,
+        classifier_config: Node2VecGCNClassifierConfig,
         loss_fn: nn.Module | None = None,
         lr: float = 0.001,
         weight_decay: float = 0.0,
@@ -109,6 +108,7 @@ class Node2VecGCNNcModule(NcModule):
             if self.mode == NODE2VEC_JOINT_MODE
             else None
         )
+
         classifier = (
             build_gcn_encoder(self.embedding_dim, self.gcn_config)
             if self.mode == NODE2VEC_PRECOMPUTED_MODE

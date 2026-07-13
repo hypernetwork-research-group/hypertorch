@@ -9,7 +9,7 @@ from hypertorch.utils import Stage
 from hypertorch.nc.common import NcModule
 
 
-class HyperGCNNcConfig(TypedDict):
+class HyperGCNClassifierConfig(TypedDict):
     """
     Configuration for the HyperGCN classifier in ``HyperGCNNcModule``.
 
@@ -61,7 +61,7 @@ class HyperGCNNcModule(NcModule):
 
     def __init__(
         self,
-        classifier_config: HyperGCNNcConfig,
+        classifier_config: HyperGCNClassifierConfig,
         loss_fn: nn.Module | None = None,
         lr: float = 0.01,
         weight_decay: float = 5e-4,

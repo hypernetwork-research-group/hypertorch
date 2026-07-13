@@ -15,7 +15,7 @@ from hypertorch.utils import ActivationFn, Stage
 from hypertorch.nc.common import NcModule
 
 
-class GCNNcConfig(TypedDict):
+class GCNClassifierConfig(TypedDict):
     """
     Configuration for the GCN classifier in ``GCNNcModule``.
 
@@ -76,7 +76,7 @@ class GCNNcModule(NcModule):
 
     def __init__(
         self,
-        classifier_config: GCNNcConfig,
+        classifier_config: GCNClassifierConfig,
         loss_fn: nn.Module | None = None,
         lr: float = 0.01,
         weight_decay: float = 5e-4,
@@ -118,7 +118,7 @@ class GCNNcModule(NcModule):
             metrics_log_kwargs=metrics_log_kwargs,
         )
 
-        self.classifier_config: GCNNcConfig = classifier_config
+        self.classifier_config: GCNClassifierConfig = classifier_config
         self.lr: float = lr
         self.weight_decay: float = weight_decay
 

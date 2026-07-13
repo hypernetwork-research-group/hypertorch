@@ -55,9 +55,6 @@ def test_model_villain(tmp_path, sampling_strategy, full, batch_size, request):
         },
         classifier_config={
             "out_channels": NUM_CLASSES,
-            "hidden_channels": 8,
-            "num_layers": 2,
-            "drop_rate": 0.1,
         },
         lr=0.01,
         weight_decay=0.0,

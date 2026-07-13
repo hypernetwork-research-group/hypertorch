@@ -47,11 +47,13 @@ def test_model_node2vecslp_precomputed(tmp_path, sampling_strategy, full, batch_
     )
 
     precomputed_node2vecslp = Node2VecSLPNcModule(
-        classifier_config={
+        encoder_config={
             "mode": "precomputed",
             "num_features": NUM_FEATURES,
-            "out_channels": NUM_CLASSES,
             "node2vec_config": {},
+        },
+        classifier_config={
+            "out_channels": NUM_CLASSES,
         },
         lr=0.001,
         weight_decay=0.0,
@@ -116,10 +118,9 @@ def test_model_node2vecslp_joint(tmp_path, sampling_strategy, full, batch_size, 
     )
 
     joint_node2vecslp = Node2VecSLPNcModule(
-        classifier_config={
+        encoder_config={
             "mode": "joint",
             "num_features": NUM_FEATURES,
-            "out_channels": NUM_CLASSES,
             "node2vec_config": {
                 "context_size": 2,
                 "walk_length": 5,
@@ -133,6 +134,9 @@ def test_model_node2vecslp_joint(tmp_path, sampling_strategy, full, batch_size, 
                 "random_walk_batch_size": 128,
                 "node2vec_loss_weight": 0.4,
             },
+        },
+        classifier_config={
+            "out_channels": NUM_CLASSES,
         },
         lr=0.001,
         weight_decay=0.0,

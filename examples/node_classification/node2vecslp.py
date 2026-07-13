@@ -84,11 +84,13 @@ if __name__ == "__main__":
     )
 
     node2vecslp_precomputed = Node2VecSLPNcModule(
-        classifier_config={
+        encoder_config={
             "mode": "precomputed",
             "num_features": num_features,
-            "out_channels": num_classes,
             "node2vec_config": {},
+        },
+        classifier_config={
+            "out_channels": num_classes,
         },
         lr=0.001,
         weight_decay=0.0,
@@ -96,10 +98,9 @@ if __name__ == "__main__":
     )
 
     node2vecslp_joint = Node2VecSLPNcModule(
-        classifier_config={
+        encoder_config={
             "mode": "joint",
             "num_features": num_features,
-            "out_channels": num_classes,
             "node2vec_config": {
                 "context_size": 10,
                 "walk_length": 20,
@@ -113,6 +114,9 @@ if __name__ == "__main__":
                 "random_walk_batch_size": 128,
                 "node2vec_loss_weight": 0.4,
             },
+        },
+        classifier_config={
+            "out_channels": num_classes,
         },
         lr=0.001,
         weight_decay=0.0,

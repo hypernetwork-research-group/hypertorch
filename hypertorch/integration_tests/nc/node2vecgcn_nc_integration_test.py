@@ -9,7 +9,7 @@ from hypertorch.integration_tests.common import (
     split_dataset,
     train_test_loop,
 )
-from hypertorch.nc import Node2VecGCNEncoderConfig, Node2VecGCNNcModule
+from hypertorch.nc import Node2VecGCNClassifierConfig, Node2VecGCNNcModule
 from hypertorch.types import TaskEnum
 
 
@@ -46,7 +46,7 @@ def test_model_node2vecgcn_precomputed(tmp_path, sampling_strategy, full, batch_
         sample_full_hypergraph=full,
     )
 
-    classifier_config: Node2VecGCNEncoderConfig = {
+    classifier_config: Node2VecGCNClassifierConfig = {
         "mode": "precomputed",
         "num_features": NUM_FEATURES,
         "node2vec_config": {},
@@ -129,7 +129,7 @@ def test_model_node2vecgcn_joint(tmp_path, sampling_strategy, full, batch_size, 
         sample_full_hypergraph=full,
     )
 
-    classifier_config: Node2VecGCNEncoderConfig = {
+    classifier_config: Node2VecGCNClassifierConfig = {
         "mode": "joint",
         "num_features": NUM_FEATURES,
         "node2vec_config": {

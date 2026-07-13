@@ -20,23 +20,33 @@ from hypertorch.types import HData
 from hypertorch.utils import Stage
 
 
-class Node2VecSLPNcConfig(TypedDict):
+class Node2VecSLPEncoderConfig(TypedDict):
     """
-    Configuration for the Node2Vec-SLP node classification module.
+    Configuration for the Node2Vec-SLP encoder module.
 
     Attributes:
         mode: Whether to use precomputed node embeddings from ``x`` or train a Node2Vec
             encoder jointly inside the module. Defaults to ``"joint"``.
-        num_features: Dimension of the Node2Vec embeddings consumed by the classifier.
-        out_channels: Number of node classes.
+        num_features: Dimension of the Node2Vec embeddings, which is also
+            the input dimension of the classifier.
         node2vec_config: Shared Node2Vec configuration used in joint mode, or metadata for
             validating precomputed embeddings.
     """
 
     mode: NotRequired[Node2VecMode]
     num_features: int
-    out_channels: int
     node2vec_config: Node2VecNcConfig
+
+
+class Node2VecSLPClassifierConfig(TypedDict):
+    """
+    Configuration for the Node2Vec-SLP node classification module.
+
+    Attributes:
+        out_channels: Number of node classes.
+    """
+
+    out_channels: int
 
 
 class Node2VecSLPNcModule(NcModule):
@@ -67,7 +77,8 @@ class Node2VecSLPNcModule(NcModule):
 
     def __init__(
         self,
-        classifier_config: Node2VecSLPNcConfig,
+        encoder_config: Node2VecSLPEncoderConfig,
+        classifier_config: Node2VecSLPClassifierConfig,
         loss_fn: nn.Module | None = None,
         lr: float = 0.001,
         weight_decay: float = 0.0,
@@ -78,7 +89,8 @@ class Node2VecSLPNcModule(NcModule):
         Initialize the Node2Vec-SLP NC module.
 
         Args:
-            classifier_config: Configuration for Node2Vec embeddings and the SLP classifier.
+            encoder_config: Configuration for the Node2Vec encoder.
+            classifier_config: Configuration for the classifier.
             loss_fn: Optional NC loss function. Defaults to ``CrossEntropyLoss``.
             lr: Learning rate for the optimizer. Defaults to ``0.001``.
             weight_decay: Weight decay for the optimizer. Defaults to ``0.0``.
@@ -87,15 +99,16 @@ class Node2VecSLPNcModule(NcModule):
                 Useful for configuring distributed synchronization behavior of ``torchmetrics``.
                 Defaults to ``None``.
         """
-        self.mode: Node2VecMode = classifier_config.get("mode", NODE2VEC_JOINT_MODE)
-        self.embedding_dim: int = classifier_config["num_features"]
-        node2vec_config = classifier_config["node2vec_config"]
+        self.mode: Node2VecMode = encoder_config.get("mode", NODE2VEC_JOINT_MODE)
+        self.embedding_dim: int = encoder_config["num_features"]
+        node2vec_config = encoder_config["node2vec_config"]
 
         encoder = (
             build_node2vec_encoder(self.embedding_dim, node2vec_config, self.mode)
             if self.mode == NODE2VEC_JOINT_MODE
             else None
         )
+
         classifier = SLP(
             in_channels=self.embedding_dim,
             out_channels=classifier_config["out_channels"],
