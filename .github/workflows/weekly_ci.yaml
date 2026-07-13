@@ -120,7 +120,7 @@ jobs:
       run: |
         uv venv macos-env
         source macos-env/bin/activate || source macos-env/Scripts/activate
-        uv pip install "torch>=2.12.0,<3.0.0" --index-url https://download.pytorch.org/whl/cpu
+        uv pip install "torch>=2.12.0,<2.13.0" --index-url https://download.pytorch.org/whl/cpu
         uv pip install pyg-lib --find-links https://data.pyg.org/whl/torch-2.12.0+cpu.html
         uv pip install --no-build-isolation hypertorch
         curl -fsSL "$WEEKLY_SCRIPT_URL" | bash -s -- "$TAG_TO_CHECK"
