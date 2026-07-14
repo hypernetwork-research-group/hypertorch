@@ -3,14 +3,14 @@ from typing import Any, TypedDict
 from typing_extensions import NotRequired
 from torchmetrics import MetricCollection
 from hypertorch.hlp.common import stage_metric_name
-from hypertorch.models import MLP, VilLain
+from hypertorch.models import SLP, VilLain
 from hypertorch.types import HData
-from hypertorch.utils import ActivationFn, NormalizationFn, Stage
+from hypertorch.utils import Stage
 
 from hypertorch.nc.common import NcModule
 
 
-class VilLainNcEncoderConfig(TypedDict):
+class VilLainEncoderConfig(TypedDict):
     """
     Configuration for the VilLain encoder in ``VilLainNcModule``.
 
@@ -35,36 +35,15 @@ class VilLainNcEncoderConfig(TypedDict):
     villain_loss_weight: NotRequired[float]
 
 
-class VilLainNcClassifierConfig(TypedDict):
+class VilLainClassifierConfig(TypedDict):
     """
-    Configuration for the MLP classifier in ``VilLainNcModule``.
+    Configuration for the classifier in ``VilLainNcModule``.
 
     Attributes:
         out_channels: Number of node classes.
-        hidden_channels: Optional number of hidden units per hidden layer.
-            Required if ``num_layers > 1``. Defaults to ``None``.
-        num_layers: Number of MLP layers. Defaults to ``1``.
-        activation_fn: Optional activation function class used after hidden layers.
-            Defaults to ``nn.ReLU``.
-        activation_fn_kwargs: Optional keyword arguments for the activation function.
-            Defaults to empty dict.
-        normalization_fn: Optional normalization function class used after hidden layers.
-            Defaults to ``None``.
-        normalization_fn_kwargs: Optional keyword arguments for the normalization function.
-            Defaults to empty dict.
-        bias: Whether to include bias terms in the MLP layers. Defaults to ``True``.
-        drop_rate: Dropout rate applied after hidden layers. Defaults to ``0.0``.
     """
 
     out_channels: int
-    hidden_channels: NotRequired[int | None]
-    num_layers: NotRequired[int]
-    activation_fn: NotRequired[ActivationFn | None]
-    activation_fn_kwargs: NotRequired[dict | None]
-    normalization_fn: NotRequired[NormalizationFn | None]
-    normalization_fn_kwargs: NotRequired[dict | None]
-    bias: NotRequired[bool]
-    drop_rate: NotRequired[float]
 
 
 class VilLainNcModule(NcModule):
@@ -76,7 +55,7 @@ class VilLainNcModule(NcModule):
 
     Attributes:
         encoder: VilLain encoder module inherited from ``NcModule``.
-        classifier: MLP classifier module inherited from ``NcModule``.
+        classifier: Classifier module inherited from ``NcModule``.
         loss_fn: Loss function inherited from ``NcModule``.
         metrics_log_kwargs: Metric logging keyword arguments inherited from ``NcModule``.
         train_metrics: Optional training metrics inherited from ``NcModule``.
@@ -90,8 +69,8 @@ class VilLainNcModule(NcModule):
 
     def __init__(
         self,
-        encoder_config: VilLainNcEncoderConfig,
-        classifier_config: VilLainNcClassifierConfig,
+        encoder_config: VilLainEncoderConfig,
+        classifier_config: VilLainClassifierConfig,
         loss_fn: nn.Module | None = None,
         lr: float = 0.01,
         weight_decay: float = 0.0,
@@ -103,7 +82,7 @@ class VilLainNcModule(NcModule):
 
         Args:
             encoder_config: Configuration for the VilLain encoder.
-            classifier_config: Configuration for the MLP classifier.
+            classifier_config: Configuration for the classifier.
             loss_fn: Optional NC loss function. Defaults to ``CrossEntropyLoss``.
             lr: Learning rate for the optimizer. Defaults to ``0.01``.
             weight_decay: L2 regularization. Defaults to ``0.0``.
@@ -126,17 +105,9 @@ class VilLainNcModule(NcModule):
             tau=encoder_config.get("tau", 1.0),
             eps=encoder_config.get("eps", 1e-10),
         )
-        classifier = MLP(
+        classifier = SLP(
             in_channels=self.embedding_dim,
             out_channels=classifier_config["out_channels"],
-            hidden_channels=classifier_config.get("hidden_channels"),
-            num_layers=classifier_config.get("num_layers", 1),
-            activation_fn=classifier_config.get("activation_fn"),
-            activation_fn_kwargs=classifier_config.get("activation_fn_kwargs"),
-            normalization_fn=classifier_config.get("normalization_fn"),
-            normalization_fn_kwargs=classifier_config.get("normalization_fn_kwargs"),
-            bias=classifier_config.get("bias", True),
-            drop_rate=classifier_config.get("drop_rate", 0.0),
         )
 
         super().__init__(
@@ -325,5 +296,5 @@ class VilLainNcModule(NcModule):
             ValueError: If the configured encoder is missing or has the wrong type.
         """
         if self.encoder is None or not isinstance(self.encoder, VilLain):
-            raise ValueError("VilLain NC requires a VilLain encoder, but none was provided.")
+            raise ValueError("VilLain requires a VilLain encoder, but none was provided.")
         return self.encoder

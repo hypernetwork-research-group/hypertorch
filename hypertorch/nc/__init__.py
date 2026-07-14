@@ -1,29 +1,52 @@
 from .common import NcModule
+
 from .common_neighbors_nc import CommonNeighborsNcModule
-from .gcn_nc import GCNNcConfig, GCNNcModule
-from .hgnn_nc import HGNNNcConfig, HGNNNcModule
-from .hnhn_nc import HNHNNcConfig, HNHNNcModule
-from .hgnnp_nc import HGNNPNcConfig, HGNNPNcModule
-from .hypergcn_nc import HyperGCNNcConfig, HyperGCNNcModule
-from .mlp_nc import MLPNcModule, MLPNcConfig
-from .villain_nc import VilLainNcClassifierConfig, VilLainNcEncoderConfig, VilLainNcModule
+
+from .gcn_nc import GCNClassifierConfig, GCNNcModule
+
+from .hgnn_nc import HGNNClassifierConfig, HGNNNcModule
+
+from .hnhn_nc import HNHNClassifierConfig, HNHNNcModule
+
+from .hgnnp_nc import HGNNPClassifierConfig, HGNNPNcModule
+
+from .hypergcn_nc import HyperGCNClassifierConfig, HyperGCNNcModule
+
+from .mlp_nc import MLPNcModule, MLPClassifierConfig
+
+from .node2vecgcn_nc import Node2VecGCNClassifierConfig, Node2VecGCNNcModule
+
+from .node2vecslp_nc import Node2VecSLPClassifierConfig, Node2VecSLPNcModule
+
+from .villain_nc import VilLainClassifierConfig, VilLainEncoderConfig, VilLainNcModule
+
+from hypertorch.models.node2vec_common import (
+    Node2VecGCNEncoderConfig as Node2VecGCNNcConfig,
+    Node2VecEncoderConfig as Node2VecNcConfig,
+)
 
 __all__ = [
     "CommonNeighborsNcModule",
-    "GCNNcConfig",
+    "GCNClassifierConfig",
     "GCNNcModule",
-    "HGNNNcConfig",
+    "HGNNClassifierConfig",
     "HGNNNcModule",
-    "HGNNPNcConfig",
+    "HGNNPClassifierConfig",
     "HGNNPNcModule",
-    "HNHNNcConfig",
+    "HNHNClassifierConfig",
     "HNHNNcModule",
-    "HyperGCNNcConfig",
+    "HyperGCNClassifierConfig",
     "HyperGCNNcModule",
-    "MLPNcConfig",
+    "MLPClassifierConfig",
     "MLPNcModule",
     "NcModule",
-    "VilLainNcClassifierConfig",
-    "VilLainNcEncoderConfig",
+    "Node2VecGCNClassifierConfig",
+    "Node2VecGCNNcConfig",
+    "Node2VecGCNNcModule",
+    "Node2VecNcConfig",
+    "Node2VecSLPClassifierConfig",
+    "Node2VecSLPNcModule",
+    "VilLainClassifierConfig",
+    "VilLainEncoderConfig",
     "VilLainNcModule",
 ]

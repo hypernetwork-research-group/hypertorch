@@ -9,7 +9,7 @@ from hypertorch.utils import ActivationFn, NormalizationFn, Stage
 from hypertorch.nc.common import NcModule
 
 
-class MLPNcConfig(TypedDict):
+class MLPClassifierConfig(TypedDict):
     """
     Configuration for the MLP classifier in ``MLPNcModule``.
 
@@ -65,7 +65,7 @@ class MLPNcModule(NcModule):
 
     def __init__(
         self,
-        classifier_config: MLPNcConfig,
+        classifier_config: MLPClassifierConfig,
         loss_fn: nn.Module | None = None,
         lr: float = 0.001,
         metrics: MetricCollection | None = None,
