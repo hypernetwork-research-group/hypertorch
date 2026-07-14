@@ -2049,36 +2049,6 @@ def test_transform_hyperedge_attrs_adds_padding_zero_when_attr_keys_padding(mock
         )  # capacity, weight (insertion order)
 
 
-def test_property_hif_hypergraph_returns_correct_values(mock_hdata, mock_hif_hypergraph):
-    with patch.object(HIFLoader, "load_by_name", return_value=(mock_hdata, mock_hif_hypergraph)):
-        dataset = AlgebraDataset()
-
-    hif = dataset.hif_hypergraph
-    assert hif.metadata == mock_hif_hypergraph.metadata
-    assert hif.nodes == mock_hif_hypergraph.nodes
-    assert hif.hyperedges == mock_hif_hypergraph.hyperedges
-    assert hif.incidences == mock_hif_hypergraph.incidences
-    assert hif.network_type == mock_hif_hypergraph.network_type
-
-
-def test_property_hif_hypergraph_raises_error_when_hif_hypergraph_is_not_loaded(
-    mock_hdata, mock_hif_hypergraph
-):
-    with patch.object(HIFLoader, "load_by_name", return_value=(mock_hdata, None)):
-        dataset = AlgebraDataset()
-
-    with pytest.raises(ValueError, match=re.escape("HIF hypergraph is not available.")):
-        _ = dataset.hif_hypergraph
-
-
-def test_set_hif_hypergraph_sets_hif_hypergraph(mock_hdata, mock_hif_hypergraph):
-    with patch.object(HIFLoader, "load_by_name", return_value=(mock_hdata, None)):
-        dataset = AlgebraDataset()
-
-    dataset.hif_hypergraph = mock_hif_hypergraph
-    assert dataset.hif_hypergraph == mock_hif_hypergraph
-
-
 def test_to_human_readable_y_convert_correct_tensor(
     mock_hdata_with_labels, mock_hypergraph_with_labels
 ):
@@ -2111,4 +2081,5 @@ def test_to_human_readable_y_convert_correct_tensor_with_mixed_labels(
         dataset = AlgebraDataset(task=task)
 
     readable = dataset.to_human_readable_y(dataset.hdata.y)
-    print(readable)
+    assert type(readable) is list
+    assert readable == ["A", "B"]

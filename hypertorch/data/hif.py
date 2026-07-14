@@ -179,11 +179,24 @@ class HIFProcessor:
     def __process_y(
         cls,
         hypergraph: HIFHypergraph,
-        num_nodes: int,
+        size: int,
         dtype: torch.dtype,
     ) -> tuple[Tensor | None, dict[str, int | float] | None]:
         """
         Build the node label tensor from HIF node attributes.
+
+        Args:
+            hypergraph: HIF hypergraph to process.
+            size: Number of nodes in the processed data.
+            dtype: Desired data type for the label tensor.
+
+        Returns:
+            y: Node label tensor, or ``None`` when no labels exist.
+            map_label_to_index: Mapping from string labels to numeric indices, or ``None``
+                when no labels exist.
+
+        Raises:
+            ValueError: If the label attribute is missing for some nodes in the hypergraph.
         """
         list_attr_label = [node.get("attrs", {}).get("label", None) for node in hypergraph.nodes]
         if all(label is None for label in list_attr_label):
@@ -192,7 +205,7 @@ class HIFProcessor:
         if (
             len(list_attr_label) > 0
             and all(label is not None for label in list_attr_label)
-            and len(list_attr_label) == num_nodes
+            and len(list_attr_label) == size
         ):
             sorted_unique_labels = sorted(set(list_attr_label))
             map_label_to_index: dict[str, int | float] = {

@@ -80,9 +80,6 @@ class Dataset(TorchDataset):
         validate_task(self.task)
 
         self.hdata: HData = hdata if hdata is not None else HData.empty(task=task)
-        self.hif_hypergraph: HIFHypergraph | None = (
-            hif_hypergraph if hif_hypergraph is not None else None
-        )
 
     @property
     def hif_hypergraph(self) -> HIFHypergraph:
@@ -669,7 +666,16 @@ class Dataset(TorchDataset):
 
     def to_human_readable_y(self, y: Tensor) -> list[str]:
         """
-        Convert numeric labels in `y` to human-readable string labels using the label map
+        Convert numeric labels in `y` to human-readable string labels using the label map.
+
+        Args:
+            y: Tensor containing numeric labels.
+
+        Returns:
+            human_readable_labels: List of string labels corresponding to the numeric labels in `y`.
+
+        Raises:
+            ValueError: If HIF hypergraph is not available.
         """
         label_map: dict[str, int | float] = self.hif_hypergraph.metadata["label_map"]
         index_to_label: dict[int | float, str] = {idx: label for label, idx in label_map.items()}

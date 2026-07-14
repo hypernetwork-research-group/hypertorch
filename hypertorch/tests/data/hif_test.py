@@ -1063,7 +1063,8 @@ def test_process_hypergraph_with_label_values(mock_hypergraph_with_labels):
     }
     assert hdata.y is not None
     assert hdata.y.shape[0] == hdata.num_nodes
-    assert torch.all(hdata.y == torch.tensor([0, 1], dtype=torch.long))
+    expected = torch.tensor([0, 1], dtype=torch.long)
+    assert torch.equal(hdata.y, expected)
 
 
 def test_process_hypergraph_with_missing_labels(mock_hypergraph_with_missing_labels):
@@ -1082,5 +1083,5 @@ def test_process_hypergraph_without_labels(mock_sample_hypergraph):
     hdata, _ = HIFProcessor.process_hypergraph(
         mock_sample_hypergraph, task=TaskEnum.NODE_CLASSIFICATION
     )
-
-    assert torch.all(hdata.y == torch.tensor([1, 1], dtype=torch.long))
+    expected = torch.tensor([1, 1], dtype=torch.long)
+    assert torch.equal(hdata.y, expected)
