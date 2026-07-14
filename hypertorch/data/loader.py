@@ -1,11 +1,15 @@
+import lightning as L
 import torch
 
 from torch import Generator, Tensor
 from collections.abc import Callable
-from typing import Any
+from typing import Any, TypeAlias
 from torch.utils.data import DataLoader as TorchDataLoader
 from hypertorch.data import Dataset
 from hypertorch.types import HData, HyperedgeIndex
+
+
+DataModule: TypeAlias = L.LightningDataModule
 
 
 class DataLoader(TorchDataLoader):
@@ -98,6 +102,48 @@ class DataLoader(TorchDataLoader):
         )
 
         self.__cached_dataset_hdata: HData = dataset.hdata
+
+    @classmethod
+    def from_datasets(
+        cls,
+        train_dataset: Dataset | None = None,
+        val_dataset: Dataset | None = None,
+        test_dataset: Dataset | None = None,
+        **kwargs: Any,
+    ) -> DataModule:
+        """
+        Create a Lightning data module from datasets that share data loader parameters.
+
+        Each provided dataset is wrapped in a separate `DataLoader`. The resulting data
+        module can be passed directly to Lightning or to `MultiModelTrainer`.
+
+        Examples:
+            ```python
+            data_module = DataLoader.from_datasets(
+                train_dataset=train_dataset,
+                val_dataset=val_dataset,
+                test_dataset=test_dataset,
+                batch_size=128,
+                shuffle=False,
+                num_workers=4,
+                persistent_workers=True,
+            )
+            ```
+
+        Args:
+            train_dataset: Optional dataset used by the data module's training data loader.
+            val_dataset: Optional dataset used by the data module's validation data loader.
+            test_dataset: Optional dataset used by the data module's test data loader.
+            kwargs: Parameters passed to every created `DataLoader`.
+
+        Returns:
+            data_module: A Lightning data module containing the created data loaders.
+        """
+        return DataLoaderDataModule(
+            train_dataloader=cls(train_dataset, **kwargs) if train_dataset is not None else None,
+            val_dataloader=cls(val_dataset, **kwargs) if val_dataset is not None else None,
+            test_dataloader=cls(test_dataset, **kwargs) if test_dataset is not None else None,
+        )
 
     def collate(self, batch: list[HData]) -> HData:
         """
@@ -276,3 +322,25 @@ class DataLoader(TorchDataLoader):
             )
 
         return collated_y, collated_target_node_mask, collated_target_hyperedge_mask
+
+
+class DataLoaderDataModule(DataModule):
+    def __init__(
+        self,
+        train_dataloader: DataLoader | None,
+        val_dataloader: DataLoader | None,
+        test_dataloader: DataLoader | None,
+    ) -> None:
+        super().__init__()
+        self.__train_dataloader = train_dataloader
+        self.__val_dataloader = val_dataloader
+        self.__test_dataloader = test_dataloader
+
+    def train_dataloader(self) -> DataLoader | None:
+        return self.__train_dataloader
+
+    def val_dataloader(self) -> DataLoader | None:
+        return self.__val_dataloader
+
+    def test_dataloader(self) -> DataLoader | None:
+        return self.__test_dataloader

@@ -16,7 +16,7 @@ from lightning.pytorch.callbacks import Callback, ModelCheckpoint
 from lightning.pytorch.loggers import CSVLogger, Logger
 from lightning.pytorch.profilers import Profiler
 from lightning.pytorch.strategies import Strategy
-from hypertorch.data import DataLoader
+from hypertorch.data import DataLoader, DataModule
 from hypertorch.types import CkptStrategy, ModelConfig, TestResult
 from hypertorch.utils import validate_is_non_empty, validate_is_non_negative
 
@@ -394,7 +394,7 @@ class MultiModelTrainer:
         self,
         train_dataloader: DataLoader | None = None,
         val_dataloader: DataLoader | None = None,
-        datamodule: L.LightningDataModule | None = None,
+        datamodule: DataModule | None = None,
         ckpt_path: CkptStrategy | None = None,
         verbose: bool = True,
     ) -> None:
@@ -457,7 +457,7 @@ class MultiModelTrainer:
     def test_all(
         self,
         dataloader: DataLoader | None = None,
-        datamodule: L.LightningDataModule | None = None,
+        datamodule: DataModule | None = None,
         ckpt_path: CkptStrategy | None = None,
         verbose: bool = True,
         verbose_loop: bool = True,

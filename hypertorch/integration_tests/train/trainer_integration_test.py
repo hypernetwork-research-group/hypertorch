@@ -6,9 +6,9 @@ from pathlib import Path
 from torch import Tensor, nn, optim
 from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.loggers import CSVLogger
-from torch.utils.data import DataLoader, TensorDataset
 from hypertorch.train import MultiModelTrainer
-from hypertorch.types import ModelConfig
+from hypertorch.types import HData, ModelConfig
+from hypertorch.data import DataLoader, Dataset
 
 from hypertorch.integration_tests.common import (
     extract_state_dict,
@@ -28,25 +28,31 @@ class TinyBinaryClassifier(L.LightningModule):
     def forward(self, x: Tensor) -> Tensor:
         return self.layer(x).squeeze(-1)
 
-    def training_step(self, batch: tuple[Tensor, Tensor], _: int) -> Tensor:
-        x, y = batch
+    def training_step(self, batch: HData, _: int) -> Tensor:
+        x, y = self.__target_features_and_labels(batch)
         logits = self(x)
         loss = self.loss(logits, y)
-        self.log("train/loss", loss)
+        self.log("train/loss", loss, batch_size=y.size(0))
         return loss
 
-    def validation_step(self, batch: tuple[Tensor, Tensor], _: int) -> None:
-        x, y = batch
-        loss = self.loss(self(x), y)
-        self.log("val/loss", loss)
+    def validation_step(self, batch: HData, _: int) -> None:
+        x, y = self.__target_features_and_labels(batch)
+        logits = self(x)
+        loss = self.loss(logits, y)
+        self.log("val/loss", loss, batch_size=y.size(0))
 
-    def test_step(self, batch: tuple[Tensor, Tensor], _: int) -> None:
-        x, y = batch
-        loss = self.loss(self(x), y)
-        self.log("test/loss", loss)
+    def test_step(self, batch: HData, _: int) -> None:
+        x, y = self.__target_features_and_labels(batch)
+        logits = self(x)
+        loss = self.loss(logits, y)
+        self.log("test/loss", loss, batch_size=y.size(0))
 
     def configure_optimizers(self) -> optim.Optimizer:
         return optim.SGD(self.parameters(), lr=0.01)
+
+    def __target_features_and_labels(self, batch: HData) -> tuple[Tensor, Tensor]:
+        target_hyperedge_mask = batch.target_hyperedge_mask
+        return batch.x[target_hyperedge_mask], batch.y[target_hyperedge_mask]
 
 
 class EpochStartTrackingTinyBinaryClassifier(TinyBinaryClassifier):
@@ -73,8 +79,10 @@ def mock_tiny_dataloader() -> DataLoader:
         ],
         dtype=torch.float32,
     )
+    hyperedge_index = torch.tensor([[0, 1, 2, 3], [0, 1, 2, 3]], dtype=torch.long)
     y = torch.tensor([0.0, 1.0, 1.0, 0.0], dtype=torch.float32)
-    return DataLoader(TensorDataset(x, y), batch_size=2)
+    hdata = HData(x=x, hyperedge_index=hyperedge_index, y=y)
+    return DataLoader(dataset=Dataset.from_hdata(hdata), batch_size=4)
 
 
 @pytest.mark.integration

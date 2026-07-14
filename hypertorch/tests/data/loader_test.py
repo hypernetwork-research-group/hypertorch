@@ -148,6 +148,56 @@ def test_initialization_uses_default_collate_fn_when_arg_is_not_provided(
     assert loader.collate_fn == loader.collate
 
 
+def test_from_datasets_creates_loaders_with_shared_params(mock_dataset_single_sample):
+    data_module = DataLoader.from_datasets(
+        train_dataset=mock_dataset_single_sample,
+        val_dataset=mock_dataset_single_sample,
+        test_dataset=mock_dataset_single_sample,
+        batch_size=2,
+        shuffle=False,
+        drop_last=True,
+        num_workers=0,
+        persistent_workers=False,
+        in_order=False,
+    )
+
+    loaders = [
+        data_module.train_dataloader(),
+        data_module.val_dataloader(),
+        data_module.test_dataloader(),
+    ]
+    for loader in loaders:
+        assert isinstance(loader, DataLoader)
+        assert loader.dataset == mock_dataset_single_sample
+        assert loader.batch_size == 2
+        assert loader.drop_last is True
+        assert loader.num_workers == 0
+        assert loader.persistent_workers is False
+        assert loader.in_order is False
+
+    # Assert they are distinct DataLoader instances (not the same object)
+    assert len({id(loader) for loader in loaders}) == 3
+
+
+def test_from_datasets_returns_none_for_omitted_datasets():
+    data_module = DataLoader.from_datasets()
+
+    assert data_module.train_dataloader() is None
+    assert data_module.val_dataloader() is None
+    assert data_module.test_dataloader() is None
+
+
+def test_from_datasets_supports_partially_defined_splits(mock_dataset_single_sample):
+    data_module = DataLoader.from_datasets(
+        train_dataset=mock_dataset_single_sample,
+        test_dataset=mock_dataset_single_sample,
+    )
+
+    assert data_module.train_dataloader() is not None
+    assert data_module.val_dataloader() is None
+    assert data_module.test_dataloader() is not None
+
+
 def test_collate_single_sample(mock_dataset_single_sample):
     loader = DataLoader(mock_dataset_single_sample, batch_size=1)
 
