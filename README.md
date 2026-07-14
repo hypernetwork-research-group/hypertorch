@@ -22,6 +22,9 @@ Use HyperTorch to:
 
 - [Main features](#main-features)
 - [Getting started](#getting-started)
+    - [Installation](#installation)
+    - [Source installation](#source-installation)
+    - [TensorBoard support](#tensorboard-support)
     - [Run examples](#run-examples)
 - [Contributing](#contributing)
 - [Documentation](#documentation)
@@ -42,25 +45,39 @@ Use HyperTorch to:
 
 ## Getting started
 
-For users working with the [pip](https://pip.pypa.io/en/stable/) package manager, HyperTorch can be installed from PyPI.
+### Installation
+
+HyperTorch can be installed from PyPI when you want to use it as a dependency, or from source when you want to contribute or run the latest repository version.
+
+CI pipelines validate CPU installs on Python 3.10 through 3.14 for Linux x86_64, Linux ARM/aarch64, macOS arm64, and Windows x64. Install the matching PyTorch and PyG wheels for your platform (e.g., CUDA) before installing HyperTorch.
+
+For more detailed instructions, see the [installation guide](docs/getting-started/installation.md).
+
+### Source installation
 
 ```bash
-pip install hypertorch
+git clone https://github.com/hypernetwork-research-group/hypertorch.git
+cd hypertorch
 
-# if you want to install optional dependencies for tensorboard support:
-pip install "hypertorch[tensorboard]"
+make setup
 ```
 
-or alternatively, using [uv](https://docs.astral.sh/uv/):
+See the [installation guide](docs/getting-started/installation.md) for platform
+notes and dependency ranges.
+
+### TensorBoard support
+
+To include TensorBoard support, also run HyperTorch install command with the TensorBoard extra:
 
 ```bash
-uv add hypertorch # or uv pip install hypertorch
-
-# for optional dependencies for tensorboard support:
-uv add "hypertorch[tensorboard]"
+uv pip install "hypertorch[tensorboard]"
 ```
 
-If you want to build the project from source, see the [documentation](#documentation) for more details.
+When installing from source, run the command:
+
+```bash
+make setup-tensorboard
+```
 
 ### Run examples
 
