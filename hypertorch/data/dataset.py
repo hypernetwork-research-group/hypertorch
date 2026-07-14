@@ -664,6 +664,23 @@ class Dataset(TorchDataset):
         self.hdata = self.hdata.to(device)
         return self
 
+    def to_human_readable_y(self, y: Tensor) -> list[str]:
+        """
+        Convert numeric labels in `y` to human-readable string labels using the label map.
+
+        Args:
+            y: Tensor containing numeric labels.
+
+        Returns:
+            human_readable_labels: List of string labels corresponding to the numeric labels in `y`.
+
+        Raises:
+            ValueError: If HIF hypergraph is not available.
+        """
+        label_map: dict[str, int | float] = self.hif_hypergraph.metadata["label_map"]
+        index_to_label: dict[int | float, str] = {idx: label for label, idx in label_map.items()}
+        return [index_to_label[label.item()] for label in y]
+
     def transform_node_attrs(
         self,
         attrs: dict[str, Any],
