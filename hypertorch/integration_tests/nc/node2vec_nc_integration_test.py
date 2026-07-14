@@ -9,7 +9,7 @@ from hypertorch.integration_tests.common import (
     split_dataset,
     train_test_loop,
 )
-from hypertorch.nc import Node2VecSLPNcModule
+from hypertorch.nc import Node2VecNcModule
 from hypertorch.types import TaskEnum
 
 
@@ -27,7 +27,7 @@ NUM_FEATURES = 8
         pytest.param(SamplingStrategyEnum.NODE, True, 1, id="node_full"),
     ],
 )
-def test_model_node2vecslp_precomputed(tmp_path, sampling_strategy, full, batch_size, request):
+def test_model_node2vec_precomputed(tmp_path, sampling_strategy, full, batch_size, request):
     test_id = request.node.callspec.id
 
     train_dataset, val_dataset, test_dataset = split_dataset(
@@ -46,7 +46,7 @@ def test_model_node2vecslp_precomputed(tmp_path, sampling_strategy, full, batch_
         sample_full_hypergraph=full,
     )
 
-    precomputed_node2vecslp = Node2VecSLPNcModule(
+    precomputed_node2vec = Node2VecNcModule(
         encoder_config={
             "mode": "precomputed",
             "num_features": NUM_FEATURES,
@@ -61,22 +61,22 @@ def test_model_node2vecslp_precomputed(tmp_path, sampling_strategy, full, batch_
     )
 
     configs = model_configs_with_single_model(
-        name="node2vecslp-precomputed",
+        name="node2vec-precomputed",
         version="nc",
-        model=precomputed_node2vecslp,
+        model=precomputed_node2vec,
     )
 
     train_test_loop(
         configs=configs,
         path=tmp_path,
-        experiment_name=f"node2vecslp_precomputed_nc_integration_test_{test_id}",
+        experiment_name=f"node2vec_precomputed_nc_integration_test_{test_id}",
         train_loader=train_loader,
         val_loader=val_loader,
         test_loader=test_loader,
     )
 
     comparison_path = (
-        tmp_path / f"node2vecslp_precomputed_nc_integration_test_{test_id}" / "comparison"
+        tmp_path / f"node2vec_precomputed_nc_integration_test_{test_id}" / "comparison"
     )
     assert (comparison_path / "overall.tex").exists()
     assert (comparison_path / "overall.md").exists()
@@ -98,7 +98,7 @@ def test_model_node2vecslp_precomputed(tmp_path, sampling_strategy, full, batch_
         pytest.param(SamplingStrategyEnum.NODE, True, 1, id="node_full"),
     ],
 )
-def test_model_node2vecslp_joint(tmp_path, sampling_strategy, full, batch_size, request):
+def test_model_node2vec_joint(tmp_path, sampling_strategy, full, batch_size, request):
     test_id = request.node.callspec.id
 
     train_dataset, val_dataset, test_dataset = split_dataset(
@@ -117,7 +117,7 @@ def test_model_node2vecslp_joint(tmp_path, sampling_strategy, full, batch_size, 
         sample_full_hypergraph=full,
     )
 
-    joint_node2vecslp = Node2VecSLPNcModule(
+    joint_node2vec = Node2VecNcModule(
         encoder_config={
             "mode": "joint",
             "num_features": NUM_FEATURES,
@@ -144,21 +144,21 @@ def test_model_node2vecslp_joint(tmp_path, sampling_strategy, full, batch_size, 
     )
 
     configs = model_configs_with_single_model(
-        name="node2vecslp-joint",
+        name="node2vec-joint",
         version="nc",
-        model=joint_node2vecslp,
+        model=joint_node2vec,
     )
 
     train_test_loop(
         configs=configs,
         path=tmp_path,
-        experiment_name=f"node2vecslp_joint_nc_integration_test_{test_id}",
+        experiment_name=f"node2vec_joint_nc_integration_test_{test_id}",
         train_loader=train_loader,
         val_loader=val_loader,
         test_loader=test_loader,
     )
 
-    comparison_path = tmp_path / f"node2vecslp_joint_nc_integration_test_{test_id}" / "comparison"
+    comparison_path = tmp_path / f"node2vec_joint_nc_integration_test_{test_id}" / "comparison"
     assert (comparison_path / "overall.tex").exists()
     assert (comparison_path / "overall.md").exists()
     assert (comparison_path / "test.tex").exists()

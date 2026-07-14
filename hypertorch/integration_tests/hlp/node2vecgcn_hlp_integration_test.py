@@ -184,7 +184,7 @@ def test_model_node2vecgcn_joint(tmp_path, sampling_strategy, full, batch_size, 
                 "num_nodes": train_dataset.hdata.num_nodes,
                 "graph_reduction_strategy": "clique_expansion",
                 "random_walk_batch_size": 128,
-                # We count the node2vec loss as 40% of the total loss (the rest is the SLP loss)
+                # We count the node2vec loss as 40% of the total loss (the rest is the HLP loss)
                 "node2vec_loss_weight": 0.4,
             },
             "gcn_config": gcn_config,

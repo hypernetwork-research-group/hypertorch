@@ -20,9 +20,9 @@ from hypertorch.types import HData
 from hypertorch.utils import Stage
 
 
-class Node2VecSLPEncoderConfig(TypedDict):
+class Node2VecEncoderConfig(TypedDict):
     """
-    Configuration for the Node2Vec-SLP encoder module.
+    Configuration for the Node2Vec encoder module.
 
     Attributes:
         mode: Whether to use precomputed node embeddings from ``x`` or train a Node2Vec
@@ -38,9 +38,9 @@ class Node2VecSLPEncoderConfig(TypedDict):
     node2vec_config: Node2VecNcConfig
 
 
-class Node2VecSLPClassifierConfig(TypedDict):
+class Node2VecClassifierConfig(TypedDict):
     """
-    Configuration for the Node2Vec-SLP classifier module.
+    Configuration for the Node2Vec classifier module.
 
     Attributes:
         out_channels: Number of node classes.
@@ -49,9 +49,9 @@ class Node2VecSLPClassifierConfig(TypedDict):
     out_channels: int
 
 
-class Node2VecSLPNcModule(NcModule):
+class Node2VecNcModule(NcModule):
     """
-    A LightningModule for Node2Vec-SLP multiclass node classification.
+    A LightningModule for Node2Vec-based multiclass node classification.
 
     Supports two modes:
         - ``precomputed``: use node embeddings already stored in ``batch.x``.
@@ -77,8 +77,8 @@ class Node2VecSLPNcModule(NcModule):
 
     def __init__(
         self,
-        encoder_config: Node2VecSLPEncoderConfig,
-        classifier_config: Node2VecSLPClassifierConfig,
+        encoder_config: Node2VecEncoderConfig,
+        classifier_config: Node2VecClassifierConfig,
         loss_fn: nn.Module | None = None,
         lr: float = 0.001,
         weight_decay: float = 0.0,
@@ -86,7 +86,7 @@ class Node2VecSLPNcModule(NcModule):
         metrics_log_kwargs: dict[str, Any] | None = None,
     ) -> None:
         """
-        Initialize the Node2Vec-SLP NC module.
+        Initialize the Node2Vec NC module.
 
         Args:
             encoder_config: Configuration for the Node2Vec encoder.
