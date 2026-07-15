@@ -3,7 +3,7 @@ name: Branch Naming Convention Check
 on:
   create:
     branches:
-    - '**'
+    - "**"
 
 permissions:
   contents: read
@@ -23,7 +23,12 @@ jobs:
 
         VALID_PATTERNS="^(feat|fix|chore|refactor|docs)\/[a-z0-9]+(-[a-z0-9]+)*$|^v[0-9]+\.[0-9]+\.[0-9]+(-[a-z0-9]+(\.[a-z0-9]+)*(-[a-z0-9]+)*)?$"
         if ! [[ $BRANCH_NAME =~ $VALID_PATTERNS ]]; then
-          echo "Branch name (${GITHUB_REF}) is invalid."
-          echo "It must follow the naming convention: 'feat|fix|chore|refactor|docs/<name>' for branches or 'v*' for tags."
+          {
+            echo "## ❌ Branch naming check failed"
+            echo "Branch name '${BRANCH_NAME}' does not follow the required naming convention."
+            echo "It must follow the naming convention: 'feat|fix|chore|refactor|docs/<name>' for branches or 'v*' for tags."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          echo "::error::Branch name '${BRANCH_NAME}' does not follow the required naming convention."
           exit 1
         fi
