@@ -5,7 +5,6 @@ from torchmetrics.classification import (
     BinaryPrecision,
     BinaryRecall,
 )
-from lightning.pytorch.callbacks import EarlyStopping
 from hypertorch.hlp import MLPHlpModule
 from hypertorch.train import MultiModelTrainer
 from hypertorch.types import ModelConfig
@@ -85,25 +84,13 @@ if __name__ == "__main__":
     val_dataset.enrich_node_features_from(train_dataset)
     test_dataset.enrich_node_features_from(train_dataset)
 
-    print("Creating dataloaders...")
+    print("Creating datamodule...")
 
-    train_loader = DataLoader(
-        train_dataset,
+    data_module = DataLoader.from_datasets(
+        train_dataset=train_dataset,
+        val_dataset=val_dataset,
+        test_dataset=test_dataset,
         batch_size=128,
-        shuffle=False,
-        num_workers=num_workers,
-        persistent_workers=True,
-    )
-    val_loader = DataLoader(
-        val_dataset,
-        batch_size=128,
-        shuffle=False,
-        num_workers=num_workers,
-        persistent_workers=True,
-    )
-    test_loader = DataLoader(
-        test_dataset,
-        sample_full_hypergraph=True,
         shuffle=False,
         num_workers=num_workers,
         persistent_workers=True,
@@ -123,25 +110,21 @@ if __name__ == "__main__":
 
     model_configs = [ModelConfig(name="mlp", version="mean", model=model)]
 
-    early_stopping = EarlyStopping(
-        monitor="val/loss",
-        patience=10,
-        mode="min",
-    )
-
     print("Starting training and evaluation...")
 
     with MultiModelTrainer(
         model_configs=model_configs,
-        max_epochs=200,
+        max_epochs=60,
         accelerator="auto",
         log_every_n_steps=10,
-        callbacks=[early_stopping],
         enable_checkpointing=False,
         devices=1,
         test_devices=1,
     ) as trainer:
-        trainer.fit_all(train_dataloader=train_loader, val_dataloader=val_loader, verbose=True)
-        trainer.test_all(dataloader=test_loader, verbose=True)
+        # No need to explicitly provide `train_dataloader`, `val_dataloader`, and `test_dataloader`,
+        # the data module will provision them automatically based on the datasets provided
+        # to `DataLoader.from_datasets()`.
+        trainer.fit_all(datamodule=data_module, verbose=True)
+        trainer.test_all(datamodule=data_module, verbose=True)
 
     print("Complete!")

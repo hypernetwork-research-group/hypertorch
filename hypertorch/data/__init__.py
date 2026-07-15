@@ -30,7 +30,7 @@ from .supported_datasets import (
     get_dataset_by_name,
 )
 
-from .loader import DataLoader
+from .loader import DataLoader, DataLoaderDataModule, DataModule
 
 from .enricher import (
     ABHyperedgeWeightsEnricher,
@@ -89,6 +89,8 @@ __all__ = [
     "CourseraDataset",
     "DBLPDataset",
     "DataLoader",
+    "DataLoaderDataModule",
+    "DataModule",
     "Dataset",
     "EmailEnronDataset",
     "EmailW3CDataset",

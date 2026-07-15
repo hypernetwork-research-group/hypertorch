@@ -186,7 +186,7 @@ class Dataset(TorchDataset):
         hdata: HData,
         hif_hypergraph: HIFHypergraph | None = None,
         sampling_strategy: SamplingStrategy = SamplingStrategyEnum.HYPEREDGE,
-        task: Task = TaskEnum.HYPERLINK_PREDICTION,
+        task: Task | None = None,
     ) -> Dataset:
         """
         Create a `Dataset` instance from an `HData` object.
@@ -198,16 +198,20 @@ class Dataset(TorchDataset):
             sampling_strategy: The sampling strategy to use for the dataset. If not provided,
                 defaults to ``SamplingStrategy.HYPEREDGE``.
             task: Learning task used when the HData. If not provided,
-                defaults to ``"hyperlink-prediction"``.
+                defaults to the task of the provided HData.
 
         Returns:
             dataset: The `Dataset` instance with the provided `HData`.
+
+        Raises:
+            ValueError: If the provided task is not supported or if the task is not provided
+                and the HData's task is unsupported.
         """
         return cls(
             hdata=hdata,
             hif_hypergraph=hif_hypergraph,
             sampling_strategy=sampling_strategy,
-            task=task,
+            task=task if task is not None else hdata.task,
         )
 
     @classmethod

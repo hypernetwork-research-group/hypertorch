@@ -1008,8 +1008,8 @@ def test_split_rejects_unsupported_task_category():
         x=torch.arange(4, dtype=torch.float).unsqueeze(1),
         hyperedge_index=torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long),
     )
-    hdata.task = cast(Any, "unsupported")
     dataset = Dataset.from_hdata(hdata)
+    dataset.hdata.task = cast(Any, "unsupported")
 
     with pytest.raises(
         ValueError,
@@ -1023,8 +1023,8 @@ def test_split_with_ratios_rejects_unsupported_task_category():
         x=torch.arange(4, dtype=torch.float).unsqueeze(1),
         hyperedge_index=torch.tensor([[0, 1, 2, 3], [0, 0, 1, 1]], dtype=torch.long),
     )
-    hdata.task = cast(Any, "unsupported")
     dataset = Dataset.from_hdata(hdata)
+    dataset.hdata.task = cast(Any, "unsupported")
 
     with pytest.raises(
         ValueError,
@@ -1368,6 +1368,12 @@ def test_from_hdata_with_explicit_strategy(mock_hdata):
 
     assert dataset.sampling_strategy == SamplingStrategyEnum.NODE
     assert len(dataset) == 3  # mock_hdata has 3 nodes
+
+
+def test_from_hdata_raises_when_task_is_none_and_hdata_task_is_unsupported(mock_hdata):
+    mock_hdata.task = cast(Any, "unsupported")
+    with pytest.raises(ValueError):
+        Dataset.from_hdata(mock_hdata)
 
 
 def test_update_from_hdata_returns_new_dataset(mock_hdata):

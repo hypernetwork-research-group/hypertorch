@@ -90,7 +90,7 @@ if __name__ == "__main__":
 
     train_loader = DataLoader(
         train_dataset,
-        batch_size=128,  # or 256
+        batch_size=128,
         shuffle=False,
         num_workers=num_workers,
         persistent_workers=True,
