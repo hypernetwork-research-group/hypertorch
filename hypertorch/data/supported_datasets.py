@@ -147,6 +147,7 @@ class AmazonDataset(_PreloadedDataset):
     DATASET_NAME: ClassVar[str] = "amazon"
     HF_SHA: ClassVar[str | None] = "614f75d1847d233ee06da0cc3ee10f51220b8243"
 
+
 class CiteseerDataset(_PreloadedDataset):
     """
     Preloaded Citeseer citation dataset.
@@ -180,7 +181,7 @@ class CoraDataset(_PreloadedDataset):
     """
 
     DATASET_NAME: ClassVar[str] = "cora"
-    HF_SHA: ClassVar[str | None] = "bec8cfada77724d24292d7ac870e8dd6033d01fd"
+    HF_SHA: ClassVar[str | None] = "fd35291e8f3289612cde9af849452bef34fa840e"
 
 
 class CourseraDataset(_PreloadedDataset):
@@ -297,7 +298,7 @@ class PubmedDataset(_PreloadedDataset):
     """
 
     DATASET_NAME: ClassVar[str] = "pubmed"
-    HF_SHA: ClassVar[str | None] = "8e9d9b6222969298532be3d51b45740c80d3f4b4"
+    HF_SHA: ClassVar[str | None] = "219b8e4c0d43c8311d0e5077827b8d2052e5b873"
 
 
 class RestaurantReviewsDataset(_PreloadedDataset):

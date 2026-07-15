@@ -28,7 +28,7 @@ from hypertorch.utils import (
     get_cache_dir,
 )
 
-GITHUB_COMMIT_SHA = "5e7c2b8cd001667e3a30fa9358d92138b94b18b4"
+GITHUB_COMMIT_SHA = "03e7cf15663aca1fa8c9afa21f33027c0ac2eee8"
 
 
 class HIFProcessor:

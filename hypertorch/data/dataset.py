@@ -218,7 +218,7 @@ class Dataset(TorchDataset):
     def from_url(
         cls,
         url: str,
-        sampling_strategy: SamplingStrategyEnum = SamplingStrategyEnum.HYPEREDGE,
+        sampling_strategy: SamplingStrategy = SamplingStrategyEnum.HYPEREDGE,
         task: Task = TaskEnum.HYPERLINK_PREDICTION,
         save_on_disk: bool = False,
     ) -> Dataset:
@@ -254,8 +254,8 @@ class Dataset(TorchDataset):
     def from_path(
         cls,
         filepath: str,
-        sampling_strategy: SamplingStrategyEnum = SamplingStrategyEnum.HYPEREDGE,
-        task: TaskEnum = TaskEnum.HYPERLINK_PREDICTION,
+        sampling_strategy: SamplingStrategy = SamplingStrategyEnum.HYPEREDGE,
+        task: Task = TaskEnum.HYPERLINK_PREDICTION,
     ) -> Dataset:
         """
         Create a `Dataset` instance by loading a hypergraph from a local file path pointing to a
