@@ -21,7 +21,7 @@ Supported models include:
 - `MLP`.
 - `NHP`.
 - `Node2VecGCN`.
-- `Node2VecSLP`.
+- `Node2Vec`.
 - `VilLain`.
 
 ## Built-in node classification modules
@@ -36,7 +36,7 @@ Supported models include:
 - `HyperGCN`.
 - `MLP`.
 - `Node2VecGCN`.
-- `Node2VecSLP`.
+- `Node2Vec`.
 - `VilLain`.
 
 ## Minimal hyperlink prediction example: NHP

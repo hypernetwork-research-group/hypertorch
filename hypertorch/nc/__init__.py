@@ -16,7 +16,7 @@ from .mlp_nc import MLPNcModule, MLPClassifierConfig
 
 from .node2vecgcn_nc import Node2VecGCNClassifierConfig, Node2VecGCNNcModule
 
-from .node2vecslp_nc import Node2VecSLPClassifierConfig, Node2VecSLPNcModule
+from .node2vec_nc import Node2VecClassifierConfig, Node2VecEncoderConfig, Node2VecNcModule
 
 from .villain_nc import VilLainClassifierConfig, VilLainEncoderConfig, VilLainNcModule
 
@@ -40,12 +40,13 @@ __all__ = [
     "MLPClassifierConfig",
     "MLPNcModule",
     "NcModule",
+    "Node2VecClassifierConfig",
+    "Node2VecEncoderConfig",
     "Node2VecGCNClassifierConfig",
     "Node2VecGCNNcConfig",
     "Node2VecGCNNcModule",
     "Node2VecNcConfig",
-    "Node2VecSLPClassifierConfig",
-    "Node2VecSLPNcModule",
+    "Node2VecNcModule",
     "VilLainClassifierConfig",
     "VilLainEncoderConfig",
     "VilLainNcModule",

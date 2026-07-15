@@ -20,9 +20,9 @@ from hypertorch.models.node2vec_common import (
 )
 
 
-class Node2VecSLPEncoderConfig(TypedDict):
+class Node2VecEncoderConfig(TypedDict):
     """
-    Configuration for the Node2Vec encoder in ``Node2VecSLPHlpModule``.
+    Configuration for the Node2Vec encoder in ``Node2VecHlpModule``.
 
     Attributes:
         mode: Whether to use precomputed node embeddings from ``x`` or train a Node2Vec encoder
@@ -37,7 +37,7 @@ class Node2VecSLPEncoderConfig(TypedDict):
     node2vec_config: Node2VecHlpConfig
 
 
-class Node2VecSLPHlpModule(HlpModule):
+class Node2VecHlpModule(HlpModule):
     """
     A LightningModule for Node2Vec-based Hyperedge Link Prediction.
 
@@ -47,7 +47,7 @@ class Node2VecSLPHlpModule(HlpModule):
 
     Attributes:
         encoder: Optional Node2Vec encoder inherited from ``HlpModule``.
-        decoder: SLP decoder module inherited from ``HlpModule``.
+        decoder: Decoder module inherited from ``HlpModule``.
         loss_fn: Loss function inherited from ``HlpModule``.
         metrics_log_kwargs: Metric logging keyword arguments inherited from ``HlpModule``.
         train_metrics: Optional training metrics inherited from ``HlpModule``.
@@ -67,7 +67,7 @@ class Node2VecSLPHlpModule(HlpModule):
 
     def __init__(
         self,
-        encoder_config: Node2VecSLPEncoderConfig,
+        encoder_config: Node2VecEncoderConfig,
         aggregation: Literal["mean", "max", "min", "sum"] = "mean",
         loss_fn: nn.Module | None = None,
         lr: float = 0.001,
@@ -76,7 +76,7 @@ class Node2VecSLPHlpModule(HlpModule):
         metrics_log_kwargs: dict[str, Any] | None = None,
     ):
         """
-        Initialize the Node2Vec-SLP HLP module.
+        Initialize the Node2Vec HLP module.
 
         Args:
             encoder_config: Configuration for Node2Vec embeddings.
