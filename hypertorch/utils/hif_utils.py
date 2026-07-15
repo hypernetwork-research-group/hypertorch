@@ -206,10 +206,3 @@ def __load_hif_schema() -> dict[str, Any]:
             raise RuntimeError(
                 "Failed to load HIF schema from both local file and remote URL. "
             ) from e
-
-
-if __name__ == "__main__":
-    # Example usage
-    dataset_names = ["cora", "pubmed"]
-    shas = get_hf_datasets_shas(dataset_names)
-    print("Hugging Face SHAs:", shas)

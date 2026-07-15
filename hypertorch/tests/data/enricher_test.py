@@ -722,3 +722,26 @@ def test_villain_trainer_uses_verbose_option_correctly(
     captured = capsys.readouterr()
 
     assert captured.out == expected_output
+
+
+def test_lpe_enricher_raises_value_error_for_non_finite_laplacian(
+    mock_two_hyperedge_index: Tensor,
+) -> None:
+    enricher = LaplacianPositionalEncodingEnricher(num_features=2)
+
+    non_finite_laplacian = torch.sparse_coo_tensor(
+        indices=torch.tensor([[0], [0]], dtype=torch.long),
+        values=torch.tensor([float("inf")], dtype=torch.float),
+        size=(1, 1),
+    ).coalesce()
+
+    with (
+        patch(
+            "hypertorch.data.enricher.EdgeIndex.get_sparse_normalized_laplacian",
+            return_value=non_finite_laplacian,
+        ),
+        pytest.raises(
+            ValueError, match=re.escape("The normalized Laplacian contains non-finite values.")
+        ),
+    ):
+        _ = enricher.enrich(mock_two_hyperedge_index)
