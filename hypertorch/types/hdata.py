@@ -207,15 +207,17 @@ class HData:
         hyperedge_attr_shape = (
             self.hyperedge_attr.shape if self.hyperedge_attr is not None else None
         )
+
+        task_as_str = str(self.task)
         target_node_mask_shape = (
             str(self.target_node_mask.shape)
             if self.is_node_related_task
-            else f"(ignored for task={self.task!r})"
+            else f"(ignored for task={task_as_str})"
         )
         target_hyperedge_mask_shape = (
             str(self.target_hyperedge_mask.shape)
             if self.is_hyperedge_related_task
-            else f"(ignored for task={self.task!r})"
+            else f"(ignored for task={task_as_str})"
         )
 
         return (
@@ -230,7 +232,7 @@ class HData:
             f"    hyperedge_weights_shape={hyperedge_weights_shape},\n"
             f"    hyperedge_attr_shape={hyperedge_attr_shape},\n"
             f"    y_shape={self.y.shape},\n"
-            f"    task={self.task!r},\n"
+            f"    task={task_as_str!r},\n"
             f"    device={self.device}\n"
             f")"
         )
