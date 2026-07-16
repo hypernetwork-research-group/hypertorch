@@ -1,7 +1,7 @@
 from torchmetrics import MetricCollection
 from torchmetrics.classification import MulticlassAUROC, MulticlassAccuracy, MulticlassF1Score
 from hypertorch.data import CoraDataset, DataLoader
-from hypertorch.nc import VilLainNcModule
+from hypertorch.nc import VilLainClassifier
 from hypertorch.train import MultiModelTrainer
 from hypertorch.types import ModelConfig
 from hypertorch.utils import node_labels_from_node_degrees
@@ -65,7 +65,7 @@ if __name__ == "__main__":
         persistent_workers=True,
     )
 
-    model = VilLainNcModule(
+    model = VilLainClassifier(
         encoder_config={
             "embedding_dim": 128,
             "labels_per_subspace": 8,

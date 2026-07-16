@@ -6,12 +6,12 @@ from hypertorch.models import HyperGCN
 from hypertorch.types import HData
 from hypertorch.utils import Stage
 
-from hypertorch.nc.common import NcModule
+from hypertorch.nc.common import NCClassifier
 
 
 class HyperGCNClassifierConfig(TypedDict):
     """
-    Configuration for the HyperGCN classifier in ``HyperGCNNcModule``.
+    Configuration for the HyperGCN classifier in ``HyperGCNClassifier``.
 
     Attributes:
         in_channels: Number of input features per node.
@@ -39,22 +39,22 @@ class HyperGCNClassifierConfig(TypedDict):
     seed: NotRequired[int]
 
 
-class HyperGCNNcModule(NcModule):
+class HyperGCNClassifier(NCClassifier):
     """
-    A LightningModule for HyperGCN-based multiclass node classification.
+    A LightningModule for HyperGCN-based NC classifier.
 
     Uses HyperGCN to transform node features and hypergraph structure directly into
     per-node class logits. During training, validation, and testing, loss and metrics
     are computed on supervised target nodes selected by ``HData.target_node_mask``.
 
     Attributes:
-        encoder: Optional encoder module inherited from ``NcModule``. Defaults to ``None``.
-        classifier: HyperGCN classifier module inherited from ``NcModule``.
-        loss_fn: Loss function inherited from ``NcModule``.
-        metrics_log_kwargs: Metric logging keyword arguments inherited from ``NcModule``.
-        train_metrics: Optional training metrics inherited from ``NcModule``.
-        val_metrics: Optional validation metrics inherited from ``NcModule``.
-        test_metrics: Optional test metrics inherited from ``NcModule``.
+        encoder: Optional encoder module inherited from ``NCClassifier``. Defaults to ``None``.
+        classifier: HyperGCN classifier module inherited from ``NCClassifier``.
+        loss_fn: Loss function inherited from ``NCClassifier``.
+        metrics_log_kwargs: Metric logging keyword arguments inherited from ``NCClassifier``.
+        train_metrics: Optional training metrics inherited from ``NCClassifier``.
+        val_metrics: Optional validation metrics inherited from ``NCClassifier``.
+        test_metrics: Optional test metrics inherited from ``NCClassifier``.
         lr: Learning rate for the optimizer. Defaults to ``0.01``.
         weight_decay: L2 regularization. Defaults to ``5e-4``.
     """
@@ -69,7 +69,7 @@ class HyperGCNNcModule(NcModule):
         metrics_log_kwargs: dict[str, Any] | None = None,
     ) -> None:
         """
-        Initialize the HyperGCN NC module.
+        Initialize the HyperGCN-based NC classifier.
 
         Args:
             classifier_config: Configuration for the HyperGCN classifier.

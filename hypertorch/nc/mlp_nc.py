@@ -6,12 +6,12 @@ from hypertorch.models import MLP
 from hypertorch.types import HData
 from hypertorch.utils import ActivationFn, NormalizationFn, Stage
 
-from hypertorch.nc.common import NcModule
+from hypertorch.nc.common import NCClassifier
 
 
 class MLPClassifierConfig(TypedDict):
     """
-    Configuration for the MLP classifier in ``MLPNcModule``.
+    Configuration for the MLP classifier in ``MLPClassifier``.
 
     Attributes:
         in_channels: Number of input features per node.
@@ -44,22 +44,22 @@ class MLPClassifierConfig(TypedDict):
     drop_rate: NotRequired[float]
 
 
-class MLPNcModule(NcModule):
+class MLPClassifier(NCClassifier):
     """
-    A LightningModule for MLP-based multiclass node classification.
+    A LightningModule for MLP-based NC classifier.
 
     Uses an MLP classifier to map node features directly to per-node class logits.
     During training, validation, and testing, loss and metrics are computed on the
     supervised target nodes selected by ``HData.target_node_mask`` when present.
 
     Attributes:
-        encoder: Optional encoder module inherited from ``NcModule``. Defaults to ``None``.
-        classifier: MLP classifier module inherited from ``NcModule``.
-        loss_fn: Loss function inherited from ``NcModule``.
-        metrics_log_kwargs: Metric logging keyword arguments inherited from ``NcModule``.
-        train_metrics: Optional training metrics inherited from ``NcModule``.
-        val_metrics: Optional validation metrics inherited from ``NcModule``.
-        test_metrics: Optional test metrics inherited from ``NcModule``.
+        encoder: Optional encoder module inherited from ``NCClassifier``. Defaults to ``None``.
+        classifier: MLP classifier module inherited from ``NCClassifier``.
+        loss_fn: Loss function inherited from ``NCClassifier``.
+        metrics_log_kwargs: Metric logging keyword arguments inherited from ``NCClassifier``.
+        train_metrics: Optional training metrics inherited from ``NCClassifier``.
+        val_metrics: Optional validation metrics inherited from ``NCClassifier``.
+        test_metrics: Optional test metrics inherited from ``NCClassifier``.
         lr: Learning rate for the optimizer. Defaults to ``0.001``.
     """
 
@@ -72,7 +72,7 @@ class MLPNcModule(NcModule):
         metrics_log_kwargs: dict[str, Any] | None = None,
     ) -> None:
         """
-        Initialize the MLP NC module.
+        Initialize the MLP-based NC classifier.
 
         Args:
             classifier_config: Configuration for the MLP classifier.

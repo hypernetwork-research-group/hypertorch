@@ -12,12 +12,12 @@ from hypertorch.types import (
 )
 from hypertorch.utils import ActivationFn, Stage
 
-from hypertorch.nc.common import NcModule
+from hypertorch.nc.common import NCClassifier
 
 
 class GCNClassifierConfig(TypedDict):
     """
-    Configuration for the GCN classifier in ``GCNNcModule``.
+    Configuration for the GCN classifier in ``GCNClassifier``.
 
     Attributes:
         in_channels: Number of input features per node.
@@ -55,21 +55,21 @@ class GCNClassifierConfig(TypedDict):
     activation_fn_kwargs: NotRequired[dict]
 
 
-class GCNNcModule(NcModule):
+class GCNClassifier(NCClassifier):
     """
-    A LightningModule for GCN-based multiclass node classification.
+    A LightningModule for GCN-based NC classifier.
 
     Reduces the hypergraph to a graph, then applies GCN
     layers to produce per-node class logits.
 
     Attributes:
-        encoder: Optional encoder module inherited from ``NcModule``. Defaults to ``None``.
-        classifier: GCN classifier module inherited from ``NcModule``.
-        loss_fn: Loss function inherited from ``NcModule``.
-        metrics_log_kwargs: Metric logging keyword arguments inherited from ``NcModule``.
-        train_metrics: Optional training metrics inherited from ``NcModule``.
-        val_metrics: Optional validation metrics inherited from ``NcModule``.
-        test_metrics: Optional test metrics inherited from ``NcModule``.
+        encoder: Optional encoder module inherited from ``NCClassifier``. Defaults to ``None``.
+        classifier: GCN classifier module inherited from ``NCClassifier``.
+        loss_fn: Loss function inherited from ``NCClassifier``.
+        metrics_log_kwargs: Metric logging keyword arguments inherited from ``NCClassifier``.
+        train_metrics: Optional training metrics inherited from ``NCClassifier``.
+        val_metrics: Optional validation metrics inherited from ``NCClassifier``.
+        test_metrics: Optional test metrics inherited from ``NCClassifier``.
         lr: Learning rate for the optimizer. Defaults to ``0.01``.
         weight_decay: L2 regularization. Defaults to ``5e-4``.
     """
@@ -84,7 +84,7 @@ class GCNNcModule(NcModule):
         metrics_log_kwargs: dict[str, Any] | None = None,
     ) -> None:
         """
-        Initialize the GCN NC module.
+        Initialize the GCN-based NC classifier.
 
         Args:
             classifier_config: Configuration for the GCN classifier.

@@ -7,8 +7,8 @@ from hypertorch.hyperlink_prediction.common import stage_metric_name
 from hypertorch.models.node2vec_common import (
     NODE2VEC_JOINT_MODE,
     NODE2VEC_PRECOMPUTED_MODE,
-    Node2VecGCNEncoderConfig as Node2VecGCNNcConfig,
-    Node2VecEncoderConfig as Node2VecNcConfig,
+    Node2VecGCNEncoderConfig as Node2VecGCNNCConfig,
+    Node2VecEncoderConfig as Node2VecNCConfig,
     Node2VecMode,
     Node2VecWalkLoaderState,
     build_gcn_encoder,
@@ -19,14 +19,14 @@ from hypertorch.models.node2vec_common import (
     to_node2vecgcn_encoder,
     validate_global_node_ids,
 )
-from hypertorch.nc.common import NcModule
+from hypertorch.nc.common import NCClassifier
 from hypertorch.types import HData
 from hypertorch.utils import Stage
 
 
 class Node2VecGCNClassifierConfig(TypedDict):
     """
-    Configuration for the Node2Vec-GCN node classification module.
+    Configuration for the Node2VecGCN classifier in ``Node2VecGCNClassifier``.
 
     Attributes:
         mode: Whether to use precomputed node embeddings from ``x`` or train a Node2Vec
@@ -39,26 +39,26 @@ class Node2VecGCNClassifierConfig(TypedDict):
 
     mode: NotRequired[Node2VecMode]
     num_features: int
-    node2vec_config: Node2VecNcConfig
-    gcn_config: Node2VecGCNNcConfig
+    node2vec_config: Node2VecNCConfig
+    gcn_config: Node2VecGCNNCConfig
 
 
-class Node2VecGCNNcModule(NcModule):
+class Node2VecGCNClassifier(NCClassifier):
     """
-    A LightningModule for Node2Vec-GCN multiclass node classification.
+    A LightningModule for Node2VecGCN-based NC classifier.
 
     Supports two modes:
         - ``precomputed``: use node embeddings already stored in ``batch.x``.
         - ``joint``: train a Node2Vec encoder jointly with the GCN classifier.
 
     Attributes:
-        encoder: Optional Node2Vec-GCN encoder inherited from ``NcModule``.
-        classifier: GCN classifier inherited from ``NcModule`` in precomputed mode.
-        loss_fn: Loss function inherited from ``NcModule``.
-        metrics_log_kwargs: Metric logging keyword arguments inherited from ``NcModule``.
-        train_metrics: Optional training metrics inherited from ``NcModule``.
-        val_metrics: Optional validation metrics inherited from ``NcModule``.
-        test_metrics: Optional test metrics inherited from ``NcModule``.
+        encoder: Optional Node2Vec-GCN encoder inherited from ``NCClassifier``.
+        classifier: GCN classifier inherited from ``NCClassifier`` in precomputed mode.
+        loss_fn: Loss function inherited from ``NCClassifier``.
+        metrics_log_kwargs: Metric logging keyword arguments inherited from ``NCClassifier``.
+        train_metrics: Optional training metrics inherited from ``NCClassifier``.
+        val_metrics: Optional validation metrics inherited from ``NCClassifier``.
+        test_metrics: Optional test metrics inherited from ``NCClassifier``.
         mode: Whether to use precomputed or joint Node2Vec embeddings.
         embedding_dim: Node embedding dimension consumed by GCN.
         node2vec_config: Node2Vec configuration.
@@ -81,7 +81,7 @@ class Node2VecGCNNcModule(NcModule):
         metrics_log_kwargs: dict[str, Any] | None = None,
     ) -> None:
         """
-        Initialize the Node2Vec-GCN NC module.
+        Initialize the Node2VecGCN-based NC classifier.
 
         Args:
             classifier_config: Configuration for Node2Vec embeddings and GCN layers.
@@ -95,8 +95,8 @@ class Node2VecGCNNcModule(NcModule):
         """
         self.mode: Node2VecMode = classifier_config.get("mode", NODE2VEC_JOINT_MODE)
         self.embedding_dim: int = classifier_config["num_features"]
-        self.node2vec_config: Node2VecNcConfig = classifier_config["node2vec_config"]
-        self.gcn_config: Node2VecGCNNcConfig = classifier_config["gcn_config"]
+        self.node2vec_config: Node2VecNCConfig = classifier_config["node2vec_config"]
+        self.gcn_config: Node2VecGCNNCConfig = classifier_config["gcn_config"]
 
         node2vecgcn_encoder = (
             build_node2vecgcn_encoder(

@@ -9,7 +9,7 @@ from hypertorch.integration_tests.common import (
     split_dataset,
     train_test_loop,
 )
-from hypertorch.nc import CommonNeighborsNcModule
+from hypertorch.nc import CommonNeighborsClassifier
 
 
 NUM_CLASSES = 3
@@ -38,7 +38,7 @@ def test_model_common_neighbors_nc(tmp_path, sampling_strategy, full, batch_size
         train_dataset, val_dataset, test_dataset, batch_size=batch_size, sample_full_hypergraph=full
     )
 
-    common_neighbors = CommonNeighborsNcModule(
+    common_neighbors = CommonNeighborsClassifier(
         train_hdata=train_dataset.hdata,
         num_classes=NUM_CLASSES,
         aggregation="mean",

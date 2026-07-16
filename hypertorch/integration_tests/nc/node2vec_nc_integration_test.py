@@ -9,7 +9,7 @@ from hypertorch.integration_tests.common import (
     split_dataset,
     train_test_loop,
 )
-from hypertorch.nc import Node2VecNcModule
+from hypertorch.nc import Node2VecClassifier
 from hypertorch.types import TaskEnum
 
 
@@ -46,7 +46,7 @@ def test_model_node2vec_precomputed(tmp_path, sampling_strategy, full, batch_siz
         sample_full_hypergraph=full,
     )
 
-    precomputed_node2vec = Node2VecNcModule(
+    precomputed_node2vec = Node2VecClassifier(
         encoder_config={
             "mode": "precomputed",
             "num_features": NUM_FEATURES,
@@ -117,7 +117,7 @@ def test_model_node2vec_joint(tmp_path, sampling_strategy, full, batch_size, req
         sample_full_hypergraph=full,
     )
 
-    joint_node2vec = Node2VecNcModule(
+    joint_node2vec = Node2VecClassifier(
         encoder_config={
             "mode": "joint",
             "num_features": NUM_FEATURES,

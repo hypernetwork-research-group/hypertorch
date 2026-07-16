@@ -6,7 +6,7 @@ from torchmetrics import MetricCollection
 from hypertorch.hyperlink_prediction.common import stage_metric_name
 from hypertorch.models.node2vec_common import (
     NODE2VEC_JOINT_MODE,
-    Node2VecEncoderConfig as Node2VecNcConfig,
+    Node2VecEncoderConfig as Node2VecNCConfig,
     Node2VecMode,
     Node2VecWalkLoaderState,
     build_node2vec_encoder,
@@ -15,14 +15,14 @@ from hypertorch.models.node2vec_common import (
     validate_global_node_ids,
 )
 from hypertorch.models import SLP
-from hypertorch.nc.common import NcModule
+from hypertorch.nc.common import NCClassifier
 from hypertorch.types import HData
 from hypertorch.utils import Stage
 
 
 class Node2VecEncoderConfig(TypedDict):
     """
-    Configuration for the Node2Vec encoder module.
+    Configuration for the Node2Vec encoder in ``Node2VecClassifier``.
 
     Attributes:
         mode: Whether to use precomputed node embeddings from ``x`` or train a Node2Vec
@@ -35,12 +35,12 @@ class Node2VecEncoderConfig(TypedDict):
 
     mode: NotRequired[Node2VecMode]
     num_features: int
-    node2vec_config: Node2VecNcConfig
+    node2vec_config: Node2VecNCConfig
 
 
 class Node2VecClassifierConfig(TypedDict):
     """
-    Configuration for the Node2Vec classifier module.
+    Configuration for the Node2Vec classifier in ``Node2VecClassifier``.
 
     Attributes:
         out_channels: Number of node classes.
@@ -49,22 +49,22 @@ class Node2VecClassifierConfig(TypedDict):
     out_channels: int
 
 
-class Node2VecNcModule(NcModule):
+class Node2VecClassifier(NCClassifier):
     """
-    A LightningModule for Node2Vec-based multiclass node classification.
+    A LightningModule for Node2Vec-based NC classifier.
 
     Supports two modes:
         - ``precomputed``: use node embeddings already stored in ``batch.x``.
         - ``joint``: train a Node2Vec encoder jointly with the node classifier.
 
     Attributes:
-        encoder: Optional Node2Vec encoder inherited from ``NcModule``.
-        classifier: Classifier inherited from ``NcModule``.
-        loss_fn: Loss function inherited from ``NcModule``.
-        metrics_log_kwargs: Metric logging keyword arguments inherited from ``NcModule``.
-        train_metrics: Optional training metrics inherited from ``NcModule``.
-        val_metrics: Optional validation metrics inherited from ``NcModule``.
-        test_metrics: Optional test metrics inherited from ``NcModule``.
+        encoder: Optional Node2Vec encoder inherited from ``NCClassifier``.
+        classifier: Classifier inherited from ``NCClassifier``.
+        loss_fn: Loss function inherited from ``NCClassifier``.
+        metrics_log_kwargs: Metric logging keyword arguments inherited from ``NCClassifier``.
+        train_metrics: Optional training metrics inherited from ``NCClassifier``.
+        val_metrics: Optional validation metrics inherited from ``NCClassifier``.
+        test_metrics: Optional test metrics inherited from ``NCClassifier``.
         mode: Whether to use precomputed or joint Node2Vec embeddings.
         embedding_dim: Node embedding dimension consumed by the classifier.
         lr: Learning rate for the optimizer. Defaults to ``0.001``.
@@ -86,7 +86,7 @@ class Node2VecNcModule(NcModule):
         metrics_log_kwargs: dict[str, Any] | None = None,
     ) -> None:
         """
-        Initialize the Node2Vec NC module.
+        Initialize the Node2Vec-based NC classifier.
 
         Args:
             encoder_config: Configuration for the Node2Vec encoder.

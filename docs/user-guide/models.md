@@ -59,9 +59,9 @@ model = NHPPredictor(
 ## Minimal node classification example: HyperGCN
 
 ```python
-from hypertorch.nc import HyperGCNNcModule
+from hypertorch.nc import HyperGCNClassifier
 
-model = HyperGCNNcModule(
+model = HyperGCNClassifier(
     classifier_config={
         "in_channels": 32,
         "hidden_channels": 16,

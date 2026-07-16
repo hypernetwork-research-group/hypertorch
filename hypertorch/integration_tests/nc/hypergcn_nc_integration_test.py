@@ -11,7 +11,7 @@ from hypertorch.integration_tests.common import (
     split_dataset,
     train_test_loop,
 )
-from hypertorch.nc import HyperGCNNcModule
+from hypertorch.nc import HyperGCNClassifier
 
 
 NUM_CLASSES = 3
@@ -43,7 +43,7 @@ def test_model_hypergcn_with_mediator(tmp_path, sampling_strategy, full, batch_s
         train_dataset, val_dataset, test_dataset, batch_size=batch_size, sample_full_hypergraph=full
     )
 
-    hypergcn = HyperGCNNcModule(
+    hypergcn = HyperGCNClassifier(
         classifier_config={
             "in_channels": NUM_FEATURES,
             "out_channels": NUM_CLASSES,
@@ -107,7 +107,7 @@ def test_model_hypergcn_no_mediator(tmp_path, sampling_strategy, full, batch_siz
         train_dataset, val_dataset, test_dataset, batch_size=batch_size, sample_full_hypergraph=full
     )
 
-    hypergcn = HyperGCNNcModule(
+    hypergcn = HyperGCNClassifier(
         classifier_config={
             "in_channels": NUM_FEATURES,
             "out_channels": NUM_CLASSES,

@@ -2,7 +2,7 @@ from torchmetrics import MetricCollection
 from torchmetrics.classification import MulticlassAUROC, MulticlassAccuracy, MulticlassF1Score
 
 from hypertorch.data import AlgebraDataset, DataLoader, Node2VecEnricher
-from hypertorch.nc import Node2VecGCNNcConfig, Node2VecGCNClassifierConfig, Node2VecGCNNcModule
+from hypertorch.nc import Node2VecGCNNCConfig, Node2VecGCNClassifierConfig, Node2VecGCNClassifier
 from hypertorch.train import MultiModelTrainer
 from hypertorch.types import ModelConfig
 from hypertorch.utils import node_labels_from_node_degrees
@@ -83,7 +83,7 @@ if __name__ == "__main__":
         persistent_workers=True,
     )
 
-    gcn_config: Node2VecGCNNcConfig = {
+    gcn_config: Node2VecGCNNCConfig = {
         "out_channels": num_classes,
         "hidden_channels": num_features,
         "num_layers": 2,
@@ -103,14 +103,14 @@ if __name__ == "__main__":
         "gcn_config": gcn_config,
     }
 
-    node2vecgcn_precomputed = Node2VecGCNNcModule(
+    node2vecgcn_precomputed = Node2VecGCNClassifier(
         classifier_config=precomputed_config,
         lr=0.001,
         weight_decay=0.0,
         metrics=metrics,
     )
 
-    node2vecgcn_joint = Node2VecGCNNcModule(
+    node2vecgcn_joint = Node2VecGCNClassifier(
         classifier_config={
             "mode": "joint",
             "num_features": num_features,
