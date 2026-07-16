@@ -6,7 +6,7 @@ from torchmetrics.classification import (
     BinaryPrecision,
     BinaryRecall,
 )
-from hypertorch.hlp import VilLainHlpModule, NHPHlpModule
+from hypertorch.hyperlink_prediction import VilLainPredictor, NHPPredictor
 from hypertorch.train import MultiModelTrainer
 from hypertorch.types import ModelConfig
 from hypertorch.data import (
@@ -110,7 +110,7 @@ if __name__ == "__main__":
         persistent_workers=True,
     )
 
-    node_villain_module = VilLainHlpModule(
+    node_villain_module = VilLainPredictor(
         encoder_config={
             "embedding_dim": 128,
             "labels_per_subspace": 8,
@@ -129,7 +129,7 @@ if __name__ == "__main__":
         metrics=metrics,
     )
 
-    maxmin_nhp_module = NHPHlpModule(
+    maxmin_nhp_module = NHPPredictor(
         encoder_config={
             "in_channels": num_features,
             "hidden_channels": 512,

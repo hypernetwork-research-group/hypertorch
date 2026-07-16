@@ -1,6 +1,6 @@
 import pytest
 
-from hypertorch.hlp import VilLainHlpModule
+from hypertorch.hyperlink_prediction import VilLainPredictor
 from hypertorch.data import SamplingStrategyEnum
 from hypertorch.integration_tests.common import (
     hlp_metrics,
@@ -39,7 +39,7 @@ def test_model_villain_node(tmp_path, sampling_strategy, full, batch_size, reque
         train_dataset, val_dataset, test_dataset, batch_size=batch_size, sample_full_hypergraph=full
     )
 
-    node_villain = VilLainHlpModule(
+    node_villain = VilLainPredictor(
         encoder_config={
             "num_nodes": train_dataset.hdata.num_nodes,
             "embedding_dim": 64,
@@ -122,7 +122,7 @@ def test_model_villain_hyperedge(tmp_path, sampling_strategy, full, batch_size, 
         train_dataset, val_dataset, test_dataset, batch_size=batch_size, sample_full_hypergraph=full
     )
 
-    hyperedge_villain = VilLainHlpModule(
+    hyperedge_villain = VilLainPredictor(
         encoder_config={
             "num_nodes": train_dataset.hdata.num_nodes,
             "embedding_dim": 64,

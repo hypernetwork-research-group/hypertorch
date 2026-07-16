@@ -1,6 +1,6 @@
 import pytest
 
-from hypertorch.hlp import HGNNHlpModule
+from hypertorch.hyperlink_prediction import GCNPredictor
 from hypertorch.data import SamplingStrategyEnum
 from hypertorch.integration_tests.common import (
     hlp_metrics,
@@ -25,7 +25,7 @@ NUM_FEATURES = 8
         pytest.param(SamplingStrategyEnum.NODE, True, 1, id="node_full"),
     ],
 )
-def test_model_hgnn(tmp_path, sampling_strategy, full, batch_size, request):
+def test_model_gcn(tmp_path, sampling_strategy, full, batch_size, request):
     test_id = request.node.callspec.id
 
     train_dataset, val_dataset, test_dataset = split_dataset(sampling_strategy)
@@ -39,14 +39,19 @@ def test_model_hgnn(tmp_path, sampling_strategy, full, batch_size, request):
         train_dataset, val_dataset, test_dataset, batch_size=batch_size, sample_full_hypergraph=full
     )
 
-    hgnn = HGNNHlpModule(
+    mean_gcn_module = GCNPredictor(
         encoder_config={
             "in_channels": NUM_FEATURES,
             "hidden_channels": 8,
             "out_channels": 8,
+            "num_layers": 2,
+            "drop_rate": 0.1,
             "bias": True,
-            "use_batch_normalization": False,
-            "drop_rate": 0.5,
+            "improved": False,
+            "add_self_loops": True,
+            "normalize": True,
+            "cached": False,
+            "graph_reduction_strategy": "clique_expansion",
         },
         aggregation="mean",
         lr=0.001,
@@ -55,29 +60,27 @@ def test_model_hgnn(tmp_path, sampling_strategy, full, batch_size, request):
     )
 
     configs = model_configs_with_single_model(
-        name="hgnn",
+        name="gcn",
         version="hlp",
-        model=hgnn,
+        model=mean_gcn_module,
     )
 
     train_test_loop(
         configs=configs,
         path=tmp_path,
-        experiment_name=f"hgnn_hlp_integration_test_{test_id}",
+        experiment_name=f"gcn_hlp_integration_test_{test_id}",
         train_loader=train_loader,
         val_loader=val_loader,
         test_loader=test_loader,
     )
 
     assert (
-        tmp_path / f"hgnn_hlp_integration_test_{test_id}" / "comparison" / "overall.tex"
+        tmp_path / f"gcn_hlp_integration_test_{test_id}" / "comparison" / "overall.tex"
     ).exists()
-    assert (
-        tmp_path / f"hgnn_hlp_integration_test_{test_id}" / "comparison" / "overall.md"
-    ).exists()
-    assert (tmp_path / f"hgnn_hlp_integration_test_{test_id}" / "comparison" / "test.tex").exists()
-    assert (tmp_path / f"hgnn_hlp_integration_test_{test_id}" / "comparison" / "test.md").exists()
-    assert (tmp_path / f"hgnn_hlp_integration_test_{test_id}" / "comparison" / "train.md").exists()
-    assert (tmp_path / f"hgnn_hlp_integration_test_{test_id}" / "comparison" / "train.tex").exists()
-    assert (tmp_path / f"hgnn_hlp_integration_test_{test_id}" / "comparison" / "val.md").exists()
-    assert (tmp_path / f"hgnn_hlp_integration_test_{test_id}" / "comparison" / "val.tex").exists()
+    assert (tmp_path / f"gcn_hlp_integration_test_{test_id}" / "comparison" / "overall.md").exists()
+    assert (tmp_path / f"gcn_hlp_integration_test_{test_id}" / "comparison" / "test.tex").exists()
+    assert (tmp_path / f"gcn_hlp_integration_test_{test_id}" / "comparison" / "test.md").exists()
+    assert (tmp_path / f"gcn_hlp_integration_test_{test_id}" / "comparison" / "train.md").exists()
+    assert (tmp_path / f"gcn_hlp_integration_test_{test_id}" / "comparison" / "train.tex").exists()
+    assert (tmp_path / f"gcn_hlp_integration_test_{test_id}" / "comparison" / "val.md").exists()
+    assert (tmp_path / f"gcn_hlp_integration_test_{test_id}" / "comparison" / "val.tex").exists()

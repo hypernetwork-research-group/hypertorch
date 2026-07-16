@@ -1,15 +1,15 @@
 import pytest
 
+from hypertorch.hyperlink_prediction import HGNNPredictor
 from hypertorch.data import SamplingStrategyEnum
-from hypertorch.hlp import NHPHlpModule
 from hypertorch.integration_tests.common import (
     hlp_metrics,
     loaders,
+    model_configs_with_single_model,
     train_test_loop,
     split_dataset,
     enrich_datasets,
     add_negatives,
-    model_configs_with_single_model,
 )
 
 NUM_FEATURES = 8
@@ -25,11 +25,10 @@ NUM_FEATURES = 8
         pytest.param(SamplingStrategyEnum.NODE, True, 1, id="node_full"),
     ],
 )
-def test_model_nhp(tmp_path, sampling_strategy, full, batch_size, request):
+def test_model_hgnn(tmp_path, sampling_strategy, full, batch_size, request):
     test_id = request.node.callspec.id
 
     train_dataset, val_dataset, test_dataset = split_dataset(sampling_strategy)
-
     train_dataset, val_dataset, test_dataset = add_negatives(
         train_dataset, val_dataset, test_dataset
     )
@@ -40,39 +39,45 @@ def test_model_nhp(tmp_path, sampling_strategy, full, batch_size, request):
         train_dataset, val_dataset, test_dataset, batch_size=batch_size, sample_full_hypergraph=full
     )
 
-    nhp = NHPHlpModule(
+    hgnn = HGNNPredictor(
         encoder_config={
             "in_channels": NUM_FEATURES,
             "hidden_channels": 8,
-            "aggregation": "maxmin",
+            "out_channels": 8,
+            "bias": True,
+            "use_batch_normalization": False,
+            "drop_rate": 0.5,
         },
+        aggregation="mean",
         lr=0.001,
         weight_decay=5e-4,
         metrics=hlp_metrics(),
     )
 
     configs = model_configs_with_single_model(
-        name="nhp",
-        version="maxmin",
-        model=nhp,
+        name="hgnn",
+        version="hlp",
+        model=hgnn,
     )
 
     train_test_loop(
         configs=configs,
         path=tmp_path,
-        experiment_name=f"nhp_hlp_integration_test_{test_id}",
+        experiment_name=f"hgnn_hlp_integration_test_{test_id}",
         train_loader=train_loader,
         val_loader=val_loader,
         test_loader=test_loader,
     )
 
     assert (
-        tmp_path / f"nhp_hlp_integration_test_{test_id}" / "comparison" / "overall.tex"
+        tmp_path / f"hgnn_hlp_integration_test_{test_id}" / "comparison" / "overall.tex"
     ).exists()
-    assert (tmp_path / f"nhp_hlp_integration_test_{test_id}" / "comparison" / "overall.md").exists()
-    assert (tmp_path / f"nhp_hlp_integration_test_{test_id}" / "comparison" / "test.tex").exists()
-    assert (tmp_path / f"nhp_hlp_integration_test_{test_id}" / "comparison" / "test.md").exists()
-    assert (tmp_path / f"nhp_hlp_integration_test_{test_id}" / "comparison" / "train.md").exists()
-    assert (tmp_path / f"nhp_hlp_integration_test_{test_id}" / "comparison" / "train.tex").exists()
-    assert (tmp_path / f"nhp_hlp_integration_test_{test_id}" / "comparison" / "val.md").exists()
-    assert (tmp_path / f"nhp_hlp_integration_test_{test_id}" / "comparison" / "val.tex").exists()
+    assert (
+        tmp_path / f"hgnn_hlp_integration_test_{test_id}" / "comparison" / "overall.md"
+    ).exists()
+    assert (tmp_path / f"hgnn_hlp_integration_test_{test_id}" / "comparison" / "test.tex").exists()
+    assert (tmp_path / f"hgnn_hlp_integration_test_{test_id}" / "comparison" / "test.md").exists()
+    assert (tmp_path / f"hgnn_hlp_integration_test_{test_id}" / "comparison" / "train.md").exists()
+    assert (tmp_path / f"hgnn_hlp_integration_test_{test_id}" / "comparison" / "train.tex").exists()
+    assert (tmp_path / f"hgnn_hlp_integration_test_{test_id}" / "comparison" / "val.md").exists()
+    assert (tmp_path / f"hgnn_hlp_integration_test_{test_id}" / "comparison" / "val.tex").exists()

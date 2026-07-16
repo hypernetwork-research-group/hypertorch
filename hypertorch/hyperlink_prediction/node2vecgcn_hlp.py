@@ -4,59 +4,68 @@ from typing_extensions import NotRequired
 from torchmetrics import MetricCollection
 from hypertorch.models import SLP
 from hypertorch.types import HData
-from hypertorch.utils import Stage
 from hypertorch.nn import HyperedgeAggregator
+from hypertorch.utils import Stage
 
-from hypertorch.hlp.common import HlpModule, stage_metric_name
+from hypertorch.hyperlink_prediction.common import HLPPredictor, stage_metric_name
 from hypertorch.models.node2vec_common import (
     NODE2VEC_JOINT_MODE,
-    Node2VecEncoderConfig as Node2VecHlpConfig,
+    NODE2VEC_PRECOMPUTED_MODE,
+    Node2VecGCNEncoderConfig as Node2VecGCNHLPConfig,
+    Node2VecEncoderConfig as Node2VecHLPConfig,
     Node2VecMode,
     Node2VecWalkLoaderState,
-    build_node2vec_encoder,
+    build_gcn_encoder,
+    build_node2vecgcn_encoder,
     next_walk_batch,
+    to_gcn_edge_index,
     to_node2vec_encoder,
+    to_node2vecgcn_encoder,
     validate_global_node_ids,
 )
 
 
-class Node2VecEncoderConfig(TypedDict):
+class Node2VecGCNEncoderConfig(TypedDict):
     """
-    Configuration for the Node2Vec encoder in ``Node2VecHlpModule``.
+    Configuration for the Node2VecGCN encoder in ``Node2VecGCNPredictor``.
 
     Attributes:
         mode: Whether to use precomputed node embeddings from ``x`` or train a Node2Vec encoder
-            jointly inside the module. Defaults to ``"joint"``.
+            jointly inside the module.
         num_features: Dimension of the node embeddings consumed by the decoder.
         node2vec_config: Shared Node2Vec configuration used in joint mode, or metadata for
             validating precomputed embeddings.
+        gcn_config: Configuration for the GCN layers.
     """
 
     mode: NotRequired[Node2VecMode]
     num_features: int
-    node2vec_config: Node2VecHlpConfig
+    node2vec_config: Node2VecHLPConfig
+    gcn_config: Node2VecGCNHLPConfig
 
 
-class Node2VecHlpModule(HlpModule):
+class Node2VecGCNPredictor(HLPPredictor):
     """
-    A LightningModule for Node2Vec-based Hyperedge Link Prediction.
+    A LightningModule for Node2VecGCN-based HLP predictor.
 
     Supports two modes:
         - ``precomputed``: use node embeddings already stored in ``batch.x``.
-        - ``joint``: train a Node2Vec encoder jointly with the hyperedge decoder.
+        - ``joint``: train a Node2Vec encoder jointly with the GCN layers and hyperedge decoder.
 
     Attributes:
-        encoder: Optional Node2Vec encoder inherited from ``HlpModule``.
-        decoder: Decoder module inherited from ``HlpModule``.
-        loss_fn: Loss function inherited from ``HlpModule``.
-        metrics_log_kwargs: Metric logging keyword arguments inherited from ``HlpModule``.
-        train_metrics: Optional training metrics inherited from ``HlpModule``.
-        val_metrics: Optional validation metrics inherited from ``HlpModule``.
-        test_metrics: Optional test metrics inherited from ``HlpModule``.
+        encoder: Optional Node2Vec-GCN encoder inherited from ``HLPPredictor``.
+        decoder: SLP decoder module inherited from ``HLPPredictor``.
+        loss_fn: Loss function inherited from ``HLPPredictor``.
+        metrics_log_kwargs: Metric logging keyword arguments inherited from ``HLPPredictor``.
+        train_metrics: Optional training metrics inherited from ``HLPPredictor``.
+        val_metrics: Optional validation metrics inherited from ``HLPPredictor``.
+        test_metrics: Optional test metrics inherited from ``HLPPredictor``.
         mode: Whether to use precomputed or joint Node2Vec embeddings.
-        embedding_dim: Node embedding dimension consumed by the decoder.
-        aggregation: Method to aggregate node embeddings per hyperedge.
-            Defaults to ``mean``.
+        embedding_dim: Node embedding dimension consumed by the GCN stack.
+        node2vec_hlp_config: Node2Vec HLP configuration.
+        gcn_hlp_config: GCN HLP configuration.
+        precomputed_gcn_encoder: GCN encoder used in precomputed mode.
+        aggregation: Method to aggregate node embeddings per hyperedge. Defaults to ``"mean"``.
         lr: Learning rate for the optimizer. Defaults to ``0.001``.
         weight_decay: Weight decay for the optimizer. Defaults to ``0.0``.
         random_walk_batch_size: Batch size used for Node2Vec walk loss in joint mode.
@@ -67,7 +76,7 @@ class Node2VecHlpModule(HlpModule):
 
     def __init__(
         self,
-        encoder_config: Node2VecEncoderConfig,
+        encoder_config: Node2VecGCNEncoderConfig,
         aggregation: Literal["mean", "max", "min", "sum"] = "mean",
         loss_fn: nn.Module | None = None,
         lr: float = 0.001,
@@ -76,10 +85,10 @@ class Node2VecHlpModule(HlpModule):
         metrics_log_kwargs: dict[str, Any] | None = None,
     ):
         """
-        Initialize the Node2Vec HLP module.
+        Initialize the Node2VecGCN-based HLP predictor.
 
         Args:
-            encoder_config: Configuration for Node2Vec embeddings.
+            encoder_config: Configuration for Node2Vec embeddings and GCN layers.
             aggregation: Method used to aggregate node embeddings per hyperedge.
                 Defaults to ``mean``.
             loss_fn: Optional HLP loss function. Defaults to ``BCEWithLogitsLoss``.
@@ -92,29 +101,44 @@ class Node2VecHlpModule(HlpModule):
         """
         self.mode: Node2VecMode = encoder_config.get("mode", NODE2VEC_JOINT_MODE)
         self.embedding_dim: int = encoder_config["num_features"]
-        node2vec_config = encoder_config["node2vec_config"]
 
-        encoder = (
-            build_node2vec_encoder(self.embedding_dim, node2vec_config, self.mode)
+        self.node2vec_hlp_config: Node2VecHLPConfig = encoder_config["node2vec_config"]
+        self.gcn_hlp_config: Node2VecGCNHLPConfig = encoder_config["gcn_config"]
+
+        node2vecgcn_encoder = (
+            build_node2vecgcn_encoder(
+                embedding_dim=self.embedding_dim,
+                node2vec_config=self.node2vec_hlp_config,
+                gcn_config=self.gcn_hlp_config,
+                mode=self.mode,
+            )
             if self.mode == NODE2VEC_JOINT_MODE
             else None
         )
 
-        decoder = SLP(in_channels=self.embedding_dim, out_channels=1)
+        decoder = SLP(in_channels=self.gcn_hlp_config["out_channels"], out_channels=1)
 
         super().__init__(
-            encoder=encoder,
+            encoder=node2vecgcn_encoder,
             decoder=decoder,
             loss_fn=loss_fn if loss_fn is not None else nn.BCEWithLogitsLoss(),
             metrics=metrics,
             metrics_log_kwargs=metrics_log_kwargs,
         )
 
+        self.precomputed_gcn_encoder: nn.Module | None = (
+            build_gcn_encoder(self.embedding_dim, self.gcn_hlp_config)
+            if self.mode == NODE2VEC_PRECOMPUTED_MODE
+            else None
+        )
+
         self.aggregation: Literal["mean", "max", "min", "sum"] = aggregation
         self.lr: float = lr
         self.weight_decay: float = weight_decay
-        self.random_walk_batch_size: int = node2vec_config.get("random_walk_batch_size", 128)
-        self.node2vec_loss_weight: float = node2vec_config.get("node2vec_loss_weight", 1.0)
+        self.random_walk_batch_size: int = self.node2vec_hlp_config.get(
+            "random_walk_batch_size", 128
+        )
+        self.node2vec_loss_weight: float = self.node2vec_hlp_config.get("node2vec_loss_weight", 1.0)
 
         self.__walk_loader_state: Node2VecWalkLoaderState = Node2VecWalkLoaderState()
 
@@ -125,7 +149,7 @@ class Node2VecHlpModule(HlpModule):
         global_node_ids: Tensor | None = None,
     ) -> Tensor:
         """
-        Score hyperedges from precomputed or jointly trained Node2Vec embeddings.
+        Score hyperedges from Node2Vec embeddings refined by GCN.
 
         Args:
             x: Node feature or precomputed embedding matrix.
@@ -139,33 +163,33 @@ class Node2VecHlpModule(HlpModule):
         Raises:
             ValueError: If the configured mode cannot supply node embeddings.
         """
-        # Encode: get node embeddings from precomputation or joint encoder
+        gcn_edge_index = to_gcn_edge_index(hyperedge_index, self.gcn_hlp_config)
+
         if self.mode == NODE2VEC_JOINT_MODE:
-            encoder = to_node2vec_encoder(self.encoder, self.mode)
+            encoder = to_node2vecgcn_encoder(self.encoder, self.mode)
             validate_global_node_ids(encoder.num_embeddings, global_node_ids, self.mode)
-            node_embeddings = encoder(batch=global_node_ids)
+            node_embeddings = encoder(batch=global_node_ids, edge_index=gcn_edge_index)
         else:
             if x.size(1) != self.embedding_dim:
                 raise ValueError(
                     f"Expected precomputed node embeddings with dimension "
                     f"{self.embedding_dim}, got {x.size(1)}."
                 )
-            node_embeddings = x
+            if self.precomputed_gcn_encoder is None:
+                raise ValueError("Precomputed GCN encoder is not initialized.")
+            node_embeddings = self.precomputed_gcn_encoder(x, gcn_edge_index)
 
-        # Aggregate: pool node embeddings per hyperedge
-        # shape: (num_hyperedges, embedding_dim)
-        hyperedge_embeddings = HyperedgeAggregator(hyperedge_index, node_embeddings).pool(
-            self.aggregation
-        )
+        hyperedge_embeddings = HyperedgeAggregator(
+            hyperedge_index,
+            node_embeddings,
+        ).pool(self.aggregation)
 
-        # Decode: linear projection to scalar score per hyperedge
-        # shape: (num_hyperedges, 1) -> squeeze -> (num_hyperedges,)
-        scores: Tensor = self.decoder(hyperedge_embeddings).squeeze(-1)
-        return scores
+        return self.decoder(hyperedge_embeddings).squeeze(-1)
 
     def training_step(self, batch: HData, batch_idx: int) -> Tensor:
         """
         Run a training step.
+
         In joint mode this combines HLP loss with one stochastic Node2Vec walk loss batch.
 
         Args:
@@ -180,10 +204,6 @@ class Node2VecHlpModule(HlpModule):
         batch_size = target_labels.size(0)
 
         if self.mode == NODE2VEC_JOINT_MODE:
-            # Node2Vec.loss() is already a stochastic objective over sampled walks,
-            # so one walk batch is a standard SGD estimate, not a logically different loss,
-            # meaning we can optimize training by using a single walk batch per training step,
-            # instead of averaging over multiple walk batches.
             positive_random_walk, negative_random_walk = next_walk_batch(
                 mode=self.mode,
                 encoder=self.encoder,
@@ -195,8 +215,7 @@ class Node2VecHlpModule(HlpModule):
 
             hlp_loss = self.loss_fn(target_scores, target_labels)
             node2vec_loss = to_node2vec_encoder(self.encoder, self.mode).loss(
-                positive_random_walk,
-                negative_random_walk,
+                positive_random_walk, negative_random_walk
             )
             loss = hlp_loss + (self.node2vec_loss_weight * node2vec_loss)
 

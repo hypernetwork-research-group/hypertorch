@@ -3,7 +3,7 @@ from typing import Any, TypedDict
 from typing_extensions import NotRequired
 from torchmetrics import MetricCollection
 
-from hypertorch.hlp.common import stage_metric_name
+from hypertorch.hyperlink_prediction.common import stage_metric_name
 from hypertorch.models.node2vec_common import (
     NODE2VEC_JOINT_MODE,
     NODE2VEC_PRECOMPUTED_MODE,

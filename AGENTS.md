@@ -20,7 +20,7 @@ See `Makefile` for supported commands. Use `make help` to list all available com
 
 - `hypertorch/`: core package
   - `data/`: dataset loading, sampling, and HIF integration
-  - `hlp/`: hyperlink prediction modules
+  - `hyperlink_prediction/`: hyperlink prediction modules
   - `integration_tests/`: integration tests for the package
   - `models/`: model implementations (e.g., GCN, Node2Vec, etc.)
   - `nc/`: node classification modules
@@ -73,7 +73,7 @@ See `Makefile` for supported commands. Use `make help` to list all available com
 - **Coverage**: Add tests for new behavior, edge cases, and failure paths when code changes.
     - Always ensure 100% coverage for new or refactored code. Run `make test` to see coverage
     reports and identify untested lines.
-- **Never add for**: `hlp`, `nc`, `models`, and `nn` modules.
+- **Never add for**: `hyperlink_prediction` (HLP), `nc`, `models`, and `nn` modules.
 
 ## Integration tests
 
@@ -85,7 +85,7 @@ See `Makefile` for supported commands. Use `make help` to list all available com
     - `uv run pytest hypertorch/integration_tests/...` only for targeted one-off invocations
 - **Style**: Use pytest function tests. Prefer `pytest.mark.parametrize` with readable `id=` values
     in `pytest.param(..., id=...)`.
-- **Always add for**: `hlp`, `nc`, and `train` modules.
+- **Always add for**: `hyperlink_prediction` (HLP), `nc`, and `train` modules.
 
 ## Security
 

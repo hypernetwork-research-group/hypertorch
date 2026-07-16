@@ -9,7 +9,7 @@ from hypertorch.types import HData
 from hypertorch.utils import Stage
 
 
-class HlpModule(L.LightningModule):
+class HLPPredictor(L.LightningModule):
     """
     A LightningModule for HLP models with optional negative sampling.
 

@@ -8,21 +8,21 @@ from hypertorch.models import CommonNeighbors
 from hypertorch.types import HData, HyperedgeIndex, Hypergraph, Neighborhood
 from hypertorch.utils import Stage
 
-from hypertorch.hlp.common import HlpModule
+from hypertorch.hyperlink_prediction.common import HLPPredictor
 
 
-class CommonNeighborsHlpModule(HlpModule):
+class CommonNeighborsPredictor(HLPPredictor):
     """
-    A LightningModule for the CommonNeighbors model with optional negative sampling.
+    A LightningModule for the CommonNeighbors-based HLP predictor.
 
     Attributes:
-        encoder: Optional encoder module inherited from ``HlpModule``. Defaults to ``None``.
-        decoder: Common-neighbor decoder inherited from ``HlpModule``.
-        loss_fn: Loss function inherited from ``HlpModule``.
-        metrics_log_kwargs: Metric logging keyword arguments inherited from ``HlpModule``.
-        train_metrics: Optional training metrics inherited from ``HlpModule``.
-        val_metrics: Optional validation metrics inherited from ``HlpModule``.
-        test_metrics: Optional test metrics inherited from ``HlpModule``.
+        encoder: Optional encoder module inherited from ``HLPPredictor``. Defaults to ``None``.
+        decoder: Common-neighbor decoder inherited from ``HLPPredictor``.
+        loss_fn: Loss function inherited from ``HLPPredictor``.
+        metrics_log_kwargs: Metric logging keyword arguments inherited from ``HLPPredictor``.
+        train_metrics: Optional training metrics inherited from ``HLPPredictor``.
+        val_metrics: Optional validation metrics inherited from ``HLPPredictor``.
+        test_metrics: Optional test metrics inherited from ``HLPPredictor``.
         node_to_neighbors: Precomputed training-world node neighborhoods.
         automatic_optimization: Disabled because this module has no trainable optimization.
     """
@@ -37,7 +37,7 @@ class CommonNeighborsHlpModule(HlpModule):
         metrics_log_kwargs: dict[str, Any] | None = None,
     ):
         """
-        Initialize the CommonNeighbors HLP module.
+        Initialize the CommonNeighbors-based HLP predictor.
 
         Args:
             train_hdata: Training data used to precompute neighborhoods.

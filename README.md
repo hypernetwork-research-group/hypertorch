@@ -38,9 +38,10 @@ Use HyperTorch to:
 | **Dataset management** | Load, process, and validate hypergraph datasets | HIF loader/processor, built-in datasets such as Algebra, Cora, Pubmed, DBLP, Amazon, and IMDB | `hypertorch.data` |
 | **Splitting, sampling, and batching** | Prepare train/validation/test data and mini-batches | Dataset splitters, node and hyperedge samplers, negative samplers, data loaders | `hypertorch.data` |
 | **Feature enrichment** | Enrich node and hyperedge features before training | Laplacian positional encodings, Node2Vec features, hyperedge weights and attributes | `hypertorch.data` |
+| **Neural components (NN)** | Build models and pipelines | Layers, aggregators, losses, and activation/normalization helpers | `hypertorch.nn` |
 | **Models** | Access hypergraph models | HGNN, HGNNP, HNHN, HyperGCN, GCN, MLP/SLP, NHP, Node2Vec, VilLain, CommonNeighbors | `hypertorch.models` |
-| **Neural components** | Build models and pipelines | Layers, aggregators, losses, and activation/normalization helpers | `hypertorch.nn` |
-| **HLP pipelines** | Use ready-to-train hyperlink prediction modules | HLP modules with encoders, configs, losses, and stage metrics for multiple models | `hypertorch.hlp` |
+| **Hyperlink prediction (HLP) pipelines** | Use ready-to-train hyperlink prediction modules | HLP modules with encoders, configs, losses, and stage metrics for multiple models | `hypertorch.hyperlink_prediction` |
+| **Node classification (NC) pipelines** | Use ready-to-train node classification modules | NC modules with encoders, configs, losses, and stage metrics for multiple models | `hypertorch.nc` |
 | **Training and benchmarking** | Train, compare, checkpoint, and report model runs | Multi-model trainer, schedulers, TensorBoard support, CSV/Markdown/LaTeX result tables | `hypertorch.train` |
 
 ## Getting started

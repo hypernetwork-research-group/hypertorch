@@ -1,6 +1,6 @@
 import pytest
 
-from hypertorch.hlp import CommonNeighborsHlpModule
+from hypertorch.hyperlink_prediction import CommonNeighborsPredictor
 from hypertorch.types import ModelConfig
 from hypertorch.data import RandomNegativeSampler, SamplingStrategyEnum
 from hypertorch.integration_tests.common import (
@@ -43,7 +43,7 @@ def test_model_common_neighbors(tmp_path, sampling_strategy, full, batch_size, r
         train_dataset, val_dataset, test_dataset, batch_size=batch_size, sample_full_hypergraph=full
     )
 
-    common_neighbors = CommonNeighborsHlpModule(
+    common_neighbors = CommonNeighborsPredictor(
         train_hdata=train_dataset.hdata,
         aggregation="mean",
         metrics=hlp_metrics(),

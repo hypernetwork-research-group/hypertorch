@@ -6,7 +6,7 @@ from torchmetrics.classification import (
     BinaryPrecision,
     BinaryRecall,
 )
-from hypertorch.hlp import NHPHlpModule
+from hypertorch.hyperlink_prediction import NHPPredictor
 from hypertorch.train import MultiModelTrainer
 from hypertorch.types import ModelConfig
 from hypertorch.data import (
@@ -114,7 +114,7 @@ if __name__ == "__main__":
         persistent_workers=True,
     )
 
-    model = NHPHlpModule(
+    model = NHPPredictor(
         encoder_config={
             "in_channels": num_features,
             "hidden_channels": 512,

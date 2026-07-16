@@ -4,7 +4,7 @@ import lightning as L
 from torch import Tensor, nn
 from typing import Any
 from torchmetrics import MetricCollection
-from hypertorch.hlp.common import stage_metric_name, stage_metric_prefix
+from hypertorch.hyperlink_prediction.common import stage_metric_name, stage_metric_prefix
 from hypertorch.types import HData
 from hypertorch.utils import Stage
 

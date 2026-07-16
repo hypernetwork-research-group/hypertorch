@@ -6,7 +6,7 @@ from torchmetrics.classification import (
     BinaryPrecision,
     BinaryRecall,
 )
-from hypertorch.hlp import Node2VecHlpModule
+from hypertorch.hyperlink_prediction import Node2VecPredictor
 from hypertorch.train import MultiModelTrainer
 from hypertorch.types import ModelConfig
 from hypertorch.data import (
@@ -120,7 +120,7 @@ if __name__ == "__main__":
         persistent_workers=True,
     )
 
-    node2vec_precomputed = Node2VecHlpModule(
+    node2vec_precomputed = Node2VecPredictor(
         encoder_config={
             "mode": "precomputed",
             "num_features": num_features,
@@ -133,7 +133,7 @@ if __name__ == "__main__":
     )
 
     train_hyperedge_index = train_dataset.hdata.hyperedge_index
-    node2vec_joint = Node2VecHlpModule(
+    node2vec_joint = Node2VecPredictor(
         encoder_config={
             "mode": "joint",
             "num_features": num_features,

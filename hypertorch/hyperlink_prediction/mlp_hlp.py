@@ -7,12 +7,12 @@ from hypertorch.types import HData
 from torchmetrics import MetricCollection
 from hypertorch.utils import ActivationFn, NormalizationFn, Stage
 
-from hypertorch.hlp.common import HlpModule
+from hypertorch.hyperlink_prediction.common import HLPPredictor
 
 
 class MLPEncoderConfig(TypedDict):
     """
-    Configuration for the MLP encoder in MLPHlpModule.
+    Configuration for the MLP encoder in MLPPredictor.
 
     Attributes:
         in_channels: Number of input features per node.
@@ -45,21 +45,21 @@ class MLPEncoderConfig(TypedDict):
     drop_rate: NotRequired[float]
 
 
-class MLPHlpModule(HlpModule):
+class MLPPredictor(HLPPredictor):
     """
-    A LightningModule for MLP-based Hyperlink Prediction.
+    A LightningModule for MLP-based HLP predictor.
 
     Uses an MLP encoder to produce node embeddings, aggregates them per hyperedge
     via mean pooling, and scores each hyperedge with a linear decoder.
 
     Attributes:
-        encoder: MLP encoder module inherited from ``HlpModule``.
-        decoder: SLP decoder module inherited from ``HlpModule``.
-        loss_fn: Loss function inherited from ``HlpModule``.
-        metrics_log_kwargs: Metric logging keyword arguments inherited from ``HlpModule``.
-        train_metrics: Optional training metrics inherited from ``HlpModule``.
-        val_metrics: Optional validation metrics inherited from ``HlpModule``.
-        test_metrics: Optional test metrics inherited from ``HlpModule``.
+        encoder: MLP encoder module inherited from ``HLPPredictor``.
+        decoder: SLP decoder module inherited from ``HLPPredictor``.
+        loss_fn: Loss function inherited from ``HLPPredictor``.
+        metrics_log_kwargs: Metric logging keyword arguments inherited from ``HLPPredictor``.
+        train_metrics: Optional training metrics inherited from ``HLPPredictor``.
+        val_metrics: Optional validation metrics inherited from ``HLPPredictor``.
+        test_metrics: Optional test metrics inherited from ``HLPPredictor``.
         aggregation: Method to aggregate node embeddings per hyperedge. Defaults to ``"mean"``.
         lr: Learning rate for the optimizer. Defaults to ``0.001``.
     """
@@ -74,7 +74,7 @@ class MLPHlpModule(HlpModule):
         metrics_log_kwargs: dict[str, Any] | None = None,
     ):
         """
-        Initialize the MLP HLP module.
+        Initialize the MLP-based HLP predictor.
 
         Args:
             encoder_config: Configuration for the MLP encoder.
