@@ -1,4 +1,4 @@
-# Available Datasets
+# Available datasets
 
 | Dataset | V | E | Avg. node deg. | Avg. edge size | Max. node deg. | Max. edge size | GitHub | 🤗 HF |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
