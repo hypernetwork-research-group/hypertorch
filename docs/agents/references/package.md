@@ -37,7 +37,6 @@
 ├── .github                   # GitHub workflows and templates
 ├── Makefile                  # convenience build/run targets
 ├── agents                    # agent docs and references
-│   ├── SKILLS.md
 │   └── references
 ├── configs                   # project configuration files
 ├── docs                      # documentation sources and site output
@@ -56,9 +55,10 @@
 │   └── utils                 # reusable helpers
 ├── hypertorch_logs           # local experiment outputs
 │   └── experiment_0
-│       ├── common_neighbors
 │       ├── comparison
-│       └── mlp
+│       ├── hgnn
+│       ├── ...
+│       └── villain
 ├── pyproject.toml            # package metadata and dependencies
 ├── uv.lock                   # exact dependency lockfile for development and CI
 └── zensical.toml             # zensical config for docs
