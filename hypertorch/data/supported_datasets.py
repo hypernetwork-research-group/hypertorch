@@ -344,8 +344,3 @@ class VegasBarsReviewsDataset(_PreloadedDataset):
 
     DATASET_NAME: ClassVar[str] = "vegas-bars-reviews"
     HF_SHA: ClassVar[str | None] = "4f1e4e4c87957679efc38c05129a694d315a8c9b"
-
-
-if __name__ == "__main__":
-    d = get_dataset_by_name("citeseer")
-    print(d.hdata)
