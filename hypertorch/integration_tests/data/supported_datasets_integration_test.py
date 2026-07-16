@@ -7,7 +7,10 @@ from hypertorch.data import (
     list_datasets,
 )
 
-from hypertorch.integration_tests.common import warn_ci
+from hypertorch.integration_tests.common import (
+    exclude_datasets,
+    warn_ci,
+)
 
 
 NETWORK_ERROR_TERMS = [
@@ -28,10 +31,6 @@ NETWORK_ERROR_TERMS = [
     "nodename nor servname provided",
     "cannot send a request",
     "client has been closed",
-]
-
-excluded_dataset = [
-    "citeseer",
 ]
 
 
@@ -59,7 +58,7 @@ def _is_network_download_failure(exception: BaseException) -> bool:
     [
         pytest.param(dataset_name, id=f"{dataset_name}")
         for dataset_name in list_datasets()
-        if dataset_name not in excluded_dataset
+        if dataset_name not in exclude_datasets()
     ],
 )
 @pytest.mark.integration

@@ -35,51 +35,22 @@ from hypertorch.utils import create_seeded_torch_generator, node_labels_from_nod
 SEED = 42
 
 
-@cache
-def __cached_split_dataset(
-    sampling_strategy: SamplingStrategyEnum,
-    dataset: Dataset | None = None,
-    node_space_setting: Literal["transductive", "inductive"] = "transductive",
-    task: Task = TaskEnum.HYPERLINK_PREDICTION,
-    num_classes: int | None = None,
-) -> tuple[Dataset, Dataset, Dataset]:
-    if dataset is None:
-        generator = create_seeded_torch_generator(device=torch.device("cpu"), seed=SEED)
-        x = torch.randn(
-            (100, 4), generator=generator, dtype=torch.float
-        )  # 100 nodes with 4 features each
-        hyperedge_index = torch.cat(  # 200 hyperedges, each connecting 5 nodes
-            [
-                torch.stack(
-                    [
-                        torch.randint(
-                            0, 100, (5,), generator=generator, dtype=torch.long
-                        ),  # 5 nodes per hyperedge
-                        torch.full((5,), i, dtype=torch.long),  # hyperedge ID
-                    ],
-                    dim=0,
-                )
-                for i in range(200)
-            ],
-            dim=1,
-        )
+def exclude_datasets() -> list[str]:
+    """
+    Returns a list of datasets to be excluded from integration tests.
 
-        hdata = HData(x=x, hyperedge_index=hyperedge_index, task=task)
-        if hdata.is_node_related_task:
-            hdata.y = node_labels_from_node_degrees(
-                node_incidences=hdata.hyperedge_index[0],
-                num_nodes=hdata.num_nodes,
-                num_classes=num_classes if num_classes is not None else 3,
-            )
-        dataset = Dataset.from_hdata(hdata, sampling_strategy=sampling_strategy)
-
-    train_dataset, val_dataset, test_dataset = dataset.split(
-        ratios=[0.7, 0.1, 0.2],
-        shuffle=True,
-        seed=SEED,
-        node_space_setting=node_space_setting,
-    )
-    return train_dataset, val_dataset, test_dataset
+    Returns:
+        A list of dataset names to be excluded.
+    """
+    return [
+        "citeseer",
+        "NDC-substances",
+        "contact-high-school",
+        "contact-primary-school",
+        "patent",
+        "threads-ask-ubuntu",
+        "threads-math-sx",
+    ]
 
 
 def hlp_metrics() -> MetricCollection:
@@ -326,3 +297,50 @@ def is_ci() -> bool:
 def warn_ci(message: str) -> None:
     if is_ci():
         print(f"::warning::{message}", file=sys.stderr)
+
+
+@cache
+def __cached_split_dataset(
+    sampling_strategy: SamplingStrategyEnum,
+    dataset: Dataset | None = None,
+    node_space_setting: Literal["transductive", "inductive"] = "transductive",
+    task: Task = TaskEnum.HYPERLINK_PREDICTION,
+    num_classes: int | None = None,
+) -> tuple[Dataset, Dataset, Dataset]:
+    if dataset is None:
+        generator = create_seeded_torch_generator(device=torch.device("cpu"), seed=SEED)
+        x = torch.randn(
+            (100, 4), generator=generator, dtype=torch.float
+        )  # 100 nodes with 4 features each
+        hyperedge_index = torch.cat(  # 200 hyperedges, each connecting 5 nodes
+            [
+                torch.stack(
+                    [
+                        torch.randint(
+                            0, 100, (5,), generator=generator, dtype=torch.long
+                        ),  # 5 nodes per hyperedge
+                        torch.full((5,), i, dtype=torch.long),  # hyperedge ID
+                    ],
+                    dim=0,
+                )
+                for i in range(200)
+            ],
+            dim=1,
+        )
+
+        hdata = HData(x=x, hyperedge_index=hyperedge_index, task=task)
+        if hdata.is_node_related_task:
+            hdata.y = node_labels_from_node_degrees(
+                node_incidences=hdata.hyperedge_index[0],
+                num_nodes=hdata.num_nodes,
+                num_classes=num_classes if num_classes is not None else 3,
+            )
+        dataset = Dataset.from_hdata(hdata, sampling_strategy=sampling_strategy)
+
+    train_dataset, val_dataset, test_dataset = dataset.split(
+        ratios=[0.7, 0.1, 0.2],
+        shuffle=True,
+        seed=SEED,
+        node_space_setting=node_space_setting,
+    )
+    return train_dataset, val_dataset, test_dataset

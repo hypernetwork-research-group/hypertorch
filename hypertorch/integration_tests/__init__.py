@@ -1,4 +1,5 @@
 from .common import (
+    exclude_datasets,
     is_ci,
     warn_ci,
     hlp_metrics,
@@ -17,6 +18,7 @@ from .common import (
 __all__ = [
     "add_negatives",
     "enrich_datasets",
+    "exclude_datasets",
     "extract_state_dict",
     "hlp_metrics",
     "is_ci",

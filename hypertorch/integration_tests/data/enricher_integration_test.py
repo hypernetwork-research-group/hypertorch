@@ -10,19 +10,9 @@ from hypertorch.data import (
     VilLainEnricher,
 )
 from hypertorch.integration_tests.common import (
+    exclude_datasets,
     split_dataset,
 )
-
-
-excluded_dataset = [
-    "citeseer",
-    "NDC-substances",
-    "contact-high-school",
-    "contact-primary-school",
-    "patent",
-    "threads-ask-ubuntu",
-    "threads-math-sx",
-]
 
 NUM_FEATURES = 8
 
@@ -46,7 +36,7 @@ NUM_FEATURES = 8
     [
         pytest.param(dataset_name, id=f"{dataset_name}")
         for dataset_name in list_datasets()
-        if dataset_name not in excluded_dataset
+        if dataset_name not in exclude_datasets()
     ],
 )
 @pytest.mark.integration
@@ -68,7 +58,7 @@ def test_lpe_node_enricher(dataset_name):
     [
         pytest.param(dataset_name, id=f"{dataset_name}")
         for dataset_name in list_datasets()
-        if dataset_name not in excluded_dataset
+        if dataset_name not in exclude_datasets()
     ],
 )
 @pytest.mark.integration
@@ -99,7 +89,7 @@ def test_n2v_node_enricher(dataset_name):
     [
         pytest.param(dataset_name, id=f"{dataset_name}")
         for dataset_name in list_datasets()
-        if dataset_name not in excluded_dataset
+        if dataset_name not in exclude_datasets()
     ],
 )
 @pytest.mark.integration
@@ -128,7 +118,7 @@ def test_villain_node_enricher(dataset_name):
     [
         pytest.param(dataset_name, id=f"{dataset_name}")
         for dataset_name in list_datasets()
-        if dataset_name not in excluded_dataset
+        if dataset_name not in exclude_datasets()
     ],
 )
 @pytest.mark.integration
@@ -147,7 +137,7 @@ def test_fill_value_hyperedge_attrs_enricher(dataset_name):
     [
         pytest.param(dataset_name, id=f"{dataset_name}")
         for dataset_name in list_datasets()
-        if dataset_name not in excluded_dataset
+        if dataset_name not in exclude_datasets()
     ],
 )
 @pytest.mark.integration

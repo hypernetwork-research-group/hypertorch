@@ -20,6 +20,7 @@ nav = [
     { "Installation" = "getting-started/installation.md" },
     { "Package overview" = "getting-started/package.md" },
     { "Tutorials" = "getting-started/tutorials.md" },
+    { "Available datasets" = "getting-started/datasets.md" },
   ] },
   { "User guide" = [
     { "Overview" = "user-guide/overview.md" },
