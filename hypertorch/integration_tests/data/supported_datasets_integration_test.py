@@ -12,6 +12,7 @@ from hypertorch.integration_tests.common import (
     warn_ci,
 )
 
+excluded_datasets = exclude_datasets()
 
 NETWORK_ERROR_TERMS = [
     "429",
@@ -58,7 +59,7 @@ def _is_network_download_failure(exception: BaseException) -> bool:
     [
         pytest.param(dataset_name, id=f"{dataset_name}")
         for dataset_name in list_datasets()
-        if dataset_name not in exclude_datasets()
+        if dataset_name not in excluded_datasets
     ],
 )
 @pytest.mark.integration
