@@ -7,7 +7,7 @@ from hypertorch.nn import HyperedgeAggregator
 from hypertorch.types import HData
 from hypertorch.utils import Stage
 
-from hypertorch.hlp.common import HLPPredictor, stage_metric_name
+from hypertorch.hyperlink_prediction.common import HLPPredictor, stage_metric_name
 
 
 class VilLainEncoderConfig(TypedDict):

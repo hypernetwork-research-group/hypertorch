@@ -94,9 +94,10 @@ branch = true
 omit = [
   "hypertorch/integration_tests/*",
   "hypertorch/tests/*",
+  # These are all tested in integration tests
   "hypertorch/nn/*",
   "hypertorch/models/*",
-  "hypertorch/hlp/*",
+  "hypertorch/hyperlink_prediction/*",
   "hypertorch/nc/*",
 ]
 

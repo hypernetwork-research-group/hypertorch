@@ -8,7 +8,7 @@ from hypertorch.models import CommonNeighbors
 from hypertorch.types import HData, HyperedgeIndex, Hypergraph, Neighborhood
 from hypertorch.utils import Stage
 
-from hypertorch.hlp.common import HLPPredictor
+from hypertorch.hyperlink_prediction.common import HLPPredictor
 
 
 class CommonNeighborsPredictor(HLPPredictor):

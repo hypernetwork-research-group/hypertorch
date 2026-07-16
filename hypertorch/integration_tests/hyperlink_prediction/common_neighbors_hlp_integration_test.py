@@ -1,6 +1,6 @@
 import pytest
 
-from hypertorch.hlp import CommonNeighborsPredictor
+from hypertorch.hyperlink_prediction import CommonNeighborsPredictor
 from hypertorch.types import ModelConfig
 from hypertorch.data import RandomNegativeSampler, SamplingStrategyEnum
 from hypertorch.integration_tests.common import (

@@ -24,7 +24,7 @@ scripts along with a brief description.
 | **Node and hyperedge enrichment** |  |  |
 | [hyperedge_enricher.py](https://github.com/hypernetwork-research-group/hypertorch/blob/main/examples/enrichment/hyperedge_enricher.py) | Hyperedge enrichment: weights (degree) + hyperedge attributes | `make run examples/enrichment/hyperedge_enricher.py` |
 | [node_enricher.py](https://github.com/hypernetwork-research-group/hypertorch/blob/main/examples/enrichment/node_enricher.py) | Node feature enrichment: Laplacian positional encoding (LPE) + Node2Vec | `make run examples/enrichment/node_enricher.py` |
-| **Hyperlink prediction models** |  |  |
+| **Hyperlink prediction (HLP) models** |  |  |
 | [common_neighbors.py](https://github.com/hypernetwork-research-group/hypertorch/blob/main/examples/hyperlink_prediction/common_neighbors.py) | Common Neighbors HLP baseline on `AlgebraDataset` (negative sampling) | `make run examples/hyperlink_prediction/common_neighbors.py` |
 | [gcn.py](https://github.com/hypernetwork-research-group/hypertorch/blob/main/examples/hyperlink_prediction/gcn.py) | GCN HLP pipeline on `AlgebraDataset` (negative sampling + LPE enricher) | `make run examples/hyperlink_prediction/gcn.py` |
 | [hgnn.py](https://github.com/hypernetwork-research-group/hypertorch/blob/main/examples/hyperlink_prediction/hgnn.py) | HGNN HLP pipeline on `AlgebraDataset` (negative sampling + LPE enricher) | `make run examples/hyperlink_prediction/hgnn.py` |

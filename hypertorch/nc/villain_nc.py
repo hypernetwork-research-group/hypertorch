@@ -2,7 +2,7 @@ from torch import Tensor, nn, optim
 from typing import Any, TypedDict
 from typing_extensions import NotRequired
 from torchmetrics import MetricCollection
-from hypertorch.hlp.common import stage_metric_name
+from hypertorch.hyperlink_prediction.common import stage_metric_name
 from hypertorch.models import SLP, VilLain
 from hypertorch.types import HData
 from hypertorch.utils import Stage

@@ -1,32 +1,26 @@
-from torch import Tensor, nn, optim
 from typing import Any, Literal, TypedDict
+from torch import Tensor, nn, optim
+from torchmetrics import MetricCollection
 from typing_extensions import NotRequired
-from hypertorch.models import HyperGCN, SLP
+from hypertorch.models import HNHN, SLP
 from hypertorch.nn import HyperedgeAggregator
 from hypertorch.types import HData
-from torchmetrics import MetricCollection
 from hypertorch.utils import Stage
 
-from hypertorch.hlp.common import HLPPredictor
+from hypertorch.hyperlink_prediction.common import HLPPredictor
 
 
-class HyperGCNEncoderConfig(TypedDict):
+class HNHNEncoderConfig(TypedDict):
     """
-    Configuration for the HyperGCN encoder in HyperGCNPredictor.
+    Configuration for the HNHN encoder in HNHNPredictor.
 
     Attributes:
         in_channels: Number of input features per node.
-        hidden_channels: Number of hidden units in the intermediate HyperGCN layer.
+        hidden_channels: Number of hidden units in the intermediate HNHN layer.
         out_channels: Number of output features (embedding size) per node.
         bias: Whether to include bias terms. Defaults to ``True``.
         use_batch_normalization: Whether to use batch normalization. Defaults to ``False``.
         drop_rate: Dropout rate. Defaults to ``0.5``.
-        use_mediator: Whether to use mediator nodes for hyperedge-to-edge conversion.
-            Defaults to ``False``.
-        fast: Whether to cache the graph structure after first computation.
-            Defaults to ``True``.
-        seed: Optional random seed for the random reduction of hyperedges to edges.
-            Defaults to ``None``.
     """
 
     in_channels: int
@@ -35,21 +29,18 @@ class HyperGCNEncoderConfig(TypedDict):
     bias: NotRequired[bool]
     use_batch_normalization: NotRequired[bool]
     drop_rate: NotRequired[float]
-    use_mediator: NotRequired[bool]
-    fast: NotRequired[bool]
-    seed: NotRequired[int]
 
 
-class HyperGCNPredictor(HLPPredictor):
+class HNHNPredictor(HLPPredictor):
     """
-    A LightningModule for HyperGCN-based HLP predictor.
+    A LightningModule for HNHN-based HLP predictor.
 
-    Uses HyperGCN as an encoder to produce structure-aware node embeddings via
-    graph convolution on the full hypergraph, aggregates them per hyperedge,
-    and scores each hyperedge with a linear decoder.
+    Uses HNHN as an encoder to produce node embeddings through explicit
+    hyperedge neurons, aggregates them per hyperedge, and scores each
+    hyperedge with a linear decoder.
 
     Attributes:
-        encoder: HyperGCN encoder module inherited from ``HLPPredictor``.
+        encoder: HNHN encoder module inherited from ``HLPPredictor``.
         decoder: SLP decoder module inherited from ``HLPPredictor``.
         loss_fn: Loss function inherited from ``HLPPredictor``.
         metrics_log_kwargs: Metric logging keyword arguments inherited from ``HLPPredictor``.
@@ -59,43 +50,46 @@ class HyperGCNPredictor(HLPPredictor):
         aggregation: Method to aggregate node embeddings per hyperedge. Defaults to ``"mean"``.
         lr: Learning rate for the optimizer. Defaults to ``0.01``.
         weight_decay: L2 regularization. Defaults to ``5e-4``.
+        scheduler_step_size: Step size for learning rate scheduler. Defaults to ``100``.
+        scheduler_gamma: Multiplicative factor for learning rate decay. Defaults to ``0.51``.
     """
 
     def __init__(
         self,
-        encoder_config: HyperGCNEncoderConfig,
+        encoder_config: HNHNEncoderConfig,
         aggregation: Literal["mean", "max", "min", "sum"] = "mean",
         loss_fn: nn.Module | None = None,
         lr: float = 0.01,
         weight_decay: float = 5e-4,
+        scheduler_step_size: int = 100,
+        scheduler_gamma: float = 0.51,
         metrics: MetricCollection | None = None,
         metrics_log_kwargs: dict[str, Any] | None = None,
     ):
         """
-        Initialize the HyperGCN-based HLP predictor.
+        Initialize the HNHN-based HLP predictor.
 
         Args:
-            encoder_config: Configuration for the HyperGCN encoder.
+            encoder_config: Configuration for the HNHN encoder.
             aggregation: Method used to aggregate node embeddings per hyperedge.
                 Defaults to ``"mean"``.
             loss_fn: Optional loss function. Defaults to ``BCEWithLogitsLoss``.
             lr: Learning rate for the optimizer. Defaults to ``0.01``.
             weight_decay: L2 regularization. Defaults to ``5e-4``.
+            scheduler_step_size: Step size for the learning rate scheduler. Defaults to ``100``.
+            scheduler_gamma: Multiplicative factor for learning rate decay. Defaults to ``0.51``.
             metrics: Optional metric collection for evaluation. Defaults to ``None``.
             metrics_log_kwargs: Additional keyword arguments passed to metric log calls.
                 Useful for configuring distributed synchronization behavior
                 of ``torchmetrics``. Defaults to ``None``.
         """
-        encoder = HyperGCN(
+        encoder = HNHN(
             in_channels=encoder_config["in_channels"],
             hidden_channels=encoder_config["hidden_channels"],
             num_classes=encoder_config["out_channels"],
             bias=encoder_config.get("bias", True),
             use_batch_normalization=encoder_config.get("use_batch_normalization", False),
             drop_rate=encoder_config.get("drop_rate", 0.5),
-            use_mediator=encoder_config.get("use_mediator", False),
-            fast=encoder_config.get("fast", True),
-            seed=encoder_config.get("seed"),
         )
         decoder = SLP(in_channels=encoder_config["out_channels"], out_channels=1)
 
@@ -110,42 +104,19 @@ class HyperGCNPredictor(HLPPredictor):
         self.aggregation: Literal["mean", "max", "min", "sum"] = aggregation
         self.lr: float = lr
         self.weight_decay: float = weight_decay
+        self.scheduler_step_size: int = scheduler_step_size
+        self.scheduler_gamma: float = scheduler_gamma
 
     def forward(self, x: Tensor, hyperedge_index: Tensor) -> Tensor:
         """
-        Encode node features via HyperGCN, aggregate per hyperedge, and score.
-
-        Steps:
-            1. Encode: HyperGCN builds a GCN Laplacian from ``hyperedge_index``
-               and applies message passing to produce structure-aware node embeddings.
-            2. Aggregate: For each hyperedge, aggregate its member nodes' embeddings
-               using the configured pooling method (mean/max/min/sum).
-            3. Decode: A linear layer scores each hyperedge embedding.
-
-        Examples:
-            Given 5 nodes with 3 features and 2 hyperedges:
-
-                >>> x.shape  # (5, 3) — all nodes in the hypergraph
-                >>> hyperedge_index = [[0, 1, 2, 3, 4],  # node IDs (global)
-                ...                    [0, 0, 0, 1, 1]]  # hyperedge IDs
-
-            The forward pass:
-
-                >>> HyperGCN encodes all 5 nodes using the full graph Laplacian.
-                ...   ``node_embeddings.shape = (5, out_channels)``
-                >>> Aggregate per hyperedge:
-                ...   - hyperedge 0: pool(emb[0], emb[1], emb[2])
-                ...   - hyperedge 1: pool(emb[3], emb[4])
-                >>> Decode: one scalar score per hyperedge → ``scores.shape = (2,)``
+        Run the full HNHN-based hyperedge link prediction pipeline.
 
         Args:
             x: Node feature matrix of shape ``(num_nodes, in_channels)``.
-                Must contain **all** nodes in the hypergraph.
-            hyperedge_index: Hyperedge connectivity of shape ``(2, num_incidences)``
-                with **global** node IDs.
+            hyperedge_index: Hyperedge connectivity of shape ``(2, num_incidences)``.
 
         Returns:
-            scores: Scores of shape ``(num_hyperedges,)``.
+            scores: Logit scores of shape ``(num_hyperedges,)``.
 
         Raises:
             ValueError: If the encoder is not defined for this module.
@@ -153,19 +124,10 @@ class HyperGCNPredictor(HLPPredictor):
         if self.encoder is None:
             raise ValueError("Encoder is not defined for this HLP module.")
 
-        # Encode: HyperGCN applies Laplacian-based message passing
-        # Example: x: (num_nodes, in_channels)
-        #          -> node_embeddings: (num_nodes, out_channels)
         node_embeddings: Tensor = self.encoder(x, hyperedge_index)
-
-        # Aggregate: pool node embeddings per hyperedge
-        # shape: (num_hyperedges, out_channels)
         hyperedge_embeddings = HyperedgeAggregator(hyperedge_index, node_embeddings).pool(
             self.aggregation
         )
-
-        # Decode: linear projection to scalar score per hyperedge
-        # shape: (num_hyperedges, 1) -> squeeze -> (num_hyperedges,)
         scores: Tensor = self.decoder(hyperedge_embeddings).squeeze(-1)
         return scores
 
@@ -221,14 +183,18 @@ class HyperGCNPredictor(HLPPredictor):
         """
         return self.forward(batch.x, batch.hyperedge_index)
 
-    def configure_optimizers(self) -> optim.Adam:
+    def configure_optimizers(self) -> tuple[list[optim.Adam], list[optim.lr_scheduler.StepLR]]:
         """
-        Configure the optimizer.
+        Configure the optimizer and scheduler.
 
         Returns:
-            optimizer: Adam optimizer.
+            optimizers_and_schedulers: Optimizer and scheduler lists.
         """
-        return optim.Adam(self.parameters(), lr=self.lr, weight_decay=self.weight_decay)
+        optimizer = optim.Adam(self.parameters(), lr=self.lr, weight_decay=self.weight_decay)
+        scheduler = optim.lr_scheduler.StepLR(
+            optimizer, step_size=self.scheduler_step_size, gamma=self.scheduler_gamma
+        )
+        return [optimizer], [scheduler]
 
     def __eval_step(self, batch: HData, stage: Stage) -> Tensor:
         """

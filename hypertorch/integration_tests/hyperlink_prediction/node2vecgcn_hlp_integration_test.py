@@ -1,7 +1,7 @@
 import pytest
 
 from hypertorch.data import SamplingStrategyEnum
-from hypertorch.hlp import Node2VecPredictor
+from hypertorch.hyperlink_prediction import Node2VecGCNPredictor, Node2VecGCNHLPConfig
 from hypertorch.integration_tests.common import (
     hlp_metrics,
     loaders,
@@ -25,7 +25,7 @@ NUM_FEATURES = 8
         pytest.param(SamplingStrategyEnum.NODE, True, 1, id="node_full"),
     ],
 )
-def test_model_node2vec_precomputed(tmp_path, sampling_strategy, full, batch_size, request):
+def test_model_node2vecgcn_precomputed(tmp_path, sampling_strategy, full, batch_size, request):
     test_id = request.node.callspec.id
 
     train_dataset, val_dataset, test_dataset = split_dataset(sampling_strategy)
@@ -40,11 +40,25 @@ def test_model_node2vec_precomputed(tmp_path, sampling_strategy, full, batch_siz
         train_dataset, val_dataset, test_dataset, batch_size=batch_size, sample_full_hypergraph=full
     )
 
-    precomputed_node2vec = Node2VecPredictor(
+    gcn_config: Node2VecGCNHLPConfig = {
+        "out_channels": NUM_FEATURES,
+        "hidden_channels": NUM_FEATURES,
+        "num_layers": 2,
+        "drop_rate": 0.1,
+        "bias": True,
+        "improved": False,
+        "add_self_loops": True,
+        "normalize": True,
+        "cached": False,
+        "graph_reduction_strategy": "clique_expansion",
+    }
+
+    precomputed_node2vecgcn = Node2VecGCNPredictor(
         encoder_config={
             "mode": "precomputed",
             "num_features": NUM_FEATURES,
             "node2vec_config": {},
+            "gcn_config": gcn_config,
         },
         aggregation="mean",
         lr=0.001,
@@ -53,15 +67,15 @@ def test_model_node2vec_precomputed(tmp_path, sampling_strategy, full, batch_siz
     )
 
     configs = model_configs_with_single_model(
-        name="node2vec-precomputed",
+        name="node2vecgcn-precomputed",
         version="hlp",
-        model=precomputed_node2vec,
+        model=precomputed_node2vecgcn,
     )
 
     train_test_loop(
         configs=configs,
         path=tmp_path,
-        experiment_name=f"node2vec_precomputed_hlp_integration_test_{test_id}",
+        experiment_name=f"node2vecgcn_precomputed_hlp_integration_test_{test_id}",
         train_loader=train_loader,
         val_loader=val_loader,
         test_loader=test_loader,
@@ -69,42 +83,51 @@ def test_model_node2vec_precomputed(tmp_path, sampling_strategy, full, batch_siz
 
     assert (
         tmp_path
-        / f"node2vec_precomputed_hlp_integration_test_{test_id}"
+        / f"node2vecgcn_precomputed_hlp_integration_test_{test_id}"
         / "comparison"
         / "overall.tex"
     ).exists()
     assert (
         tmp_path
-        / f"node2vec_precomputed_hlp_integration_test_{test_id}"
+        / f"node2vecgcn_precomputed_hlp_integration_test_{test_id}"
         / "comparison"
         / "overall.md"
     ).exists()
     assert (
         tmp_path
-        / f"node2vec_precomputed_hlp_integration_test_{test_id}"
+        / f"node2vecgcn_precomputed_hlp_integration_test_{test_id}"
         / "comparison"
         / "test.tex"
     ).exists()
     assert (
-        tmp_path / f"node2vec_precomputed_hlp_integration_test_{test_id}" / "comparison" / "test.md"
+        tmp_path
+        / f"node2vecgcn_precomputed_hlp_integration_test_{test_id}"
+        / "comparison"
+        / "test.md"
     ).exists()
     assert (
         tmp_path
-        / f"node2vec_precomputed_hlp_integration_test_{test_id}"
+        / f"node2vecgcn_precomputed_hlp_integration_test_{test_id}"
         / "comparison"
         / "train.md"
     ).exists()
     assert (
         tmp_path
-        / f"node2vec_precomputed_hlp_integration_test_{test_id}"
+        / f"node2vecgcn_precomputed_hlp_integration_test_{test_id}"
         / "comparison"
         / "train.tex"
     ).exists()
     assert (
-        tmp_path / f"node2vec_precomputed_hlp_integration_test_{test_id}" / "comparison" / "val.md"
+        tmp_path
+        / f"node2vecgcn_precomputed_hlp_integration_test_{test_id}"
+        / "comparison"
+        / "val.md"
     ).exists()
     assert (
-        tmp_path / f"node2vec_precomputed_hlp_integration_test_{test_id}" / "comparison" / "val.tex"
+        tmp_path
+        / f"node2vecgcn_precomputed_hlp_integration_test_{test_id}"
+        / "comparison"
+        / "val.tex"
     ).exists()
 
 
@@ -118,7 +141,7 @@ def test_model_node2vec_precomputed(tmp_path, sampling_strategy, full, batch_siz
         pytest.param(SamplingStrategyEnum.NODE, True, 1, id="node_full"),
     ],
 )
-def test_model_node2vec_joint(tmp_path, sampling_strategy, full, batch_size, request):
+def test_model_node2vecgcn_joint(tmp_path, sampling_strategy, full, batch_size, request):
     test_id = request.node.callspec.id
 
     train_dataset, val_dataset, test_dataset = split_dataset(sampling_strategy)
@@ -133,7 +156,20 @@ def test_model_node2vec_joint(tmp_path, sampling_strategy, full, batch_size, req
         train_dataset, val_dataset, test_dataset, batch_size=batch_size, sample_full_hypergraph=full
     )
 
-    joint_node2vec = Node2VecPredictor(
+    gcn_config: Node2VecGCNHLPConfig = {
+        "out_channels": NUM_FEATURES,
+        "hidden_channels": NUM_FEATURES,
+        "num_layers": 2,
+        "drop_rate": 0.1,
+        "bias": True,
+        "improved": False,
+        "add_self_loops": True,
+        "normalize": True,
+        "cached": False,
+        "graph_reduction_strategy": "clique_expansion",
+    }
+
+    joint_node2vecgcn = Node2VecGCNPredictor(
         encoder_config={
             "mode": "joint",
             "num_features": NUM_FEATURES,
@@ -151,6 +187,7 @@ def test_model_node2vec_joint(tmp_path, sampling_strategy, full, batch_size, req
                 # We count the node2vec loss as 40% of the total loss (the rest is the HLP loss)
                 "node2vec_loss_weight": 0.4,
             },
+            "gcn_config": gcn_config,
         },
         aggregation="mean",
         lr=0.001,
@@ -159,41 +196,43 @@ def test_model_node2vec_joint(tmp_path, sampling_strategy, full, batch_size, req
     )
 
     configs = model_configs_with_single_model(
-        name="node2vec-joint",
+        name="node2vecgcn-joint",
         version="hlp",
-        model=joint_node2vec,
+        model=joint_node2vecgcn,
     )
 
     train_test_loop(
         configs=configs,
         path=tmp_path,
-        experiment_name=f"node2vec_joint_hlp_integration_test_{test_id}",
+        experiment_name=f"node2vecgcn_joint_hlp_integration_test_{test_id}",
         train_loader=train_loader,
         val_loader=val_loader,
         test_loader=test_loader,
     )
-
     assert (
-        tmp_path / f"node2vec_joint_hlp_integration_test_{test_id}" / "comparison" / "overall.tex"
+        tmp_path
+        / f"node2vecgcn_joint_hlp_integration_test_{test_id}"
+        / "comparison"
+        / "overall.tex"
     ).exists()
     assert (
-        tmp_path / f"node2vec_joint_hlp_integration_test_{test_id}" / "comparison" / "overall.md"
+        tmp_path / f"node2vecgcn_joint_hlp_integration_test_{test_id}" / "comparison" / "overall.md"
     ).exists()
     assert (
-        tmp_path / f"node2vec_joint_hlp_integration_test_{test_id}" / "comparison" / "test.tex"
+        tmp_path / f"node2vecgcn_joint_hlp_integration_test_{test_id}" / "comparison" / "test.tex"
     ).exists()
     assert (
-        tmp_path / f"node2vec_joint_hlp_integration_test_{test_id}" / "comparison" / "test.md"
+        tmp_path / f"node2vecgcn_joint_hlp_integration_test_{test_id}" / "comparison" / "test.md"
     ).exists()
     assert (
-        tmp_path / f"node2vec_joint_hlp_integration_test_{test_id}" / "comparison" / "train.md"
+        tmp_path / f"node2vecgcn_joint_hlp_integration_test_{test_id}" / "comparison" / "train.md"
     ).exists()
     assert (
-        tmp_path / f"node2vec_joint_hlp_integration_test_{test_id}" / "comparison" / "train.tex"
+        tmp_path / f"node2vecgcn_joint_hlp_integration_test_{test_id}" / "comparison" / "train.tex"
     ).exists()
     assert (
-        tmp_path / f"node2vec_joint_hlp_integration_test_{test_id}" / "comparison" / "val.md"
+        tmp_path / f"node2vecgcn_joint_hlp_integration_test_{test_id}" / "comparison" / "val.md"
     ).exists()
     assert (
-        tmp_path / f"node2vec_joint_hlp_integration_test_{test_id}" / "comparison" / "val.tex"
+        tmp_path / f"node2vecgcn_joint_hlp_integration_test_{test_id}" / "comparison" / "val.tex"
     ).exists()

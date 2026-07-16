@@ -6,7 +6,7 @@ from torchmetrics.classification import (
     BinaryPrecision,
     BinaryRecall,
 )
-from hypertorch.hlp import VilLainPredictor
+from hypertorch.hyperlink_prediction import VilLainPredictor
 from hypertorch.train import MultiModelTrainer
 from hypertorch.types import ModelConfig
 from hypertorch.data import CoraDataset, DataLoader, RandomNegativeSampler

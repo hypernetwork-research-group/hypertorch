@@ -1,3 +1,3 @@
-# NC (Node classification)
+# Node classification (NC)
 
 ::: hypertorch.nc

@@ -1,6 +1,6 @@
 import pytest
 
-from hypertorch.hlp import MLPPredictor
+from hypertorch.hyperlink_prediction import MLPPredictor
 from hypertorch.data import SamplingStrategyEnum
 from hypertorch.integration_tests.common import (
     hlp_metrics,

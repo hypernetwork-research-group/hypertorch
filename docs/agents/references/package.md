@@ -34,34 +34,34 @@
 
 ```bash
 .
-├── .github                 # GitHub workflows and templates
-├── Makefile                # convenience build/run targets
-├── agents                  # agent docs and references
+├── .github                   # GitHub workflows and templates
+├── Makefile                  # convenience build/run targets
+├── agents                    # agent docs and references
 │   ├── SKILLS.md
 │   └── references
-├── configs                 # project configuration files
-├── docs                    # documentation sources and site output
-├── examples                # runnable examples and demos
+├── configs                   # project configuration files
+├── docs                      # documentation sources and site output
+├── examples                  # runnable examples and demos
 │   ├── hgnn.py
 |   ├── ...
 │   └── villain.py
-├── hypertorch              # core Python package
-│   ├── data                # datasets, loaders, and sampling
-│   ├── hlp                 # HLP task helpers and pipelines
-│   ├── models              # model implementations
-│   ├── nn                  # neural network building blocks
-│   ├── tests               # unit tests
-│   ├── train               # training loops and loggers
-│   ├── types               # shared type definitions
-│   └── utils               # reusable helpers
-├── hypertorch_logs         # local experiment outputs
+├── hypertorch                # core Python package
+│   ├── data                  # datasets, loaders, and sampling
+│   ├── hyperlink_prediction  # Hyperlink prediction (HLP) task helpers and pipelines
+│   ├── models                # model implementations
+│   ├── nn                    # neural network building blocks
+│   ├── tests                 # unit tests
+│   ├── train                 # training loops and loggers
+│   ├── types                 # shared type definitions
+│   └── utils                 # reusable helpers
+├── hypertorch_logs           # local experiment outputs
 │   └── experiment_0
 │       ├── common_neighbors
 │       ├── comparison
 │       └── mlp
-├── pyproject.toml          # package metadata and dependencies
-├── uv.lock                 # exact dependency lockfile for development and CI
-└── zensical.toml           # zensical config for docs
+├── pyproject.toml            # package metadata and dependencies
+├── uv.lock                   # exact dependency lockfile for development and CI
+└── zensical.toml             # zensical config for docs
 ```
 
 

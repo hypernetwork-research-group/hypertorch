@@ -1,7 +1,7 @@
 import pytest
 
-from hypertorch.hlp import VilLainPredictor
 from hypertorch.data import SamplingStrategyEnum
+from hypertorch.hyperlink_prediction import Node2VecPredictor
 from hypertorch.integration_tests.common import (
     hlp_metrics,
     loaders,
@@ -25,10 +25,11 @@ NUM_FEATURES = 8
         pytest.param(SamplingStrategyEnum.NODE, True, 1, id="node_full"),
     ],
 )
-def test_model_villain_node(tmp_path, sampling_strategy, full, batch_size, request):
+def test_model_node2vec_precomputed(tmp_path, sampling_strategy, full, batch_size, request):
     test_id = request.node.callspec.id
 
     train_dataset, val_dataset, test_dataset = split_dataset(sampling_strategy)
+
     train_dataset, val_dataset, test_dataset = add_negatives(
         train_dataset, val_dataset, test_dataset
     )
@@ -39,62 +40,71 @@ def test_model_villain_node(tmp_path, sampling_strategy, full, batch_size, reque
         train_dataset, val_dataset, test_dataset, batch_size=batch_size, sample_full_hypergraph=full
     )
 
-    node_villain = VilLainPredictor(
+    precomputed_node2vec = Node2VecPredictor(
         encoder_config={
-            "num_nodes": train_dataset.hdata.num_nodes,
-            "embedding_dim": 64,
-            "labels_per_subspace": 2,
-            "training_steps": 2,
-            "generation_steps": 4,
-            "tau": 1.0,
-            "eps": 1e-10,
-            "villain_loss_weight": 1.0,
+            "mode": "precomputed",
+            "num_features": NUM_FEATURES,
+            "node2vec_config": {},
         },
-        embedding_mode="node",
-        aggregation="maxmin",
-        lr=0.01,
+        aggregation="mean",
+        lr=0.001,
         weight_decay=0.0,
         metrics=hlp_metrics(),
     )
 
     configs = model_configs_with_single_model(
-        name="villain-node",
+        name="node2vec-precomputed",
         version="hlp",
-        model=node_villain,
+        model=precomputed_node2vec,
     )
 
     train_test_loop(
         configs=configs,
         path=tmp_path,
-        experiment_name=f"villain_node_hlp_integration_test_{test_id}",
+        experiment_name=f"node2vec_precomputed_hlp_integration_test_{test_id}",
         train_loader=train_loader,
         val_loader=val_loader,
         test_loader=test_loader,
     )
 
     assert (
-        tmp_path / f"villain_node_hlp_integration_test_{test_id}" / "comparison" / "overall.tex"
+        tmp_path
+        / f"node2vec_precomputed_hlp_integration_test_{test_id}"
+        / "comparison"
+        / "overall.tex"
     ).exists()
     assert (
-        tmp_path / f"villain_node_hlp_integration_test_{test_id}" / "comparison" / "overall.md"
+        tmp_path
+        / f"node2vec_precomputed_hlp_integration_test_{test_id}"
+        / "comparison"
+        / "overall.md"
     ).exists()
     assert (
-        tmp_path / f"villain_node_hlp_integration_test_{test_id}" / "comparison" / "test.tex"
+        tmp_path
+        / f"node2vec_precomputed_hlp_integration_test_{test_id}"
+        / "comparison"
+        / "test.tex"
     ).exists()
     assert (
-        tmp_path / f"villain_node_hlp_integration_test_{test_id}" / "comparison" / "test.md"
+        tmp_path / f"node2vec_precomputed_hlp_integration_test_{test_id}" / "comparison" / "test.md"
     ).exists()
     assert (
-        tmp_path / f"villain_node_hlp_integration_test_{test_id}" / "comparison" / "train.md"
+        tmp_path
+        / f"node2vec_precomputed_hlp_integration_test_{test_id}"
+        / "comparison"
+        / "train.md"
     ).exists()
     assert (
-        tmp_path / f"villain_node_hlp_integration_test_{test_id}" / "comparison" / "train.tex"
+        tmp_path
+        / f"node2vec_precomputed_hlp_integration_test_{test_id}"
+        / "comparison"
+        / "train.tex"
     ).exists()
     assert (
-        tmp_path / f"villain_node_hlp_integration_test_{test_id}" / "comparison" / "val.md"
+        tmp_path / f"node2vec_precomputed_hlp_integration_test_{test_id}" / "comparison" / "val.md"
     ).exists()
     assert (
-        tmp_path / f"villain_node_hlp_integration_test_{test_id}" / "comparison" / "val.tex"
+        tmp_path / f"node2vec_precomputed_hlp_integration_test_{test_id}" / "comparison" / "val.tex"
     ).exists()
 
 
@@ -108,10 +118,11 @@ def test_model_villain_node(tmp_path, sampling_strategy, full, batch_size, reque
         pytest.param(SamplingStrategyEnum.NODE, True, 1, id="node_full"),
     ],
 )
-def test_model_villain_hyperedge(tmp_path, sampling_strategy, full, batch_size, request):
+def test_model_node2vec_joint(tmp_path, sampling_strategy, full, batch_size, request):
     test_id = request.node.callspec.id
 
     train_dataset, val_dataset, test_dataset = split_dataset(sampling_strategy)
+
     train_dataset, val_dataset, test_dataset = add_negatives(
         train_dataset, val_dataset, test_dataset
     )
@@ -122,62 +133,67 @@ def test_model_villain_hyperedge(tmp_path, sampling_strategy, full, batch_size, 
         train_dataset, val_dataset, test_dataset, batch_size=batch_size, sample_full_hypergraph=full
     )
 
-    hyperedge_villain = VilLainPredictor(
+    joint_node2vec = Node2VecPredictor(
         encoder_config={
-            "num_nodes": train_dataset.hdata.num_nodes,
-            "embedding_dim": 64,
-            "labels_per_subspace": 2,
-            "training_steps": 2,
-            "generation_steps": 4,
-            "tau": 1.0,
-            "eps": 1e-10,
-            "villain_loss_weight": 1.0,
+            "mode": "joint",
+            "num_features": NUM_FEATURES,
+            "node2vec_config": {
+                "context_size": 2,
+                "walk_length": 5,
+                "num_walks_per_node": 2,
+                "p": 1.0,
+                "q": 1.0,
+                "num_negative_samples": 1,
+                "train_hyperedge_index": train_dataset.hdata.hyperedge_index,
+                "num_nodes": train_dataset.hdata.num_nodes,
+                "graph_reduction_strategy": "clique_expansion",
+                "random_walk_batch_size": 128,
+                # We count the node2vec loss as 40% of the total loss (the rest is the HLP loss)
+                "node2vec_loss_weight": 0.4,
+            },
         },
-        embedding_mode="hyperedge",
-        lr=0.01,
+        aggregation="mean",
+        lr=0.001,
         weight_decay=0.0,
         metrics=hlp_metrics(),
     )
 
     configs = model_configs_with_single_model(
-        name="villain-hyperedge",
+        name="node2vec-joint",
         version="hlp",
-        model=hyperedge_villain,
+        model=joint_node2vec,
     )
 
     train_test_loop(
         configs=configs,
         path=tmp_path,
-        experiment_name=f"villain_hyperedge_hlp_integration_test_{test_id}",
+        experiment_name=f"node2vec_joint_hlp_integration_test_{test_id}",
         train_loader=train_loader,
         val_loader=val_loader,
         test_loader=test_loader,
     )
 
     assert (
-        tmp_path
-        / f"villain_hyperedge_hlp_integration_test_{test_id}"
-        / "comparison"
-        / "overall.tex"
+        tmp_path / f"node2vec_joint_hlp_integration_test_{test_id}" / "comparison" / "overall.tex"
     ).exists()
     assert (
-        tmp_path / f"villain_hyperedge_hlp_integration_test_{test_id}" / "comparison" / "overall.md"
+        tmp_path / f"node2vec_joint_hlp_integration_test_{test_id}" / "comparison" / "overall.md"
     ).exists()
     assert (
-        tmp_path / f"villain_hyperedge_hlp_integration_test_{test_id}" / "comparison" / "test.tex"
+        tmp_path / f"node2vec_joint_hlp_integration_test_{test_id}" / "comparison" / "test.tex"
     ).exists()
     assert (
-        tmp_path / f"villain_hyperedge_hlp_integration_test_{test_id}" / "comparison" / "test.md"
+        tmp_path / f"node2vec_joint_hlp_integration_test_{test_id}" / "comparison" / "test.md"
     ).exists()
     assert (
-        tmp_path / f"villain_hyperedge_hlp_integration_test_{test_id}" / "comparison" / "train.md"
+        tmp_path / f"node2vec_joint_hlp_integration_test_{test_id}" / "comparison" / "train.md"
     ).exists()
     assert (
-        tmp_path / f"villain_hyperedge_hlp_integration_test_{test_id}" / "comparison" / "train.tex"
+        tmp_path / f"node2vec_joint_hlp_integration_test_{test_id}" / "comparison" / "train.tex"
     ).exists()
     assert (
-        tmp_path / f"villain_hyperedge_hlp_integration_test_{test_id}" / "comparison" / "val.md"
+        tmp_path / f"node2vec_joint_hlp_integration_test_{test_id}" / "comparison" / "val.md"
     ).exists()
     assert (
-        tmp_path / f"villain_hyperedge_hlp_integration_test_{test_id}" / "comparison" / "val.tex"
+        tmp_path / f"node2vec_joint_hlp_integration_test_{test_id}" / "comparison" / "val.tex"
     ).exists()

@@ -1,6 +1,6 @@
 import pytest
 
-from hypertorch.hlp import HyperGCNPredictor
+from hypertorch.hyperlink_prediction import HyperGCNPredictor
 from hypertorch.data import SamplingStrategyEnum
 from hypertorch.integration_tests.common import (
     SEED,

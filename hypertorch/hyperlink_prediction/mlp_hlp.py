@@ -7,7 +7,7 @@ from hypertorch.types import HData
 from torchmetrics import MetricCollection
 from hypertorch.utils import ActivationFn, NormalizationFn, Stage
 
-from hypertorch.hlp.common import HLPPredictor
+from hypertorch.hyperlink_prediction.common import HLPPredictor
 
 
 class MLPEncoderConfig(TypedDict):

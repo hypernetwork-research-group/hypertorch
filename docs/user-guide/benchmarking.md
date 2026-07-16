@@ -12,7 +12,7 @@ The recommended pattern is to pass multiple `ModelConfig` objects to `MultiModel
 ```python
 from hypertorch.types import ModelConfig
 from hypertorch.train import MultiModelTrainer
-from hypertorch.hlp import MLPPredictor, NHPPredictor
+from hypertorch.hyperlink_prediction import MLPPredictor, NHPPredictor
 
 configs = [
     ModelConfig(

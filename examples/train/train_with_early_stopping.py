@@ -6,7 +6,7 @@ from torchmetrics.classification import (
     BinaryRecall,
 )
 from lightning.pytorch.callbacks import EarlyStopping
-from hypertorch.hlp import MLPPredictor
+from hypertorch.hyperlink_prediction import MLPPredictor
 from hypertorch.train import MultiModelTrainer
 from hypertorch.types import ModelConfig
 from hypertorch.data import (

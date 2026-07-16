@@ -26,7 +26,7 @@ Most examples follow the same high-level pipeline:
 2. Split into train/val/test.
 3. Add negative samples.
 4. Enrich node features (e.g. Laplacian positional encoding).
-5. Create one or more models (HLP modules).
+5. Create one or more hyperlink prediction (HLP) or node classification (NC) modules.
 6. Train + evaluate with `MultiModelTrainer`.
 
 Artifacts are written under `hypertorch_logs/` (by default). In particular:

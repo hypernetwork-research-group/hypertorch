@@ -13,7 +13,7 @@ from hypertorch.types import (
 )
 from hypertorch.utils import ActivationFn, Stage
 
-from hypertorch.hlp.common import HLPPredictor
+from hypertorch.hyperlink_prediction.common import HLPPredictor
 
 
 class GCNEncoderConfig(TypedDict):

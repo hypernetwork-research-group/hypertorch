@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import cast
 from lightning.pytorch.callbacks import ModelCheckpoint
 from torch import Tensor
-from hypertorch.hlp import MLPPredictor
+from hypertorch.hyperlink_prediction import MLPPredictor
 from hypertorch.train import MultiModelTrainer
 from hypertorch.types import ModelConfig
 from hypertorch.data import (

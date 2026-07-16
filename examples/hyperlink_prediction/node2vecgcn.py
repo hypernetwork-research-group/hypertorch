@@ -6,7 +6,7 @@ from torchmetrics.classification import (
     BinaryPrecision,
     BinaryRecall,
 )
-from hypertorch.hlp import Node2VecGCNPredictor, Node2VecGCNHLPConfig
+from hypertorch.hyperlink_prediction import Node2VecGCNPredictor, Node2VecGCNHLPConfig
 from hypertorch.train import MultiModelTrainer
 from hypertorch.types import ModelConfig
 from hypertorch.data import (

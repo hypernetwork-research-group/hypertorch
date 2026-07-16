@@ -7,7 +7,7 @@ from hypertorch.types import HData
 from hypertorch.utils import Stage
 from hypertorch.nn import HyperedgeAggregator
 
-from hypertorch.hlp.common import HLPPredictor, stage_metric_name
+from hypertorch.hyperlink_prediction.common import HLPPredictor, stage_metric_name
 from hypertorch.models.node2vec_common import (
     NODE2VEC_JOINT_MODE,
     Node2VecEncoderConfig as Node2VecHLPConfig,

@@ -2,116 +2,148 @@ from torch import Tensor, nn, optim
 from typing import Any, Literal, TypedDict
 from torchmetrics import MetricCollection
 from typing_extensions import NotRequired
-from hypertorch.models import NHP
-from hypertorch.nn import NHPRankingLoss
+from hypertorch.models import HGNNP, SLP
+from hypertorch.nn import HyperedgeAggregator
 from hypertorch.types import HData
-from hypertorch.utils import ActivationFn, Stage
+from hypertorch.utils import Stage
 
-from hypertorch.hlp.common import HLPPredictor
+from hypertorch.hyperlink_prediction.common import HLPPredictor
 
 
-class NHPEncoderConfig(TypedDict):
+class HGNNPEncoderConfig(TypedDict):
     """
-    Configuration for the NHP encoder/scorer to be used for hyperedge link prediction.
+    Configuration for the HGNN+ encoder in HGNNPPredictor.
 
     Attributes:
         in_channels: Number of input features per node.
-        hidden_channels: Number of hidden channels for incidence embeddings. Defaults to ``512``.
-        activation_fn: Optional activation function. Defaults to ``None``.
-        activation_fn_kwargs: Keyword arguments for the activation function. Defaults to ``None``.
-        aggregation: Hyperedge scoring aggregation. ``"maxmin"`` uses the paper's
-            element-wise range representation; ``"mean"`` uses mean pooling.
-            Defaults to ``"maxmin"``.
+        hidden_channels: Number of hidden units in the intermediate HGNN+ layer.
+        out_channels: Number of output features (embedding size) per node.
         bias: Whether to include bias terms. Defaults to ``True``.
+        use_batch_normalization: Whether to use batch normalization. Defaults to ``False``.
+        drop_rate: Dropout rate. Defaults to ``0.5``.
     """
 
     in_channels: int
-    hidden_channels: NotRequired[int]
-    activation_fn: NotRequired[ActivationFn | None]
-    activation_fn_kwargs: NotRequired[dict | None]
-    aggregation: NotRequired[Literal["mean", "maxmin"]]
+    hidden_channels: int
+    out_channels: int
     bias: NotRequired[bool]
+    use_batch_normalization: NotRequired[bool]
+    drop_rate: NotRequired[float]
 
 
-class NHPPredictor(HLPPredictor):
+class HGNNPPredictor(HLPPredictor):
     """
-    A LightningModule for undirected NHP-based HLP predictor.
+    A LightningModule for HGNN+-based HLP predictor.
 
-    NHP encodes and scores candidate hyperedges in a single pass.
-    Unlike encoder wrappers that produce reusable global node embeddings,
-    NHP builds candidate-specific incidence embeddings before pooling and scoring each hyperedge.
+    Uses HGNN+ as an encoder to produce structure-aware node embeddings via
+    row-stochastic hypergraph convolution, aggregates them per hyperedge,
+    and scores each hyperedge with a linear decoder.
 
     Attributes:
-        encoder: NHP scorer inherited from ``HLPPredictor``.
-        decoder: Identity decoder inherited from ``HLPPredictor``.
+        encoder: HGNN+ encoder module inherited from ``HLPPredictor``.
+        decoder: SLP decoder module inherited from ``HLPPredictor``.
         loss_fn: Loss function inherited from ``HLPPredictor``.
         metrics_log_kwargs: Metric logging keyword arguments inherited from ``HLPPredictor``.
         train_metrics: Optional training metrics inherited from ``HLPPredictor``.
         val_metrics: Optional validation metrics inherited from ``HLPPredictor``.
         test_metrics: Optional test metrics inherited from ``HLPPredictor``.
-        lr: Learning rate for the optimizer. Defaults to ``0.001``.
+        aggregation: Method to aggregate node embeddings per hyperedge. Defaults to ``"mean"``.
+        lr: Learning rate for the optimizer. Defaults to ``0.01``.
         weight_decay: L2 regularization. Defaults to ``5e-4``.
     """
 
     def __init__(
         self,
-        encoder_config: NHPEncoderConfig,
+        encoder_config: HGNNPEncoderConfig,
+        aggregation: Literal["mean", "max", "min", "sum"] = "mean",
         loss_fn: nn.Module | None = None,
-        lr: float = 0.001,
+        lr: float = 0.01,
         weight_decay: float = 5e-4,
         metrics: MetricCollection | None = None,
         metrics_log_kwargs: dict[str, Any] | None = None,
     ):
         """
-        Initialize the NHP-based HLP predictor.
+        Initialize the HGNN+-based HLP predictor.
 
         Args:
-            encoder_config: Configuration for the NHP encoder/scorer.
-            loss_fn: Optional loss function. Defaults to ``NHPRankingLoss``.
-            lr: Learning rate for the optimizer. Defaults to ``0.001``.
+            encoder_config: Configuration for the HGNN+ encoder.
+            aggregation: Method used to aggregate node embeddings per hyperedge.
+                Defaults to ``"mean"``.
+            loss_fn: Optional loss function. Defaults to ``BCEWithLogitsLoss``.
+            lr: Learning rate for the optimizer. Defaults to ``0.01``.
             weight_decay: L2 regularization. Defaults to ``5e-4``.
             metrics: Optional metric collection for evaluation. Defaults to ``None``.
             metrics_log_kwargs: Additional keyword arguments passed to metric log calls.
                 Useful for configuring distributed synchronization behavior
                 of ``torchmetrics``. Defaults to ``None``.
         """
-        encoder = NHP(
+        encoder = HGNNP(
             in_channels=encoder_config["in_channels"],
-            hidden_channels=encoder_config.get("hidden_channels", 512),
-            activation_fn=encoder_config.get("activation_fn"),
-            activation_fn_kwargs=encoder_config.get("activation_fn_kwargs"),
-            aggregation=encoder_config.get("aggregation", "maxmin"),
+            hidden_channels=encoder_config["hidden_channels"],
+            num_classes=encoder_config["out_channels"],
             bias=encoder_config.get("bias", True),
+            use_batch_normalization=encoder_config.get("use_batch_normalization", False),
+            drop_rate=encoder_config.get("drop_rate", 0.5),
         )
+        decoder = SLP(in_channels=encoder_config["out_channels"], out_channels=1)
 
         super().__init__(
             encoder=encoder,
-            decoder=nn.Identity(),
-            loss_fn=loss_fn if loss_fn is not None else NHPRankingLoss(),
+            decoder=decoder,
+            loss_fn=loss_fn if loss_fn is not None else nn.BCEWithLogitsLoss(),
             metrics=metrics,
             metrics_log_kwargs=metrics_log_kwargs,
         )
 
+        self.aggregation: Literal["mean", "max", "min", "sum"] = aggregation
         self.lr: float = lr
         self.weight_decay: float = weight_decay
 
     def forward(self, x: Tensor, hyperedge_index: Tensor) -> Tensor:
         """
-        Encode and score each candidate hyperedge.
+        Run the full HGNN+-based hyperedge link prediction pipeline.
+
+        The pipeline has three stages:
+            1. Encode: HGNN+ applies two rounds of ``D_v^{-1} H D_e^{-1} H^T``
+            smoothing to propagate information through the hypergraph topology with
+            two-stage mean aggregation. The output is a structure-aware node
+            embedding matrix of shape ``(num_nodes, out_channels)``.
+            2. Aggregate: For each hyperedge being scored, pool the embeddings of its member
+            nodes using the configured strategy (mean/max/min/sum). This produces a hyperedge
+            embedding of shape ``(num_hyperedges, out_channels)``.
+            3. Decode: A single linear layer projects each hyperedge embedding to a
+            scalar score. Shape: ``(num_hyperedges,)``.
 
         Args:
             x: Node feature matrix of shape ``(num_nodes, in_channels)``.
-            hyperedge_index: Hyperedge connectivity of shape ``(2, num_incidences)``.
+                Must contain **all** nodes referenced in ``hyperedge_index``.
+            hyperedge_index: Hyperedge connectivity of shape ``(2, num_incidences)``,
+                with row 0 containing global node IDs and row 1 hyperedge IDs.
 
         Returns:
-            scores: Scores of shape ``(num_hyperedges,)``.
+            scores: Logit scores of shape ``(num_hyperedges,)``.
 
         Raises:
             ValueError: If the encoder is not defined for this module.
         """
         if self.encoder is None:
             raise ValueError("Encoder is not defined for this HLP module.")
-        return self.encoder(x, hyperedge_index)
+
+        # Encode: produce node embeddings using HGNN+, no graph reduction is applied
+        # Example: x: (num_nodes, in_channels)
+        #          -> node_embeddings: (num_nodes, out_channels), out_channels)
+        node_embeddings: Tensor = self.encoder(x, hyperedge_index)
+
+        # Aggregate: pool node embeddings per hyperedge
+        # shape: (num_hyperedges, out_channels)
+        hyperedge_embeddings = HyperedgeAggregator(hyperedge_index, node_embeddings).pool(
+            self.aggregation
+        )
+
+        # Decode: linear projection to scalar score per hyperedge
+        # shape: (num_hyperedges, 1) -> squeeze -> (num_hyperedges,)
+        scores: Tensor = self.decoder(hyperedge_embeddings).squeeze(-1)
+        return scores
 
     def training_step(self, batch: HData, batch_idx: int) -> Tensor:
         """

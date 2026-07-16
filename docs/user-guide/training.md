@@ -28,7 +28,7 @@ from hypertorch.data import (
 )
 from hypertorch.train import MultiModelTrainer
 from hypertorch.types import ModelConfig
-from hypertorch.hlp import MLPPredictor
+from hypertorch.hyperlink_prediction import MLPPredictor
 
 dataset = AlgebraDataset(sampling_strategy=SamplingStrategy.HYPEREDGE)
 train_dataset, val_dataset, test_dataset = dataset.split(
