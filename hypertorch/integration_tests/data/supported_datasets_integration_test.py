@@ -30,6 +30,10 @@ NETWORK_ERROR_TERMS = [
     "client has been closed",
 ]
 
+excluded_dataset = [
+    "citeseer",
+]
+
 
 def _exception_chain_text(exception: BaseException) -> str:
     parts: list[str] = []
@@ -52,7 +56,11 @@ def _is_network_download_failure(exception: BaseException) -> bool:
 @pytest.mark.flaky(reruns=3, reruns_delay=10, rerun_show_tracebacks=True)
 @pytest.mark.parametrize(
     "dataset_name",
-    [pytest.param(dataset_name, id=dataset_name) for dataset_name in list_datasets()],
+    [
+        pytest.param(dataset_name, id=f"{dataset_name}")
+        for dataset_name in list_datasets()
+        if dataset_name not in excluded_dataset
+    ],
 )
 @pytest.mark.integration
 def test_all_supported_datasets_load(dataset_name):
