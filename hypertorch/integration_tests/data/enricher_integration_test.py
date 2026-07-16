@@ -15,6 +15,7 @@ from hypertorch.integration_tests.common import (
 
 
 excluded_dataset = [
+    "citeseer",
     "NDC-substances",
     "contact-high-school",
     "contact-primary-school",

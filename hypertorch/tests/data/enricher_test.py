@@ -386,6 +386,29 @@ def test_laplacian_positional_encoding_enricher_rejects_invalid_semantic_params(
         build_invalid_enricher()
 
 
+def test_laplacian_positional_encoding_enricher_raises_value_error_for_non_finite_laplacian(
+    mock_two_hyperedge_index: Tensor,
+) -> None:
+    enricher = LaplacianPositionalEncodingEnricher(num_features=2)
+
+    non_finite_laplacian = torch.sparse_coo_tensor(
+        indices=torch.tensor([[0], [0]], dtype=torch.long),
+        values=torch.tensor([float("inf")], dtype=torch.float),
+        size=(1, 1),
+    ).coalesce()
+
+    with (
+        patch(
+            "hypertorch.data.enricher.EdgeIndex.get_sparse_normalized_laplacian",
+            return_value=non_finite_laplacian,
+        ),
+        pytest.raises(
+            ValueError, match=re.escape("The normalized Laplacian contains non-finite values.")
+        ),
+    ):
+        _ = enricher.enrich(mock_two_hyperedge_index)
+
+
 def test_villain_trainer_resolves_explicit_and_inferred_counts(
     mock_two_hyperedge_index: Tensor,
 ) -> None:

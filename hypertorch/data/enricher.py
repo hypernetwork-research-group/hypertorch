@@ -766,6 +766,9 @@ class LaplacianPositionalEncodingEnricher(NodeEnricher):
 
         Returns:
             node_features: Tensor of shape ``(num_nodes, num_features)``.
+
+        Raises:
+            ValueError: If the normalized Laplacian contains non-finite values.
         """
         num_nodes = self.num_nodes if self.num_nodes > 0 else None
         edge_index = HyperedgeIndex(hyperedge_index).reduce_to_edge_index_on_clique_expansion(
@@ -776,6 +779,9 @@ class LaplacianPositionalEncodingEnricher(NodeEnricher):
         laplacian_matrix_dense = (
             laplacian_matrix.to_dense()  # torch.linalg.eigh only works on dense tensors
         )
+
+        if not torch.isfinite(laplacian_matrix.values()).all().item():
+            raise ValueError("The normalized Laplacian contains non-finite values.")
 
         # Compute eigenvalues and eigenvectors of the symmetric Laplacian.
         # torch.linalg.eigh returns them sorted in ascending order of eigenvalue.
@@ -788,8 +794,16 @@ class LaplacianPositionalEncodingEnricher(NodeEnricher):
         # Column 0 (eigenvalue ~0) is the trivial constant vector, all entries ~0.577.
         # eigenvectors shape is ``(num_nodes, num_nodes)``, each column is an eigenvector.
         with torch.no_grad():
-            _, eigenvectors = torch.linalg.eigh(laplacian_matrix_dense)
+            solver_dtype = (
+                # Use double precision for CPU to avoid numerical issues in eigenvalue computation
+                torch.float64
+                if laplacian_matrix_dense.device.type == "cpu"
+                else laplacian_matrix_dense.dtype
+            )
+            _, eigenvectors = torch.linalg.eigh(laplacian_matrix_dense.to(dtype=solver_dtype))
             eigenvectors = cast(Tensor, eigenvectors)
+            # Convert back to the original dtype of the Laplacian matrix (e.g., float32 on GPU)
+            eigenvectors = eigenvectors.to(dtype=laplacian_matrix_dense.dtype)
 
         # We skip the first (trivial) eigenvector, so at most num_nodes - 1 are usable.
         # Example: 3 nodes -> 2 available non-trivial eigenvectors
@@ -798,7 +812,7 @@ class LaplacianPositionalEncodingEnricher(NodeEnricher):
 
         # If we have enough eigenvectors, slice columns 1 through num_features (inclusive).
         # Each row will be the positional encoding for that node.
-        # Example: num_features = 2, eigenvectors.shape = (3, 3)
+        # Example: num_nodes = 3, num_features = 2, eigenvectors.shape = (3, 3)
         #          -> return columns 1 and 2
         #             shape (3, 2)  # (num_nodes, num_features)
         if num_nontrivial_eigenvectors >= self.num_features:
