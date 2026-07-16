@@ -1,7 +1,7 @@
 import pytest
 
 from hypertorch.data import SamplingStrategyEnum
-from hypertorch.hlp import NHPHlpModule
+from hypertorch.hlp import NHPPredictor
 from hypertorch.integration_tests.common import (
     hlp_metrics,
     loaders,
@@ -40,7 +40,7 @@ def test_model_nhp(tmp_path, sampling_strategy, full, batch_size, request):
         train_dataset, val_dataset, test_dataset, batch_size=batch_size, sample_full_hypergraph=full
     )
 
-    nhp = NHPHlpModule(
+    nhp = NHPPredictor(
         encoder_config={
             "in_channels": NUM_FEATURES,
             "hidden_channels": 8,

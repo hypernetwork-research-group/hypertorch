@@ -6,7 +6,7 @@ from torchmetrics.classification import (
     BinaryPrecision,
     BinaryRecall,
 )
-from hypertorch.hlp import VilLainHlpModule
+from hypertorch.hlp import VilLainPredictor
 from hypertorch.train import MultiModelTrainer
 from hypertorch.types import ModelConfig
 from hypertorch.data import CoraDataset, DataLoader, RandomNegativeSampler
@@ -84,7 +84,7 @@ if __name__ == "__main__":
         persistent_workers=True,
     )
 
-    villain_node = VilLainHlpModule(
+    villain_node = VilLainPredictor(
         encoder_config={
             "embedding_dim": 128,
             "labels_per_subspace": 8,
@@ -103,7 +103,7 @@ if __name__ == "__main__":
         metrics=metrics,
     )
 
-    villain_hyperedge = VilLainHlpModule(
+    villain_hyperedge = VilLainPredictor(
         encoder_config={
             "embedding_dim": 128,
             "labels_per_subspace": 8,

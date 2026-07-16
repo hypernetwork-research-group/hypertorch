@@ -7,12 +7,12 @@ from hypertorch.nn import HyperedgeAggregator
 from hypertorch.types import HData
 from hypertorch.utils import Stage
 
-from hypertorch.hlp.common import HlpModule, stage_metric_name
+from hypertorch.hlp.common import HLPPredictor, stage_metric_name
 
 
 class VilLainEncoderConfig(TypedDict):
     """
-    Configuration for ``VilLainHlpModule``.
+    Configuration for the VilLain encoder in ``VilLainPredictor``.
 
     Attributes:
         num_nodes: Total number of trainable nodes.
@@ -35,18 +35,18 @@ class VilLainEncoderConfig(TypedDict):
     villain_loss_weight: NotRequired[float]
 
 
-class VilLainHlpModule(HlpModule):
+class VilLainPredictor(HLPPredictor):
     """
-    Feature-free VilLain Hyperedge Link Prediction module.
+    Feature-free VilLain-based HLP predictor.
 
     Attributes:
-        encoder: VilLain encoder module inherited from ``HlpModule``.
-        decoder: SLP decoder module inherited from ``HlpModule``.
-        loss_fn: Loss function inherited from ``HlpModule``.
-        metrics_log_kwargs: Metric logging keyword arguments inherited from ``HlpModule``.
-        train_metrics: Optional training metrics inherited from ``HlpModule``.
-        val_metrics: Optional validation metrics inherited from ``HlpModule``.
-        test_metrics: Optional test metrics inherited from ``HlpModule``.
+        encoder: VilLain encoder module inherited from ``HLPPredictor``.
+        decoder: SLP decoder module inherited from ``HLPPredictor``.
+        loss_fn: Loss function inherited from ``HLPPredictor``.
+        metrics_log_kwargs: Metric logging keyword arguments inherited from ``HLPPredictor``.
+        train_metrics: Optional training metrics inherited from ``HLPPredictor``.
+        val_metrics: Optional validation metrics inherited from ``HLPPredictor``.
+        test_metrics: Optional test metrics inherited from ``HLPPredictor``.
         embedding_dim: VilLain embedding dimension.
         embedding_mode: Whether to return node or hyperedge embeddings from the VilLain encoder.
             Defaults to ``"node"``.
@@ -70,7 +70,7 @@ class VilLainHlpModule(HlpModule):
         metrics_log_kwargs: dict[str, Any] | None = None,
     ):
         """
-        Initialize the VilLain HLP module.
+        Initialize the VilLain-based HLP predictor.
 
         Args:
             encoder_config: Configuration for the VilLain encoder.

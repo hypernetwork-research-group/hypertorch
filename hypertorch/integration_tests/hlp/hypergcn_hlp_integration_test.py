@@ -1,6 +1,6 @@
 import pytest
 
-from hypertorch.hlp import HyperGCNHlpModule
+from hypertorch.hlp import HyperGCNPredictor
 from hypertorch.data import SamplingStrategyEnum
 from hypertorch.integration_tests.common import (
     SEED,
@@ -40,7 +40,7 @@ def test_model_hypergcn_with_mediator(tmp_path, sampling_strategy, full, batch_s
         train_dataset, val_dataset, test_dataset, batch_size=batch_size, sample_full_hypergraph=full
     )
 
-    hypergcn_with_mediator = HyperGCNHlpModule(
+    hypergcn_with_mediator = HyperGCNPredictor(
         encoder_config={
             "in_channels": NUM_FEATURES,
             "hidden_channels": 8,
@@ -128,7 +128,7 @@ def test_model_hypergcn_no_mediator(tmp_path, sampling_strategy, full, batch_siz
         train_dataset, val_dataset, test_dataset, batch_size=batch_size, sample_full_hypergraph=full
     )
 
-    hypergcn_no_mediator = HyperGCNHlpModule(
+    hypergcn_no_mediator = HyperGCNPredictor(
         encoder_config={
             "in_channels": num_features,
             "hidden_channels": 8,

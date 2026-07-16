@@ -6,7 +6,7 @@ from torchmetrics.classification import (
     BinaryPrecision,
     BinaryRecall,
 )
-from hypertorch.hlp import HGNNPHlpModule
+from hypertorch.hlp import HGNNPPredictor
 from hypertorch.train import MultiModelTrainer
 from hypertorch.types import ModelConfig
 from hypertorch.data import (
@@ -107,7 +107,7 @@ if __name__ == "__main__":
         persistent_workers=True,
     )
 
-    model = HGNNPHlpModule(
+    model = HGNNPPredictor(
         encoder_config={
             "in_channels": num_features,
             "hidden_channels": 16,

@@ -1,7 +1,7 @@
 import pytest
 
 from hypertorch.data import SamplingStrategyEnum
-from hypertorch.hlp import Node2VecGCNHlpModule, Node2VecGCNHlpConfig
+from hypertorch.hlp import Node2VecGCNPredictor, Node2VecGCNHLPConfig
 from hypertorch.integration_tests.common import (
     hlp_metrics,
     loaders,
@@ -40,7 +40,7 @@ def test_model_node2vecgcn_precomputed(tmp_path, sampling_strategy, full, batch_
         train_dataset, val_dataset, test_dataset, batch_size=batch_size, sample_full_hypergraph=full
     )
 
-    gcn_config: Node2VecGCNHlpConfig = {
+    gcn_config: Node2VecGCNHLPConfig = {
         "out_channels": NUM_FEATURES,
         "hidden_channels": NUM_FEATURES,
         "num_layers": 2,
@@ -53,7 +53,7 @@ def test_model_node2vecgcn_precomputed(tmp_path, sampling_strategy, full, batch_
         "graph_reduction_strategy": "clique_expansion",
     }
 
-    precomputed_node2vecgcn = Node2VecGCNHlpModule(
+    precomputed_node2vecgcn = Node2VecGCNPredictor(
         encoder_config={
             "mode": "precomputed",
             "num_features": NUM_FEATURES,
@@ -156,7 +156,7 @@ def test_model_node2vecgcn_joint(tmp_path, sampling_strategy, full, batch_size, 
         train_dataset, val_dataset, test_dataset, batch_size=batch_size, sample_full_hypergraph=full
     )
 
-    gcn_config: Node2VecGCNHlpConfig = {
+    gcn_config: Node2VecGCNHLPConfig = {
         "out_channels": NUM_FEATURES,
         "hidden_channels": NUM_FEATURES,
         "num_layers": 2,
@@ -169,7 +169,7 @@ def test_model_node2vecgcn_joint(tmp_path, sampling_strategy, full, batch_size, 
         "graph_reduction_strategy": "clique_expansion",
     }
 
-    joint_node2vecgcn = Node2VecGCNHlpModule(
+    joint_node2vecgcn = Node2VecGCNPredictor(
         encoder_config={
             "mode": "joint",
             "num_features": NUM_FEATURES,

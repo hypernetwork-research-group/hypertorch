@@ -1,6 +1,6 @@
 import pytest
 
-from hypertorch.hlp import GCNHlpModule
+from hypertorch.hlp import GCNPredictor
 from hypertorch.data import SamplingStrategyEnum
 from hypertorch.integration_tests.common import (
     hlp_metrics,
@@ -39,7 +39,7 @@ def test_model_gcn(tmp_path, sampling_strategy, full, batch_size, request):
         train_dataset, val_dataset, test_dataset, batch_size=batch_size, sample_full_hypergraph=full
     )
 
-    mean_gcn_module = GCNHlpModule(
+    mean_gcn_module = GCNPredictor(
         encoder_config={
             "in_channels": NUM_FEATURES,
             "hidden_channels": 8,

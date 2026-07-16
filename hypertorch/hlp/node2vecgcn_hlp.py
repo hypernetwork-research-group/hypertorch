@@ -7,12 +7,12 @@ from hypertorch.types import HData
 from hypertorch.nn import HyperedgeAggregator
 from hypertorch.utils import Stage
 
-from hypertorch.hlp.common import HlpModule, stage_metric_name
+from hypertorch.hlp.common import HLPPredictor, stage_metric_name
 from hypertorch.models.node2vec_common import (
     NODE2VEC_JOINT_MODE,
     NODE2VEC_PRECOMPUTED_MODE,
-    Node2VecGCNEncoderConfig as Node2VecGCNHlpConfig,
-    Node2VecEncoderConfig as Node2VecHlpConfig,
+    Node2VecGCNEncoderConfig as Node2VecGCNHLPConfig,
+    Node2VecEncoderConfig as Node2VecHLPConfig,
     Node2VecMode,
     Node2VecWalkLoaderState,
     build_gcn_encoder,
@@ -27,7 +27,7 @@ from hypertorch.models.node2vec_common import (
 
 class Node2VecGCNEncoderConfig(TypedDict):
     """
-    Configuration for the Node2Vec encoder in ``Node2VecGCNHlpModule``.
+    Configuration for the Node2VecGCN encoder in ``Node2VecGCNPredictor``.
 
     Attributes:
         mode: Whether to use precomputed node embeddings from ``x`` or train a Node2Vec encoder
@@ -40,26 +40,26 @@ class Node2VecGCNEncoderConfig(TypedDict):
 
     mode: NotRequired[Node2VecMode]
     num_features: int
-    node2vec_config: Node2VecHlpConfig
-    gcn_config: Node2VecGCNHlpConfig
+    node2vec_config: Node2VecHLPConfig
+    gcn_config: Node2VecGCNHLPConfig
 
 
-class Node2VecGCNHlpModule(HlpModule):
+class Node2VecGCNPredictor(HLPPredictor):
     """
-    A LightningModule for Node2Vec-based Hyperedge Link Prediction with GCN encoder.
+    A LightningModule for Node2VecGCN-based HLP predictor.
 
     Supports two modes:
         - ``precomputed``: use node embeddings already stored in ``batch.x``.
         - ``joint``: train a Node2Vec encoder jointly with the GCN layers and hyperedge decoder.
 
     Attributes:
-        encoder: Optional Node2Vec-GCN encoder inherited from ``HlpModule``.
-        decoder: SLP decoder module inherited from ``HlpModule``.
-        loss_fn: Loss function inherited from ``HlpModule``.
-        metrics_log_kwargs: Metric logging keyword arguments inherited from ``HlpModule``.
-        train_metrics: Optional training metrics inherited from ``HlpModule``.
-        val_metrics: Optional validation metrics inherited from ``HlpModule``.
-        test_metrics: Optional test metrics inherited from ``HlpModule``.
+        encoder: Optional Node2Vec-GCN encoder inherited from ``HLPPredictor``.
+        decoder: SLP decoder module inherited from ``HLPPredictor``.
+        loss_fn: Loss function inherited from ``HLPPredictor``.
+        metrics_log_kwargs: Metric logging keyword arguments inherited from ``HLPPredictor``.
+        train_metrics: Optional training metrics inherited from ``HLPPredictor``.
+        val_metrics: Optional validation metrics inherited from ``HLPPredictor``.
+        test_metrics: Optional test metrics inherited from ``HLPPredictor``.
         mode: Whether to use precomputed or joint Node2Vec embeddings.
         embedding_dim: Node embedding dimension consumed by the GCN stack.
         node2vec_hlp_config: Node2Vec HLP configuration.
@@ -85,7 +85,7 @@ class Node2VecGCNHlpModule(HlpModule):
         metrics_log_kwargs: dict[str, Any] | None = None,
     ):
         """
-        Initialize the Node2Vec-GCN HLP module.
+        Initialize the Node2VecGCN-based HLP predictor.
 
         Args:
             encoder_config: Configuration for Node2Vec embeddings and GCN layers.
@@ -102,8 +102,8 @@ class Node2VecGCNHlpModule(HlpModule):
         self.mode: Node2VecMode = encoder_config.get("mode", NODE2VEC_JOINT_MODE)
         self.embedding_dim: int = encoder_config["num_features"]
 
-        self.node2vec_hlp_config: Node2VecHlpConfig = encoder_config["node2vec_config"]
-        self.gcn_hlp_config: Node2VecGCNHlpConfig = encoder_config["gcn_config"]
+        self.node2vec_hlp_config: Node2VecHLPConfig = encoder_config["node2vec_config"]
+        self.gcn_hlp_config: Node2VecGCNHLPConfig = encoder_config["gcn_config"]
 
         node2vecgcn_encoder = (
             build_node2vecgcn_encoder(

@@ -12,13 +12,13 @@ The recommended pattern is to pass multiple `ModelConfig` objects to `MultiModel
 ```python
 from hypertorch.types import ModelConfig
 from hypertorch.train import MultiModelTrainer
-from hypertorch.hlp import MLPHlpModule, NHPHlpModule
+from hypertorch.hlp import MLPPredictor, NHPPredictor
 
 configs = [
     ModelConfig(
         name="nhp",
         version="maxmin",
-        model=NHPHlpModule(
+        model=NHPPredictor(
             encoder_config={
                 "in_channels": 32,
                 "hidden_channels": 64,
@@ -29,7 +29,7 @@ configs = [
     ModelConfig(
         name="mlp",
         version="mean",
-        model=MLPHlpModule(
+        model=MLPPredictor(
             encoder_config={
                 "in_channels": 32,
                 "out_channels": 32,

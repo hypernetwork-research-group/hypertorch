@@ -1,7 +1,7 @@
 import pytest
 
 from hypertorch.data import SamplingStrategyEnum
-from hypertorch.hlp import Node2VecHlpModule
+from hypertorch.hlp import Node2VecPredictor
 from hypertorch.integration_tests.common import (
     hlp_metrics,
     loaders,
@@ -40,7 +40,7 @@ def test_model_node2vec_precomputed(tmp_path, sampling_strategy, full, batch_siz
         train_dataset, val_dataset, test_dataset, batch_size=batch_size, sample_full_hypergraph=full
     )
 
-    precomputed_node2vec = Node2VecHlpModule(
+    precomputed_node2vec = Node2VecPredictor(
         encoder_config={
             "mode": "precomputed",
             "num_features": NUM_FEATURES,
@@ -133,7 +133,7 @@ def test_model_node2vec_joint(tmp_path, sampling_strategy, full, batch_size, req
         train_dataset, val_dataset, test_dataset, batch_size=batch_size, sample_full_hypergraph=full
     )
 
-    joint_node2vec = Node2VecHlpModule(
+    joint_node2vec = Node2VecPredictor(
         encoder_config={
             "mode": "joint",
             "num_features": NUM_FEATURES,

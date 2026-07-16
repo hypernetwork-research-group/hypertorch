@@ -7,7 +7,7 @@ from hypertorch.nn import NHPRankingLoss
 from hypertorch.types import HData
 from hypertorch.utils import ActivationFn, Stage
 
-from hypertorch.hlp.common import HlpModule
+from hypertorch.hlp.common import HLPPredictor
 
 
 class NHPEncoderConfig(TypedDict):
@@ -33,22 +33,22 @@ class NHPEncoderConfig(TypedDict):
     bias: NotRequired[bool]
 
 
-class NHPHlpModule(HlpModule):
+class NHPPredictor(HLPPredictor):
     """
-    A LightningModule for undirected NHP hyperedge link prediction.
+    A LightningModule for undirected NHP-based HLP predictor.
 
     NHP encodes and scores candidate hyperedges in a single pass.
     Unlike encoder wrappers that produce reusable global node embeddings,
     NHP builds candidate-specific incidence embeddings before pooling and scoring each hyperedge.
 
     Attributes:
-        encoder: NHP scorer inherited from ``HlpModule``.
-        decoder: Identity decoder inherited from ``HlpModule``.
-        loss_fn: Loss function inherited from ``HlpModule``.
-        metrics_log_kwargs: Metric logging keyword arguments inherited from ``HlpModule``.
-        train_metrics: Optional training metrics inherited from ``HlpModule``.
-        val_metrics: Optional validation metrics inherited from ``HlpModule``.
-        test_metrics: Optional test metrics inherited from ``HlpModule``.
+        encoder: NHP scorer inherited from ``HLPPredictor``.
+        decoder: Identity decoder inherited from ``HLPPredictor``.
+        loss_fn: Loss function inherited from ``HLPPredictor``.
+        metrics_log_kwargs: Metric logging keyword arguments inherited from ``HLPPredictor``.
+        train_metrics: Optional training metrics inherited from ``HLPPredictor``.
+        val_metrics: Optional validation metrics inherited from ``HLPPredictor``.
+        test_metrics: Optional test metrics inherited from ``HLPPredictor``.
         lr: Learning rate for the optimizer. Defaults to ``0.001``.
         weight_decay: L2 regularization. Defaults to ``5e-4``.
     """
@@ -63,7 +63,7 @@ class NHPHlpModule(HlpModule):
         metrics_log_kwargs: dict[str, Any] | None = None,
     ):
         """
-        Initialize the NHP HLP module.
+        Initialize the NHP-based HLP predictor.
 
         Args:
             encoder_config: Configuration for the NHP encoder/scorer.

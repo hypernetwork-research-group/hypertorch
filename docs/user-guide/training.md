@@ -28,7 +28,7 @@ from hypertorch.data import (
 )
 from hypertorch.train import MultiModelTrainer
 from hypertorch.types import ModelConfig
-from hypertorch.hlp import MLPHlpModule
+from hypertorch.hlp import MLPPredictor
 
 dataset = AlgebraDataset(sampling_strategy=SamplingStrategy.HYPEREDGE)
 train_dataset, val_dataset, test_dataset = dataset.split(
@@ -65,7 +65,7 @@ val_loader = DataLoader(val_dataset, batch_size=64)
 test_loader = DataLoader(test_dataset, batch_size=64)
 
 # Model(s)
-model = MLPHlpModule(
+model = MLPPredictor(
     encoder_config={
         "in_channels": 32,
         "out_channels": 32,
@@ -108,8 +108,11 @@ with MultiModelTrainer(
     accelerator="auto",
     enable_checkpointing=False,
 ) as trainer:
-    trainer.fit_all(datamodule=data_module)
-    trainer.test_all(datamodule=data_module)
+    trainer.fit_all(
+        train_dataloader=data_module.train_dataloader(),
+        val_dataloader=data_module.val_dataloader(),
+    )
+    trainer.test_all(dataloader=data_module.test_dataloader())
 ```
 
 Datasets can be omitted when a split is not needed. Its corresponding data module hook

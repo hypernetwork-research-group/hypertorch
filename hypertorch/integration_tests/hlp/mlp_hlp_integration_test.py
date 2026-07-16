@@ -1,6 +1,6 @@
 import pytest
 
-from hypertorch.hlp import MLPHlpModule
+from hypertorch.hlp import MLPPredictor
 from hypertorch.data import SamplingStrategyEnum
 from hypertorch.integration_tests.common import (
     hlp_metrics,
@@ -40,7 +40,7 @@ def test_model_mlp(tmp_path, sampling_strategy, full, batch_size, request):
         train_dataset, val_dataset, test_dataset, batch_size=batch_size, sample_full_hypergraph=full
     )
 
-    mlp = MLPHlpModule(
+    mlp = MLPPredictor(
         encoder_config={
             "in_channels": NUM_FEATURES,
             "out_channels": NUM_FEATURES,

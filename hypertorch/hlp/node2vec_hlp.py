@@ -7,10 +7,10 @@ from hypertorch.types import HData
 from hypertorch.utils import Stage
 from hypertorch.nn import HyperedgeAggregator
 
-from hypertorch.hlp.common import HlpModule, stage_metric_name
+from hypertorch.hlp.common import HLPPredictor, stage_metric_name
 from hypertorch.models.node2vec_common import (
     NODE2VEC_JOINT_MODE,
-    Node2VecEncoderConfig as Node2VecHlpConfig,
+    Node2VecEncoderConfig as Node2VecHLPConfig,
     Node2VecMode,
     Node2VecWalkLoaderState,
     build_node2vec_encoder,
@@ -22,7 +22,7 @@ from hypertorch.models.node2vec_common import (
 
 class Node2VecEncoderConfig(TypedDict):
     """
-    Configuration for the Node2Vec encoder in ``Node2VecHlpModule``.
+    Configuration for the Node2Vec encoder in ``Node2VecPredictor``.
 
     Attributes:
         mode: Whether to use precomputed node embeddings from ``x`` or train a Node2Vec encoder
@@ -34,25 +34,25 @@ class Node2VecEncoderConfig(TypedDict):
 
     mode: NotRequired[Node2VecMode]
     num_features: int
-    node2vec_config: Node2VecHlpConfig
+    node2vec_config: Node2VecHLPConfig
 
 
-class Node2VecHlpModule(HlpModule):
+class Node2VecPredictor(HLPPredictor):
     """
-    A LightningModule for Node2Vec-based Hyperedge Link Prediction.
+    A LightningModule for Node2Vec-based HLP predictor.
 
     Supports two modes:
         - ``precomputed``: use node embeddings already stored in ``batch.x``.
         - ``joint``: train a Node2Vec encoder jointly with the hyperedge decoder.
 
     Attributes:
-        encoder: Optional Node2Vec encoder inherited from ``HlpModule``.
-        decoder: Decoder module inherited from ``HlpModule``.
-        loss_fn: Loss function inherited from ``HlpModule``.
-        metrics_log_kwargs: Metric logging keyword arguments inherited from ``HlpModule``.
-        train_metrics: Optional training metrics inherited from ``HlpModule``.
-        val_metrics: Optional validation metrics inherited from ``HlpModule``.
-        test_metrics: Optional test metrics inherited from ``HlpModule``.
+        encoder: Optional Node2Vec encoder inherited from ``HLPPredictor``.
+        decoder: Decoder module inherited from ``HLPPredictor``.
+        loss_fn: Loss function inherited from ``HLPPredictor``.
+        metrics_log_kwargs: Metric logging keyword arguments inherited from ``HLPPredictor``.
+        train_metrics: Optional training metrics inherited from ``HLPPredictor``.
+        val_metrics: Optional validation metrics inherited from ``HLPPredictor``.
+        test_metrics: Optional test metrics inherited from ``HLPPredictor``.
         mode: Whether to use precomputed or joint Node2Vec embeddings.
         embedding_dim: Node embedding dimension consumed by the decoder.
         aggregation: Method to aggregate node embeddings per hyperedge.
@@ -76,7 +76,7 @@ class Node2VecHlpModule(HlpModule):
         metrics_log_kwargs: dict[str, Any] | None = None,
     ):
         """
-        Initialize the Node2Vec HLP module.
+        Initialize the Node2Vec-based HLP predictor.
 
         Args:
             encoder_config: Configuration for Node2Vec embeddings.

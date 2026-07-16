@@ -6,7 +6,7 @@ from torchmetrics.classification import (
     BinaryPrecision,
     BinaryRecall,
 )
-from hypertorch.hlp import Node2VecGCNHlpModule, Node2VecGCNHlpConfig
+from hypertorch.hlp import Node2VecGCNPredictor, Node2VecGCNHLPConfig
 from hypertorch.train import MultiModelTrainer
 from hypertorch.types import ModelConfig
 from hypertorch.data import (
@@ -120,7 +120,7 @@ if __name__ == "__main__":
         persistent_workers=True,
     )
 
-    gcn_config: Node2VecGCNHlpConfig = {
+    gcn_config: Node2VecGCNHLPConfig = {
         "out_channels": num_features,
         "hidden_channels": num_features,
         "num_layers": 2,
@@ -135,7 +135,7 @@ if __name__ == "__main__":
         "num_nodes": dataset.hdata.num_nodes,
     }
 
-    node2vecgcn_precomputed = Node2VecGCNHlpModule(
+    node2vecgcn_precomputed = Node2VecGCNPredictor(
         encoder_config={
             "mode": "precomputed",
             "num_features": num_features,
@@ -149,7 +149,7 @@ if __name__ == "__main__":
     )
 
     train_hyperedge_index = train_dataset.hdata.hyperedge_index
-    node2vecgcn_joint = Node2VecGCNHlpModule(
+    node2vecgcn_joint = Node2VecGCNPredictor(
         encoder_config={
             "mode": "joint",
             "num_features": num_features,

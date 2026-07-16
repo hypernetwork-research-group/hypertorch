@@ -6,7 +6,7 @@ from torchmetrics.classification import (
     BinaryPrecision,
     BinaryRecall,
 )
-from hypertorch.hlp import MLPHlpModule
+from hypertorch.hlp import MLPPredictor
 from hypertorch.train import MultiModelTrainer
 from hypertorch.types import ModelConfig
 from hypertorch.data import (
@@ -110,7 +110,7 @@ if __name__ == "__main__":
         persistent_workers=True,
     )
 
-    model = MLPHlpModule(
+    model = MLPPredictor(
         encoder_config={
             "in_channels": num_features,
             "out_channels": num_features,

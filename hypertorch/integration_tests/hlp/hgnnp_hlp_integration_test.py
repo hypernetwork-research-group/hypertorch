@@ -1,6 +1,6 @@
 import pytest
 
-from hypertorch.hlp import HGNNPHlpModule
+from hypertorch.hlp import HGNNPPredictor
 from hypertorch.data import SamplingStrategyEnum
 from hypertorch.integration_tests.common import (
     hlp_metrics,
@@ -40,7 +40,7 @@ def test_model_hgnnp(tmp_path, sampling_strategy, full, batch_size, request):
         train_dataset, val_dataset, test_dataset, batch_size=batch_size, sample_full_hypergraph=full
     )
 
-    hgnnp = HGNNPHlpModule(
+    hgnnp = HGNNPPredictor(
         encoder_config={
             "in_channels": NUM_FEATURES,
             "hidden_channels": 8,

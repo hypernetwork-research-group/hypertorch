@@ -7,12 +7,12 @@ from hypertorch.types import HData
 from torchmetrics import MetricCollection
 from hypertorch.utils import Stage
 
-from hypertorch.hlp.common import HlpModule
+from hypertorch.hlp.common import HLPPredictor
 
 
 class HyperGCNEncoderConfig(TypedDict):
     """
-    Configuration for the HyperGCN encoder in HyperGCNHlpModule.
+    Configuration for the HyperGCN encoder in HyperGCNPredictor.
 
     Attributes:
         in_channels: Number of input features per node.
@@ -40,22 +40,22 @@ class HyperGCNEncoderConfig(TypedDict):
     seed: NotRequired[int]
 
 
-class HyperGCNHlpModule(HlpModule):
+class HyperGCNPredictor(HLPPredictor):
     """
-    A LightningModule for HyperGCN-based Hyperedge Link Prediction.
+    A LightningModule for HyperGCN-based HLP predictor.
 
     Uses HyperGCN as an encoder to produce structure-aware node embeddings via
     graph convolution on the full hypergraph, aggregates them per hyperedge,
     and scores each hyperedge with a linear decoder.
 
     Attributes:
-        encoder: HyperGCN encoder module inherited from ``HlpModule``.
-        decoder: SLP decoder module inherited from ``HlpModule``.
-        loss_fn: Loss function inherited from ``HlpModule``.
-        metrics_log_kwargs: Metric logging keyword arguments inherited from ``HlpModule``.
-        train_metrics: Optional training metrics inherited from ``HlpModule``.
-        val_metrics: Optional validation metrics inherited from ``HlpModule``.
-        test_metrics: Optional test metrics inherited from ``HlpModule``.
+        encoder: HyperGCN encoder module inherited from ``HLPPredictor``.
+        decoder: SLP decoder module inherited from ``HLPPredictor``.
+        loss_fn: Loss function inherited from ``HLPPredictor``.
+        metrics_log_kwargs: Metric logging keyword arguments inherited from ``HLPPredictor``.
+        train_metrics: Optional training metrics inherited from ``HLPPredictor``.
+        val_metrics: Optional validation metrics inherited from ``HLPPredictor``.
+        test_metrics: Optional test metrics inherited from ``HLPPredictor``.
         aggregation: Method to aggregate node embeddings per hyperedge. Defaults to ``"mean"``.
         lr: Learning rate for the optimizer. Defaults to ``0.01``.
         weight_decay: L2 regularization. Defaults to ``5e-4``.
@@ -72,7 +72,7 @@ class HyperGCNHlpModule(HlpModule):
         metrics_log_kwargs: dict[str, Any] | None = None,
     ):
         """
-        Initialize the HyperGCN HLP module.
+        Initialize the HyperGCN-based HLP predictor.
 
         Args:
             encoder_config: Configuration for the HyperGCN encoder.

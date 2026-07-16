@@ -42,9 +42,9 @@ Supported models include:
 ## Minimal hyperlink prediction example: NHP
 
 ```python
-from hypertorch.hlp import NHPHlpModule
+from hypertorch.hlp import NHPPredictor
 
-model = NHPHlpModule(
+model = NHPPredictor(
     encoder_config={
         "in_channels": num_features,
         "hidden_channels": 512,

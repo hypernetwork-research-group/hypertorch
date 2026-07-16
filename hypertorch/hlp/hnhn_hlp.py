@@ -7,12 +7,12 @@ from hypertorch.nn import HyperedgeAggregator
 from hypertorch.types import HData
 from hypertorch.utils import Stage
 
-from hypertorch.hlp.common import HlpModule
+from hypertorch.hlp.common import HLPPredictor
 
 
 class HNHNEncoderConfig(TypedDict):
     """
-    Configuration for the HNHN encoder in HNHNHlpModule.
+    Configuration for the HNHN encoder in HNHNPredictor.
 
     Attributes:
         in_channels: Number of input features per node.
@@ -31,22 +31,22 @@ class HNHNEncoderConfig(TypedDict):
     drop_rate: NotRequired[float]
 
 
-class HNHNHlpModule(HlpModule):
+class HNHNPredictor(HLPPredictor):
     """
-    A LightningModule for HNHN-based Hyperedge Link Prediction.
+    A LightningModule for HNHN-based HLP predictor.
 
     Uses HNHN as an encoder to produce node embeddings through explicit
     hyperedge neurons, aggregates them per hyperedge, and scores each
     hyperedge with a linear decoder.
 
     Attributes:
-        encoder: HNHN encoder module inherited from ``HlpModule``.
-        decoder: SLP decoder module inherited from ``HlpModule``.
-        loss_fn: Loss function inherited from ``HlpModule``.
-        metrics_log_kwargs: Metric logging keyword arguments inherited from ``HlpModule``.
-        train_metrics: Optional training metrics inherited from ``HlpModule``.
-        val_metrics: Optional validation metrics inherited from ``HlpModule``.
-        test_metrics: Optional test metrics inherited from ``HlpModule``.
+        encoder: HNHN encoder module inherited from ``HLPPredictor``.
+        decoder: SLP decoder module inherited from ``HLPPredictor``.
+        loss_fn: Loss function inherited from ``HLPPredictor``.
+        metrics_log_kwargs: Metric logging keyword arguments inherited from ``HLPPredictor``.
+        train_metrics: Optional training metrics inherited from ``HLPPredictor``.
+        val_metrics: Optional validation metrics inherited from ``HLPPredictor``.
+        test_metrics: Optional test metrics inherited from ``HLPPredictor``.
         aggregation: Method to aggregate node embeddings per hyperedge. Defaults to ``"mean"``.
         lr: Learning rate for the optimizer. Defaults to ``0.01``.
         weight_decay: L2 regularization. Defaults to ``5e-4``.
@@ -67,7 +67,7 @@ class HNHNHlpModule(HlpModule):
         metrics_log_kwargs: dict[str, Any] | None = None,
     ):
         """
-        Initialize the HNHN HLP module.
+        Initialize the HNHN-based HLP predictor.
 
         Args:
             encoder_config: Configuration for the HNHN encoder.

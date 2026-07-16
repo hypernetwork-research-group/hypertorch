@@ -1,56 +1,56 @@
-from .common import HlpModule
+from .common import HLPPredictor
 
-from .common_neighbors_hlp import CommonNeighborsHlpModule
+from .common_neighbors_hlp import CommonNeighborsPredictor
 
-from .gcn_hlp import GCNEncoderConfig, GCNHlpModule
+from .gcn_hlp import GCNEncoderConfig, GCNPredictor
 
-from .hgnn_hlp import HGNNHlpModule, HGNNEncoderConfig
+from .hgnn_hlp import HGNNPredictor, HGNNEncoderConfig
 
-from .hnhn_hlp import HNHNEncoderConfig, HNHNHlpModule
+from .hnhn_hlp import HNHNEncoderConfig, HNHNPredictor
 
-from .hgnnp_hlp import HGNNPEncoderConfig, HGNNPHlpModule
+from .hgnnp_hlp import HGNNPEncoderConfig, HGNNPPredictor
 
-from .hypergcn_hlp import HyperGCNHlpModule, HyperGCNEncoderConfig
+from .hypergcn_hlp import HyperGCNPredictor, HyperGCNEncoderConfig
 
-from .mlp_hlp import MLPHlpModule, MLPEncoderConfig
+from .mlp_hlp import MLPPredictor, MLPEncoderConfig
 
-from .nhp_hlp import NHPEncoderConfig, NHPHlpModule, NHPRankingLoss
+from .nhp_hlp import NHPEncoderConfig, NHPPredictor, NHPRankingLoss
 
-from .node2vecgcn_hlp import Node2VecGCNEncoderConfig, Node2VecGCNHlpModule
+from .node2vecgcn_hlp import Node2VecGCNEncoderConfig, Node2VecGCNPredictor
 
-from .node2vec_hlp import Node2VecEncoderConfig, Node2VecHlpModule
+from .node2vec_hlp import Node2VecEncoderConfig, Node2VecPredictor
 
-from .villain_hlp import VilLainEncoderConfig, VilLainHlpModule
+from .villain_hlp import VilLainEncoderConfig, VilLainPredictor
 
 from hypertorch.models.node2vec_common import (
-    Node2VecGCNEncoderConfig as Node2VecGCNHlpConfig,
-    Node2VecEncoderConfig as Node2VecHlpConfig,
+    Node2VecGCNEncoderConfig as Node2VecGCNHLPConfig,
+    Node2VecEncoderConfig as Node2VecHLPConfig,
 )
 
 __all__ = [
-    "CommonNeighborsHlpModule",
+    "CommonNeighborsPredictor",
     "GCNEncoderConfig",
-    "GCNHlpModule",
+    "GCNPredictor",
     "HGNNEncoderConfig",
-    "HGNNHlpModule",
     "HGNNPEncoderConfig",
-    "HGNNPHlpModule",
+    "HGNNPPredictor",
+    "HGNNPredictor",
+    "HLPPredictor",
     "HNHNEncoderConfig",
-    "HNHNHlpModule",
-    "HlpModule",
+    "HNHNPredictor",
     "HyperGCNEncoderConfig",
-    "HyperGCNHlpModule",
+    "HyperGCNPredictor",
     "MLPEncoderConfig",
-    "MLPHlpModule",
+    "MLPPredictor",
     "NHPEncoderConfig",
-    "NHPHlpModule",
+    "NHPPredictor",
     "NHPRankingLoss",
     "Node2VecEncoderConfig",
     "Node2VecGCNEncoderConfig",
-    "Node2VecGCNHlpConfig",
-    "Node2VecGCNHlpModule",
-    "Node2VecHlpConfig",
-    "Node2VecHlpModule",
+    "Node2VecGCNHLPConfig",
+    "Node2VecGCNPredictor",
+    "Node2VecHLPConfig",
+    "Node2VecPredictor",
     "VilLainEncoderConfig",
-    "VilLainHlpModule",
+    "VilLainPredictor",
 ]
