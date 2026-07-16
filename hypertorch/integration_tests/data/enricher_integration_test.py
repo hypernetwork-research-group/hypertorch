@@ -10,34 +10,13 @@ from hypertorch.data import (
     VilLainEnricher,
 )
 from hypertorch.integration_tests.common import (
+    exclude_datasets,
     split_dataset,
 )
 
-
-excluded_dataset = [
-    "citeseer",
-    "NDC-substances",
-    "contact-high-school",
-    "contact-primary-school",
-    "patent",
-    "threads-ask-ubuntu",
-    "threads-math-sx",
-]
-
 NUM_FEATURES = 8
 
-#### Why we have some excluded datasets? ####
-#
-# Some of the dataset have a very large number of nodes and hyperedges,
-# which can lead to very long runtimes for the enrichers, especially the
-# more complex ones like VilLain. To ensure that our integration tests run in a
-# reasonable amount of time, we limit the number of nodes and hyperedges to 75000
-# for the enrichment tests. This allows us to test the functionality of the
-# enrichers without running into excessively long test times, while still providing
-# a meaningful test of their behavior on reasonably sized datasets.
-# With the threshold of 75000 nodes and hyperedges, we cover ~75% of the datasets.
-# The datasets.py in the scripts folder contains a function that calculates the node count
-# cutoff to cover 75% of the datasets.
+excluded_datasets = exclude_datasets()
 
 
 @pytest.mark.flaky(reruns=3, reruns_delay=10, rerun_show_tracebacks=True)
@@ -46,7 +25,7 @@ NUM_FEATURES = 8
     [
         pytest.param(dataset_name, id=f"{dataset_name}")
         for dataset_name in list_datasets()
-        if dataset_name not in excluded_dataset
+        if dataset_name not in excluded_datasets
     ],
 )
 @pytest.mark.integration
@@ -68,7 +47,7 @@ def test_lpe_node_enricher(dataset_name):
     [
         pytest.param(dataset_name, id=f"{dataset_name}")
         for dataset_name in list_datasets()
-        if dataset_name not in excluded_dataset
+        if dataset_name not in excluded_datasets
     ],
 )
 @pytest.mark.integration
@@ -99,7 +78,7 @@ def test_n2v_node_enricher(dataset_name):
     [
         pytest.param(dataset_name, id=f"{dataset_name}")
         for dataset_name in list_datasets()
-        if dataset_name not in excluded_dataset
+        if dataset_name not in excluded_datasets
     ],
 )
 @pytest.mark.integration
@@ -128,7 +107,7 @@ def test_villain_node_enricher(dataset_name):
     [
         pytest.param(dataset_name, id=f"{dataset_name}")
         for dataset_name in list_datasets()
-        if dataset_name not in excluded_dataset
+        if dataset_name not in excluded_datasets
     ],
 )
 @pytest.mark.integration
@@ -147,7 +126,7 @@ def test_fill_value_hyperedge_attrs_enricher(dataset_name):
     [
         pytest.param(dataset_name, id=f"{dataset_name}")
         for dataset_name in list_datasets()
-        if dataset_name not in excluded_dataset
+        if dataset_name not in excluded_datasets
     ],
 )
 @pytest.mark.integration
