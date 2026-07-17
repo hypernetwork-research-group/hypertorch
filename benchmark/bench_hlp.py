@@ -11,7 +11,12 @@ from torchmetrics.classification import (
 from hypertorch.train import MultiModelTrainer
 from hypertorch.data import DataLoader
 
-from common import load_gcn, load_common_neighbors, prepare
+from common import (
+    load_gcn,
+    load_common_neighbors,
+    prepare,
+    merge_all_results,
+)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -47,7 +52,7 @@ if __name__ == "__main__":
     print("Loading and preparing datasets...")
     prepared_datasets = {}
     for dataset_name in datasets:
-        picked_seed = seed[datasets.index(dataset_name) % len(seed)]
+        picked_seed = seed[datasets.index(dataset_name) % len(seed)]  # ogni run usa lo stesso seed
         train_dataset, val_dataset, test_dataset, num_nodes, num_features = prepare(
             dataset_name=dataset_name,
             k_nodes=k_nodes,
@@ -101,30 +106,29 @@ if __name__ == "__main__":
                 }
             )
 
-            list_configs = [
-                load_gcn(
-                    metrics=metrics,
-                    num_features=num_features,
-                    train_loader=train_loader,
-                    val_loader=val_loader,
-                    test_loader=test_loader,
-                    num_nodes=num_nodes,
-                    num_run=r,
-                ),
-                load_common_neighbors(
-                    metrics=metrics,
-                    num_features=num_features,
-                    train_dataset=train_dataset,
-                    test_loader=test_loader,
-                    num_nodes=num_nodes,
-                    num_run=r,
-                ),
-            ]
+            list_model = ["gcn", "common_neighbors"]
 
-            for config in list_configs:
-                print(f"Running model: {config[0].model}")
-                model = config[0].model
-
+            for model in list_model:
+                if model == "gcn":
+                    config = load_gcn(
+                        metrics=metrics,
+                        num_features=num_features,
+                        train_loader=train_loader,
+                        val_loader=val_loader,
+                        test_loader=test_loader,
+                        num_nodes=num_nodes,
+                        num_run=r,
+                    )
+                elif model == "common_neighbors":
+                    config = load_common_neighbors(
+                        metrics=metrics,
+                        num_features=num_features,
+                        train_dataset=train_dataset,
+                        test_loader=test_loader,
+                        num_nodes=num_nodes,
+                        num_run=r,
+                    )
+                # model = config[0].model
                 print("Starting training and evaluation...")
 
                 with MultiModelTrainer(
@@ -138,4 +142,7 @@ if __name__ == "__main__":
                     )
                     trainer.test_all(dataloader=test_loader, verbose=True)
 
-                print("Complete!")
+                del config
+        del prepared_datasets[dataset_name]  # free memory
+    print("Merging all results into a single CSV file...")
+    merge_all_results(dir_path="benchmark/results", output_file="merged_results.csv")

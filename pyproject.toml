@@ -58,6 +58,10 @@ dev = [
   "ty>=0.0.34,<1.0.0",
   { include-group = "docs" },
   { include-group = "test" },
+  { include-group = "benchmark" },
+]
+benchmark = [
+  "pandas>=2.3.3,<3.0.0",
 ]
 docs = ["mkdocstrings[python]>=1.0.4,<2.0.0", "zensical>=0.0.44,<1.0.0"]
 test = [

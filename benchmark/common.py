@@ -1,3 +1,6 @@
+import os
+import pandas as pd
+
 from torchmetrics import MetricCollection
 from hypertorch.hyperlink_prediction import GCNPredictor, CommonNeighborsPredictor
 from hypertorch.types import ModelConfig
@@ -130,3 +133,25 @@ def prepare(
         dataset.hdata.num_nodes,
         num_features,
     )
+
+
+def merge_all_results(dir_path: str, output_file: str = "merged_results.csv"):
+
+    all_results = []
+    for root, _, files in os.walk(dir_path):
+        for file in files:
+            if file.endswith("metrics.csv"):
+                file_path = os.path.join(root, file)
+                df = pd.read_csv(file_path)
+                dataset_name = root.split(os.sep)[2]
+                model = root.split(os.sep)[3]
+                model_name = model.split("_")[0]
+                model_run = model.split("_")[1]
+                df.insert(0, "dataset", dataset_name)
+                df.insert(1, "model_name", model_name)
+                df.insert(2, "model_run", model_run)
+                all_results.append(df)
+
+    if all_results:
+        merged_df = pd.concat(all_results, ignore_index=True)
+        merged_df.to_csv(os.path.join(dir_path, output_file), index=False)
