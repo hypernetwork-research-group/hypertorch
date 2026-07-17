@@ -1,6 +1,6 @@
 .PHONY: all release build setup setup-tensorboard clean destroy\
 		package validate-package \
-		test stest i-test si-test run bench \
+		test stest i-test si-test run \
 		check format typecheck lint lint-fix lint-rule lint-rule-fix \
 		docs docs-build docs-serve \
 		loc help
@@ -123,10 +123,6 @@ clean:
 destroy: clean
 	@echo '=== Destroying environment ==='
 	rm -rf .venv .hypertorch_cache hypertorch_logs $(UV).lock .$(UV)-cache
-
-bench:
-	@echo '=== Running benchmark ==='
-	$(UV) run ./benchmark/bench.sh
 
 help:
 	@echo "Usage: make [target]"
