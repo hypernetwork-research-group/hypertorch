@@ -6,67 +6,63 @@ from torchmetrics import MetricCollection
 from hypertorch.hyperlink_prediction.common import stage_metric_name
 from hypertorch.models.node2vec_common import (
     NODE2VEC_JOINT_MODE,
-    Node2VecEncoderConfig as Node2VecNcConfig,
+    NODE2VEC_PRECOMPUTED_MODE,
+    Node2VecGCNEncoderConfig as Node2VecGCNNCConfig,
+    Node2VecEncoderConfig as Node2VecNCConfig,
     Node2VecMode,
     Node2VecWalkLoaderState,
-    build_node2vec_encoder,
+    build_gcn_encoder,
+    build_node2vecgcn_encoder,
     next_walk_batch,
+    to_gcn_edge_index,
     to_node2vec_encoder,
+    to_node2vecgcn_encoder,
     validate_global_node_ids,
 )
-from hypertorch.models import SLP
-from hypertorch.nc.common import NcModule
+from hypertorch.node_classification.common import NCClassifier
 from hypertorch.types import HData
 from hypertorch.utils import Stage
 
 
-class Node2VecEncoderConfig(TypedDict):
+class Node2VecGCNClassifierConfig(TypedDict):
     """
-    Configuration for the Node2Vec encoder module.
+    Configuration for the Node2VecGCN classifier in ``Node2VecGCNClassifier``.
 
     Attributes:
         mode: Whether to use precomputed node embeddings from ``x`` or train a Node2Vec
             encoder jointly inside the module. Defaults to ``"joint"``.
-        num_features: Dimension of the Node2Vec embeddings, which is also
-            the input dimension of the classifier.
-        node2vec_config: Shared Node2Vec configuration used in joint mode, or metadata for
-            validating precomputed embeddings.
+        num_features: Dimension of the Node2Vec embeddings, which is also used by the GCN.
+        node2vec_config: Shared Node2Vec configuration used in joint mode. It is ignored
+            in precomputed mode. So, it can be provided as an empty dictionary: ``{}``.
+        gcn_config: Configuration for the GCN classifier.
     """
 
     mode: NotRequired[Node2VecMode]
     num_features: int
-    node2vec_config: Node2VecNcConfig
+    node2vec_config: Node2VecNCConfig
+    gcn_config: Node2VecGCNNCConfig
 
 
-class Node2VecClassifierConfig(TypedDict):
+class Node2VecGCNClassifier(NCClassifier):
     """
-    Configuration for the Node2Vec classifier module.
-
-    Attributes:
-        out_channels: Number of node classes.
-    """
-
-    out_channels: int
-
-
-class Node2VecNcModule(NcModule):
-    """
-    A LightningModule for Node2Vec-based multiclass node classification.
+    A LightningModule for Node2VecGCN-based NC classifier.
 
     Supports two modes:
         - ``precomputed``: use node embeddings already stored in ``batch.x``.
-        - ``joint``: train a Node2Vec encoder jointly with the node classifier.
+        - ``joint``: train a Node2Vec encoder jointly with the GCN classifier.
 
     Attributes:
-        encoder: Optional Node2Vec encoder inherited from ``NcModule``.
-        classifier: Classifier inherited from ``NcModule``.
-        loss_fn: Loss function inherited from ``NcModule``.
-        metrics_log_kwargs: Metric logging keyword arguments inherited from ``NcModule``.
-        train_metrics: Optional training metrics inherited from ``NcModule``.
-        val_metrics: Optional validation metrics inherited from ``NcModule``.
-        test_metrics: Optional test metrics inherited from ``NcModule``.
+        encoder: Optional Node2Vec-GCN encoder inherited from ``NCClassifier``.
+        classifier: GCN classifier inherited from ``NCClassifier`` in precomputed mode.
+        loss_fn: Loss function inherited from ``NCClassifier``.
+        metrics_log_kwargs: Metric logging keyword arguments inherited from ``NCClassifier``.
+        train_metrics: Optional training metrics inherited from ``NCClassifier``.
+        val_metrics: Optional validation metrics inherited from ``NCClassifier``.
+        test_metrics: Optional test metrics inherited from ``NCClassifier``.
         mode: Whether to use precomputed or joint Node2Vec embeddings.
-        embedding_dim: Node embedding dimension consumed by the classifier.
+        embedding_dim: Node embedding dimension consumed by GCN.
+        node2vec_config: Node2Vec configuration.
+        gcn_config: GCN configuration.
         lr: Learning rate for the optimizer. Defaults to ``0.001``.
         weight_decay: Weight decay for the optimizer. Defaults to ``0.0``.
         random_walk_batch_size: Batch size used for Node2Vec walk loss in joint mode.
@@ -77,8 +73,7 @@ class Node2VecNcModule(NcModule):
 
     def __init__(
         self,
-        encoder_config: Node2VecEncoderConfig,
-        classifier_config: Node2VecClassifierConfig,
+        classifier_config: Node2VecGCNClassifierConfig,
         loss_fn: nn.Module | None = None,
         lr: float = 0.001,
         weight_decay: float = 0.0,
@@ -86,11 +81,10 @@ class Node2VecNcModule(NcModule):
         metrics_log_kwargs: dict[str, Any] | None = None,
     ) -> None:
         """
-        Initialize the Node2Vec NC module.
+        Initialize the Node2VecGCN-based NC classifier.
 
         Args:
-            encoder_config: Configuration for the Node2Vec encoder.
-            classifier_config: Configuration for the classifier.
+            classifier_config: Configuration for Node2Vec embeddings and GCN layers.
             loss_fn: Optional NC loss function. Defaults to ``CrossEntropyLoss``.
             lr: Learning rate for the optimizer. Defaults to ``0.001``.
             weight_decay: Weight decay for the optimizer. Defaults to ``0.0``.
@@ -99,23 +93,30 @@ class Node2VecNcModule(NcModule):
                 Useful for configuring distributed synchronization behavior of ``torchmetrics``.
                 Defaults to ``None``.
         """
-        self.mode: Node2VecMode = encoder_config.get("mode", NODE2VEC_JOINT_MODE)
-        self.embedding_dim: int = encoder_config["num_features"]
-        node2vec_config = encoder_config["node2vec_config"]
+        self.mode: Node2VecMode = classifier_config.get("mode", NODE2VEC_JOINT_MODE)
+        self.embedding_dim: int = classifier_config["num_features"]
+        self.node2vec_config: Node2VecNCConfig = classifier_config["node2vec_config"]
+        self.gcn_config: Node2VecGCNNCConfig = classifier_config["gcn_config"]
 
-        encoder = (
-            build_node2vec_encoder(self.embedding_dim, node2vec_config, self.mode)
+        node2vecgcn_encoder = (
+            build_node2vecgcn_encoder(
+                embedding_dim=self.embedding_dim,
+                node2vec_config=self.node2vec_config,
+                gcn_config=self.gcn_config,
+                mode=self.mode,
+            )
             if self.mode == NODE2VEC_JOINT_MODE
             else None
         )
 
-        classifier = SLP(
-            in_channels=self.embedding_dim,
-            out_channels=classifier_config["out_channels"],
+        classifier = (
+            build_gcn_encoder(self.embedding_dim, self.gcn_config)
+            if self.mode == NODE2VEC_PRECOMPUTED_MODE
+            else nn.Identity()
         )
 
         super().__init__(
-            encoder=encoder,
+            encoder=node2vecgcn_encoder,
             classifier=classifier,
             loss_fn=loss_fn if loss_fn is not None else nn.CrossEntropyLoss(),
             metrics=metrics,
@@ -124,21 +125,23 @@ class Node2VecNcModule(NcModule):
 
         self.lr: float = lr
         self.weight_decay: float = weight_decay
-        self.random_walk_batch_size: int = node2vec_config.get("random_walk_batch_size", 128)
-        self.node2vec_loss_weight: float = node2vec_config.get("node2vec_loss_weight", 1.0)
+        self.random_walk_batch_size: int = self.node2vec_config.get("random_walk_batch_size", 128)
+        self.node2vec_loss_weight: float = self.node2vec_config.get("node2vec_loss_weight", 1.0)
 
         self.__walk_loader_state: Node2VecWalkLoaderState = Node2VecWalkLoaderState()
 
     def forward(
         self,
         x: Tensor,
+        hyperedge_index: Tensor,
         global_node_ids: Tensor | None = None,
     ) -> Tensor:
         """
-        Predict node-class logits from precomputed or jointly trained Node2Vec embeddings.
+        Predict node-class logits from Node2Vec embeddings refined by GCN.
 
         Args:
             x: Node feature or precomputed embedding matrix.
+            hyperedge_index: Hyperedge incidence tensor.
             global_node_ids: Optional global node IDs for joint Node2Vec lookup.
                 Defaults to ``None``.
 
@@ -148,22 +151,20 @@ class Node2VecNcModule(NcModule):
         Raises:
             ValueError: If the configured mode cannot supply node embeddings.
         """
-        # Encode: get node embeddings from precomputation or joint encoder
+        gcn_edge_index = to_gcn_edge_index(hyperedge_index, self.gcn_config)
+
         if self.mode == NODE2VEC_JOINT_MODE:
-            encoder = to_node2vec_encoder(self.encoder, self.mode)
+            encoder = to_node2vecgcn_encoder(self.encoder, self.mode)
             validate_global_node_ids(encoder.num_embeddings, global_node_ids, self.mode)
-            node_embeddings = encoder(batch=global_node_ids)
+            logits = encoder(batch=global_node_ids, edge_index=gcn_edge_index)
         else:
             if x.size(1) != self.embedding_dim:
                 raise ValueError(
                     f"Expected precomputed node embeddings with dimension "
                     f"{self.embedding_dim}, got {x.size(1)}."
                 )
-            node_embeddings = x
+            logits = self.classifier(x, gcn_edge_index)
 
-        # Decode: linear projection to scalar score per node class
-        # shape: (num_nodes, out_channels)
-        logits: Tensor = self.classifier(node_embeddings)
         return logits
 
     def training_step(self, batch: HData, batch_idx: int) -> Tensor:
@@ -179,15 +180,11 @@ class Node2VecNcModule(NcModule):
         Returns:
             loss: Training loss.
         """
-        logits = self.forward(batch.x, batch.global_node_ids)
+        logits = self.forward(batch.x, batch.hyperedge_index, batch.global_node_ids)
         target_logits, target_labels = self._target_logits_and_labels(logits, batch)
         batch_size = int(target_labels.size(0))
 
         if self.mode == NODE2VEC_JOINT_MODE:
-            # Node2Vec.loss() is already a stochastic objective over sampled walks,
-            # so one walk batch is a standard SGD estimate, not a logically different loss,
-            # meaning we can optimize training by using a single walk batch per training step,
-            # instead of averaging over multiple walk batches.
             positive_random_walk, negative_random_walk = next_walk_batch(
                 mode=self.mode,
                 encoder=self.encoder,
@@ -268,7 +265,7 @@ class Node2VecNcModule(NcModule):
         Returns:
             logits: Predicted node-class logits.
         """
-        return self.forward(batch.x, batch.global_node_ids)
+        return self.forward(batch.x, batch.hyperedge_index, batch.global_node_ids)
 
     def configure_optimizers(self) -> optim.Adam:
         """
@@ -290,7 +287,7 @@ class Node2VecNcModule(NcModule):
         Returns:
             loss: Computed loss.
         """
-        logits = self.forward(batch.x, batch.global_node_ids)
+        logits = self.forward(batch.x, batch.hyperedge_index, batch.global_node_ids)
         target_logits, target_labels = self._target_logits_and_labels(logits, batch)
         batch_size = int(target_labels.size(0))
 

@@ -10,7 +10,7 @@ from hypertorch.integration_tests.common import (
     split_dataset,
     train_test_loop,
 )
-from hypertorch.nc import GCNNcModule
+from hypertorch.node_classification import GCNClassifier
 
 
 NUM_CLASSES = 3
@@ -44,7 +44,7 @@ def test_model_gcn(tmp_path, sampling_strategy, full, batch_size, request):
         train_dataset, val_dataset, test_dataset, batch_size=batch_size, sample_full_hypergraph=full
     )
 
-    gcn = GCNNcModule(
+    gcn = GCNClassifier(
         classifier_config={
             "in_channels": num_features,
             "hidden_channels": 8,

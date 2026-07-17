@@ -11,7 +11,7 @@ Developer note: rendering is configured in `zensical.toml` under
 - [Hyperlink prediction (HLP)](hyperlink_prediction.md)
 - [Models](models.md)
 - [Neural components (NN)](nn.md)
-- [Node classification (NC)](nc.md)
+- [Node classification (NC)](node_classification.md)
 - [Training](train.md)
 - [Types](types.md)
 - [Utils](utils.md)

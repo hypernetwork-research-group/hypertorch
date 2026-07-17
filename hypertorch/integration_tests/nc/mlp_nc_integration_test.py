@@ -10,7 +10,7 @@ from hypertorch.integration_tests.common import (
     split_dataset,
     train_test_loop,
 )
-from hypertorch.nc import MLPNcModule
+from hypertorch.node_classification import MLPClassifier
 
 
 NUM_CLASSES = 3
@@ -42,7 +42,7 @@ def test_model_mlp(tmp_path, sampling_strategy, full, batch_size, request):
         train_dataset, val_dataset, test_dataset, batch_size=batch_size, sample_full_hypergraph=full
     )
 
-    mlp = MLPNcModule(
+    mlp = MLPClassifier(
         classifier_config={
             "in_channels": NUM_FEATURES,
             "out_channels": NUM_CLASSES,

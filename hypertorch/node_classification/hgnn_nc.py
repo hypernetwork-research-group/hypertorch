@@ -2,30 +2,24 @@ from torch import Tensor, nn, optim
 from typing import Any, TypedDict
 from typing_extensions import NotRequired
 from torchmetrics import MetricCollection
-from hypertorch.models import HyperGCN
+from hypertorch.models import HGNN
 from hypertorch.types import HData
 from hypertorch.utils import Stage
 
-from hypertorch.nc.common import NcModule
+from hypertorch.node_classification.common import NCClassifier
 
 
-class HyperGCNClassifierConfig(TypedDict):
+class HGNNClassifierConfig(TypedDict):
     """
-    Configuration for the HyperGCN classifier in ``HyperGCNNcModule``.
+    Configuration for the HGNN classifier in ``HGNNClassifier``.
 
     Attributes:
         in_channels: Number of input features per node.
-        hidden_channels: Number of hidden units in the intermediate HyperGCN layer.
+        hidden_channels: Number of hidden units in the intermediate HGNN layer.
         out_channels: Number of node classes.
         bias: Whether to include bias terms. Defaults to ``True``.
         use_batch_normalization: Whether to use batch normalization. Defaults to ``False``.
         drop_rate: Dropout rate. Defaults to ``0.5``.
-        use_mediator: Whether to use mediator nodes for hyperedge-to-edge conversion.
-            Defaults to ``False``.
-        fast: Whether to cache the graph structure after first computation.
-            Defaults to ``True``.
-        seed: Optional random seed for the random reduction of hyperedges to edges.
-            Defaults to ``None``.
     """
 
     in_channels: int
@@ -34,34 +28,31 @@ class HyperGCNClassifierConfig(TypedDict):
     bias: NotRequired[bool]
     use_batch_normalization: NotRequired[bool]
     drop_rate: NotRequired[float]
-    use_mediator: NotRequired[bool]
-    fast: NotRequired[bool]
-    seed: NotRequired[int]
 
 
-class HyperGCNNcModule(NcModule):
+class HGNNClassifier(NCClassifier):
     """
-    A LightningModule for HyperGCN-based multiclass node classification.
+    A LightningModule for HGNN-based NC classifier.
 
-    Uses HyperGCN to transform node features and hypergraph structure directly into
+    Uses HGNN to transform node features and hypergraph incidence structure directly into
     per-node class logits. During training, validation, and testing, loss and metrics
     are computed on supervised target nodes selected by ``HData.target_node_mask``.
 
     Attributes:
-        encoder: Optional encoder module inherited from ``NcModule``. Defaults to ``None``.
-        classifier: HyperGCN classifier module inherited from ``NcModule``.
-        loss_fn: Loss function inherited from ``NcModule``.
-        metrics_log_kwargs: Metric logging keyword arguments inherited from ``NcModule``.
-        train_metrics: Optional training metrics inherited from ``NcModule``.
-        val_metrics: Optional validation metrics inherited from ``NcModule``.
-        test_metrics: Optional test metrics inherited from ``NcModule``.
+        encoder: Optional encoder module inherited from ``NCClassifier``. Defaults to ``None``.
+        classifier: HGNN classifier module inherited from ``NCClassifier``.
+        loss_fn: Loss function inherited from ``NCClassifier``.
+        metrics_log_kwargs: Metric logging keyword arguments inherited from ``NCClassifier``.
+        train_metrics: Optional training metrics inherited from ``NCClassifier``.
+        val_metrics: Optional validation metrics inherited from ``NCClassifier``.
+        test_metrics: Optional test metrics inherited from ``NCClassifier``.
         lr: Learning rate for the optimizer. Defaults to ``0.01``.
         weight_decay: L2 regularization. Defaults to ``5e-4``.
     """
 
     def __init__(
         self,
-        classifier_config: HyperGCNClassifierConfig,
+        classifier_config: HGNNClassifierConfig,
         loss_fn: nn.Module | None = None,
         lr: float = 0.01,
         weight_decay: float = 5e-4,
@@ -69,10 +60,10 @@ class HyperGCNNcModule(NcModule):
         metrics_log_kwargs: dict[str, Any] | None = None,
     ) -> None:
         """
-        Initialize the HyperGCN NC module.
+        Initialize the HGNN-based NC classifier.
 
         Args:
-            classifier_config: Configuration for the HyperGCN classifier.
+            classifier_config: Configuration for the HGNN classifier.
             loss_fn: Optional loss function. Defaults to ``CrossEntropyLoss``.
             lr: Learning rate for the optimizer. Defaults to ``0.01``.
             weight_decay: L2 regularization. Defaults to ``5e-4``.
@@ -81,16 +72,13 @@ class HyperGCNNcModule(NcModule):
                 Useful for configuring distributed synchronization behavior
                 of ``torchmetrics``. Defaults to ``None``.
         """
-        classifier = HyperGCN(
+        classifier = HGNN(
             in_channels=classifier_config["in_channels"],
             hidden_channels=classifier_config["hidden_channels"],
             num_classes=classifier_config["out_channels"],
             bias=classifier_config.get("bias", True),
             use_batch_normalization=classifier_config.get("use_batch_normalization", False),
             drop_rate=classifier_config.get("drop_rate", 0.5),
-            use_mediator=classifier_config.get("use_mediator", False),
-            fast=classifier_config.get("fast", True),
-            seed=classifier_config.get("seed"),
         )
 
         super().__init__(

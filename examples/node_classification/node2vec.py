@@ -2,7 +2,7 @@ from torchmetrics import MetricCollection
 from torchmetrics.classification import MulticlassAUROC, MulticlassAccuracy, MulticlassF1Score
 
 from hypertorch.data import AlgebraDataset, DataLoader, Node2VecEnricher
-from hypertorch.nc import Node2VecNcModule
+from hypertorch.node_classification import Node2VecClassifier
 from hypertorch.train import MultiModelTrainer
 from hypertorch.types import ModelConfig
 from hypertorch.utils import node_labels_from_node_degrees
@@ -83,7 +83,7 @@ if __name__ == "__main__":
         persistent_workers=True,
     )
 
-    node2vec_precomputed = Node2VecNcModule(
+    node2vec_precomputed = Node2VecClassifier(
         encoder_config={
             "mode": "precomputed",
             "num_features": num_features,
@@ -97,7 +97,7 @@ if __name__ == "__main__":
         metrics=metrics,
     )
 
-    node2vec_joint = Node2VecNcModule(
+    node2vec_joint = Node2VecClassifier(
         encoder_config={
             "mode": "joint",
             "num_features": num_features,

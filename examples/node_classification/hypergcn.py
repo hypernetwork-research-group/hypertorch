@@ -5,7 +5,7 @@ from hypertorch.data import (
     DataLoader,
     LaplacianPositionalEncodingEnricher,
 )
-from hypertorch.nc import HyperGCNNcModule
+from hypertorch.node_classification import HyperGCNClassifier
 from hypertorch.train import MultiModelTrainer
 from hypertorch.types import ModelConfig
 from hypertorch.utils import node_labels_from_node_degrees
@@ -74,7 +74,7 @@ if __name__ == "__main__":
         persistent_workers=True,
     )
 
-    no_mediator_model = HyperGCNNcModule(
+    no_mediator_model = HyperGCNClassifier(
         classifier_config={
             "in_channels": num_features,
             "out_channels": num_classes,
@@ -87,7 +87,7 @@ if __name__ == "__main__":
         metrics=metrics,
     )
 
-    with_mediator_model = HyperGCNNcModule(
+    with_mediator_model = HyperGCNClassifier(
         classifier_config={
             "in_channels": num_features,
             "out_channels": num_classes,

@@ -7,12 +7,12 @@ from hypertorch.models import SLP, VilLain
 from hypertorch.types import HData
 from hypertorch.utils import Stage
 
-from hypertorch.nc.common import NcModule
+from hypertorch.node_classification.common import NCClassifier
 
 
 class VilLainEncoderConfig(TypedDict):
     """
-    Configuration for the VilLain encoder in ``VilLainNcModule``.
+    Configuration for the VilLain encoder in ``VilLainClassifier``.
 
     Attributes:
         num_nodes: Total number of trainable nodes.
@@ -37,7 +37,7 @@ class VilLainEncoderConfig(TypedDict):
 
 class VilLainClassifierConfig(TypedDict):
     """
-    Configuration for the classifier in ``VilLainNcModule``.
+    Configuration for the classifier in ``VilLainClassifier``.
 
     Attributes:
         out_channels: Number of node classes.
@@ -46,21 +46,21 @@ class VilLainClassifierConfig(TypedDict):
     out_channels: int
 
 
-class VilLainNcModule(NcModule):
+class VilLainClassifier(NCClassifier):
     """
-    Feature-free VilLain multiclass node-classification module.
+    Feature-free VilLain-based NC classifier.
 
     The module learns transductive node embeddings from the hypergraph structure with
     ``VilLain`` and classifies the generated embeddings with an MLP.
 
     Attributes:
-        encoder: VilLain encoder module inherited from ``NcModule``.
-        classifier: Classifier module inherited from ``NcModule``.
-        loss_fn: Loss function inherited from ``NcModule``.
-        metrics_log_kwargs: Metric logging keyword arguments inherited from ``NcModule``.
-        train_metrics: Optional training metrics inherited from ``NcModule``.
-        val_metrics: Optional validation metrics inherited from ``NcModule``.
-        test_metrics: Optional test metrics inherited from ``NcModule``.
+        encoder: VilLain encoder module inherited from ``NCClassifier``.
+        classifier: Classifier module inherited from ``NCClassifier``.
+        loss_fn: Loss function inherited from ``NCClassifier``.
+        metrics_log_kwargs: Metric logging keyword arguments inherited from ``NCClassifier``.
+        train_metrics: Optional training metrics inherited from ``NCClassifier``.
+        val_metrics: Optional validation metrics inherited from ``NCClassifier``.
+        test_metrics: Optional test metrics inherited from ``NCClassifier``.
         embedding_dim: VilLain node embedding dimension.
         lr: Learning rate for the optimizer. Defaults to ``0.01``.
         weight_decay: L2 regularization. Defaults to ``0.0``.
@@ -78,7 +78,7 @@ class VilLainNcModule(NcModule):
         metrics_log_kwargs: dict[str, Any] | None = None,
     ) -> None:
         """
-        Initialize the VilLain NC module.
+        Initialize the VilLain-based NC classifier.
 
         Args:
             encoder_config: Configuration for the VilLain encoder.

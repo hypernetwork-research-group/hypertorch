@@ -9,21 +9,21 @@ from hypertorch.nn import CommonNeighborsNodeScorer
 from hypertorch.types import HData, HyperedgeIndex, Hypergraph, Neighborhood
 from hypertorch.utils import Stage
 
-from hypertorch.nc.common import NcModule
+from hypertorch.node_classification.common import NCClassifier
 
 
-class CommonNeighborsNcModule(NcModule):
+class CommonNeighborsClassifier(NCClassifier):
     """
-    A LightningModule for the CommonNeighbors node-classification heuristic.
+    A LightningModule for the CommonNeighbors-based NC classifier.
 
     Attributes:
-        encoder: Optional encoder module inherited from ``NcModule``. Defaults to ``None``.
-        classifier: Identity placeholder inherited from ``NcModule``.
-        loss_fn: Loss function inherited from ``NcModule``.
-        metrics_log_kwargs: Metric logging keyword arguments inherited from ``NcModule``.
-        train_metrics: Optional training metrics inherited from ``NcModule``.
-        val_metrics: Optional validation metrics inherited from ``NcModule``.
-        test_metrics: Optional test metrics inherited from ``NcModule``.
+        encoder: Optional encoder module inherited from ``NCClassifier``. Defaults to ``None``.
+        classifier: Identity placeholder inherited from ``NCClassifier``.
+        loss_fn: Loss function inherited from ``NCClassifier``.
+        metrics_log_kwargs: Metric logging keyword arguments inherited from ``NCClassifier``.
+        train_metrics: Optional training metrics inherited from ``NCClassifier``.
+        val_metrics: Optional validation metrics inherited from ``NCClassifier``.
+        test_metrics: Optional test metrics inherited from ``NCClassifier``.
         node_to_neighbors: Precomputed training-world node neighborhoods.
         automatic_optimization: Disabled because this module has no trainable optimization.
     """
@@ -40,7 +40,7 @@ class CommonNeighborsNcModule(NcModule):
         metrics_log_kwargs: dict[str, Any] | None = None,
     ) -> None:
         """
-        Initialize the CommonNeighbors NC module.
+        Initialize the CommonNeighbors-based NC classifier.
 
         Args:
             train_hdata: Training data used to precompute neighborhoods and labeled

@@ -9,7 +9,7 @@ from hypertorch.types import HData
 from hypertorch.utils import Stage
 
 
-class NcModule(L.LightningModule):
+class NCClassifier(L.LightningModule):
     """
     A LightningModule base class for multiclass node-classification models.
 
@@ -32,7 +32,7 @@ class NcModule(L.LightningModule):
         metrics_log_kwargs: dict[str, Any] | None = None,
     ) -> None:
         """
-        Initialize the NC module.
+        Initialize the NC classifier.
 
         Args:
             classifier: Module producing one class-logit row per node.
