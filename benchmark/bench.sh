@@ -19,11 +19,12 @@ if [[ "$TASK" == "hlp" ]]; then
     uv run python3 ${repo_root}/benchmark/bench_hlp.py \
         --num-workers 8 \
         --num-features 32 \
-        --seed 42 \
+        --seed 42 43 44 \
         --k-nodes 2 \
         --test-set-negative-ratio 0.6 \
         --split-ratios 0.7 0.1 0.2 \
-        --datasets cora citeseer pubmed
+        --datasets cora
+        # --datasets cora citeseer pubmed
 else
     echo "Unknown task: $TASK" >&2
     exit 1
