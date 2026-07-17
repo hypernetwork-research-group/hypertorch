@@ -12,7 +12,7 @@ from hypertorch.types import (
 )
 from hypertorch.utils import ActivationFn, Stage
 
-from hypertorch.nc.common import NCClassifier
+from hypertorch.node_classification.common import NCClassifier
 
 
 class GCNClassifierConfig(TypedDict):

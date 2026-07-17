@@ -9,7 +9,7 @@ from hypertorch.integration_tests.common import (
     split_dataset,
     train_test_loop,
 )
-from hypertorch.nc import CommonNeighborsClassifier
+from hypertorch.node_classification import CommonNeighborsClassifier
 
 
 NUM_CLASSES = 3

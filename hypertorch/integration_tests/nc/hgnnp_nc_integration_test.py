@@ -10,7 +10,7 @@ from hypertorch.integration_tests.common import (
     split_dataset,
     train_test_loop,
 )
-from hypertorch.nc import HGNNPClassifier
+from hypertorch.node_classification import HGNNPClassifier
 
 
 NUM_CLASSES = 3

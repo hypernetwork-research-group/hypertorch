@@ -5,7 +5,7 @@ from hypertorch.data import (
     DataLoader,
     LaplacianPositionalEncodingEnricher,
 )
-from hypertorch.nc import HGNNPClassifier
+from hypertorch.node_classification import HGNNPClassifier
 from hypertorch.train import MultiModelTrainer
 from hypertorch.types import ModelConfig
 from hypertorch.utils import node_labels_from_node_degrees

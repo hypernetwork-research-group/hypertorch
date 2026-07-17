@@ -23,7 +23,7 @@ See `Makefile` for supported commands. Use `make help` to list all available com
   - `hyperlink_prediction/`: hyperlink prediction modules
   - `integration_tests/`: integration tests for the package
   - `models/`: model implementations (e.g., GCN, Node2Vec, etc.)
-  - `nc/`: node classification modules
+  - `node_classification/`: node classification modules
   - `nn/`: layers, enrichers, aggregators, and losses
   - `train/`: training utilities and trainers
   - `tests/`: test suite

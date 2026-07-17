@@ -2,7 +2,11 @@ from torchmetrics import MetricCollection
 from torchmetrics.classification import MulticlassAUROC, MulticlassAccuracy, MulticlassF1Score
 
 from hypertorch.data import AlgebraDataset, DataLoader, Node2VecEnricher
-from hypertorch.nc import Node2VecGCNNCConfig, Node2VecGCNClassifierConfig, Node2VecGCNClassifier
+from hypertorch.node_classification import (
+    Node2VecGCNNCConfig,
+    Node2VecGCNClassifierConfig,
+    Node2VecGCNClassifier,
+)
 from hypertorch.train import MultiModelTrainer
 from hypertorch.types import ModelConfig
 from hypertorch.utils import node_labels_from_node_degrees

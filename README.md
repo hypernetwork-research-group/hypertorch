@@ -41,7 +41,7 @@ Use HyperTorch to:
 | **Neural components (NN)** | Build models and pipelines | Layers, aggregators, losses, and activation/normalization helpers | `hypertorch.nn` |
 | **Models** | Access hypergraph models | HGNN, HGNNP, HNHN, HyperGCN, GCN, MLP/SLP, NHP, Node2Vec, VilLain, CommonNeighbors | `hypertorch.models` |
 | **Hyperlink prediction (HLP) pipelines** | Use ready-to-train hyperlink prediction modules | HLP modules with encoders, configs, losses, and stage metrics for multiple models | `hypertorch.hyperlink_prediction` |
-| **Node classification (NC) pipelines** | Use ready-to-train node classification modules | NC modules with encoders, configs, losses, and stage metrics for multiple models | `hypertorch.nc` |
+| **Node classification (NC) pipelines** | Use ready-to-train node classification modules | NC modules with encoders, configs, losses, and stage metrics for multiple models | `hypertorch.node_classification` |
 | **Training and benchmarking** | Train, compare, checkpoint, and report model runs | Multi-model trainer, schedulers, TensorBoard support, CSV/Markdown/LaTeX result tables | `hypertorch.train` |
 
 ## Getting started

@@ -1,7 +1,7 @@
 from torchmetrics import MetricCollection
 from torchmetrics.classification import MulticlassAUROC, MulticlassAccuracy, MulticlassF1Score
 from hypertorch.data import AlgebraDataset, DataLoader
-from hypertorch.nc import CommonNeighborsClassifier
+from hypertorch.node_classification import CommonNeighborsClassifier
 from hypertorch.train import MultiModelTrainer
 from hypertorch.types import ModelConfig
 from hypertorch.utils import node_labels_from_node_degrees

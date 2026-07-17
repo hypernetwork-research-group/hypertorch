@@ -7,7 +7,7 @@ from hypertorch.models import SLP, VilLain
 from hypertorch.types import HData
 from hypertorch.utils import Stage
 
-from hypertorch.nc.common import NCClassifier
+from hypertorch.node_classification.common import NCClassifier
 
 
 class VilLainEncoderConfig(TypedDict):

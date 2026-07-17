@@ -2,98 +2,83 @@ from torch import Tensor, nn, optim
 from typing import Any, TypedDict
 from typing_extensions import NotRequired
 from torchmetrics import MetricCollection
-from hypertorch.models import MLP
+from hypertorch.models import HGNN
 from hypertorch.types import HData
-from hypertorch.utils import ActivationFn, NormalizationFn, Stage
+from hypertorch.utils import Stage
 
-from hypertorch.nc.common import NCClassifier
+from hypertorch.node_classification.common import NCClassifier
 
 
-class MLPClassifierConfig(TypedDict):
+class HGNNClassifierConfig(TypedDict):
     """
-    Configuration for the MLP classifier in ``MLPClassifier``.
+    Configuration for the HGNN classifier in ``HGNNClassifier``.
 
     Attributes:
         in_channels: Number of input features per node.
+        hidden_channels: Number of hidden units in the intermediate HGNN layer.
         out_channels: Number of node classes.
-        num_layers: Number of layers in the MLP classifier.
-        hidden_channels: Optional number of hidden units per layer. If ``None``, no hidden layers
-            are used and the classifier is a simple linear layer.
-        activation_fn: Optional activation function class to use in the MLP classifier.
-            If ``None``, no activation function is applied.
-        activation_fn_kwargs: Optional dictionary of keyword arguments to pass to the activation
-            function constructor.
-        normalization_fn: Optional normalization function class to use in the MLP classifier.
-            If ``None``, no normalization is applied.
-        normalization_fn_kwargs: Optional dictionary of keyword arguments to pass to the
-            normalization function constructor.
-        bias: Whether to include bias terms in the MLP layers. Defaults to ``True``.
-        drop_rate: Dropout rate to apply after each MLP layer except the last one.
-            Defaults to ``0.0``.
+        bias: Whether to include bias terms. Defaults to ``True``.
+        use_batch_normalization: Whether to use batch normalization. Defaults to ``False``.
+        drop_rate: Dropout rate. Defaults to ``0.5``.
     """
 
     in_channels: int
+    hidden_channels: int
     out_channels: int
-    num_layers: NotRequired[int]
-    hidden_channels: NotRequired[int | None]
-    activation_fn: NotRequired[ActivationFn | None]
-    activation_fn_kwargs: NotRequired[dict | None]
-    normalization_fn: NotRequired[NormalizationFn | None]
-    normalization_fn_kwargs: NotRequired[dict | None]
     bias: NotRequired[bool]
+    use_batch_normalization: NotRequired[bool]
     drop_rate: NotRequired[float]
 
 
-class MLPClassifier(NCClassifier):
+class HGNNClassifier(NCClassifier):
     """
-    A LightningModule for MLP-based NC classifier.
+    A LightningModule for HGNN-based NC classifier.
 
-    Uses an MLP classifier to map node features directly to per-node class logits.
-    During training, validation, and testing, loss and metrics are computed on the
-    supervised target nodes selected by ``HData.target_node_mask`` when present.
+    Uses HGNN to transform node features and hypergraph incidence structure directly into
+    per-node class logits. During training, validation, and testing, loss and metrics
+    are computed on supervised target nodes selected by ``HData.target_node_mask``.
 
     Attributes:
         encoder: Optional encoder module inherited from ``NCClassifier``. Defaults to ``None``.
-        classifier: MLP classifier module inherited from ``NCClassifier``.
+        classifier: HGNN classifier module inherited from ``NCClassifier``.
         loss_fn: Loss function inherited from ``NCClassifier``.
         metrics_log_kwargs: Metric logging keyword arguments inherited from ``NCClassifier``.
         train_metrics: Optional training metrics inherited from ``NCClassifier``.
         val_metrics: Optional validation metrics inherited from ``NCClassifier``.
         test_metrics: Optional test metrics inherited from ``NCClassifier``.
-        lr: Learning rate for the optimizer. Defaults to ``0.001``.
+        lr: Learning rate for the optimizer. Defaults to ``0.01``.
+        weight_decay: L2 regularization. Defaults to ``5e-4``.
     """
 
     def __init__(
         self,
-        classifier_config: MLPClassifierConfig,
+        classifier_config: HGNNClassifierConfig,
         loss_fn: nn.Module | None = None,
-        lr: float = 0.001,
+        lr: float = 0.01,
+        weight_decay: float = 5e-4,
         metrics: MetricCollection | None = None,
         metrics_log_kwargs: dict[str, Any] | None = None,
     ) -> None:
         """
-        Initialize the MLP-based NC classifier.
+        Initialize the HGNN-based NC classifier.
 
         Args:
-            classifier_config: Configuration for the MLP classifier.
+            classifier_config: Configuration for the HGNN classifier.
             loss_fn: Optional loss function. Defaults to ``CrossEntropyLoss``.
-            lr: Learning rate for the optimizer. Defaults to ``0.001``.
+            lr: Learning rate for the optimizer. Defaults to ``0.01``.
+            weight_decay: L2 regularization. Defaults to ``5e-4``.
             metrics: Optional metric collection for evaluation. Defaults to ``None``.
             metrics_log_kwargs: Additional keyword arguments passed to metric log calls.
                 Useful for configuring distributed synchronization behavior
                 of ``torchmetrics``. Defaults to ``None``.
         """
-        classifier = MLP(
+        classifier = HGNN(
             in_channels=classifier_config["in_channels"],
-            hidden_channels=classifier_config.get("hidden_channels"),
-            out_channels=classifier_config["out_channels"],
-            num_layers=classifier_config.get("num_layers", 1),
-            activation_fn=classifier_config.get("activation_fn"),
-            activation_fn_kwargs=classifier_config.get("activation_fn_kwargs"),
-            normalization_fn=classifier_config.get("normalization_fn"),
-            normalization_fn_kwargs=classifier_config.get("normalization_fn_kwargs"),
+            hidden_channels=classifier_config["hidden_channels"],
+            num_classes=classifier_config["out_channels"],
             bias=classifier_config.get("bias", True),
-            drop_rate=classifier_config.get("drop_rate", 0.0),
+            use_batch_normalization=classifier_config.get("use_batch_normalization", False),
+            drop_rate=classifier_config.get("drop_rate", 0.5),
         )
 
         super().__init__(
@@ -104,30 +89,32 @@ class MLPClassifier(NCClassifier):
         )
 
         self.lr: float = lr
+        self.weight_decay: float = weight_decay
 
-    def forward(self, x: Tensor) -> Tensor:
+    def forward(self, x: Tensor, hyperedge_index: Tensor) -> Tensor:
         """
-        Predict node-class logits from node features.
+        Predict node-class logits from node features and hypergraph structure.
 
         Examples:
             Given 4 nodes with 3 features each and 2 output classes:
-                >>> x = [[0.1, 0.2, 0.3],   # node 0
-                ...      [0.4, 0.5, 0.6],   # node 1
-                ...      [0.7, 0.8, 0.9],   # node 2
-                ...      [1.0, 1.1, 1.2]]   # node 3
+                >>> x.shape
+                ... torch.Size([4, 3])
+                >>> hyperedge_index.shape
+                ... torch.Size([2, 6])
 
             The forward pass maps each node to one row of class logits:
-                >>> logits = model.forward(x)
+                >>> logits = model.forward(x, hyperedge_index)
                 >>> logits.shape
-                torch.Size([4, 2])
+                ... torch.Size([4, 2])
 
         Args:
             x: Node feature matrix of shape ``(num_nodes, in_channels)``.
+            hyperedge_index: Hyperedge connectivity of shape ``(2, num_incidences)``.
 
         Returns:
             logits: Node-class logits of shape ``(num_nodes, num_classes)``.
         """
-        return self.classifier(x)
+        return self.classifier(x, hyperedge_index)
 
     def training_step(self, batch: HData, batch_idx: int) -> Tensor:
         """
@@ -179,7 +166,7 @@ class MLPClassifier(NCClassifier):
         Returns:
             logits: Predicted node-class logits.
         """
-        return self.forward(batch.x)
+        return self.forward(batch.x, batch.hyperedge_index)
 
     def configure_optimizers(self) -> optim.Adam:
         """
@@ -188,7 +175,7 @@ class MLPClassifier(NCClassifier):
         Returns:
             optimizer: Adam optimizer.
         """
-        return optim.Adam(self.parameters(), lr=self.lr)
+        return optim.Adam(self.parameters(), lr=self.lr, weight_decay=self.weight_decay)
 
     def __eval_step(self, batch: HData, stage: Stage) -> Tensor:
         """
@@ -201,7 +188,7 @@ class MLPClassifier(NCClassifier):
         Returns:
             loss: Computed loss.
         """
-        logits = self.forward(batch.x)
+        logits = self.forward(batch.x, batch.hyperedge_index)
         target_logits, target_labels = self._target_logits_and_labels(logits, batch)
         batch_size = int(target_labels.size(0))
 

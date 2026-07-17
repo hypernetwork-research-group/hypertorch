@@ -9,7 +9,7 @@ from hypertorch.nn import CommonNeighborsNodeScorer
 from hypertorch.types import HData, HyperedgeIndex, Hypergraph, Neighborhood
 from hypertorch.utils import Stage
 
-from hypertorch.nc.common import NCClassifier
+from hypertorch.node_classification.common import NCClassifier
 
 
 class CommonNeighborsClassifier(NCClassifier):

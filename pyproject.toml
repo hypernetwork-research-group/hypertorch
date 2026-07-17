@@ -98,7 +98,7 @@ omit = [
   "hypertorch/nn/*",
   "hypertorch/models/*",
   "hypertorch/hyperlink_prediction/*",
-  "hypertorch/nc/*",
+  "hypertorch/node_classification/*",
 ]
 
 [tool.coverage.report]

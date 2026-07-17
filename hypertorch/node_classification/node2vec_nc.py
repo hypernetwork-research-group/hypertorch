@@ -15,7 +15,7 @@ from hypertorch.models.node2vec_common import (
     validate_global_node_ids,
 )
 from hypertorch.models import SLP
-from hypertorch.nc.common import NCClassifier
+from hypertorch.node_classification.common import NCClassifier
 from hypertorch.types import HData
 from hypertorch.utils import Stage
 

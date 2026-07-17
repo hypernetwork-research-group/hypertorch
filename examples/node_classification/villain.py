@@ -1,7 +1,7 @@
 from torchmetrics import MetricCollection
 from torchmetrics.classification import MulticlassAUROC, MulticlassAccuracy, MulticlassF1Score
 from hypertorch.data import CoraDataset, DataLoader
-from hypertorch.nc import VilLainClassifier
+from hypertorch.node_classification import VilLainClassifier
 from hypertorch.train import MultiModelTrainer
 from hypertorch.types import ModelConfig
 from hypertorch.utils import node_labels_from_node_degrees

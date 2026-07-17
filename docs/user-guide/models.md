@@ -4,7 +4,7 @@ HyperTorch provides ready-to-use built-in models inspired by the existing litera
 
 At a high level:
 - `hypertorch.hyperlink_prediction.*` contains ready-to-train hyperlink prediction (HLP) modules.
-- `hypertorch.nc.*` contains ready-to-train node classification (NC) modules.
+- `hypertorch.node_classification.*` contains ready-to-train node classification (NC) modules.
 - `hypertorch.models.*` contains actual models like Node2Vec, GCN, etc.
 - `hypertorch.nn.*` contains layers, enrichers, aggregators, and losses.
 
@@ -59,7 +59,7 @@ model = NHPPredictor(
 ## Minimal node classification example: HyperGCN
 
 ```python
-from hypertorch.nc import HyperGCNClassifier
+from hypertorch.node_classification import HyperGCNClassifier
 
 model = HyperGCNClassifier(
     classifier_config={

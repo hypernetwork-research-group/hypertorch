@@ -19,7 +19,7 @@ from hypertorch.models.node2vec_common import (
     to_node2vecgcn_encoder,
     validate_global_node_ids,
 )
-from hypertorch.nc.common import NCClassifier
+from hypertorch.node_classification.common import NCClassifier
 from hypertorch.types import HData
 from hypertorch.utils import Stage
 

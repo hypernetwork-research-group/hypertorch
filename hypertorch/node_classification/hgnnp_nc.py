@@ -2,20 +2,20 @@ from torch import Tensor, nn, optim
 from typing import Any, TypedDict
 from typing_extensions import NotRequired
 from torchmetrics import MetricCollection
-from hypertorch.models import HNHN
+from hypertorch.models import HGNNP
 from hypertorch.types import HData
 from hypertorch.utils import Stage
 
-from hypertorch.nc.common import NCClassifier
+from hypertorch.node_classification.common import NCClassifier
 
 
-class HNHNClassifierConfig(TypedDict):
+class HGNNPClassifierConfig(TypedDict):
     """
-    Configuration for the HNHN classifier in ``HNHNClassifier``.
+    Configuration for the HGNN+ classifier in ``HGNNPClassifier``.
 
     Attributes:
         in_channels: Number of input features per node.
-        hidden_channels: Number of hidden units in the intermediate HNHN layer.
+        hidden_channels: Number of hidden units in the intermediate HGNN+ layer.
         out_channels: Number of node classes.
         bias: Whether to include bias terms. Defaults to ``True``.
         use_batch_normalization: Whether to use batch normalization. Defaults to ``False``.
@@ -30,18 +30,17 @@ class HNHNClassifierConfig(TypedDict):
     drop_rate: NotRequired[float]
 
 
-class HNHNClassifier(NCClassifier):
+class HGNNPClassifier(NCClassifier):
     """
-    A LightningModule for HNHN-based NC classifier.
+    A LightningModule for HGNN+-based NC classifier.
 
-    Uses HNHN to transform node features and hypergraph incidence structure into
-    per-node class logits through explicit hyperedge neurons. During training,
-    validation, and testing, loss and metrics are computed on supervised target
-    nodes selected by ``HData.target_node_mask``.
+    Uses HGNN+ to transform node features and hypergraph incidence structure directly into
+    per-node class logits. During training, validation, and testing, loss and metrics
+    are computed on supervised target nodes selected by ``HData.target_node_mask``.
 
     Attributes:
         encoder: Optional encoder module inherited from ``NCClassifier``. Defaults to ``None``.
-        classifier: HNHN classifier module inherited from ``NCClassifier``.
+        classifier: HGNN+ classifier module inherited from ``NCClassifier``.
         loss_fn: Loss function inherited from ``NCClassifier``.
         metrics_log_kwargs: Metric logging keyword arguments inherited from ``NCClassifier``.
         train_metrics: Optional training metrics inherited from ``NCClassifier``.
@@ -53,7 +52,7 @@ class HNHNClassifier(NCClassifier):
 
     def __init__(
         self,
-        classifier_config: HNHNClassifierConfig,
+        classifier_config: HGNNPClassifierConfig,
         loss_fn: nn.Module | None = None,
         lr: float = 0.01,
         weight_decay: float = 5e-4,
@@ -61,10 +60,10 @@ class HNHNClassifier(NCClassifier):
         metrics_log_kwargs: dict[str, Any] | None = None,
     ) -> None:
         """
-        Initialize the HNHN-based NC classifier.
+        Initialize the HGNN+-based NC classifier.
 
         Args:
-            classifier_config: Configuration for the HNHN classifier.
+            classifier_config: Configuration for the HGNN+ classifier.
             loss_fn: Optional loss function. Defaults to ``CrossEntropyLoss``.
             lr: Learning rate for the optimizer. Defaults to ``0.01``.
             weight_decay: L2 regularization. Defaults to ``5e-4``.
@@ -73,7 +72,7 @@ class HNHNClassifier(NCClassifier):
                 Useful for configuring distributed synchronization behavior
                 of ``torchmetrics``. Defaults to ``None``.
         """
-        classifier = HNHN(
+        classifier = HGNNP(
             in_channels=classifier_config["in_channels"],
             hidden_channels=classifier_config["hidden_channels"],
             num_classes=classifier_config["out_channels"],
