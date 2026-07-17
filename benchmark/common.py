@@ -1,8 +1,20 @@
 import os
 import pandas as pd
+from torch import Tensor
 
 from torchmetrics import MetricCollection
-from hypertorch.hyperlink_prediction import GCNPredictor, CommonNeighborsPredictor
+from hypertorch.hyperlink_prediction import (
+    GCNPredictor,
+    CommonNeighborsPredictor,
+    HGNNPredictor,
+    HGNNPPredictor,
+    HNHNPredictor,
+    HyperGCNPredictor,
+    MLPPredictor,
+    NHPPredictor,
+    Node2VecPredictor,
+    VilLainPredictor,
+)
 from hypertorch.types import ModelConfig
 from hypertorch.data import DataLoader, Dataset, RandomNegativeSampler, get_dataset_by_name
 
@@ -29,7 +41,7 @@ def load_common_neighbors(
             is_trainable=False,
             test_dataloader=test_loader,
             trainer_kwargs={
-                "max_epochs": 5,
+                "max_epochs": 3,
             },
         ),
     ]
@@ -76,9 +88,436 @@ def load_gcn(
             val_dataloader=val_loader,
             test_dataloader=test_loader,
             trainer_kwargs={
-                "max_epochs": 5,
+                "max_epochs": 3,
             },
         )
+    ]
+
+    return configs
+
+
+def load_hgnn(
+    metrics: MetricCollection,
+    num_nodes: int,
+    train_loader: DataLoader,
+    val_loader: DataLoader,
+    test_loader: DataLoader,
+    num_run: int,
+    num_features: int = 32,
+) -> list[ModelConfig]:
+    model = HGNNPredictor(
+        encoder_config={
+            "in_channels": num_features,
+            "hidden_channels": 16,
+            "out_channels": 16,
+            "bias": True,
+            "use_batch_normalization": False,
+            "drop_rate": 0.5,
+        },
+        aggregation="mean",
+        lr=0.001,
+        weight_decay=5e-4,
+        metrics=metrics,
+    )
+
+    configs = [
+        ModelConfig(
+            name=f"hgnn_{num_run}",
+            version="hyperlink-prediction",
+            model=model,
+            train_dataloader=train_loader,
+            val_dataloader=val_loader,
+            test_dataloader=test_loader,
+            trainer_kwargs={
+                "max_epochs": 3,
+            },
+        ),
+    ]
+
+    return configs
+
+
+def load_hgnnp(
+    metrics: MetricCollection,
+    num_nodes: int,
+    train_loader: DataLoader,
+    val_loader: DataLoader,
+    test_loader: DataLoader,
+    num_run: int,
+    num_features: int = 32,
+) -> list[ModelConfig]:
+    model = HGNNPPredictor(
+        encoder_config={
+            "in_channels": num_features,
+            "hidden_channels": 16,
+            "out_channels": 16,
+            "bias": True,
+            "use_batch_normalization": False,
+            "drop_rate": 0.5,
+        },
+        aggregation="mean",
+        lr=0.01,
+        weight_decay=5e-4,
+        metrics=metrics,
+    )
+
+    configs = [
+        ModelConfig(
+            name=f"hgnnp_{num_run}",
+            version="hyperlink-prediction",
+            model=model,
+            train_dataloader=train_loader,
+            val_dataloader=val_loader,
+            test_dataloader=test_loader,
+            trainer_kwargs={
+                "max_epochs": 3,
+            },
+        ),
+    ]
+
+    return configs
+
+
+def load_hnhn(
+    metrics: MetricCollection,
+    num_nodes: int,
+    train_loader: DataLoader,
+    val_loader: DataLoader,
+    test_loader: DataLoader,
+    num_run: int,
+    num_features: int = 32,
+) -> list[ModelConfig]:
+    model = HNHNPredictor(
+        encoder_config={
+            "in_channels": num_features,
+            "hidden_channels": 400,
+            "out_channels": 400,
+            "bias": True,
+            "use_batch_normalization": False,
+            "drop_rate": 0.3,
+        },
+        aggregation="mean",
+        lr=0.04,
+        weight_decay=5e-4,
+        scheduler_step_size=100,
+        scheduler_gamma=0.51,
+        metrics=metrics,
+    )
+
+    configs = [
+        ModelConfig(
+            name=f"hnhn_{num_run}",
+            version="hyperlink-prediction",
+            model=model,
+            train_dataloader=train_loader,
+            val_dataloader=val_loader,
+            test_dataloader=test_loader,
+            trainer_kwargs={
+                "max_epochs": 3,
+            },
+        ),
+    ]
+
+    return configs
+
+
+def load_hypergcn_no_mediator(
+    metrics: MetricCollection,
+    num_nodes: int,
+    train_loader: DataLoader,
+    val_loader: DataLoader,
+    test_loader: DataLoader,
+    num_run: int,
+    num_features: int = 32,
+) -> list[ModelConfig]:
+    model = HyperGCNPredictor(
+        encoder_config={
+            "in_channels": num_features,
+            "hidden_channels": 16,
+            "out_channels": 16,
+            "bias": True,
+            "use_batch_normalization": False,
+            "drop_rate": 0.5,
+            "use_mediator": False,
+            "fast": False,
+        },
+        aggregation="mean",
+        lr=0.01,
+        weight_decay=5e-4,
+        metrics=metrics,
+    )
+
+    configs = [
+        ModelConfig(
+            name=f"hypergcn_no_med_{num_run}",
+            version="hyperlink-prediction",
+            model=model,
+            train_dataloader=train_loader,
+            val_dataloader=val_loader,
+            test_dataloader=test_loader,
+            trainer_kwargs={
+                "max_epochs": 3,
+            },
+        ),
+    ]
+
+    return configs
+
+
+def load_hypergcn_with_mediator(
+    metrics: MetricCollection,
+    num_nodes: int,
+    train_loader: DataLoader,
+    val_loader: DataLoader,
+    test_loader: DataLoader,
+    num_run: int,
+    num_features: int = 32,
+) -> list[ModelConfig]:
+    model = HyperGCNPredictor(
+        encoder_config={
+            "in_channels": num_features,
+            "hidden_channels": 16,
+            "out_channels": 16,
+            "bias": True,
+            "use_batch_normalization": False,
+            "drop_rate": 0.5,
+            "use_mediator": True,
+            "fast": False,
+        },
+        aggregation="mean",
+        lr=0.01,
+        weight_decay=5e-4,
+        metrics=metrics,
+    )
+
+    configs = [
+        ModelConfig(
+            name=f"hypergcn_no_med_{num_run}",
+            version="hyperlink-prediction",
+            model=model,
+            train_dataloader=train_loader,
+            val_dataloader=val_loader,
+            test_dataloader=test_loader,
+            trainer_kwargs={
+                "max_epochs": 3,
+            },
+        ),
+    ]
+
+    return configs
+
+
+def load_mlp(
+    metrics: MetricCollection,
+    num_nodes: int,
+    train_loader: DataLoader,
+    val_loader: DataLoader,
+    test_loader: DataLoader,
+    num_run: int,
+    num_features: int = 32,
+) -> list[ModelConfig]:
+    model = MLPPredictor(
+        encoder_config={
+            "in_channels": num_features,
+            "out_channels": num_features,
+            "hidden_channels": 64,
+            "num_layers": 3,
+            "drop_rate": 0.3,
+        },
+        aggregation="mean",
+        metrics=metrics,
+    )
+
+    configs = [
+        ModelConfig(
+            name=f"mlp_{num_run}",
+            version="hyperlink-prediction",
+            model=model,
+            train_dataloader=train_loader,
+            val_dataloader=val_loader,
+            test_dataloader=test_loader,
+            trainer_kwargs={
+                "max_epochs": 3,
+            },
+        ),
+    ]
+
+    return configs
+
+
+def load_nhp(
+    metrics: MetricCollection,
+    num_nodes: int,
+    train_loader: DataLoader,
+    val_loader: DataLoader,
+    test_loader: DataLoader,
+    num_run: int,
+    num_features: int = 32,
+) -> list[ModelConfig]:
+    model = NHPPredictor(
+        encoder_config={
+            "in_channels": num_features,
+            "hidden_channels": 512,
+            "aggregation": "maxmin",
+        },
+        lr=0.001,
+        weight_decay=5e-4,
+        metrics=metrics,
+    )
+
+    configs = [
+        ModelConfig(
+            name=f"nhp_{num_run}",
+            version="hyperlink-prediction",
+            model=model,
+            train_dataloader=train_loader,
+            val_dataloader=val_loader,
+            test_dataloader=test_loader,
+            trainer_kwargs={
+                "max_epochs": 3,
+            },
+        ),
+    ]
+
+    return configs
+
+
+def load_villain_node(
+    metrics: MetricCollection,
+    num_nodes: int,
+    train_loader: DataLoader,
+    val_loader: DataLoader,
+    test_loader: DataLoader,
+    num_run: int,
+    num_features: int = 32,
+) -> list[ModelConfig]:
+    villain_node = VilLainPredictor(
+        encoder_config={
+            "embedding_dim": 128,
+            "labels_per_subspace": 8,
+            "training_steps": 4,
+            "generation_steps": 128,
+            "tau": 1.0,
+            "eps": 1e-10,
+            "villain_loss_weight": 1.0,
+            # Transductive splits keep the full node space.
+            "num_nodes": num_nodes,
+        },
+        embedding_mode="node",
+        aggregation="maxmin",
+        lr=0.01,
+        weight_decay=0.0,
+        metrics=metrics,
+    )
+
+    configs = [
+        ModelConfig(
+            name=f"villain_node_{num_run}",
+            version="hyperlink-prediction",
+            model=villain_node,
+            train_dataloader=train_loader,
+            val_dataloader=val_loader,
+            test_dataloader=test_loader,
+            trainer_kwargs={
+                "max_epochs": 3,
+            },
+        ),
+    ]
+
+    return configs
+
+
+def load_villain_hyperedge(
+    metrics: MetricCollection,
+    num_nodes: int,
+    train_loader: DataLoader,
+    val_loader: DataLoader,
+    test_loader: DataLoader,
+    num_run: int,
+    num_features: int = 32,
+) -> list[ModelConfig]:
+    villain_hyperedge = VilLainPredictor(
+        encoder_config={
+            "embedding_dim": 128,
+            "labels_per_subspace": 8,
+            "training_steps": 4,
+            "generation_steps": 28,
+            "tau": 1.0,
+            "eps": 1e-10,
+            "villain_loss_weight": 0.4,
+            "num_nodes": num_nodes,
+        },
+        embedding_mode="hyperedge",
+        lr=0.01,
+        weight_decay=0.0,
+        metrics=metrics,
+    )
+
+    configs = [
+        ModelConfig(
+            name=f"villain_hyperedge_{num_run}",
+            version="hyperlink-prediction",
+            model=villain_hyperedge,
+            train_dataloader=train_loader,
+            val_dataloader=val_loader,
+            test_dataloader=test_loader,
+            trainer_kwargs={
+                "max_epochs": 100,
+            },
+        ),
+    ]
+
+    return configs
+
+
+def load_n2v_joint(
+    metrics: MetricCollection,
+    num_nodes: int,
+    train_loader: DataLoader,
+    val_loader: DataLoader,
+    test_loader: DataLoader,
+    train_hyperedge_index: Tensor,
+    num_run: int,
+    num_features: int = 32,
+) -> list[ModelConfig]:
+    node2vec_joint = Node2VecPredictor(
+        encoder_config={
+            "mode": "joint",
+            "num_features": num_features,
+            "node2vec_config": {
+                "context_size": 10,
+                "walk_length": 20,
+                "num_walks_per_node": 10,
+                "p": 1.0,
+                "q": 1.0,
+                "num_negative_samples": 1,
+                "train_hyperedge_index": train_hyperedge_index,
+                # Transductive splits keep the full node space.
+                "num_nodes": num_nodes,
+                "graph_reduction_strategy": "clique_expansion",
+                "random_walk_batch_size": 128,
+                # We count the node2vec loss as 40% of the total loss (the rest is the HLP loss)
+                "node2vec_loss_weight": 0.4,
+            },
+        },
+        aggregation="mean",
+        lr=0.001,
+        weight_decay=0.0,
+        metrics=metrics,
+    )
+
+    configs = [
+        ModelConfig(
+            name=f"node2vec_joint_{num_run}",
+            version="hyperlink-prediction",
+            model=node2vec_joint,
+            train_dataloader=train_loader,
+            val_dataloader=val_loader,
+            test_dataloader=test_loader,
+            trainer_kwargs={
+                "max_epochs": 100,
+            },
+        ),
     ]
 
     return configs

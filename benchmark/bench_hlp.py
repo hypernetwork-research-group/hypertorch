@@ -14,6 +14,15 @@ from hypertorch.data import DataLoader
 from common import (
     load_gcn,
     load_common_neighbors,
+    load_hgnn,
+    load_hgnnp,
+    load_hypergcn_no_mediator,
+    load_hypergcn_with_mediator,
+    load_mlp,
+    load_nhp,
+    load_n2v_joint,
+    load_villain_node,
+    load_villain_hyperedge,
     prepare,
     merge_all_results,
 )
@@ -106,7 +115,19 @@ if __name__ == "__main__":
                 }
             )
 
-            list_model = ["gcn", "common_neighbors"]
+            list_model = [
+                "gcn",
+                "common_neighbors",
+                "hgnn",
+                "hgnnp",
+                "hypergcn_no_mediator",
+                "hypergcn_with_mediator",
+                "mlp",
+                "nhp",
+                "villain_node",
+                "villain_hyperedge",
+                "node2vec_joint",
+            ]
 
             for model in list_model:
                 if model == "gcn":
@@ -127,6 +148,97 @@ if __name__ == "__main__":
                         test_loader=test_loader,
                         num_nodes=num_nodes,
                         num_run=r,
+                    )
+                elif model == "hgnn":
+                    config = load_hgnn(
+                        metrics=metrics,
+                        num_features=num_features,
+                        train_loader=train_loader,
+                        val_loader=val_loader,
+                        test_loader=test_loader,
+                        num_nodes=num_nodes,
+                        num_run=r,
+                    )
+                elif model == "hgnnp":
+                    config = load_hgnnp(
+                        metrics=metrics,
+                        num_features=num_features,
+                        train_loader=train_loader,
+                        val_loader=val_loader,
+                        test_loader=test_loader,
+                        num_nodes=num_nodes,
+                        num_run=r,
+                    )
+                elif model == "hypergcn_no_mediator":
+                    config = load_hypergcn_no_mediator(
+                        metrics=metrics,
+                        num_features=num_features,
+                        train_loader=train_loader,
+                        val_loader=val_loader,
+                        test_loader=test_loader,
+                        num_nodes=num_nodes,
+                        num_run=r,
+                    )
+                elif model == "hypergcn_with_mediator":
+                    config = load_hypergcn_with_mediator(
+                        metrics=metrics,
+                        num_features=num_features,
+                        train_loader=train_loader,
+                        val_loader=val_loader,
+                        test_loader=test_loader,
+                        num_nodes=num_nodes,
+                        num_run=r,
+                    )
+                elif model == "mlp":
+                    config = load_mlp(
+                        metrics=metrics,
+                        num_features=num_features,
+                        train_loader=train_loader,
+                        val_loader=val_loader,
+                        test_loader=test_loader,
+                        num_nodes=num_nodes,
+                        num_run=r,
+                    )
+                elif model == "nhp":
+                    config = load_nhp(
+                        metrics=metrics,
+                        num_features=num_features,
+                        train_loader=train_loader,
+                        val_loader=val_loader,
+                        test_loader=test_loader,
+                        num_nodes=num_nodes,
+                        num_run=r,
+                    )
+                elif model == "villain_node":
+                    config = load_villain_node(
+                        metrics=metrics,
+                        num_features=num_features,
+                        train_loader=train_loader,
+                        val_loader=val_loader,
+                        test_loader=test_loader,
+                        num_nodes=num_nodes,
+                        num_run=r,
+                    )
+                elif model == "villain_hyperedge":
+                    config = load_villain_hyperedge(
+                        metrics=metrics,
+                        num_features=num_features,
+                        train_loader=train_loader,
+                        val_loader=val_loader,
+                        test_loader=test_loader,
+                        num_nodes=num_nodes,
+                        num_run=r,
+                    )
+                elif model == "node2vec_joint":
+                    config = load_n2v_joint(
+                        metrics=metrics,
+                        num_features=num_features,
+                        train_loader=train_loader,
+                        val_loader=val_loader,
+                        test_loader=test_loader,
+                        num_nodes=num_nodes,
+                        num_run=r,
+                        train_hyperedge_index=train_dataset.hdata.hyperedge_index,
                     )
                 # model = config[0].model
                 print("Starting training and evaluation...")
