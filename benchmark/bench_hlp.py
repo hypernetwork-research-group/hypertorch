@@ -40,35 +40,35 @@ if __name__ == "__main__":
 
     print("Loading and preparing datasets...")
     prepared_datasets = {}
-    for dataset_name in datasets:
-        picked_seed = seed[datasets.index(dataset_name) % len(seed)]  # ogni run usa lo stesso seed
-        train_dataset, val_dataset, test_dataset, num_nodes, num_features = prepare(
-            dataset_name=dataset_name,
-            k_nodes=k_nodes,
-            split_ratios=split_ratios,
-            seed=picked_seed,
-            test_set_negative_ratio=test_set_negative_ratio,
-        )
-        prepared_datasets[dataset_name] = (
-            train_dataset,
-            val_dataset,
-            test_dataset,
-            num_nodes,
-            num_features,
-        )
+    for r in range(run):
+        for dataset_name in datasets:
+            picked_seed = seed[r]  # ogni run usa lo stesso seed
+            train_dataset, val_dataset, test_dataset, num_nodes, num_features = prepare(
+                dataset_name=dataset_name,
+                k_nodes=k_nodes,
+                split_ratios=split_ratios,
+                seed=picked_seed,
+                test_set_negative_ratio=test_set_negative_ratio,
+            )
+            prepared_datasets[dataset_name] = (
+                train_dataset,
+                val_dataset,
+                test_dataset,
+                num_nodes,
+                num_features,
+            )
 
-        print(f"Running benchmark for dataset: {dataset_name}")
+            print(f"Running benchmark for dataset: {dataset_name}")
 
-        data_loader = DataLoader.from_datasets(
-            train_dataset=train_dataset,
-            val_dataset=val_dataset,
-            test_dataset=test_dataset,
-            batch_size=64,
-            num_workers=num_workers,
-            persistent_workers=True,
-        )
+            data_loader = DataLoader.from_datasets(
+                train_dataset=train_dataset,
+                val_dataset=val_dataset,
+                test_dataset=test_dataset,
+                batch_size=64,
+                num_workers=num_workers,
+                persistent_workers=True,
+            )
 
-        for r in range(run):
             print(f"Run {r + 1}/{run} for dataset: {dataset_name}")
 
             metrics = MetricCollection(
@@ -95,6 +95,7 @@ if __name__ == "__main__":
                 "node2vec",
             ]
 
+            max_epochs = 100
             for model in list_model:
                 if model == "gcn":
                     config = load_gcn(
@@ -105,6 +106,7 @@ if __name__ == "__main__":
                         test_loader=data_loader.test_dataloader(),
                         num_nodes=num_nodes,
                         num_run=r,
+                        max_epochs=max_epochs,
                     )
                 elif model == "common_neighbors":
                     config = load_common_neighbors(
@@ -114,6 +116,7 @@ if __name__ == "__main__":
                         test_loader=data_loader.test_dataloader(),
                         num_nodes=num_nodes,
                         num_run=r,
+                        max_epochs=max_epochs,
                     )
                 elif model == "hgnn":
                     config = load_hgnn(
@@ -124,6 +127,7 @@ if __name__ == "__main__":
                         test_loader=data_loader.test_dataloader(),
                         num_nodes=num_nodes,
                         num_run=r,
+                        max_epochs=max_epochs,
                     )
                 elif model == "hgnnp":
                     config = load_hgnnp(
@@ -134,6 +138,7 @@ if __name__ == "__main__":
                         test_loader=data_loader.test_dataloader(),
                         num_nodes=num_nodes,
                         num_run=r,
+                        max_epochs=max_epochs,
                     )
                 elif model == "hypergcn_no_mediator":
                     config = load_hypergcn_no_mediator(
@@ -144,6 +149,7 @@ if __name__ == "__main__":
                         test_loader=data_loader.test_dataloader(),
                         num_nodes=num_nodes,
                         num_run=r,
+                        max_epochs=max_epochs,
                     )
                 elif model == "hypergcn_with_mediator":
                     config = load_hypergcn_with_mediator(
@@ -154,6 +160,7 @@ if __name__ == "__main__":
                         test_loader=data_loader.test_dataloader(),
                         num_nodes=num_nodes,
                         num_run=r,
+                        max_epochs=max_epochs,
                     )
                 elif model == "mlp":
                     config = load_mlp(
@@ -164,6 +171,7 @@ if __name__ == "__main__":
                         test_loader=data_loader.test_dataloader(),
                         num_nodes=num_nodes,
                         num_run=r,
+                        max_epochs=max_epochs,
                     )
                 elif model == "nhp":
                     config = load_nhp(
@@ -174,6 +182,7 @@ if __name__ == "__main__":
                         test_loader=data_loader.test_dataloader(),
                         num_nodes=num_nodes,
                         num_run=r,
+                        max_epochs=max_epochs,
                     )
                 elif model == "villain_node":
                     config = load_villain_node(
@@ -184,6 +193,7 @@ if __name__ == "__main__":
                         test_loader=data_loader.test_dataloader(),
                         num_nodes=num_nodes,
                         num_run=r,
+                        max_epochs=max_epochs,
                     )
                 elif model == "villain_hyperedge":
                     config = load_villain_hyperedge(
@@ -194,6 +204,7 @@ if __name__ == "__main__":
                         test_loader=data_loader.test_dataloader(),
                         num_nodes=num_nodes,
                         num_run=r,
+                        max_epochs=max_epochs,
                     )
                 elif model == "node2vec":
                     config = load_n2v_joint(
@@ -205,6 +216,7 @@ if __name__ == "__main__":
                         num_nodes=num_nodes,
                         num_run=r,
                         train_hyperedge_index=train_dataset.hdata.hyperedge_index,
+                        max_epochs=max_epochs,
                     )
                 # model = config[0].model
                 print("Starting training and evaluation...")
@@ -221,6 +233,7 @@ if __name__ == "__main__":
                     trainer.test_all(dataloader=data_loader.test_dataloader(), verbose=True)
 
                 del config
+
         del prepared_datasets[dataset_name]  # free memory
     print("Merging all results into a single CSV file...")
     merge_all_results(dir_path="benchmark/results", output_file="merged_results.csv")

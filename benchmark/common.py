@@ -27,6 +27,7 @@ def load_common_neighbors(
     test_loader: DataLoader,
     num_run: int,
     num_features: int = 32,
+    max_epochs: int = 100,
 ) -> list[ModelConfig]:
     model = CommonNeighborsPredictor(
         train_hdata=train_dataset.hdata,
@@ -42,7 +43,7 @@ def load_common_neighbors(
             is_trainable=False,
             test_dataloader=test_loader,
             trainer_kwargs={
-                "max_epochs": 100,
+                "max_epochs": max_epochs,
             },
         ),
     ]
@@ -58,6 +59,7 @@ def load_gcn(
     test_loader: DataLoader,
     num_run: int,
     num_features: int = 32,
+    max_epochs: int = 100,
 ) -> list[ModelConfig]:
     model = GCNPredictor(
         encoder_config={
@@ -89,7 +91,7 @@ def load_gcn(
             val_dataloader=val_loader,
             test_dataloader=test_loader,
             trainer_kwargs={
-                "max_epochs": 100,
+                "max_epochs": max_epochs,
             },
         )
     ]
@@ -105,6 +107,7 @@ def load_hgnn(
     test_loader: DataLoader,
     num_run: int,
     num_features: int = 32,
+    max_epochs: int = 100,
 ) -> list[ModelConfig]:
     model = HGNNPredictor(
         encoder_config={
@@ -130,7 +133,7 @@ def load_hgnn(
             val_dataloader=val_loader,
             test_dataloader=test_loader,
             trainer_kwargs={
-                "max_epochs": 100,
+                "max_epochs": max_epochs,
             },
         ),
     ]
@@ -146,6 +149,7 @@ def load_hgnnp(
     test_loader: DataLoader,
     num_run: int,
     num_features: int = 32,
+    max_epochs: int = 100,
 ) -> list[ModelConfig]:
     model = HGNNPPredictor(
         encoder_config={
@@ -171,7 +175,7 @@ def load_hgnnp(
             val_dataloader=val_loader,
             test_dataloader=test_loader,
             trainer_kwargs={
-                "max_epochs": 100,
+                "max_epochs": max_epochs,
             },
         ),
     ]
@@ -187,6 +191,7 @@ def load_hnhn(
     test_loader: DataLoader,
     num_run: int,
     num_features: int = 32,
+    max_epochs: int = 100,
 ) -> list[ModelConfig]:
     model = HNHNPredictor(
         encoder_config={
@@ -214,7 +219,7 @@ def load_hnhn(
             val_dataloader=val_loader,
             test_dataloader=test_loader,
             trainer_kwargs={
-                "max_epochs": 100,
+                "max_epochs": max_epochs,
             },
         ),
     ]
@@ -230,6 +235,7 @@ def load_hypergcn_no_mediator(
     test_loader: DataLoader,
     num_run: int,
     num_features: int = 32,
+    max_epochs: int = 100,
 ) -> list[ModelConfig]:
     model = HyperGCNPredictor(
         encoder_config={
@@ -257,7 +263,7 @@ def load_hypergcn_no_mediator(
             val_dataloader=val_loader,
             test_dataloader=test_loader,
             trainer_kwargs={
-                "max_epochs": 100,
+                "max_epochs": max_epochs,
             },
         ),
     ]
@@ -273,6 +279,7 @@ def load_hypergcn_with_mediator(
     test_loader: DataLoader,
     num_run: int,
     num_features: int = 32,
+    max_epochs: int = 100,
 ) -> list[ModelConfig]:
     model = HyperGCNPredictor(
         encoder_config={
@@ -300,7 +307,7 @@ def load_hypergcn_with_mediator(
             val_dataloader=val_loader,
             test_dataloader=test_loader,
             trainer_kwargs={
-                "max_epochs": 100,
+                "max_epochs": max_epochs,
             },
         ),
     ]
@@ -316,6 +323,7 @@ def load_mlp(
     test_loader: DataLoader,
     num_run: int,
     num_features: int = 32,
+    max_epochs: int = 100,
 ) -> list[ModelConfig]:
     model = MLPPredictor(
         encoder_config={
@@ -338,7 +346,7 @@ def load_mlp(
             val_dataloader=val_loader,
             test_dataloader=test_loader,
             trainer_kwargs={
-                "max_epochs": 100,
+                "max_epochs": max_epochs,
             },
         ),
     ]
@@ -354,6 +362,7 @@ def load_nhp(
     test_loader: DataLoader,
     num_run: int,
     num_features: int = 32,
+    max_epochs: int = 100,
 ) -> list[ModelConfig]:
     model = NHPPredictor(
         encoder_config={
@@ -375,7 +384,7 @@ def load_nhp(
             val_dataloader=val_loader,
             test_dataloader=test_loader,
             trainer_kwargs={
-                "max_epochs": 100,
+                "max_epochs": max_epochs,
             },
         ),
     ]
@@ -391,6 +400,7 @@ def load_villain_node(
     test_loader: DataLoader,
     num_run: int,
     num_features: int = 32,
+    max_epochs: int = 100,
 ) -> list[ModelConfig]:
     villain_node = VilLainPredictor(
         encoder_config={
@@ -420,7 +430,7 @@ def load_villain_node(
             val_dataloader=val_loader,
             test_dataloader=test_loader,
             trainer_kwargs={
-                "max_epochs": 100,
+                "max_epochs": max_epochs,
             },
         ),
     ]
@@ -436,6 +446,7 @@ def load_villain_hyperedge(
     test_loader: DataLoader,
     num_run: int,
     num_features: int = 32,
+    max_epochs: int = 100,
 ) -> list[ModelConfig]:
     villain_hyperedge = VilLainPredictor(
         encoder_config={
@@ -463,7 +474,7 @@ def load_villain_hyperedge(
             val_dataloader=val_loader,
             test_dataloader=test_loader,
             trainer_kwargs={
-                "max_epochs": 100,
+                "max_epochs": max_epochs,
             },
         ),
     ]
@@ -480,6 +491,7 @@ def load_n2v_joint(
     train_hyperedge_index: Tensor,
     num_run: int,
     num_features: int = 32,
+    max_epochs: int = 100,
 ) -> list[ModelConfig]:
     node2vec_joint = Node2VecPredictor(
         encoder_config={
@@ -516,7 +528,7 @@ def load_n2v_joint(
             val_dataloader=val_loader,
             test_dataloader=test_loader,
             trainer_kwargs={
-                "max_epochs": 100,
+                "max_epochs": max_epochs,
             },
         ),
     ]
@@ -585,8 +597,8 @@ def merge_all_results(dir_path: str, output_file: str = "merged_results.csv"):
                 df = pd.read_csv(file_path)
                 dataset_name = root.split(os.sep)[2]
                 model = root.split(os.sep)[3]
-                model_name = model.split("_")[0]
-                model_run = model.split("_")[1]
+                model_name = "_".join(model.split("_")[:-1])
+                model_run = model.split("_")[-1]
                 df.insert(0, "dataset", dataset_name)
                 df.insert(1, "model_name", model_name)
                 df.insert(2, "model_run", model_run)
