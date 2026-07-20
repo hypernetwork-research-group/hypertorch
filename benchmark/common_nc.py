@@ -4,17 +4,17 @@ import pandas as pd
 from torch import Tensor
 
 from torchmetrics import MetricCollection
-from hypertorch.nc import (
-    GCNNcModule,
-    CommonNeighborsNcModule,
-    HGNNNcModule,
-    HGNNPNcModule,
-    HNHNNcModule,
-    HyperGCNNcModule,
-    MLPNcModule,
-    VilLainNcModule,
-    Node2VecGCNNcModule,
-    Node2VecGCNNcConfig,
+from hypertorch.node_classification import (
+    GCNClassifier,
+    CommonNeighborsClassifier,
+    HGNNClassifier,
+    HGNNPClassifier,
+    HNHNClassifier,
+    HyperGCNClassifier,
+    MLPClassifier,
+    VilLainClassifier,
+    Node2VecGCNClassifier,
+    Node2VecGCNNCConfig,
 )
 from hypertorch.types import ModelConfig, TaskEnum
 from hypertorch.data import DataLoader, Dataset, get_dataset_by_name
@@ -30,7 +30,7 @@ def load_common_neighbors(
     max_epochs: int = 100,
     num_classes: int = 2,
 ) -> list[ModelConfig]:
-    model = CommonNeighborsNcModule(
+    model = CommonNeighborsClassifier(
         train_hdata=train_dataset.hdata,
         num_classes=num_classes,
         aggregation="mean",
@@ -64,7 +64,7 @@ def load_gcn(
     max_epochs: int = 100,
     num_classes: int = 2,
 ) -> list[ModelConfig]:
-    model = GCNNcModule(
+    model = GCNClassifier(
         classifier_config={
             "in_channels": num_features,
             "out_channels": num_classes,
@@ -105,7 +105,7 @@ def load_hgnn(
     max_epochs: int = 100,
     num_classes: int = 2,
 ) -> list[ModelConfig]:
-    model = HGNNNcModule(
+    model = HGNNClassifier(
         classifier_config={
             "in_channels": num_features,
             "out_channels": num_classes,
@@ -143,7 +143,7 @@ def load_hgnnp(
     max_epochs: int = 100,
     num_classes: int = 2,
 ) -> list[ModelConfig]:
-    model = HGNNPNcModule(
+    model = HGNNPClassifier(
         classifier_config={
             "in_channels": num_features,
             "out_channels": num_classes,
@@ -181,7 +181,7 @@ def load_hnhn(
     max_epochs: int = 100,
     num_classes: int = 2,
 ) -> list[ModelConfig]:
-    model = HNHNNcModule(
+    model = HNHNClassifier(
         classifier_config={
             "in_channels": num_features,
             "out_channels": num_classes,
@@ -219,7 +219,7 @@ def load_hypergcn_no_mediator(
     max_epochs: int = 100,
     num_classes: int = 2,
 ) -> list[ModelConfig]:
-    model = HyperGCNNcModule(
+    model = HyperGCNClassifier(
         classifier_config={
             "in_channels": num_features,
             "out_channels": num_classes,
@@ -260,7 +260,7 @@ def load_hypergcn_with_mediator(
     max_epochs: int = 100,
     num_classes: int = 2,
 ) -> list[ModelConfig]:
-    model = HyperGCNNcModule(
+    model = HyperGCNClassifier(
         classifier_config={
             "in_channels": num_features,
             "out_channels": num_classes,
@@ -301,7 +301,7 @@ def load_mlp(
     max_epochs: int = 100,
     num_classes: int = 2,
 ) -> list[ModelConfig]:
-    model = MLPNcModule(
+    model = MLPClassifier(
         classifier_config={
             "in_channels": num_features,
             "out_channels": num_classes,
@@ -338,7 +338,7 @@ def load_mlp(
     #     num_features: int = 32,
     #     max_epochs: int = 100,
     # ) -> list[ModelConfig]:
-    #     model = NHPNcModule(
+    #     model = NHPClassifier(
     #         encoder_config={
     #             "in_channels": num_features,
     #             "hidden_channels": 512,
@@ -377,7 +377,7 @@ def load_villain_node(
     max_epochs: int = 100,
     num_classes: int = 2,
 ) -> list[ModelConfig]:
-    villain_node = VilLainNcModule(
+    villain_node = VilLainClassifier(
         encoder_config={
             "embedding_dim": 128,
             "labels_per_subspace": 8,
@@ -427,7 +427,7 @@ def load_n2v_joint(
     max_epochs: int = 100,
     num_classes: int = 2,
 ) -> list[ModelConfig]:
-    gcn_config: Node2VecGCNNcConfig = {
+    gcn_config: Node2VecGCNNCConfig = {
         "out_channels": num_classes,
         "hidden_channels": num_features,
         "num_layers": 2,
@@ -440,7 +440,7 @@ def load_n2v_joint(
         "graph_reduction_strategy": "clique_expansion",
         "num_nodes": num_nodes,
     }
-    node2vec_joint = Node2VecGCNNcModule(
+    node2vec_joint = Node2VecGCNClassifier(
         classifier_config={
             "mode": "joint",
             "num_features": num_features,

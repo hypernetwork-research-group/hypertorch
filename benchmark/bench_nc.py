@@ -92,7 +92,7 @@ if __name__ == "__main__":
                 "node2vec",
             ]
 
-            max_epochs = 100
+            max_epochs = 3
             for model in list_model:
                 if model == "gcn":
                     config = load_gcn(
