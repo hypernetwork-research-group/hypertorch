@@ -86,13 +86,13 @@ if __name__ == "__main__":
                 "hypergcn_no_mediator",
                 "hypergcn_with_mediator",
                 "mlp",
-                "nhp",
+                # "nhp",
                 "villain_node",
-                "villain_hyperedge",
+                # "villain_hyperedge",
                 "node2vec",
             ]
 
-            max_epochs = 3
+            max_epochs = 100
             for model in list_model:
                 if model == "gcn":
                     config = load_gcn(

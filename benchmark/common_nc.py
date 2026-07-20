@@ -491,6 +491,7 @@ def prepare(
 ) -> tuple[Dataset, Dataset, Dataset, int, int]:
 
     dataset = get_dataset_by_name(dataset_name=dataset_name, sampling_strategy="node", task=task)
+    dataset.remove_hyperedges_with_fewer_than_k_nodes(k=k_nodes)
     # dataset.hdata.y = node_labels_from_node_degrees(
     #     node_incidences=dataset.hdata.hyperedge_index[0],
     #     num_nodes=dataset.hdata.num_nodes,
