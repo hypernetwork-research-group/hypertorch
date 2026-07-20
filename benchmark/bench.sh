@@ -24,6 +24,10 @@ case "${task}" in
         echo "Running HLP benchmark..."
         exec uv run python3 "${repo_root}/benchmark/bench_hlp.py" "$@"
         ;;
+    nc)
+        echo "Running NC benchmark..."
+        exec uv run python3 "${repo_root}/benchmark/bench_nc.py" "$@"
+        ;;
     *)
         echo "Unknown task: ${task}" >&2
         exit 1

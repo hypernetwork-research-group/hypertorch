@@ -1,15 +1,10 @@
 from torchmetrics import MetricCollection
-from torchmetrics.classification import (
-    BinaryAUROC,
-    BinaryAccuracy,
-    BinaryAveragePrecision,
-    BinaryPrecision,
-    BinaryRecall,
-)
+from torchmetrics.classification import MulticlassAUROC, MulticlassAccuracy, MulticlassF1Score
+
 from hypertorch.train import MultiModelTrainer
 from hypertorch.data import DataLoader
 
-from common_hlp import (
+from common_nc import (
     load_gcn,
     load_common_neighbors,
     load_hgnn,
@@ -17,10 +12,10 @@ from common_hlp import (
     load_hypergcn_no_mediator,
     load_hypergcn_with_mediator,
     load_mlp,
-    load_nhp,
+    # load_nhp,
     load_n2v_joint,
     load_villain_node,
-    load_villain_hyperedge,
+    # load_villain_hyperedge,
     parse_arguments,
     prepare,
     merge_all_results,
@@ -38,6 +33,8 @@ if __name__ == "__main__":
     split_ratios = args.split_ratios
     datasets = args.datasets
     task = args.task
+
+    print("Running task:", task)
 
     print("Loading and preparing datasets...")
     prepared_datasets = {}
@@ -72,14 +69,12 @@ if __name__ == "__main__":
             )
 
             print(f"Run {r + 1}/{run} for dataset: {dataset_name}")
-
+            num_classes = int(train_dataset.hdata.y.max().item() + 1)
             metrics = MetricCollection(
                 {
-                    "auc": BinaryAUROC(),
-                    "accuracy": BinaryAccuracy(),
-                    "avg_precision": BinaryAveragePrecision(),
-                    "precision": BinaryPrecision(),
-                    "recall": BinaryRecall(),
+                    "auc": MulticlassAUROC(num_classes=num_classes),
+                    "accuracy": MulticlassAccuracy(num_classes=num_classes),
+                    "f1": MulticlassF1Score(num_classes=num_classes),
                 }
             )
 
@@ -109,6 +104,7 @@ if __name__ == "__main__":
                         num_nodes=num_nodes,
                         num_run=r,
                         max_epochs=max_epochs,
+                        num_classes=num_classes,
                     )
                 elif model == "common_neighbors":
                     config = load_common_neighbors(
@@ -119,6 +115,7 @@ if __name__ == "__main__":
                         num_nodes=num_nodes,
                         num_run=r,
                         max_epochs=max_epochs,
+                        num_classes=num_classes,
                     )
                 elif model == "hgnn":
                     config = load_hgnn(
@@ -130,6 +127,7 @@ if __name__ == "__main__":
                         num_nodes=num_nodes,
                         num_run=r,
                         max_epochs=max_epochs,
+                        num_classes=num_classes,
                     )
                 elif model == "hgnnp":
                     config = load_hgnnp(
@@ -141,6 +139,7 @@ if __name__ == "__main__":
                         num_nodes=num_nodes,
                         num_run=r,
                         max_epochs=max_epochs,
+                        num_classes=num_classes,
                     )
                 elif model == "hypergcn_no_mediator":
                     config = load_hypergcn_no_mediator(
@@ -152,6 +151,7 @@ if __name__ == "__main__":
                         num_nodes=num_nodes,
                         num_run=r,
                         max_epochs=max_epochs,
+                        num_classes=num_classes,
                     )
                 elif model == "hypergcn_with_mediator":
                     config = load_hypergcn_with_mediator(
@@ -163,6 +163,7 @@ if __name__ == "__main__":
                         num_nodes=num_nodes,
                         num_run=r,
                         max_epochs=max_epochs,
+                        num_classes=num_classes,
                     )
                 elif model == "mlp":
                     config = load_mlp(
@@ -174,18 +175,19 @@ if __name__ == "__main__":
                         num_nodes=num_nodes,
                         num_run=r,
                         max_epochs=max_epochs,
+                        num_classes=num_classes,
                     )
-                elif model == "nhp":
-                    config = load_nhp(
-                        metrics=metrics,
-                        num_features=num_features,
-                        train_loader=data_loader.train_dataloader(),
-                        val_loader=data_loader.val_dataloader(),
-                        test_loader=data_loader.test_dataloader(),
-                        num_nodes=num_nodes,
-                        num_run=r,
-                        max_epochs=max_epochs,
-                    )
+                # elif model == "nhp":
+                #     config = load_nhp(
+                #         metrics=metrics,
+                #         num_features=num_features,
+                #         train_loader=data_loader.train_dataloader(),
+                #         val_loader=data_loader.val_dataloader(),
+                #         test_loader=data_loader.test_dataloader(),
+                #         num_nodes=num_nodes,
+                #         num_run=r,
+                #         max_epochs=max_epochs,
+                #     )
                 elif model == "villain_node":
                     config = load_villain_node(
                         metrics=metrics,
@@ -196,18 +198,19 @@ if __name__ == "__main__":
                         num_nodes=num_nodes,
                         num_run=r,
                         max_epochs=max_epochs,
+                        num_classes=num_classes,
                     )
-                elif model == "villain_hyperedge":
-                    config = load_villain_hyperedge(
-                        metrics=metrics,
-                        num_features=num_features,
-                        train_loader=data_loader.train_dataloader(),
-                        val_loader=data_loader.val_dataloader(),
-                        test_loader=data_loader.test_dataloader(),
-                        num_nodes=num_nodes,
-                        num_run=r,
-                        max_epochs=max_epochs,
-                    )
+                # elif model == "villain_hyperedge":
+                #     config = load_villain_hyperedge(
+                #         metrics=metrics,
+                #         num_features=num_features,
+                #         train_loader=data_loader.train_dataloader(),
+                #         val_loader=data_loader.val_dataloader(),
+                #         test_loader=data_loader.test_dataloader(),
+                #         num_nodes=num_nodes,
+                #         num_run=r,
+                #         max_epochs=max_epochs,
+                #     )
                 elif model == "node2vec":
                     config = load_n2v_joint(
                         metrics=metrics,
@@ -219,6 +222,7 @@ if __name__ == "__main__":
                         num_run=r,
                         train_hyperedge_index=train_dataset.hdata.hyperedge_index,
                         max_epochs=max_epochs,
+                        num_classes=num_classes,
                     )
                 # model = config[0].model
                 print("Starting training and evaluation...")
