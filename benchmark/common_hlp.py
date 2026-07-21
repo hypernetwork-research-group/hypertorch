@@ -1,6 +1,8 @@
 import argparse
 import os
 import pandas as pd
+import psutil
+import torch
 from torch import Tensor
 
 from torchmetrics import MetricCollection
@@ -18,6 +20,39 @@ from hypertorch.hyperlink_prediction import (
 )
 from hypertorch.types import ModelConfig, TaskEnum
 from hypertorch.data import DataLoader, Dataset, RandomNegativeSampler, get_dataset_by_name
+
+
+def collect_hw_stats_row(
+    run: int,
+    dataset: str,
+    model: str,
+    before_stats: tuple[float, float, float],
+    after_stats: tuple[float, float, float],
+) -> dict[str, float | int | str]:
+    cpu_usage_before, ram_usage_before, gpu_usage_before = before_stats
+    cpu_usage_after, ram_usage_after, gpu_usage_after = after_stats
+
+    return {
+        "run": run,
+        "dataset": dataset,
+        "model": model,
+        "cpu_usage_before": cpu_usage_before,
+        "ram_usage_before": ram_usage_before,
+        "gpu_usage_before": gpu_usage_before,
+        "cpu_usage_after": cpu_usage_after,
+        "ram_usage_after": ram_usage_after,
+        "gpu_usage_after": gpu_usage_after,
+        "cpu_usage_diff": cpu_usage_after - cpu_usage_before,
+        "ram_usage_diff": ram_usage_after - ram_usage_before,
+        "gpu_usage_diff": gpu_usage_after - gpu_usage_before,
+    }
+
+
+def retrieve_hw_stats() -> tuple[float, float, float]:
+    cpu_usage = psutil.cpu_percent(interval=1)
+    ram_usage = psutil.virtual_memory().percent
+    gpu_usage = torch.cuda.memory_allocated() / 1024**2 if torch.cuda.is_available() else 0.0
+    return cpu_usage, ram_usage, gpu_usage
 
 
 def load_common_neighbors(
