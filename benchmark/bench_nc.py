@@ -12,6 +12,7 @@ from common_nc import (
     load_hypergcn_no_mediator,
     load_hypergcn_with_mediator,
     load_mlp,
+    load_hnhn,
     # load_nhp,
     load_n2v_joint,
     load_villain_node,
@@ -40,7 +41,7 @@ if __name__ == "__main__":
     prepared_datasets = {}
     for r in range(run):
         for dataset_name in datasets:
-            picked_seed = seed[r]  # ogni run usa lo stesso seed
+            picked_seed = seed[r]
             train_dataset, val_dataset, test_dataset, num_nodes, num_features = prepare(
                 dataset_name=dataset_name,
                 k_nodes=k_nodes,
@@ -62,8 +63,15 @@ if __name__ == "__main__":
             data_loader = DataLoader.from_datasets(
                 train_dataset=train_dataset,
                 val_dataset=val_dataset,
-                test_dataset=test_dataset,
+                test_dataset=None,
                 batch_size=64,
+                num_workers=num_workers,
+                persistent_workers=True,
+            )
+            test_loader = DataLoader(
+                dataset=test_dataset,
+                sample_full_hypergraph=True,
+                shuffle=False,
                 num_workers=num_workers,
                 persistent_workers=True,
             )
@@ -83,16 +91,16 @@ if __name__ == "__main__":
                 "common_neighbors",
                 "hgnn",
                 "hgnnp",
+                "hnhn",
                 "hypergcn_no_mediator",
                 "hypergcn_with_mediator",
                 "mlp",
-                # "nhp",
                 "villain_node",
-                # "villain_hyperedge",
                 "node2vec",
+                # "villain_hyperedge",
+                # "nhp",
             ]
 
-            max_epochs = 100
             for model in list_model:
                 if model == "gcn":
                     config = load_gcn(
@@ -100,10 +108,10 @@ if __name__ == "__main__":
                         num_features=num_features,
                         train_loader=data_loader.train_dataloader(),
                         val_loader=data_loader.val_dataloader(),
-                        test_loader=data_loader.test_dataloader(),
+                        test_loader=test_loader,
                         num_nodes=num_nodes,
                         num_run=r,
-                        max_epochs=max_epochs,
+                        max_epochs=60,
                         num_classes=num_classes,
                     )
                 elif model == "common_neighbors":
@@ -111,10 +119,10 @@ if __name__ == "__main__":
                         metrics=metrics,
                         num_features=num_features,
                         train_dataset=train_dataset,
-                        test_loader=data_loader.test_dataloader(),
+                        test_loader=test_loader,
                         num_nodes=num_nodes,
                         num_run=r,
-                        max_epochs=max_epochs,
+                        max_epochs=0,
                         num_classes=num_classes,
                     )
                 elif model == "hgnn":
@@ -123,10 +131,10 @@ if __name__ == "__main__":
                         num_features=num_features,
                         train_loader=data_loader.train_dataloader(),
                         val_loader=data_loader.val_dataloader(),
-                        test_loader=data_loader.test_dataloader(),
+                        test_loader=test_loader,
                         num_nodes=num_nodes,
                         num_run=r,
-                        max_epochs=max_epochs,
+                        max_epochs=60,
                         num_classes=num_classes,
                     )
                 elif model == "hgnnp":
@@ -135,10 +143,22 @@ if __name__ == "__main__":
                         num_features=num_features,
                         train_loader=data_loader.train_dataloader(),
                         val_loader=data_loader.val_dataloader(),
-                        test_loader=data_loader.test_dataloader(),
+                        test_loader=test_loader,
                         num_nodes=num_nodes,
                         num_run=r,
-                        max_epochs=max_epochs,
+                        max_epochs=60,
+                        num_classes=num_classes,
+                    )
+                elif model == "hnhn":
+                    config = load_hnhn(
+                        metrics=metrics,
+                        num_features=num_features,
+                        train_loader=data_loader.train_dataloader(),
+                        val_loader=data_loader.val_dataloader(),
+                        test_loader=test_loader,
+                        num_nodes=num_nodes,
+                        num_run=r,
+                        max_epochs=200,
                         num_classes=num_classes,
                     )
                 elif model == "hypergcn_no_mediator":
@@ -147,10 +167,10 @@ if __name__ == "__main__":
                         num_features=num_features,
                         train_loader=data_loader.train_dataloader(),
                         val_loader=data_loader.val_dataloader(),
-                        test_loader=data_loader.test_dataloader(),
+                        test_loader=test_loader,
                         num_nodes=num_nodes,
                         num_run=r,
-                        max_epochs=max_epochs,
+                        max_epochs=100,
                         num_classes=num_classes,
                     )
                 elif model == "hypergcn_with_mediator":
@@ -159,10 +179,10 @@ if __name__ == "__main__":
                         num_features=num_features,
                         train_loader=data_loader.train_dataloader(),
                         val_loader=data_loader.val_dataloader(),
-                        test_loader=data_loader.test_dataloader(),
+                        test_loader=test_loader,
                         num_nodes=num_nodes,
                         num_run=r,
-                        max_epochs=max_epochs,
+                        max_epochs=100,
                         num_classes=num_classes,
                     )
                 elif model == "mlp":
@@ -171,10 +191,10 @@ if __name__ == "__main__":
                         num_features=num_features,
                         train_loader=data_loader.train_dataloader(),
                         val_loader=data_loader.val_dataloader(),
-                        test_loader=data_loader.test_dataloader(),
+                        test_loader=test_loader,
                         num_nodes=num_nodes,
                         num_run=r,
-                        max_epochs=max_epochs,
+                        max_epochs=100,
                         num_classes=num_classes,
                     )
                 # elif model == "nhp":
@@ -183,7 +203,7 @@ if __name__ == "__main__":
                 #         num_features=num_features,
                 #         train_loader=data_loader.train_dataloader(),
                 #         val_loader=data_loader.val_dataloader(),
-                #         test_loader=data_loader.test_dataloader(),
+                #         test_loader=test_loader,
                 #         num_nodes=num_nodes,
                 #         num_run=r,
                 #         max_epochs=max_epochs,
@@ -194,10 +214,10 @@ if __name__ == "__main__":
                         num_features=num_features,
                         train_loader=data_loader.train_dataloader(),
                         val_loader=data_loader.val_dataloader(),
-                        test_loader=data_loader.test_dataloader(),
+                        test_loader=test_loader,
                         num_nodes=num_nodes,
                         num_run=r,
-                        max_epochs=max_epochs,
+                        max_epochs=100,
                         num_classes=num_classes,
                     )
                 # elif model == "villain_hyperedge":
@@ -206,7 +226,7 @@ if __name__ == "__main__":
                 #         num_features=num_features,
                 #         train_loader=data_loader.train_dataloader(),
                 #         val_loader=data_loader.val_dataloader(),
-                #         test_loader=data_loader.test_dataloader(),
+                #         test_loader=test_loader,
                 #         num_nodes=num_nodes,
                 #         num_run=r,
                 #         max_epochs=max_epochs,
@@ -217,29 +237,29 @@ if __name__ == "__main__":
                         num_features=num_features,
                         train_loader=data_loader.train_dataloader(),
                         val_loader=data_loader.val_dataloader(),
-                        test_loader=data_loader.test_dataloader(),
+                        test_loader=test_loader,
                         num_nodes=num_nodes,
                         num_run=r,
                         train_hyperedge_index=train_dataset.hdata.hyperedge_index,
-                        max_epochs=max_epochs,
+                        max_epochs=60,
                         num_classes=num_classes,
                     )
-                # model = config[0].model
                 print("Starting training and evaluation...")
 
                 with MultiModelTrainer(
+                    experiment_name=f"{model}_{r}",
                     model_configs=config,
-                    default_root_dir=f"benchmark/results/{dataset_name}/{config[0].name}",
+                    default_root_dir=f"benchmark/results_nc/{dataset_name}/",
                 ) as trainer:
                     trainer.fit_all(
                         train_dataloader=data_loader.train_dataloader(),
                         val_dataloader=data_loader.val_dataloader(),
                         verbose=True,
                     )
-                    trainer.test_all(dataloader=data_loader.test_dataloader(), verbose=True)
+                    trainer.test_all(dataloader=test_loader, verbose=True)
 
                 del config
 
         del prepared_datasets[dataset_name]  # free memory
     print("Merging all results into a single CSV file...")
-    merge_all_results(dir_path="benchmark/results", output_file="merged_results.csv")
+    merge_all_results(dir_path="benchmark/results_nc", output_file="merged_results.csv")

@@ -130,4 +130,5 @@ lightning_logs/
 .plans/
 plans/
 
-benchmark/results/
+benchmark/results_*/
+

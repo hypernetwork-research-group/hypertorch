@@ -122,7 +122,7 @@ def get_dataset_by_name(
     Args:
         dataset_name: Name returned by ``list_datasets``.
         task: Learning task used to initialize the dataset.
-
+        sampling_strategy: Sampling strategy used to initialize the dataset.
     Returns:
         dataset: Loaded dataset instance.
 
