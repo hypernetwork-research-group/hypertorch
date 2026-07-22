@@ -120,8 +120,8 @@ if __name__ == "__main__":
                 "mlp",
                 "villain_node",
                 "node2vec",
-                "villain_hyperedge",
-                "nhp",
+                # "villain_hyperedge",
+                # "nhp",
             ]
 
             for model in list_model:
