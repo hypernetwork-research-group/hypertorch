@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import copy
 import importlib.util
+import os
 import shutil
 import subprocess
 import warnings
 import lightning as L
 import torch
 
+from itertools import count
 from pathlib import Path
 from typing import Any, cast
 from collections.abc import Iterable, Mapping
@@ -17,6 +19,7 @@ from lightning.pytorch.loggers import CSVLogger, Logger
 from lightning.pytorch.profilers import Profiler
 from lightning.pytorch.strategies import Strategy
 from hypertorch.data import DataLoader, DataModule
+from hypertorch.train.logger import ExperimentSharedLogger
 from hypertorch.types import CkptStrategy, ModelConfig, TestResult
 from hypertorch.utils import validate_is_non_empty, validate_is_non_negative
 
@@ -24,9 +27,29 @@ from hypertorch.train.markdown_logger import MarkdownTableLogger
 from hypertorch.train.latex_logger import LaTexTableLogger
 
 
+AUTO_EXPERIMENT_DIR_ENV_PREFIX = "HYPERTORCH_AUTO_EXPERIMENT_DIR"
+AUTO_EXPERIMENT_INDEX = count()
+
+
 class MultiModelTrainer:
     """
     A trainer class to handle training multiple models with individual trainers.
+
+    When ``experiment_name`` is ``None``, an auto-selected directory is exported through
+    ``HYPERTORCH_AUTO_EXPERIMENT_DIR_<index>``. This is for distributed settings, as
+    Lightning child processes launched after this trainer is constructed inherit
+    that value and reuse the parent's directory.
+    The zero-based index identifies the construction order of auto-named
+    ``MultiModelTrainer`` instances, so relaunched processes must construct them in the
+    same order.
+
+    External launchers such as ``torchrun`` start sibling processes before this code runs,
+    so environment changes made by one rank are not propagated to the others. With such
+    launchers, pass the same explicit ``experiment_name`` to every rank or preconfigure the
+    indexed environment variables before launch. For example,
+    ``HYPERTORCH_AUTO_EXPERIMENT_DIR_0="..." HYPERTORCH_AUTO_EXPERIMENT_DIR_1="..." ...``
+    The resolved directory must be accessible from every rank;
+    multi-machine jobs therefore require shared storage.
 
     Attributes:
         model_configs: Model configurations managed by the trainer.
@@ -87,7 +110,10 @@ class MultiModelTrainer:
                 associated trainer (if any).
             experiment_name: Name for this experiment run's log directory. When ``None`` (default),
                 auto-increments as ``experiment_0``, ``experiment_1``, etc. under
-                the log root directory. Only used when ``logger`` is not provided.
+                the log root directory. Lightning-launched child processes on the same machine
+                inherit the selected directory. For external launchers such as ``torchrun``,
+                provide the same explicit name on every rank or set
+                ``HYPERTORCH_AUTO_EXPERIMENT_DIR_<index>`` before launch.
             accelerator: Supports passing different accelerator types
                 ("cpu", "gpu", "tpu", "hpu", "mps", "auto") as well as custom accelerator instances.
             devices: The devices to use. Can be set to a positive number (int or str), a
@@ -210,6 +236,7 @@ class MultiModelTrainer:
         validate_is_non_empty("model_configs", self.model_configs)
 
         self.log_dir: Path = self.__logdir(default_root_dir, experiment_name)
+        self.__experiment_key = str(self.log_dir)
 
         self.auto_start_tensorboard: bool = auto_start_tensorboard
         self.tensorboard_port: int = tensorboard_port
@@ -536,6 +563,28 @@ class MultiModelTrainer:
         if self.__tensorboard_process is not None:
             self.__tensorboard_process.terminate()
             self.__tensorboard_process = None
+        self.__clear_loggers()
+
+    def __clear_loggers(self) -> None:
+        """
+        Clear the internal state of all loggers.
+
+        This is called by Lightning when a new experiment starts, so that metrics from
+        previous experiments do not carry over.
+        """
+        if getattr(self, "_MultiModelTrainer__experiment_key", None) is None:
+            return
+
+        for config in self.model_configs:
+            if config.trainer is not None and config.trainer.loggers is not None:
+                for logger in config.trainer.loggers:
+                    if isinstance(logger, ExperimentSharedLogger):
+                        logger.clear(self.__experiment_key)
+
+            if config.test_trainer is not None and config.test_trainer.loggers is not None:
+                for logger in config.test_trainer.loggers:
+                    if isinstance(logger, ExperimentSharedLogger):
+                        logger.clear(self.__experiment_key)
 
     def wait(self) -> None:
         """
@@ -726,15 +775,6 @@ class MultiModelTrainer:
         Returns:
             experiment_name: Next experiment directory name.
         """
-        if not save_dir.exists():
-            # Example: EXPERIMENT_NAME_PREFIX = "experiment",
-            #          EXPERIMENT_SEPARATOR = "_",
-            #          FIRST_EXPERIMENT_NUMBER = 0
-            #          -> next_experiment_name = "experiment_0"
-            return Path(
-                f"{self.EXPERIMENT_NAME_PREFIX}{self.EXPERIMENT_SEPARATOR}{self.FIRST_EXPERIMENT_NUMBER}"
-            )
-
         existing_experiment_names: list[str] = [
             dir.name
             for dir in save_dir.iterdir()
@@ -762,6 +802,11 @@ class MultiModelTrainer:
         """
         Resolve the log directory for this trainer instance.
 
+        Auto-named directories are exported through an environment variable indexed by
+        trainer construction order. This allows Lightning-relaunched child processes to
+        reuse the parent's directory, provided they reconstruct auto-named trainers in the
+        same order. It does not coordinate sibling processes started by external launchers.
+
         Args:
             default_root_dir: Optional root directory for logs.
             experiment_name: Optional explicit experiment directory name.
@@ -772,12 +817,51 @@ class MultiModelTrainer:
         base_dir = (
             Path(self.DEFAULT_BASE_LOG_DIR) if default_root_dir is None else Path(default_root_dir)
         )
-        next_experiment_name = (
-            self.__next_experiment_name(base_dir)
-            if experiment_name is None
-            else Path(experiment_name)
-        )
-        return base_dir / next_experiment_name
+        if experiment_name is None:
+            experiment_index = next(AUTO_EXPERIMENT_INDEX)
+            environment_variable = f"{AUTO_EXPERIMENT_DIR_ENV_PREFIX}_{experiment_index}"
+            inherited_log_dir = os.environ.get(environment_variable)
+            if inherited_log_dir is not None:
+                # If a parent process has already reserved an auto-named directory, reuse it.
+                return Path(inherited_log_dir)
+
+            # Create the next experiment directory and reserve it for this trainer instance,
+            # but only if it is not already reserved by a parent process. This ensures that
+            # Lightning-relaunched child processes can reuse the same directory when they
+            # reconstruct auto-named trainers in the same order.
+            log_dir = self.__reserve_next_experiment_dir(base_dir).resolve()
+
+            # Export the reserved directory through an environment variable for child processes
+            # to inherit, in case this is a distributed training setup.
+            os.environ[environment_variable] = str(log_dir)
+            return log_dir
+
+        return base_dir / experiment_name
+
+    def __reserve_next_experiment_dir(self, base_dir: Path) -> Path:
+        """
+        Atomically select and reserve the next experiment directory.
+
+        Args:
+            base_dir: Base directory containing experiment directories.
+
+        Returns:
+            experiment_dir: Reserved experiment directory.
+        """
+        base_dir.mkdir(parents=True, exist_ok=True)
+
+        while True:  # Until we successfully reserve a directory, keep trying
+            new_experiment_name = self.__next_experiment_name(base_dir)
+            new_experiment_dir = base_dir / new_experiment_name
+
+            try:
+                new_experiment_dir.mkdir(exist_ok=False)
+            except FileExistsError:
+                # Another trainer reserved this name after we calculated it,
+                # so we need to try again to find the next available name.
+                continue
+
+            return new_experiment_dir
 
     def __setup_logger(
         self,
@@ -797,8 +881,6 @@ class MultiModelTrainer:
         if logger is not None:
             return logger
 
-        experiment_name = str(self.__next_experiment_name(self.log_dir))
-
         loggers: list[Logger] = [
             CSVLogger(
                 save_dir=self.log_dir,
@@ -808,12 +890,12 @@ class MultiModelTrainer:
             MarkdownTableLogger(
                 save_dir=self.log_dir,
                 model_name=model_config.full_model_name(),
-                experiment_name=experiment_name,
+                experiment_name=self.__experiment_key,
             ),
             LaTexTableLogger(
                 save_dir=self.log_dir,
                 model_name=model_config.full_model_name(),
-                experiment_name=experiment_name,
+                experiment_name=self.__experiment_key,
                 options={
                     "table_caption": "Results for Experiments",
                     "sort_by": ["des", "asc"],

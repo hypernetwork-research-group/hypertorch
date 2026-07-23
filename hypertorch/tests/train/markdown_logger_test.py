@@ -1,6 +1,7 @@
 import pytest
 
 from textwrap import dedent
+from lightning.pytorch.utilities.rank_zero import rank_zero_only
 from hypertorch.train import MarkdownTableLogger
 
 
@@ -57,6 +58,66 @@ def test_markdown_table_logger_log_metrics_accumulates_metrics(tmp_path):
     logger.finalize("success")
     store = logger.store
     assert store == {"model_a": {"test/auc": 0.80, "train/loss": 0.50, "val/loss": 0.40}}
+
+
+def test_markdown_table_logger_does_not_log_or_save_on_nonzero_rank(tmp_path, monkeypatch):
+    experiment_name = "exp_nonzero_rank"
+    logger = MarkdownTableLogger(
+        save_dir=str(tmp_path),
+        model_name="model_a",
+        experiment_name=experiment_name,
+    )
+    logger.clear(experiment_name)
+    monkeypatch.setattr(rank_zero_only, "rank", 1)
+
+    logger.log_metrics({"test/auc": 0.80})
+    logger.finalize("success")
+
+    assert logger.store == {}
+    assert not (tmp_path / "comparison").exists()
+
+
+def test_clear_removes_metrics_only_for_requested_experiment(tmp_path):
+    first_logger = MarkdownTableLogger(
+        save_dir=str(tmp_path),
+        model_name="model_a",
+        experiment_name="exp_clear_first",
+    )
+    second_logger = MarkdownTableLogger(
+        save_dir=str(tmp_path),
+        model_name="model_b",
+        experiment_name="exp_clear_second",
+    )
+
+    first_logger.log_metrics({"test/auc": 0.80, "train/loss": 0.50})
+    second_logger.log_metrics({"test/auc": 0.90})
+    first_logger.clear("exp_clear_first")
+
+    assert first_logger.store == {}
+    assert second_logger.store == {"model_b": {"test/auc": 0.90}}
+
+    second_logger.clear("exp_clear_second")
+    assert second_logger.store == {}
+
+
+def test_destroy_removes_metrics_for_all_experiments(tmp_path):
+    first_logger = MarkdownTableLogger(
+        save_dir=str(tmp_path),
+        model_name="model_a",
+        experiment_name="exp_destroy_first",
+    )
+    second_logger = MarkdownTableLogger(
+        save_dir=str(tmp_path),
+        model_name="model_b",
+        experiment_name="exp_destroy_second",
+    )
+
+    first_logger.log_metrics({"test/auc": 0.80})
+    second_logger.log_metrics({"test/auc": 0.90})
+    first_logger.destroy()
+
+    assert first_logger.store == {}
+    assert second_logger.store == {}
 
 
 def test_markdown_table_logger_finalize_does_not_save_when_no_results(tmp_path):

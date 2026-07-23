@@ -1,11 +1,18 @@
+import os
+import subprocess
+import sys
+
 import pytest
 import lightning as L
 import torch
 
+from itertools import count
 from pathlib import Path
+from textwrap import dedent
 from torch import Tensor, nn, optim
 from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.loggers import CSVLogger
+import hypertorch.train.trainer as trainer_module
 from hypertorch.train import MultiModelTrainer
 from hypertorch.types import HData, ModelConfig
 from hypertorch.data import DataLoader, Dataset
@@ -137,6 +144,244 @@ def test_fit_and_test_all_trains_and_evaluates_models(
         )
 
     __assert_default_logger_outputs(tmp_path / EXPERIMENT_NAME, model_configs)
+
+
+@pytest.mark.integration
+def test_auto_named_trainers_reserve_distinct_experiment_directories(
+    tmp_path,
+    mock_tiny_dataloader,
+):
+    first_model_configs = [
+        ModelConfig(
+            name="first",
+            version="0",
+            model=TinyBinaryClassifier(),
+        )
+    ]
+    second_model_configs = [
+        ModelConfig(
+            name="second",
+            version="0",
+            model=TinyBinaryClassifier(),
+        )
+    ]
+
+    with (
+        MultiModelTrainer(
+            model_configs=first_model_configs,
+            default_root_dir=tmp_path,
+            max_epochs=1,
+            accelerator="auto",
+            devices=1,
+            enable_checkpointing=False,
+            enable_progress_bar=False,
+            enable_model_summary=False,
+            log_every_n_steps=1,
+        ) as first_trainer,
+        MultiModelTrainer(
+            model_configs=second_model_configs,
+            default_root_dir=tmp_path,
+            max_epochs=1,
+            accelerator="auto",
+            devices=1,
+            enable_checkpointing=False,
+            enable_progress_bar=False,
+            enable_model_summary=False,
+            log_every_n_steps=1,
+        ) as second_trainer,
+    ):
+        assert first_trainer.log_dir == tmp_path / "experiment_0"
+        assert second_trainer.log_dir == tmp_path / "experiment_1"
+        assert first_trainer.log_dir.is_dir()
+        assert second_trainer.log_dir.is_dir()
+
+        for trainer in (first_trainer, second_trainer):
+            trainer.fit_all(
+                train_dataloader=mock_tiny_dataloader,
+                val_dataloader=mock_tiny_dataloader,
+                verbose=False,
+            )
+            trainer.test_all(
+                dataloader=mock_tiny_dataloader,
+                verbose=False,
+                verbose_loop=False,
+            )
+
+        __assert_default_logger_outputs(first_trainer.log_dir, first_model_configs)
+        __assert_default_logger_outputs(second_trainer.log_dir, second_model_configs)
+
+        first_comparison = (first_trainer.log_dir / "comparison" / "overall.md").read_text()
+        second_comparison = (second_trainer.log_dir / "comparison" / "overall.md").read_text()
+
+        assert "first:0" in first_comparison
+        assert "second:0" not in first_comparison
+        assert "second:0" in second_comparison
+        assert "first:0" not in second_comparison
+
+
+@pytest.mark.integration
+def test_auto_named_trainer_reuses_parent_experiment_dir_in_relaunched_processes(
+    tmp_path,
+    monkeypatch,
+):
+    environment_variable = "HYPERTORCH_AUTO_EXPERIMENT_DIR_0"
+    monkeypatch.delenv(environment_variable, raising=False)
+    monkeypatch.setattr(trainer_module, "AUTO_EXPERIMENT_INDEX", count())
+
+    parent_trainer = MultiModelTrainer(
+        model_configs=[
+            ModelConfig(
+                name="parent",
+                version="0",
+                model=TinyBinaryClassifier(),
+            )
+        ],
+        default_root_dir=tmp_path,
+        logger=False,
+        enable_checkpointing=False,
+        enable_progress_bar=False,
+        enable_model_summary=False,
+    )
+    expected_log_dir = (tmp_path / "experiment_0").resolve()
+
+    child_script = dedent(
+        """
+        import lightning as L
+        import os
+        from hypertorch.train import MultiModelTrainer
+        from hypertorch.types import ModelConfig
+
+        trainer = MultiModelTrainer(
+            model_configs=[
+                ModelConfig(
+                    name="child",
+                    version=os.environ["SIMULATED_CHILD_RANK"],
+                    model=L.LightningModule(),
+                )
+            ],
+            default_root_dir=os.environ["SIMULATED_LOG_ROOT"],
+            logger=False,
+            enable_checkpointing=False,
+            enable_progress_bar=False,
+            enable_model_summary=False,
+        )
+        print(f"SIMULATED_CHILD_LOG_DIR={trainer.log_dir}")
+        """
+    )
+
+    child_log_dirs = []
+    for child_rank in ("1", "2"):
+        child_environment = os.environ.copy()
+        child_environment["SIMULATED_CHILD_RANK"] = child_rank
+        child_environment["SIMULATED_LOG_ROOT"] = str(tmp_path)
+        child_process = subprocess.run(
+            [sys.executable, "-c", child_script],
+            check=True,
+            capture_output=True,
+            env=child_environment,
+            text=True,
+        )
+        child_log_dir_line = next(
+            line
+            for line in child_process.stdout.splitlines()
+            if line.startswith("SIMULATED_CHILD_LOG_DIR=")
+        )
+        child_log_dirs.append(Path(child_log_dir_line.split("=", maxsplit=1)[1]))
+
+    assert parent_trainer.log_dir == expected_log_dir
+    assert child_log_dirs == [expected_log_dir, expected_log_dir]
+    assert sorted(path.name for path in tmp_path.iterdir()) == ["experiment_0"]
+
+
+@pytest.mark.integration
+def test_two_auto_named_trainers_will_reuse_parent_experiment_dirs_in_relaunched_processes(
+    tmp_path,
+    monkeypatch,
+):
+    for trainer_index in range(2):
+        monkeypatch.delenv(
+            f"HYPERTORCH_AUTO_EXPERIMENT_DIR_{trainer_index}",
+            raising=False,
+        )
+    monkeypatch.setattr(trainer_module, "AUTO_EXPERIMENT_INDEX", count())
+
+    parent_trainers = [
+        MultiModelTrainer(
+            model_configs=[
+                ModelConfig(
+                    name=f"parent_{trainer_index}",
+                    version="0",
+                    model=TinyBinaryClassifier(),
+                )
+            ],
+            default_root_dir=tmp_path,
+            logger=False,
+            enable_checkpointing=False,
+            enable_progress_bar=False,
+            enable_model_summary=False,
+        )
+        for trainer_index in range(2)
+    ]
+    expected_log_dirs = [
+        (tmp_path / f"experiment_{trainer_index}").resolve() for trainer_index in range(2)
+    ]
+
+    child_script = dedent(
+        """
+        import lightning as L
+        import os
+
+        from hypertorch.train import MultiModelTrainer
+        from hypertorch.types import ModelConfig
+
+
+        for trainer_index in range(2):
+            trainer = MultiModelTrainer(
+                model_configs=[
+                    ModelConfig(
+                        name=f"child_{trainer_index}",
+                        version=os.environ["SIMULATED_CHILD_RANK"],
+                        model=L.LightningModule(),
+                    )
+                ],
+                default_root_dir=os.environ["SIMULATED_LOG_ROOT"],
+                logger=False,
+                enable_checkpointing=False,
+                enable_progress_bar=False,
+                enable_model_summary=False,
+            )
+            print(
+                f"SIMULATED_CHILD_LOG_DIR_{trainer_index}={trainer.log_dir}"
+            )
+        """
+    )
+
+    child_log_dirs_by_rank = []
+    for child_rank in ("1", "2"):
+        child_environment = os.environ.copy()
+        child_environment["SIMULATED_CHILD_RANK"] = child_rank
+        child_environment["SIMULATED_LOG_ROOT"] = str(tmp_path)
+        child_process = subprocess.run(
+            [sys.executable, "-c", child_script],
+            check=True,
+            capture_output=True,
+            env=child_environment,
+            text=True,
+        )
+        child_log_dirs = [
+            Path(line.split("=", maxsplit=1)[1])
+            for line in child_process.stdout.splitlines()
+            if line.startswith("SIMULATED_CHILD_LOG_DIR_")
+        ]
+        child_log_dirs_by_rank.append(child_log_dirs)
+
+    assert [trainer.log_dir for trainer in parent_trainers] == expected_log_dirs
+    assert child_log_dirs_by_rank == [expected_log_dirs, expected_log_dirs]
+
+    assert sorted(path.name for path in tmp_path.iterdir()) == [
+        "experiment_0",
+        "experiment_1",
+    ]
 
 
 @pytest.mark.integration

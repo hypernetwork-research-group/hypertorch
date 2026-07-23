@@ -1,11 +1,13 @@
+import os
 import pytest
 import re
 
+from pathlib import Path
 from types import MappingProxyType
 from unittest.mock import MagicMock, patch
 from lightning.pytorch.callbacks import Callback
 from lightning.pytorch.callbacks import ModelCheckpoint
-from hypertorch.train import MultiModelTrainer
+from hypertorch.train import ExperimentSharedLogger, MultiModelTrainer
 from hypertorch.types import ModelConfig
 from hypertorch.tests import new_mock_trainer
 
@@ -875,6 +877,110 @@ def test_init_auto_increments_experiment_name(
 
     for call in mock_latex_logger_cls.call_args_list:
         assert "experiment_2" in str(call.kwargs["save_dir"])
+
+
+@patch("hypertorch.train.trainer.L.Trainer")
+def test_init_retries_when_another_trainer_reserves_the_same_experiment_dir(
+    mock_trainer_cls,
+    mock_model_configs,
+    tmp_path,
+    monkeypatch,
+):
+    original_mkdir = Path.mkdir
+    reservation_attempts = []
+    collision_simulated = False
+
+    def mkdir_with_collision(path, *args, **kwargs):
+        nonlocal collision_simulated  # Use nonlocal to modify the outer variable
+
+        is_called_by_trainer = (
+            path.parent == tmp_path
+            and path.name.startswith("experiment_")
+            and kwargs.get("exist_ok") is False
+        )
+
+        # We simulate a race condition where another trainer reserves the experiment_0 directory
+        # before this trainer can create it. The next call, will select experiment_1,
+        # which will succeed and the trainer will then create the experiment_1 directory.
+        if is_called_by_trainer:
+            reservation_attempts.append(path.name)
+
+            if not collision_simulated:
+                # Simulate another trainer creating this directory first,
+                # then trainer reaches its atomic mkdir(exist_ok=False) call.
+                original_mkdir(path)
+                collision_simulated = True
+
+        return original_mkdir(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "mkdir", mkdir_with_collision)
+
+    trainer = MultiModelTrainer(
+        mock_model_configs,
+        default_root_dir=tmp_path,
+        logger=False,
+        enable_checkpointing=False,
+    )
+
+    assert collision_simulated
+    assert reservation_attempts == ["experiment_0", "experiment_1"]
+    assert trainer.log_dir == (tmp_path / "experiment_1").resolve()
+
+
+@patch("hypertorch.train.trainer.AUTO_EXPERIMENT_INDEX", iter([7]))
+@patch("hypertorch.train.trainer.L.Trainer")
+@patch("hypertorch.train.trainer.CSVLogger")
+@patch("hypertorch.train.trainer.MarkdownTableLogger")
+@patch("hypertorch.train.trainer.LaTexTableLogger")
+def test_init_exports_auto_experiment_dir_for_distributed_children(
+    mock_latex_logger_cls,
+    mock_md_logger_cls,
+    mock_csv_logger_cls,
+    mock_trainer_cls,
+    mock_model_configs,
+    tmp_path,
+    monkeypatch,
+):
+    environment_variable = "HYPERTORCH_AUTO_EXPERIMENT_DIR_7"
+    monkeypatch.delenv(environment_variable, raising=False)
+
+    trainer = MultiModelTrainer(
+        mock_model_configs,
+        default_root_dir=tmp_path,
+    )
+
+    assert trainer.log_dir == (tmp_path / "experiment_0").resolve()
+    assert trainer.log_dir == Path(os.environ[environment_variable])
+
+
+@patch("hypertorch.train.trainer.AUTO_EXPERIMENT_INDEX", iter([8]))
+@patch("hypertorch.train.trainer.L.Trainer")
+@patch("hypertorch.train.trainer.CSVLogger")
+@patch("hypertorch.train.trainer.MarkdownTableLogger")
+@patch("hypertorch.train.trainer.LaTexTableLogger")
+def test_init_reuses_auto_experiment_dir_inherited_by_distributed_child(
+    mock_latex_logger_cls,
+    mock_md_logger_cls,
+    mock_csv_logger_cls,
+    mock_trainer_cls,
+    mock_model_configs,
+    tmp_path,
+    monkeypatch,
+):
+    inherited_log_dir = tmp_path / "experiment_parent"
+    inherited_log_dir.mkdir()
+    monkeypatch.setenv(
+        "HYPERTORCH_AUTO_EXPERIMENT_DIR_8",
+        str(inherited_log_dir),
+    )
+
+    trainer = MultiModelTrainer(
+        mock_model_configs,
+        default_root_dir=tmp_path,
+    )
+
+    assert trainer.log_dir == inherited_log_dir
+    assert not (tmp_path / "experiment_0").exists()
 
 
 @patch("hypertorch.train.trainer.L.Trainer")
@@ -1751,6 +1857,47 @@ def test_finalize_terminates_tensorboard_process(
 @patch("hypertorch.train.trainer.CSVLogger")
 @patch("hypertorch.train.trainer.MarkdownTableLogger")
 @patch("hypertorch.train.trainer.LaTexTableLogger")
+def test_finalize_clears_shared_train_and_test_loggers(
+    mock_latex_logger_cls,
+    mock_md_logger_cls,
+    mock_csv_logger_cls,
+    mock_trainer_cls,
+    mock_model_configs,
+    tmp_path,
+):
+    experiment_name = "experiment_to_clear"
+    trainer = MultiModelTrainer(
+        mock_model_configs,
+        default_root_dir=str(tmp_path),
+        experiment_name=experiment_name,
+    )
+    shared_loggers = []
+    non_shared_loggers = []
+    for model_config in mock_model_configs:
+        train_logger = MagicMock(spec=ExperimentSharedLogger)
+        test_logger = MagicMock(spec=ExperimentSharedLogger)
+        train_non_shared_logger = MagicMock()
+        test_non_shared_logger = MagicMock()
+        model_config.trainer = new_mock_trainer()
+        model_config.trainer.loggers = [train_logger, train_non_shared_logger]
+        model_config.test_trainer = new_mock_trainer()
+        model_config.test_trainer.loggers = [test_logger, test_non_shared_logger]
+        shared_loggers.extend((train_logger, test_logger))
+        non_shared_loggers.extend((train_non_shared_logger, test_non_shared_logger))
+
+    trainer.finalize()
+
+    experiment_key = str(tmp_path / experiment_name)
+    for logger in shared_loggers:
+        logger.clear.assert_called_once_with(experiment_key)
+    for logger in non_shared_loggers:
+        logger.clear.assert_not_called()
+
+
+@patch("hypertorch.train.trainer.L.Trainer")
+@patch("hypertorch.train.trainer.CSVLogger")
+@patch("hypertorch.train.trainer.MarkdownTableLogger")
+@patch("hypertorch.train.trainer.LaTexTableLogger")
 def test_wait_does_nothing_when_no_tensorboard_process(
     mock_latex_logger_cls,
     mock_md_logger_cls,
@@ -1941,4 +2088,4 @@ def test_init_always_create_default_markdown_logger_per_model(
 
     for call in mock_markdown_logger_cls.call_args_list:
         assert call.kwargs["model_name"] in full_model_names
-        assert call.kwargs["experiment_name"] == "experiment_0"
+        assert call.kwargs["experiment_name"].endswith("experiment_0")
