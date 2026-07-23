@@ -219,6 +219,7 @@ def test_clear_removes_metrics_only_for_requested_experiment(tmp_path, mock_opti
     assert second_logger.store == {"model_b": {"test/auc": 0.90}}
 
     second_logger.clear("exp_clear_second")
+    assert second_logger.store == {}
 
 
 def test_destroy_removes_metrics_for_all_experiments(tmp_path, mock_option_configs):
