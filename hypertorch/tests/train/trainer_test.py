@@ -879,6 +879,54 @@ def test_init_auto_increments_experiment_name(
         assert "experiment_2" in str(call.kwargs["save_dir"])
 
 
+@patch("hypertorch.train.trainer.L.Trainer")
+def test_init_retries_when_another_trainer_reserves_the_same_experiment_dir(
+    mock_trainer_cls,
+    mock_model_configs,
+    tmp_path,
+    monkeypatch,
+):
+    original_mkdir = Path.mkdir
+    reservation_attempts = []
+    collision_simulated = False
+
+    def mkdir_with_collision(path, *args, **kwargs):
+        nonlocal collision_simulated  # Use nonlocal to modify the outer variable
+
+        is_called_by_trainer = (
+            path.parent == tmp_path
+            and path.name.startswith("experiment_")
+            and kwargs.get("exist_ok") is False
+        )
+
+        # We simulate a race condition where another trainer reserves the experiment_0 directory
+        # before this trainer can create it. The next call, will select experiment_1,
+        # which will succeed and the trainer will then create the experiment_1 directory.
+        if is_called_by_trainer:
+            reservation_attempts.append(path.name)
+
+            if not collision_simulated:
+                # Simulate another trainer creating this directory first,
+                # then trainer reaches its atomic mkdir(exist_ok=False) call.
+                original_mkdir(path)
+                collision_simulated = True
+
+        return original_mkdir(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "mkdir", mkdir_with_collision)
+
+    trainer = MultiModelTrainer(
+        mock_model_configs,
+        default_root_dir=tmp_path,
+        logger=False,
+        enable_checkpointing=False,
+    )
+
+    assert collision_simulated
+    assert reservation_attempts == ["experiment_0", "experiment_1"]
+    assert trainer.log_dir == (tmp_path / "experiment_1").resolve()
+
+
 @patch("hypertorch.train.trainer.AUTO_EXPERIMENT_INDEX", iter([7]))
 @patch("hypertorch.train.trainer.L.Trainer")
 @patch("hypertorch.train.trainer.CSVLogger")
