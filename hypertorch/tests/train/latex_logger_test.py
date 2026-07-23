@@ -2,6 +2,7 @@ import pytest
 import re
 
 from textwrap import dedent
+from lightning.pytorch.utilities.rank_zero import rank_zero_only
 from hypertorch.train import (
     LaTexTableConfig,
     LaTexTableLogger,
@@ -73,6 +74,28 @@ def test_latex_logger_log_metrics_accumulates_metrics(tmp_path, mock_option_conf
     logger.finalize("success")
     store = logger.store
     assert store == {"model_a": {"test/auc": 0.80, "train/loss": 0.50, "val/loss": 0.40}}
+
+
+def test_latex_logger_does_not_log_or_save_on_nonzero_rank(
+    tmp_path,
+    mock_option_configs,
+    monkeypatch,
+):
+    experiment_name = "exp_nonzero_rank"
+    logger = LaTexTableLogger(
+        save_dir=str(tmp_path),
+        model_name="model_a",
+        experiment_name=experiment_name,
+        options=mock_option_configs,
+    )
+    logger.clear(experiment_name)
+    monkeypatch.setattr(rank_zero_only, "rank", 1)
+
+    logger.log_metrics({"test/auc": 0.80})
+    logger.finalize("success")
+
+    assert logger.store == {}
+    assert not (tmp_path / "comparison").exists()
 
 
 def test_markdown_table_logger_finalize_does_not_save_when_no_results(

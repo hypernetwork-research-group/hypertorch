@@ -136,6 +136,80 @@ train_ds, test_ds = dataset.split(
 
 Use `split_with_ratios(...)` instead of `split(...)` when you need the final target-hyperedge ratios after optional sparse rebalancing.
 
+## Distributed experiment directories
+
+When `experiment_name` is omitted, `MultiModelTrainer` reserves the next available
+directory under `default_root_dir`, such as `experiment_0`. On a single machine,
+Lightning's default DDP launcher starts child processes after the parent constructs
+the trainer. HyperTorch exports the selected directory through an indexed environment
+variable, allowing every child rank to reuse the parent's directory:
+
+```text
+HYPERTORCH_AUTO_EXPERIMENT_DIR_0=/absolute/path/to/experiment_0
+```
+
+The index identifies an auto-named `MultiModelTrainer` by construction order. When a
+script constructs two trainers, the parent exports two values:
+
+```text
+HYPERTORCH_AUTO_EXPERIMENT_DIR_0=/absolute/path/to/experiment_0
+HYPERTORCH_AUTO_EXPERIMENT_DIR_1=/absolute/path/to/experiment_1
+```
+
+Relaunched processes must construct auto-named trainers in the same order as the
+parent. Each trainer and all of its ranks then share one experiment directory.
+
+### External launchers
+
+External launchers such as `torchrun` start all ranks as sibling processes before the
+training script runs. An environment variable created later by rank zero cannot
+propagate to the other ranks. For these launchers, provide the same explicit
+`experiment_name` to every rank:
+
+```python
+import os
+
+from hypertorch.train import MultiModelTrainer
+
+run_id = os.environ["HYPERTORCH_RUN_ID"]
+
+with MultiModelTrainer(
+    model_configs=configs,
+    default_root_dir="hypertorch_logs",
+    experiment_name=f"experiment_{run_id}",
+    accelerator="gpu",
+    devices=4,
+    strategy="ddp",
+) as trainer:
+    trainer.fit_all(
+        train_dataloader=train_loader,
+        val_dataloader=val_loader,
+    )
+```
+
+Set the run identifier before starting `torchrun` so every rank inherits it:
+
+```bash
+HYPERTORCH_RUN_ID=my-run-001 \
+torchrun --nproc-per-node=4 train.py
+```
+
+Alternatively, create the directory and configure the indexed value before launch:
+
+```bash
+mkdir -p /absolute/path/to/hypertorch_logs/experiment_0
+export HYPERTORCH_AUTO_EXPERIMENT_DIR_0=/absolute/path/to/hypertorch_logs/experiment_0
+torchrun --nproc-per-node=4 train.py
+```
+
+For multi-machine jobs, the resolved directory must be accessible at the same path
+from every machine, normally through shared storage. A node-local path produces a
+separate set of files on each machine even when its textual path is identical.
+
+Experiment-directory sharing only coordinates artifact locations. Distributed metric
+values must also be synchronized before global rank zero writes them. See
+[Distributed metric logging](loggers.md#distributed-metric-logging).
+
 ## Per-model trainer options
 
 `MultiModelTrainer` values are shared defaults. Set per-model trainer options on an

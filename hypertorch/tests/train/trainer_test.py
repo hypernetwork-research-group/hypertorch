@@ -1,6 +1,8 @@
+import os
 import pytest
 import re
 
+from pathlib import Path
 from types import MappingProxyType
 from unittest.mock import MagicMock, patch
 from lightning.pytorch.callbacks import Callback
@@ -875,6 +877,62 @@ def test_init_auto_increments_experiment_name(
 
     for call in mock_latex_logger_cls.call_args_list:
         assert "experiment_2" in str(call.kwargs["save_dir"])
+
+
+@patch("hypertorch.train.trainer.AUTO_EXPERIMENT_INDEX", iter([7]))
+@patch("hypertorch.train.trainer.L.Trainer")
+@patch("hypertorch.train.trainer.CSVLogger")
+@patch("hypertorch.train.trainer.MarkdownTableLogger")
+@patch("hypertorch.train.trainer.LaTexTableLogger")
+def test_init_exports_auto_experiment_dir_for_distributed_children(
+    mock_latex_logger_cls,
+    mock_md_logger_cls,
+    mock_csv_logger_cls,
+    mock_trainer_cls,
+    mock_model_configs,
+    tmp_path,
+    monkeypatch,
+):
+    environment_variable = "HYPERTORCH_AUTO_EXPERIMENT_DIR_7"
+    monkeypatch.delenv(environment_variable, raising=False)
+
+    trainer = MultiModelTrainer(
+        mock_model_configs,
+        default_root_dir=tmp_path,
+    )
+
+    assert trainer.log_dir == (tmp_path / "experiment_0").resolve()
+    assert trainer.log_dir == Path(os.environ[environment_variable])
+
+
+@patch("hypertorch.train.trainer.AUTO_EXPERIMENT_INDEX", iter([8]))
+@patch("hypertorch.train.trainer.L.Trainer")
+@patch("hypertorch.train.trainer.CSVLogger")
+@patch("hypertorch.train.trainer.MarkdownTableLogger")
+@patch("hypertorch.train.trainer.LaTexTableLogger")
+def test_init_reuses_auto_experiment_dir_inherited_by_distributed_child(
+    mock_latex_logger_cls,
+    mock_md_logger_cls,
+    mock_csv_logger_cls,
+    mock_trainer_cls,
+    mock_model_configs,
+    tmp_path,
+    monkeypatch,
+):
+    inherited_log_dir = tmp_path / "experiment_parent"
+    inherited_log_dir.mkdir()
+    monkeypatch.setenv(
+        "HYPERTORCH_AUTO_EXPERIMENT_DIR_8",
+        str(inherited_log_dir),
+    )
+
+    trainer = MultiModelTrainer(
+        mock_model_configs,
+        default_root_dir=tmp_path,
+    )
+
+    assert trainer.log_dir == inherited_log_dir
+    assert not (tmp_path / "experiment_0").exists()
 
 
 @patch("hypertorch.train.trainer.L.Trainer")

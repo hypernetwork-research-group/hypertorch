@@ -3,6 +3,7 @@ import copy
 from pathlib import Path
 from typing import Any, ClassVar
 from collections.abc import Mapping
+from lightning.pytorch.utilities.rank_zero import rank_zero_only
 from hypertorch.utils import MARKDOWN_CHARACTER_ESCAPE_TABLE, escape, validate_is_non_negative
 
 from hypertorch.train.logger import ExperimentSharedLogger
@@ -16,6 +17,10 @@ class MarkdownTableLogger(ExperimentSharedLogger):
     Every time ``finalize()`` is called (after ``fit()`` or ``test()`` for each model), the current
     state of all accumulated metrics is written to a markdown file. The last model to
     finalize produces the most complete table.
+
+    In distributed runs, only global rank zero accumulates metrics and writes tables.
+    Metrics must therefore be synchronized before they reach the logger, for example by
+    passing ``sync_dist=True`` to Lightning's metric logging methods.
 
     This means the file is progressively updated as models finish training/testing,
     so partial results are available while running.
@@ -113,10 +118,10 @@ class MarkdownTableLogger(ExperimentSharedLogger):
         Destroy the internal shared state of the logger.
 
         Caution: This method should be used with care, as it will clear all shared
-            state across experiments and processes. This means that any metrics or data logged
-            by other experiments will be lost as well. Use this method only when you are certain
-            that you want to clear all shared state, and not just the state for
-            a specific experiment. In that case, use the `clear` methods instead.
+            state across experiments in the current process. This means that any metrics
+            or data logged by other experiments will be lost as well. Use this method only
+            when you are certain that you want to clear all shared state, and not just the
+            state for a specific experiment. In that case, use the `clear` methods instead.
         """
         self.__shared_stores.clear()
 
@@ -129,6 +134,7 @@ class MarkdownTableLogger(ExperimentSharedLogger):
         """
         pass
 
+    @rank_zero_only
     def log_metrics(self, metrics: dict[str, float], step: int | None = None) -> None:
         """
         Accumulate metrics for this model. Called by Lightning on every log step.
@@ -145,6 +151,7 @@ class MarkdownTableLogger(ExperimentSharedLogger):
             store[self.__model_name] = {}
         store[self.__model_name].update(metrics)
 
+    @rank_zero_only
     def finalize(self, status: str) -> None:
         """
         Write the markdown comparison table with all accumulated metrics so far.

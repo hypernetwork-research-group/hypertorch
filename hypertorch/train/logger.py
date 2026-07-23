@@ -5,7 +5,7 @@ from lightning.pytorch.loggers import Logger
 class ExperimentSharedLogger(Logger, ABC):
     """
     Extends `lightning.pytorch.loggers.Logger` to provide a base class
-    for experiment loggers that are shared across multiple processes.
+    for experiment loggers that share state across instances in one process.
     """
 
     @abstractmethod
@@ -24,9 +24,9 @@ class ExperimentSharedLogger(Logger, ABC):
         Destroy the internal shared state of the logger.
 
         Caution: This method should be used with care, as it will clear all shared
-            state across experiments and processes. This means that any metrics or data logged
-            by other experiments will be lost as well. Use this method only when you are certain
-            that you want to clear all shared state, and not just the state for
-            a specific experiment. In that case, use the `clear` methods instead.
+            state across experiments in the current process. This means that any metrics
+            or data logged by other experiments will be lost as well. Use this method only
+            when you are certain that you want to clear all shared state, and not just the
+            state for a specific experiment. In that case, use the `clear` methods instead.
         """
         raise NotImplementedError("Subclasses must implement the destroy method.")
