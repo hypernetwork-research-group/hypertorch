@@ -114,18 +114,18 @@ if __name__ == "__main__":
             )
 
             list_model = [
-                # "gcn",
-                # "common_neighbors",
-                # "hgnn",
-                # "hgnnp",
-                # "hnhn",
-                # "hypergcn_no_mediator",
-                # "hypergcn_with_mediator",
-                # "mlp",
+                "gcn",
+                "common_neighbors",
+                "hgnn",
+                "hgnnp",
+                "hnhn",
+                "hypergcn_no_mediator",
+                "hypergcn_with_mediator",
+                "mlp",
                 "nhp",
-                # "villain_node",
-                # "villain_hyperedge",
-                # "node2vec",
+                "villain_node",
+                "villain_hyperedge",
+                "node2vec",
             ]
 
             for model in list_model:
