@@ -268,10 +268,11 @@ if __name__ == "__main__":
                         num_classes=num_classes,
                     )
                 print("Starting training and evaluation...")
-
+                timer_start = pd.Timestamp.now()
                 with MultiModelTrainer(
                     experiment_name=f"{model}_{r}",
                     model_configs=config,
+                    enable_checkpointing=False,
                     default_root_dir=f"benchmark/results_nc/{dataset_name}/",
                 ) as trainer:
                     before_stats = retrieve_hw_stats()
@@ -282,6 +283,8 @@ if __name__ == "__main__":
                         verbose=True,
                     )
                     trainer.test_all(dataloader=test_loader, verbose=True)
+                    timer_end = pd.Timestamp.now()
+                    execution_time = (timer_end - timer_start).total_seconds()
                     after_stats = retrieve_hw_stats()
                     hw_stats_df = pd.concat(
                         [
@@ -294,6 +297,7 @@ if __name__ == "__main__":
                                         model=model,
                                         before_stats=before_stats,
                                         after_stats=after_stats,
+                                        execution_time=execution_time,
                                     )
                                 ]
                             ),

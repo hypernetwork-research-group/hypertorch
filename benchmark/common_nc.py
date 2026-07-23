@@ -28,6 +28,7 @@ def collect_hw_stats_row(
     model: str,
     before_stats: tuple[float, float, float],
     after_stats: tuple[float, float, float],
+    execution_time: float,
 ) -> dict[str, float | int | str]:
     cpu_usage_before, ram_usage_before, gpu_usage_before = before_stats
     cpu_usage_after, ram_usage_after, gpu_usage_after = after_stats
@@ -36,6 +37,7 @@ def collect_hw_stats_row(
         "run": run,
         "dataset": dataset,
         "model": model,
+        "execution_time": execution_time,
         "cpu_usage_before": cpu_usage_before,
         "ram_usage_before": ram_usage_before,
         "gpu_usage_before": gpu_usage_before,
