@@ -192,7 +192,7 @@ if __name__ == "__main__":
                         test_loader=test_loader,
                         num_nodes=num_nodes,
                         num_run=r,
-                        max_epochs=10,
+                        max_epochs=100,
                     )
                 elif model == "hypergcn_with_mediator":
                     config = load_hypergcn_with_mediator(
@@ -203,7 +203,7 @@ if __name__ == "__main__":
                         test_loader=test_loader,
                         num_nodes=num_nodes,
                         num_run=r,
-                        max_epochs=10,
+                        max_epochs=100,
                     )
                 elif model == "mlp":
                     config = load_mlp(
