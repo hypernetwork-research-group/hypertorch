@@ -174,18 +174,50 @@ def test_finalize_no_relevant_metrics_writes_no_file(tmp_path, mock_option_confi
     assert not (tmp_path / "comparison" / "test.tex").exists()
 
 
-def test_clear_removes_metrics_for_experiment(tmp_path, mock_option_configs):
-    logger = LaTexTableLogger(
+def test_clear_removes_metrics_only_for_requested_experiment(tmp_path, mock_option_configs):
+    first_logger = LaTexTableLogger(
         save_dir=str(tmp_path),
         model_name="model_a",
-        experiment_name="exp_clear",
+        experiment_name="exp_clear_first",
+        options=mock_option_configs,
+    )
+    second_logger = LaTexTableLogger(
+        save_dir=str(tmp_path),
+        model_name="model_b",
+        experiment_name="exp_clear_second",
         options=mock_option_configs,
     )
 
-    logger.log_metrics({"test/auc": 0.80, "train/loss": 0.50})
-    logger.clear("exp_clear")
+    first_logger.log_metrics({"test/auc": 0.80, "train/loss": 0.50})
+    second_logger.log_metrics({"test/auc": 0.90})
+    first_logger.clear("exp_clear_first")
 
-    assert logger.store == {}
+    assert first_logger.store == {}
+    assert second_logger.store == {"model_b": {"test/auc": 0.90}}
+
+    second_logger.clear("exp_clear_second")
+
+
+def test_destroy_removes_metrics_for_all_experiments(tmp_path, mock_option_configs):
+    first_logger = LaTexTableLogger(
+        save_dir=str(tmp_path),
+        model_name="model_a",
+        experiment_name="exp_destroy_first",
+        options=mock_option_configs,
+    )
+    second_logger = LaTexTableLogger(
+        save_dir=str(tmp_path),
+        model_name="model_b",
+        experiment_name="exp_destroy_second",
+        options=mock_option_configs,
+    )
+
+    first_logger.log_metrics({"test/auc": 0.80})
+    second_logger.log_metrics({"test/auc": 0.90})
+    first_logger.destroy()
+
+    assert first_logger.store == {}
+    assert second_logger.store == {}
 
 
 def test_finalize_writes_section_spacing_and_midrule_lines(tmp_path, mock_option_configs):

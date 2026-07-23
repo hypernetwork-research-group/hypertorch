@@ -2,12 +2,13 @@ import copy
 
 from pathlib import Path
 from typing import Any, ClassVar
-from lightning.pytorch.loggers import Logger
 from collections.abc import Mapping
 from hypertorch.utils import MARKDOWN_CHARACTER_ESCAPE_TABLE, escape, validate_is_non_negative
 
+from hypertorch.train.logger import ExperimentSharedLogger
 
-class MarkdownTableLogger(Logger):
+
+class MarkdownTableLogger(ExperimentSharedLogger):
     """
     A Lightning Logger that accumulates metrics and writes a markdown comparison table.
 
@@ -106,6 +107,18 @@ class MarkdownTableLogger(Logger):
             experiment_name: The experiment name whose data should be cleared.
         """
         self.__shared_stores.pop(experiment_name, None)
+
+    def destroy(self) -> None:
+        """
+        Destroy the internal shared state of the logger.
+
+        Caution: This method should be used with care, as it will clear all shared
+            state across experiments and processes. This means that any metrics or data logged
+            by other experiments will be lost as well. Use this method only when you are certain
+            that you want to clear all shared state, and not just the state for
+            a specific experiment. In that case, use the `clear` methods instead.
+        """
+        self.__shared_stores.clear()
 
     def log_hyperparams(self, params: Any) -> None:
         """

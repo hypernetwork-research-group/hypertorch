@@ -17,6 +17,7 @@ from lightning.pytorch.loggers import CSVLogger, Logger
 from lightning.pytorch.profilers import Profiler
 from lightning.pytorch.strategies import Strategy
 from hypertorch.data import DataLoader, DataModule
+from hypertorch.train.logger import ExperimentSharedLogger
 from hypertorch.types import CkptStrategy, ModelConfig, TestResult
 from hypertorch.utils import validate_is_non_empty, validate_is_non_negative
 
@@ -210,6 +211,7 @@ class MultiModelTrainer:
         validate_is_non_empty("model_configs", self.model_configs)
 
         self.log_dir: Path = self.__logdir(default_root_dir, experiment_name)
+        self.__experiment_key = str(self.log_dir)
 
         self.auto_start_tensorboard: bool = auto_start_tensorboard
         self.tensorboard_port: int = tensorboard_port
@@ -536,6 +538,28 @@ class MultiModelTrainer:
         if self.__tensorboard_process is not None:
             self.__tensorboard_process.terminate()
             self.__tensorboard_process = None
+        self.__clear_loggers()
+
+    def __clear_loggers(self) -> None:
+        """
+        Clear the internal state of all loggers.
+
+        This is called by Lightning when a new experiment starts, so that metrics from
+        previous experiments do not carry over.
+        """
+        if getattr(self, "_MultiModelTrainer__experiment_key", None) is None:
+            return
+
+        for config in self.model_configs:
+            if config.trainer is not None and config.trainer.loggers is not None:
+                for logger in config.trainer.loggers:
+                    if isinstance(logger, ExperimentSharedLogger):
+                        logger.clear(self.__experiment_key)
+
+            if config.test_trainer is not None and config.test_trainer.loggers is not None:
+                for logger in config.test_trainer.loggers:
+                    if isinstance(logger, ExperimentSharedLogger):
+                        logger.clear(self.__experiment_key)
 
     def wait(self) -> None:
         """
@@ -726,15 +750,6 @@ class MultiModelTrainer:
         Returns:
             experiment_name: Next experiment directory name.
         """
-        if not save_dir.exists():
-            # Example: EXPERIMENT_NAME_PREFIX = "experiment",
-            #          EXPERIMENT_SEPARATOR = "_",
-            #          FIRST_EXPERIMENT_NUMBER = 0
-            #          -> next_experiment_name = "experiment_0"
-            return Path(
-                f"{self.EXPERIMENT_NAME_PREFIX}{self.EXPERIMENT_SEPARATOR}{self.FIRST_EXPERIMENT_NUMBER}"
-            )
-
         existing_experiment_names: list[str] = [
             dir.name
             for dir in save_dir.iterdir()
@@ -772,12 +787,34 @@ class MultiModelTrainer:
         base_dir = (
             Path(self.DEFAULT_BASE_LOG_DIR) if default_root_dir is None else Path(default_root_dir)
         )
-        next_experiment_name = (
-            self.__next_experiment_name(base_dir)
-            if experiment_name is None
-            else Path(experiment_name)
-        )
-        return base_dir / next_experiment_name
+        if experiment_name is None:
+            return self.__reserve_next_experiment_dir(base_dir)
+        return base_dir / experiment_name
+
+    def __reserve_next_experiment_dir(self, base_dir: Path) -> Path:
+        """
+        Atomically select and reserve the next experiment directory.
+
+        Args:
+            base_dir: Base directory containing experiment directories.
+
+        Returns:
+            experiment_dir: Reserved experiment directory.
+        """
+        base_dir.mkdir(parents=True, exist_ok=True)
+
+        while True:  # Until we successfully reserve a directory, keep trying
+            new_experiment_name = self.__next_experiment_name(base_dir)
+            new_experiment_dir = base_dir / new_experiment_name
+
+            try:
+                new_experiment_dir.mkdir(exist_ok=False)
+            except FileExistsError:
+                # Another trainer reserved this name after we calculated it,
+                # so we need to try again to find the next available name.
+                continue
+
+            return new_experiment_dir
 
     def __setup_logger(
         self,
@@ -797,8 +834,6 @@ class MultiModelTrainer:
         if logger is not None:
             return logger
 
-        experiment_name = str(self.__next_experiment_name(self.log_dir))
-
         loggers: list[Logger] = [
             CSVLogger(
                 save_dir=self.log_dir,
@@ -808,12 +843,12 @@ class MultiModelTrainer:
             MarkdownTableLogger(
                 save_dir=self.log_dir,
                 model_name=model_config.full_model_name(),
-                experiment_name=experiment_name,
+                experiment_name=self.__experiment_key,
             ),
             LaTexTableLogger(
                 save_dir=self.log_dir,
                 model_name=model_config.full_model_name(),
-                experiment_name=experiment_name,
+                experiment_name=self.__experiment_key,
                 options={
                     "table_caption": "Results for Experiments",
                     "sort_by": ["des", "asc"],

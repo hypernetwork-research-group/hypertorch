@@ -59,6 +59,48 @@ def test_markdown_table_logger_log_metrics_accumulates_metrics(tmp_path):
     assert store == {"model_a": {"test/auc": 0.80, "train/loss": 0.50, "val/loss": 0.40}}
 
 
+def test_clear_removes_metrics_only_for_requested_experiment(tmp_path):
+    first_logger = MarkdownTableLogger(
+        save_dir=str(tmp_path),
+        model_name="model_a",
+        experiment_name="exp_clear_first",
+    )
+    second_logger = MarkdownTableLogger(
+        save_dir=str(tmp_path),
+        model_name="model_b",
+        experiment_name="exp_clear_second",
+    )
+
+    first_logger.log_metrics({"test/auc": 0.80, "train/loss": 0.50})
+    second_logger.log_metrics({"test/auc": 0.90})
+    first_logger.clear("exp_clear_first")
+
+    assert first_logger.store == {}
+    assert second_logger.store == {"model_b": {"test/auc": 0.90}}
+
+    second_logger.clear("exp_clear_second")
+
+
+def test_destroy_removes_metrics_for_all_experiments(tmp_path):
+    first_logger = MarkdownTableLogger(
+        save_dir=str(tmp_path),
+        model_name="model_a",
+        experiment_name="exp_destroy_first",
+    )
+    second_logger = MarkdownTableLogger(
+        save_dir=str(tmp_path),
+        model_name="model_b",
+        experiment_name="exp_destroy_second",
+    )
+
+    first_logger.log_metrics({"test/auc": 0.80})
+    second_logger.log_metrics({"test/auc": 0.90})
+    first_logger.destroy()
+
+    assert first_logger.store == {}
+    assert second_logger.store == {}
+
+
 def test_markdown_table_logger_finalize_does_not_save_when_no_results(tmp_path):
     experiment_name = "exp3"
 

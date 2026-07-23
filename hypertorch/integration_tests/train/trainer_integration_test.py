@@ -140,6 +140,79 @@ def test_fit_and_test_all_trains_and_evaluates_models(
 
 
 @pytest.mark.integration
+def test_auto_named_trainers_reserve_distinct_experiment_directories(
+    tmp_path,
+    mock_tiny_dataloader,
+):
+    first_model_configs = [
+        ModelConfig(
+            name="first",
+            version="0",
+            model=TinyBinaryClassifier(),
+        )
+    ]
+    second_model_configs = [
+        ModelConfig(
+            name="second",
+            version="0",
+            model=TinyBinaryClassifier(),
+        )
+    ]
+
+    with (
+        MultiModelTrainer(
+            model_configs=first_model_configs,
+            default_root_dir=tmp_path,
+            max_epochs=1,
+            accelerator="auto",
+            devices=1,
+            enable_checkpointing=False,
+            enable_progress_bar=False,
+            enable_model_summary=False,
+            log_every_n_steps=1,
+        ) as first_trainer,
+        MultiModelTrainer(
+            model_configs=second_model_configs,
+            default_root_dir=tmp_path,
+            max_epochs=1,
+            accelerator="auto",
+            devices=1,
+            enable_checkpointing=False,
+            enable_progress_bar=False,
+            enable_model_summary=False,
+            log_every_n_steps=1,
+        ) as second_trainer,
+    ):
+        assert first_trainer.log_dir == tmp_path / "experiment_0"
+        assert second_trainer.log_dir == tmp_path / "experiment_1"
+        assert first_trainer.log_dir.is_dir()
+        assert second_trainer.log_dir.is_dir()
+
+        for trainer in (first_trainer, second_trainer):
+            trainer.fit_all(
+                train_dataloader=mock_tiny_dataloader,
+                val_dataloader=mock_tiny_dataloader,
+                verbose=False,
+            )
+            trainer.test_all(
+                dataloader=mock_tiny_dataloader,
+                verbose=False,
+                verbose_loop=False,
+            )
+
+        __assert_default_logger_outputs(first_trainer.log_dir, first_model_configs)
+        __assert_default_logger_outputs(second_trainer.log_dir, second_model_configs)
+
+        first_comparison = (first_trainer.log_dir / "comparison" / "overall.md").read_text()
+        second_comparison = (second_trainer.log_dir / "comparison" / "overall.md").read_text()
+
+        assert "first:0" in first_comparison
+        assert "second:0" not in first_comparison
+        assert "second:0" in second_comparison
+        assert "first:0" not in second_comparison
+
+
+@pytest.mark.integration
 def test_custom_logger_is_used_instead_of_default_loggers(
     tmp_path,
     mock_tiny_dataloader,

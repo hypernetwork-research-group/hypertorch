@@ -5,7 +5,7 @@ from types import MappingProxyType
 from unittest.mock import MagicMock, patch
 from lightning.pytorch.callbacks import Callback
 from lightning.pytorch.callbacks import ModelCheckpoint
-from hypertorch.train import MultiModelTrainer
+from hypertorch.train import ExperimentSharedLogger, MultiModelTrainer
 from hypertorch.types import ModelConfig
 from hypertorch.tests import new_mock_trainer
 
@@ -1751,6 +1751,47 @@ def test_finalize_terminates_tensorboard_process(
 @patch("hypertorch.train.trainer.CSVLogger")
 @patch("hypertorch.train.trainer.MarkdownTableLogger")
 @patch("hypertorch.train.trainer.LaTexTableLogger")
+def test_finalize_clears_shared_train_and_test_loggers(
+    mock_latex_logger_cls,
+    mock_md_logger_cls,
+    mock_csv_logger_cls,
+    mock_trainer_cls,
+    mock_model_configs,
+    tmp_path,
+):
+    experiment_name = "experiment_to_clear"
+    trainer = MultiModelTrainer(
+        mock_model_configs,
+        default_root_dir=str(tmp_path),
+        experiment_name=experiment_name,
+    )
+    shared_loggers = []
+    non_shared_loggers = []
+    for model_config in mock_model_configs:
+        train_logger = MagicMock(spec=ExperimentSharedLogger)
+        test_logger = MagicMock(spec=ExperimentSharedLogger)
+        train_non_shared_logger = MagicMock()
+        test_non_shared_logger = MagicMock()
+        model_config.trainer = new_mock_trainer()
+        model_config.trainer.loggers = [train_logger, train_non_shared_logger]
+        model_config.test_trainer = new_mock_trainer()
+        model_config.test_trainer.loggers = [test_logger, test_non_shared_logger]
+        shared_loggers.extend((train_logger, test_logger))
+        non_shared_loggers.extend((train_non_shared_logger, test_non_shared_logger))
+
+    trainer.finalize()
+
+    experiment_key = str(tmp_path / experiment_name)
+    for logger in shared_loggers:
+        logger.clear.assert_called_once_with(experiment_key)
+    for logger in non_shared_loggers:
+        logger.clear.assert_not_called()
+
+
+@patch("hypertorch.train.trainer.L.Trainer")
+@patch("hypertorch.train.trainer.CSVLogger")
+@patch("hypertorch.train.trainer.MarkdownTableLogger")
+@patch("hypertorch.train.trainer.LaTexTableLogger")
 def test_wait_does_nothing_when_no_tensorboard_process(
     mock_latex_logger_cls,
     mock_md_logger_cls,
@@ -1941,4 +1982,4 @@ def test_init_always_create_default_markdown_logger_per_model(
 
     for call in mock_markdown_logger_cls.call_args_list:
         assert call.kwargs["model_name"] in full_model_names
-        assert call.kwargs["experiment_name"] == "experiment_0"
+        assert call.kwargs["experiment_name"].endswith("experiment_0")
