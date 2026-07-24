@@ -17,6 +17,8 @@ from common_hlp import (
     load_hgnnp,
     load_hypergcn_no_mediator,
     load_hypergcn_with_mediator,
+    load_hypergcn_no_mediator_fast,
+    load_hypergcn_with_mediator_fast,
     load_hnhn,
     load_mlp,
     load_nhp,
@@ -122,6 +124,8 @@ if __name__ == "__main__":
                 "hnhn",
                 "hypergcn_no_mediator",
                 "hypergcn_with_mediator",
+                "hypergcn_no_mediator_fast",
+                "hypergcn_with_mediator_fast",
                 "mlp",
                 "nhp",
                 "villain_node",
@@ -189,6 +193,30 @@ if __name__ == "__main__":
                         max_epochs=200,
                     )
                     loaded_models.append(config[0])
+                elif model == "hypergcn_no_mediator_fast":
+                    config = load_hypergcn_no_mediator_fast(
+                        metrics=metrics,
+                        num_features=num_features,
+                        train_loader=data_loader.train_dataloader(),
+                        val_loader=data_loader.val_dataloader(),
+                        test_loader=test_loader,
+                        num_nodes=num_nodes,
+                        num_run=r,
+                        max_epochs=200,
+                    )
+                    loaded_models.append(config[0])
+                elif model == "hypergcn_with_mediator_fast":
+                    config = load_hypergcn_with_mediator_fast(
+                        metrics=metrics,
+                        num_features=num_features,
+                        train_loader=data_loader.train_dataloader(),
+                        val_loader=data_loader.val_dataloader(),
+                        test_loader=test_loader,
+                        num_nodes=num_nodes,
+                        num_run=r,
+                        max_epochs=200,
+                    )
+                    loaded_models.append(config[0])
                 elif model == "hypergcn_no_mediator":
                     config = load_hypergcn_no_mediator(
                         metrics=metrics,
@@ -198,7 +226,7 @@ if __name__ == "__main__":
                         test_loader=test_loader,
                         num_nodes=num_nodes,
                         num_run=r,
-                        max_epochs=100,
+                        max_epochs=200,
                     )
                     loaded_models.append(config[0])
                 elif model == "hypergcn_with_mediator":
@@ -210,7 +238,7 @@ if __name__ == "__main__":
                         test_loader=test_loader,
                         num_nodes=num_nodes,
                         num_run=r,
-                        max_epochs=100,
+                        max_epochs=200,
                     )
                     loaded_models.append(config[0])
                 elif model == "mlp":

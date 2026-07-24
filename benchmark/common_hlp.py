@@ -337,7 +337,95 @@ def load_hypergcn_with_mediator(
 
     configs = [
         ModelConfig(
+            name=f"hypergcn_with_med_{num_run}",
+            version="hyperlink-prediction",
+            model=model,
+            train_dataloader=train_loader,
+            val_dataloader=val_loader,
+            test_dataloader=test_loader,
+            trainer_kwargs={
+                "max_epochs": max_epochs,
+            },
+        ),
+    ]
+
+    return configs
+
+
+def load_hypergcn_no_mediator_fast(
+    metrics: MetricCollection,
+    num_nodes: int,
+    train_loader: DataLoader,
+    val_loader: DataLoader,
+    test_loader: DataLoader,
+    num_run: int,
+    num_features: int = 32,
+    max_epochs: int = 100,
+) -> list[ModelConfig]:
+    model = HyperGCNPredictor(
+        encoder_config={
+            "in_channels": num_features,
+            "hidden_channels": 16,
+            "out_channels": 16,
+            "bias": True,
+            "use_batch_normalization": False,
+            "drop_rate": 0.5,
+            "use_mediator": False,
+            "fast": True,
+        },
+        aggregation="mean",
+        lr=0.01,
+        weight_decay=5e-4,
+        metrics=metrics,
+    )
+
+    configs = [
+        ModelConfig(
             name=f"hypergcn_no_med_{num_run}",
+            version="hyperlink-prediction",
+            model=model,
+            train_dataloader=train_loader,
+            val_dataloader=val_loader,
+            test_dataloader=test_loader,
+            trainer_kwargs={
+                "max_epochs": max_epochs,
+            },
+        ),
+    ]
+
+    return configs
+
+
+def load_hypergcn_with_mediator_fast(
+    metrics: MetricCollection,
+    num_nodes: int,
+    train_loader: DataLoader,
+    val_loader: DataLoader,
+    test_loader: DataLoader,
+    num_run: int,
+    num_features: int = 32,
+    max_epochs: int = 100,
+) -> list[ModelConfig]:
+    model = HyperGCNPredictor(
+        encoder_config={
+            "in_channels": num_features,
+            "hidden_channels": 16,
+            "out_channels": 16,
+            "bias": True,
+            "use_batch_normalization": False,
+            "drop_rate": 0.5,
+            "use_mediator": True,
+            "fast": True,
+        },
+        aggregation="mean",
+        lr=0.01,
+        weight_decay=5e-4,
+        metrics=metrics,
+    )
+
+    configs = [
+        ModelConfig(
+            name=f"hypergcn_with_med_{num_run}",
             version="hyperlink-prediction",
             model=model,
             train_dataloader=train_loader,
