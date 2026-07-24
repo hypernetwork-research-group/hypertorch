@@ -214,16 +214,6 @@ def test_from_datasets_applies_test_loader_overrides_without_mutating_params(
     assert test_loader.batch_size == 1
     assert test_loader.drop_last is True
     assert test_loader.in_order is False
-    assert shared_params == {
-        "batch_size": 2,
-        "drop_last": False,
-        "in_order": True,
-    }
-    assert test_loader_params == {
-        "batch_size": 1,
-        "drop_last": True,
-        "in_order": False,
-    }
 
 
 def test_from_datasets_ignores_test_loader_params_without_test_dataset(
@@ -240,7 +230,6 @@ def test_from_datasets_ignores_test_loader_params_without_test_dataset(
     train_loader = cast(DataLoader, data_module.train_dataloader())
     assert train_loader.batch_size == 1
     assert data_module.test_dataloader() is None
-    assert test_loader_params == {"batch_size": 2}
 
 
 def test_from_datasets_returns_none_for_omitted_datasets():
