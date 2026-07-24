@@ -290,11 +290,11 @@ def test_auto_named_trainer_reuses_parent_experiment_dir_in_relaunched_processes
 
     assert parent_trainer.log_dir == expected_log_dir
     assert child_log_dirs == [expected_log_dir, expected_log_dir]
-    assert sorted(path.name for path in tmp_path.iterdir()) == ["experiment_0"]
+    assert [path.name for path in tmp_path.iterdir()] == ["experiment_0"]
 
 
 @pytest.mark.integration
-def test_two_auto_named_trainers_will_reuse_parent_experiment_dirs_in_relaunched_processes(
+def test_multiple_auto_named_trainers_reuse_parent_experiment_dirs_in_relaunched_processes(
     tmp_path,
     monkeypatch,
 ):
@@ -382,6 +382,107 @@ def test_two_auto_named_trainers_will_reuse_parent_experiment_dirs_in_relaunched
         "experiment_0",
         "experiment_1",
     ]
+
+
+@pytest.mark.integration
+def test_lightning_distributed_training_works_correctly(tmp_path):
+    script_path = tmp_path / "cpu_ddp_training.py"
+    script_path.write_text(
+        dedent(
+            """
+            import os
+            import lightning as L
+            import torch
+            from torch import Tensor, nn, optim
+            from torch.utils.data import DataLoader, TensorDataset
+            from hypertorch.train import MultiModelTrainer
+            from hypertorch.types import ModelConfig
+
+            class RankDependentLossModel(L.LightningModule):
+                def __init__(self) -> None:
+                    super().__init__()
+                    # DDP and automatic optimization require a gradient-bearing parameter.
+                    self.dummy_parameter = nn.Parameter(torch.tensor(0.0))
+
+                def training_step(self, _batch: tuple[Tensor, Tensor], _batch_index: int) -> Tensor:
+                    local_loss = 1.0 + (2.0 * self.global_rank)
+                    loss = self.dummy_parameter * 0.0 + local_loss
+                    self.log(
+                        "train/loss",
+                        loss,
+                        batch_size=2,
+                        on_step=False,
+                        on_epoch=True,
+                        sync_dist=True,
+                    )
+                    return loss
+
+                def configure_optimizers(self) -> optim.Optimizer:
+                    return optim.SGD(self.parameters(), lr=0.01)
+
+            def main() -> None:
+                dataloader = DataLoader(
+                    TensorDataset(torch.ones(8, 2), torch.zeros(8, 1)),
+                    batch_size=2,
+                )
+                model_configs = [
+                    ModelConfig(name="tiny", version="cpu-ddp", model=RankDependentLossModel()),
+                ]
+                with MultiModelTrainer(
+                    model_configs=model_configs,
+                    # This is used to provide a unique log directory from the integration test
+                    default_root_dir=os.environ["HYPERTORCH_DDP_TEST_ROOT"],
+                    accelerator="cpu",
+                    devices=2,
+                    strategy="ddp",
+                    max_epochs=1,
+                    enable_checkpointing=False,
+                    enable_progress_bar=False,
+                    enable_model_summary=False,
+                    log_every_n_steps=1,
+                ) as trainer:
+                    local_rank = os.environ.get("LOCAL_RANK", "0")
+                    rank_log_dir_path = (
+                        os.environ["HYPERTORCH_DDP_TEST_ROOT"]
+                        + f"/rank_{local_rank}.txt"
+                    )
+                    with open(rank_log_dir_path, "w") as rank_log_dir_file:
+                        rank_log_dir_file.write(str(trainer.log_dir))
+                    trainer.fit_all(train_dataloader=dataloader, verbose=False)
+
+            if __name__ == "__main__":
+                main()
+            """
+        )
+    )
+
+    child_environment = {"HYPERTORCH_DDP_TEST_ROOT": str(tmp_path)}
+    subprocess.run(
+        [sys.executable, str(script_path)],
+        check=True,
+        capture_output=True,
+        env=child_environment,
+        text=True,
+        timeout=120,
+    )
+
+    expected_log_dir = (tmp_path / "experiment_0").resolve()
+    rank_log_dir_paths = sorted(tmp_path.glob("rank_*.txt"))
+
+    assert [path.name for path in rank_log_dir_paths] == ["rank_0.txt", "rank_1.txt"]
+    assert [Path(path.read_text()) for path in rank_log_dir_paths] == [
+        expected_log_dir,
+        expected_log_dir,
+    ]
+    assert [path for path in tmp_path.glob("experiment_*") if path.is_dir()] == [expected_log_dir]
+    markdown_results = (expected_log_dir / "comparison" / "overall.md").read_text()
+    latex_results = (expected_log_dir / "comparison" / "overall.tex").read_text()
+
+    for results in (markdown_results, latex_results):
+        assert "train/loss" in results
+        assert "2.0000" in results  # The loss averaged across ranks 0 and 1 should be present
+        assert "1.0000" not in results  # The loss from rank 0 should not be present
+        assert "3.0000" not in results  # The loss from rank 1 should not be present
 
 
 @pytest.mark.integration
