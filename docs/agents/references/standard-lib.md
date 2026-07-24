@@ -15,6 +15,7 @@ project_root = Path(__file__).parent.parent
 config_file = project_root / "config" / "settings.toml"
 data_dir = Path.home() / "data"
 
+
 # File operations
 def read_config(config_path: Path) -> dict[str, str]:
     if not config_path.exists():
@@ -28,10 +29,12 @@ def read_config(config_path: Path) -> dict[str, str]:
 
     return parse_config(content)
 
+
 # Path traversal
 def find_python_files(directory: Path) -> list[Path]:
     # Recursive glob
     return list(directory.rglob("*.py"))
+
 
 def get_file_info(path: Path) -> dict[str, Any]:
     stat = path.stat()
@@ -44,13 +47,16 @@ def get_file_info(path: Path) -> dict[str, Any]:
         "stem": path.stem,
     }
 
+
 # Creating directories
 def ensure_dir(path: Path) -> None:
     path.mkdir(parents=True, exist_ok=True)
 
+
 # Temporary files
 from tempfile import TemporaryDirectory
 from pathlib import Path
+
 
 def process_with_temp() -> None:
     with TemporaryDirectory() as tmpdir:
@@ -64,6 +70,7 @@ def process_with_temp() -> None:
 from dataclasses import dataclass, field, asdict, replace
 from typing import ClassVar
 
+
 # Basic dataclass
 @dataclass
 class User:
@@ -71,6 +78,7 @@ class User:
     name: str
     email: str
     active: bool = True
+
 
 # Post-init processing
 @dataclass
@@ -87,12 +95,14 @@ class Product:
     def final_price(self) -> float:
         return self.price * (1 - self.discount)
 
+
 # Field with factory
 @dataclass
 class ShoppingCart:
     user_id: int
     items: list[str] = field(default_factory=list)
     metadata: dict[str, Any] = field(default_factory=dict)
+
 
 # Frozen dataclass (immutable)
 @dataclass(frozen=True)
@@ -101,7 +111,8 @@ class Point:
     y: float
 
     def distance(self, other: "Point") -> float:
-        return ((self.x - other.x)**2 + (self.y - other.y)**2)**0.5
+        return ((self.x - other.x) ** 2 + (self.y - other.y) ** 2) ** 0.5
+
 
 # Class variables
 @dataclass
@@ -112,11 +123,13 @@ class Config:
     timeout: int = 30
     retries: int = 3
 
+
 # Ordered dataclass for comparison
 @dataclass(order=True)
 class Priority:
     level: int
     name: str = field(compare=False)
+
 
 # Convert to/from dict
 user = User(1, "Alice", "alice@example.com")
@@ -127,10 +140,8 @@ updated = replace(user, name="Alice Smith")
 ## Functools for function tools
 
 ```python
-from functools import (
-    cache, lru_cache, cached_property,
-    partial, wraps, reduce, singledispatch
-)
+from functools import cache, lru_cache, cached_property, partial, wraps, reduce, singledispatch
+
 
 # Caching
 @cache  # Unlimited cache (Python 3.9+)
@@ -139,10 +150,12 @@ def fibonacci(n: int) -> int:
         return n
     return fibonacci(n - 1) + fibonacci(n - 2)
 
+
 @lru_cache(maxsize=128)  # LRU cache with size limit
 def fetch_user(user_id: int) -> dict[str, Any]:
     # Expensive database call
     return {"id": user_id, "name": "User"}
+
 
 # Cached property
 class DataProcessor:
@@ -154,12 +167,14 @@ class DataProcessor:
         """Computed once, then cached."""
         return sum(self._data) / len(self._data)
 
+
 # Partial application
 from operator import mul
 
 double = partial(mul, 2)
 triple = partial(mul, 3)
 print(double(5))  # 10
+
 
 # Decorator preservation
 def timing_decorator(func: Callable[P, R]) -> Callable[P, R]:
@@ -169,7 +184,9 @@ def timing_decorator(func: Callable[P, R]) -> Callable[P, R]:
         result = func(*args, **kwargs)
         print(f"{func.__name__} took {time.time() - start:.2f}s")
         return result
+
     return wrapper
+
 
 # Reduce for aggregation
 from operator import add
@@ -177,18 +194,22 @@ from operator import add
 total = reduce(add, [1, 2, 3, 4, 5])  # 15
 product = reduce(mul, [1, 2, 3, 4], 1)  # 24
 
+
 # Single dispatch for polymorphism
 @singledispatch
 def process(arg: Any) -> str:
     return f"Unknown type: {type(arg)}"
 
+
 @process.register
 def _(arg: int) -> str:
     return f"Integer: {arg * 2}"
 
+
 @process.register
 def _(arg: str) -> str:
     return f"String: {arg.upper()}"
+
 
 @process.register(list)
 def _(arg: list[Any]) -> str:
@@ -199,9 +220,18 @@ def _(arg: list[Any]) -> str:
 
 ```python
 from itertools import (
-    chain, islice, cycle, repeat,
-    groupby, accumulate, combinations, permutations,
-    product, zip_longest, tee, filterfalse
+    chain,
+    islice,
+    cycle,
+    repeat,
+    groupby,
+    accumulate,
+    combinations,
+    permutations,
+    product,
+    zip_longest,
+    tee,
+    filterfalse,
 )
 
 # Chain multiple iterables
@@ -212,6 +242,7 @@ first_10 = list(islice(range(1000), 10))
 
 # Infinite iterators
 from itertools import count
+
 counter = count(start=1, step=2)  # 1, 3, 5, 7, ...
 
 # Groupby for grouping
@@ -226,11 +257,12 @@ combos = list(combinations([1, 2, 3], 2))  # [(1,2), (1,3), (2,3)]
 perms = list(permutations([1, 2, 3], 2))  # [(1,2), (1,3), (2,1), ...]
 
 # Cartesian product
-pairs = list(product([1, 2], ['a', 'b']))  # [(1,'a'), (1,'b'), (2,'a'), (2,'b')]
+pairs = list(product([1, 2], ["a", "b"]))  # [(1,'a'), (1,'b'), (2,'a'), (2,'b')]
 
 # Zip with different lengths
 from itertools import zip_longest
-paired = list(zip_longest([1, 2], ['a', 'b', 'c'], fillvalue=0))
+
+paired = list(zip_longest([1, 2], ["a", "b", "c"], fillvalue=0))
 
 # Tee for multiple iterators
 it1, it2 = tee(range(5), 2)
@@ -242,10 +274,7 @@ odds = list(filterfalse(lambda x: x % 2 == 0, range(10)))
 ## Collections for data structures
 
 ```python
-from collections import (
-    defaultdict, Counter, deque, namedtuple,
-    ChainMap, OrderedDict
-)
+from collections import defaultdict, Counter, deque, namedtuple, ChainMap, OrderedDict
 
 # defaultdict for automatic defaults
 word_index: defaultdict[str, list[int]] = defaultdict(list)
@@ -280,23 +309,24 @@ for i in range(5):
 # namedtuple for lightweight classes
 from collections import namedtuple
 
-Point = namedtuple('Point', ['x', 'y'])
+Point = namedtuple("Point", ["x", "y"])
 p = Point(1, 2)
 print(p.x, p.y)
 
 # ChainMap for layered configs
 from collections import ChainMap
 
-defaults = {'color': 'red', 'user': 'guest'}
-environment = {'user': 'admin'}
+defaults = {"color": "red", "user": "guest"}
+environment = {"user": "admin"}
 combined = ChainMap(environment, defaults)
-print(combined['user'])  # 'admin' (from environment)
+print(combined["user"])  # 'admin' (from environment)
 ```
 
 ## Context managers
 
 ```python
 from contextlib import contextmanager, suppress, ExitStack
+
 
 # Custom context manager
 @contextmanager
@@ -307,9 +337,11 @@ def managed_resource(resource_id: str) -> Iterator[Resource]:
     finally:
         release_resource(resource)
 
+
 # Suppress exceptions
 with suppress(FileNotFoundError):
     Path("nonexistent.txt").unlink()
+
 
 # ExitStack for dynamic context managers
 def process_files(filenames: list[str]) -> None:
@@ -325,11 +357,13 @@ def process_files(filenames: list[str]) -> None:
 ```python
 from enum import Enum, auto, IntEnum, Flag
 
+
 # Basic enum
 class Status(Enum):
     PENDING = "pending"
     APPROVED = "approved"
     REJECTED = "rejected"
+
 
 # Auto values
 class Color(Enum):
@@ -337,17 +371,20 @@ class Color(Enum):
     GREEN = auto()
     BLUE = auto()
 
+
 # IntEnum for numeric values
 class Priority(IntEnum):
     LOW = 1
     MEDIUM = 2
     HIGH = 3
 
+
 # Flag for bit flags
 class Permission(Flag):
     READ = auto()
     WRITE = auto()
     EXECUTE = auto()
+
 
 user_perms = Permission.READ | Permission.WRITE
 if Permission.READ in user_perms:
@@ -363,14 +400,12 @@ from pathlib import Path
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('app.log'),
-        logging.StreamHandler()
-    ]
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.FileHandler("app.log"), logging.StreamHandler()],
 )
 
 logger = logging.getLogger(__name__)
+
 
 # Structured logging
 def process_user(user_id: int) -> None:

@@ -143,6 +143,7 @@ ignore = [
   "N812",    # lowercase imported as non lowercase (https://docs.astral.sh/ruff/rules/lowercase-imported-as-non-lowercase)
   "PLC0415", # import outside top-level (https://docs.astral.sh/ruff/rules/import-outside-top-level)
   "PLR0913", # too many arguments (https://docs.astral.sh/ruff/rules/too-many-arguments)
+  "PLR0917", # too many positional arguments (https://docs.astral.sh/ruff/rules/too-many-positional-arguments)
   "PLR2004", # magic numbers (https://docs.astral.sh/ruff/rules/magic-value-comparison)
   "RET504",  # unnecessary assignment (https://docs.astral.sh/ruff/rules/unnecessary-assign)
 ]

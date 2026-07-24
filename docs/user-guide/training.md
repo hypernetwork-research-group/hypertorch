@@ -24,7 +24,7 @@ from hypertorch.data import (
     DataLoader,
     LaplacianPositionalEncodingEnricher,
     RandomNegativeSampler,
-    SamplingStrategy
+    SamplingStrategy,
 )
 from hypertorch.train import MultiModelTrainer
 from hypertorch.types import ModelConfig
@@ -248,7 +248,7 @@ configs = [
         name="shared_defaults",
         version="mean",
         model=shared_model,
-    )
+    ),
 ]
 
 with MultiModelTrainer(
