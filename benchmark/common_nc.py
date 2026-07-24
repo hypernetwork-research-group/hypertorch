@@ -17,6 +17,7 @@ from hypertorch.node_classification import (
     VilLainClassifier,
     Node2VecGCNClassifier,
     Node2VecGCNNCConfig,
+    Node2VecClassifier,
 )
 from hypertorch.types import ModelConfig, TaskEnum
 from hypertorch.data import DataLoader, Dataset, get_dataset_by_name
@@ -286,7 +287,89 @@ def load_hypergcn_no_mediator(
     return configs
 
 
+def load_hypergcn_no_mediator_fast(
+    metrics: MetricCollection,
+    num_nodes: int,
+    train_loader: DataLoader,
+    val_loader: DataLoader,
+    test_loader: DataLoader,
+    num_run: int,
+    num_features: int = 32,
+    max_epochs: int = 100,
+    num_classes: int = 2,
+) -> list[ModelConfig]:
+    model = HyperGCNClassifier(
+        classifier_config={
+            "in_channels": num_features,
+            "out_channels": num_classes,
+            "hidden_channels": 64,
+            "drop_rate": 0.3,
+            "use_mediator": False,
+            "fast": True,
+            "seed": 42,
+        },
+        metrics=metrics,
+    )
+
+    configs = [
+        ModelConfig(
+            name=f"hypergcn_no_med_{num_run}",
+            version="node-classification",
+            model=model,
+            train_dataloader=train_loader,
+            val_dataloader=val_loader,
+            test_dataloader=test_loader,
+            trainer_kwargs={
+                "max_epochs": max_epochs,
+            },
+        ),
+    ]
+
+    return configs
+
+
 def load_hypergcn_with_mediator(
+    metrics: MetricCollection,
+    num_nodes: int,
+    train_loader: DataLoader,
+    val_loader: DataLoader,
+    test_loader: DataLoader,
+    num_run: int,
+    num_features: int = 32,
+    max_epochs: int = 100,
+    num_classes: int = 2,
+) -> list[ModelConfig]:
+    model = HyperGCNClassifier(
+        classifier_config={
+            "in_channels": num_features,
+            "out_channels": num_classes,
+            "hidden_channels": 64,
+            "drop_rate": 0.3,
+            "use_mediator": True,
+            "fast": False,
+            "seed": 42,
+        },
+        metrics=metrics,
+    )
+
+    configs = [
+        ModelConfig(
+            name=f"hypergcn_no_med_{num_run}",
+            version="node-classification",
+            model=model,
+            train_dataloader=train_loader,
+            val_dataloader=val_loader,
+            test_dataloader=test_loader,
+            trainer_kwargs={
+                "max_epochs": max_epochs,
+            },
+        ),
+    ]
+
+    return configs
+
+
+def load_hypergcn_with_mediator_fast(
     metrics: MetricCollection,
     num_nodes: int,
     train_loader: DataLoader,
@@ -365,43 +448,6 @@ def load_mlp(
 
     return configs
 
-    # def load_nhp(
-    #     metrics: MetricCollection,
-    #     num_nodes: int,
-    #     train_loader: DataLoader,
-    #     val_loader: DataLoader,
-    #     test_loader: DataLoader,
-    #     num_run: int,
-    #     num_features: int = 32,
-    #     max_epochs: int = 100,
-    # ) -> list[ModelConfig]:
-    #     model = NHPClassifier(
-    #         encoder_config={
-    #             "in_channels": num_features,
-    #             "hidden_channels": 512,
-    #             "aggregation": "maxmin",
-    #         },
-    #         lr=0.001,
-    #         weight_decay=5e-4,
-    #         metrics=metrics,
-    #     )
-
-    #     configs = [
-    #         ModelConfig(
-    #             name=f"nhp_{num_run}",
-    #             version="node-classification",
-    #             model=model,
-    #             train_dataloader=train_loader,
-    #             val_dataloader=val_loader,
-    #             test_dataloader=test_loader,
-    #             trainer_kwargs={
-    #                 "max_epochs": max_epochs,
-    #             },
-    #         ),
-    #     ]
-
-    #     return configs
-
 
 def load_villain_node(
     metrics: MetricCollection,
@@ -452,7 +498,7 @@ def load_villain_node(
     return configs
 
 
-def load_n2v_joint(
+def load_n2vgcn(
     metrics: MetricCollection,
     num_nodes: int,
     train_loader: DataLoader,
@@ -503,9 +549,64 @@ def load_n2v_joint(
 
     configs = [
         ModelConfig(
-            name=f"node2vec_joint_{num_run}",
+            name=f"node2vecgcn_{num_run}",
             version="node-classification",
             model=node2vec_joint,
+            train_dataloader=train_loader,
+            val_dataloader=val_loader,
+            test_dataloader=test_loader,
+            trainer_kwargs={
+                "max_epochs": max_epochs,
+            },
+        ),
+    ]
+
+    return configs
+
+
+def load_n2v(
+    metrics: MetricCollection,
+    num_nodes: int,
+    train_loader: DataLoader,
+    val_loader: DataLoader,
+    test_loader: DataLoader,
+    train_hyperedge_index: Tensor,
+    num_run: int,
+    num_features: int = 32,
+    max_epochs: int = 100,
+    num_classes: int = 2,
+) -> list[ModelConfig]:
+    node2vec = Node2VecClassifier(
+        encoder_config={
+            "mode": "joint",
+            "num_features": num_features,
+            "node2vec_config": {
+                "context_size": 10,
+                "walk_length": 20,
+                "num_walks_per_node": 10,
+                "p": 1.0,
+                "q": 1.0,
+                "num_negative_samples": 1,
+                "train_hyperedge_index": train_hyperedge_index,
+                "num_nodes": num_nodes,
+                "graph_reduction_strategy": "clique_expansion",
+                "random_walk_batch_size": 128,
+                "node2vec_loss_weight": 0.4,
+            },
+        },
+        classifier_config={
+            "out_channels": num_classes,
+        },
+        lr=0.001,
+        weight_decay=0.0,
+        metrics=metrics,
+    )
+
+    configs = [
+        ModelConfig(
+            name=f"node2vec_{num_run}",
+            version="node-classification",
+            model=node2vec,
             train_dataloader=train_loader,
             val_dataloader=val_loader,
             test_dataloader=test_loader,

@@ -25,8 +25,6 @@ from common_hlp import (
     load_n2v_joint,
     load_villain_node,
     load_villain_hyperedge,
-    collect_hw_stats_row,
-    retrieve_hw_stats,
     parse_arguments,
     prepare,
     merge_all_results,
@@ -47,25 +45,7 @@ if __name__ == "__main__":
 
     print("Loading and preparing datasets...")
     prepared_datasets = {}
-    hw_stats_df = pd.DataFrame(
-        columns=pd.Index(
-            [
-                "run",
-                "dataset",
-                "model",
-                "execution_time",
-                "cpu_usage_before",
-                "ram_usage_before",
-                "gpu_usage_before",
-                "cpu_usage_after",
-                "ram_usage_after",
-                "gpu_usage_after",
-                "cpu_usage_diff",
-                "ram_usage_diff",
-                "gpu_usage_diff",
-            ]
-        )
-    )
+
     for r in range(run):
         for dataset_name in datasets:
             picked_seed = seed[r]
@@ -311,8 +291,6 @@ if __name__ == "__main__":
                 enable_checkpointing=False,
                 default_root_dir=f"benchmark/results_hlp/{dataset_name}/",
             ) as trainer:
-                before_stats = retrieve_hw_stats()
-
                 trainer.fit_all(
                     train_dataloader=data_loader.train_dataloader(),
                     val_dataloader=data_loader.val_dataloader(),
@@ -321,29 +299,8 @@ if __name__ == "__main__":
                 trainer.test_all(dataloader=test_loader, verbose=True)
                 timer_end = pd.Timestamp.now()
                 execution_time = (timer_end - timer_start).total_seconds()
-                after_stats = retrieve_hw_stats()
-                hw_stats_df = pd.concat(
-                    [
-                        hw_stats_df,
-                        pd.DataFrame(
-                            [
-                                collect_hw_stats_row(
-                                    run=r,
-                                    dataset=dataset_name,
-                                    model=model,
-                                    before_stats=before_stats,
-                                    after_stats=after_stats,
-                                    execution_time=execution_time,
-                                )
-                            ]
-                        ),
-                    ],
-                    ignore_index=True,
-                )
-
             # del config
 
         del prepared_datasets[dataset_name]  # free memory
     print("Merging all results into a single CSV file...")
     merge_all_results(dir_path="benchmark/results_hlp", output_file="merged_results.csv")
-    hw_stats_df.to_csv("benchmark/results_hlp/hw_usage_stats.csv", index=False)

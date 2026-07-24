@@ -14,10 +14,7 @@ from common_nc import (
     load_hypergcn_with_mediator,
     load_mlp,
     load_hnhn,
-    # load_nhp,
-    load_n2v_joint,
     load_villain_node,
-    # load_villain_hyperedge,
     collect_hw_stats_row,
     retrieve_hw_stats,
     parse_arguments,
@@ -241,30 +238,6 @@ if __name__ == "__main__":
                         num_nodes=num_nodes,
                         num_run=r,
                         max_epochs=100,
-                        num_classes=num_classes,
-                    )
-                # elif model == "villain_hyperedge":
-                #     config = load_villain_hyperedge(
-                #         metrics=metrics,
-                #         num_features=num_features,
-                #         train_loader=data_loader.train_dataloader(),
-                #         val_loader=data_loader.val_dataloader(),
-                #         test_loader=test_loader,
-                #         num_nodes=num_nodes,
-                #         num_run=r,
-                #         max_epochs=max_epochs,
-                #     )
-                elif model == "node2vec":
-                    config = load_n2v_joint(
-                        metrics=metrics,
-                        num_features=num_features,
-                        train_loader=data_loader.train_dataloader(),
-                        val_loader=data_loader.val_dataloader(),
-                        test_loader=test_loader,
-                        num_nodes=num_nodes,
-                        num_run=r,
-                        train_hyperedge_index=train_dataset.hdata.hyperedge_index,
-                        max_epochs=60,
                         num_classes=num_classes,
                     )
                 print("Starting training and evaluation...")

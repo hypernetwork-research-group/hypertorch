@@ -11,15 +11,14 @@ from common_nc import (
     load_hgnn,
     load_hgnnp,
     load_hypergcn_no_mediator,
+    load_hypergcn_no_mediator_fast,
     load_hypergcn_with_mediator,
+    load_hypergcn_with_mediator_fast,
     load_mlp,
     load_hnhn,
-    # load_nhp,
-    load_n2v_joint,
+    load_n2v,
+    load_n2vgcn,
     load_villain_node,
-    # load_villain_hyperedge,
-    collect_hw_stats_row,
-    retrieve_hw_stats,
     parse_arguments,
     prepare,
     merge_all_results,
@@ -42,25 +41,6 @@ if __name__ == "__main__":
 
     print("Loading and preparing datasets...")
     prepared_datasets = {}
-
-    hw_stats_df = pd.DataFrame(
-        columns=pd.Index(
-            [
-                "run",
-                "dataset",
-                "model",
-                "cpu_usage_before",
-                "ram_usage_before",
-                "gpu_usage_before",
-                "cpu_usage_after",
-                "ram_usage_after",
-                "gpu_usage_after",
-                "cpu_usage_diff",
-                "ram_usage_diff",
-                "gpu_usage_diff",
-            ]
-        )
-    )
 
     for r in range(run):
         for dataset_name in datasets:
@@ -116,12 +96,14 @@ if __name__ == "__main__":
                 "hgnnp",
                 "hnhn",
                 "hypergcn_no_mediator",
+                "hypergcn_no_mediator_fast",
                 "hypergcn_with_mediator",
+                "hypergcn_with_mediator_fast",
+                "hnhn",
                 "mlp",
                 "villain_node",
                 "node2vec",
-                # "villain_hyperedge",
-                # "nhp",
+                "node2vecgcn",
             ]
             loaded_models = []
             for model in list_model:
@@ -202,8 +184,34 @@ if __name__ == "__main__":
                         num_classes=num_classes,
                     )
                     loaded_models.append(config[0])
+                elif model == "hypergcn_no_mediator_fast":
+                    config = load_hypergcn_no_mediator_fast(
+                        metrics=metrics,
+                        num_features=num_features,
+                        train_loader=data_loader.train_dataloader(),
+                        val_loader=data_loader.val_dataloader(),
+                        test_loader=test_loader,
+                        num_nodes=num_nodes,
+                        num_run=r,
+                        max_epochs=100,
+                        num_classes=num_classes,
+                    )
+                    loaded_models.append(config[0])
                 elif model == "hypergcn_with_mediator":
                     config = load_hypergcn_with_mediator(
+                        metrics=metrics,
+                        num_features=num_features,
+                        train_loader=data_loader.train_dataloader(),
+                        val_loader=data_loader.val_dataloader(),
+                        test_loader=test_loader,
+                        num_nodes=num_nodes,
+                        num_run=r,
+                        max_epochs=100,
+                        num_classes=num_classes,
+                    )
+                    loaded_models.append(config[0])
+                elif model == "hypergcn_with_mediator_fast":
+                    config = load_hypergcn_with_mediator_fast(
                         metrics=metrics,
                         num_features=num_features,
                         train_loader=data_loader.train_dataloader(),
@@ -228,18 +236,6 @@ if __name__ == "__main__":
                         num_classes=num_classes,
                     )
                     loaded_models.append(config[0])
-                # elif model == "nhp":
-                #     config = load_nhp(
-                #         metrics=metrics,
-                #         num_features=num_features,
-                #         train_loader=data_loader.train_dataloader(),
-                #         val_loader=data_loader.val_dataloader(),
-                #         test_loader=test_loader,
-                #         num_nodes=num_nodes,
-                #         num_run=r,
-                #         max_epochs=max_epochs,
-                #     )
-                # loaded_models.append(config[0])
                 elif model == "villain_node":
                     config = load_villain_node(
                         metrics=metrics,
@@ -253,20 +249,22 @@ if __name__ == "__main__":
                         num_classes=num_classes,
                     )
                     loaded_models.append(config[0])
-                # elif model == "villain_hyperedge":
-                #     config = load_villain_hyperedge(
-                #         metrics=metrics,
-                #         num_features=num_features,
-                #         train_loader=data_loader.train_dataloader(),
-                #         val_loader=data_loader.val_dataloader(),
-                #         test_loader=test_loader,
-                #         num_nodes=num_nodes,
-                #         num_run=r,
-                #         max_epochs=max_epochs,
-                #     )
-                #    loaded_models.append(config[0])
                 elif model == "node2vec":
-                    config = load_n2v_joint(
+                    config = load_n2v(
+                        metrics=metrics,
+                        num_features=num_features,
+                        train_loader=data_loader.train_dataloader(),
+                        val_loader=data_loader.val_dataloader(),
+                        test_loader=test_loader,
+                        num_nodes=num_nodes,
+                        num_run=r,
+                        train_hyperedge_index=train_dataset.hdata.hyperedge_index,
+                        max_epochs=60,
+                        num_classes=num_classes,
+                    )
+                    loaded_models.append(config[0])
+                elif model == "node2vecgcn":
+                    config = load_n2vgcn(
                         metrics=metrics,
                         num_features=num_features,
                         train_loader=data_loader.train_dataloader(),
@@ -287,8 +285,6 @@ if __name__ == "__main__":
                 enable_checkpointing=False,
                 default_root_dir=f"benchmark/results_nc/{dataset_name}/",
             ) as trainer:
-                before_stats = retrieve_hw_stats()
-
                 trainer.fit_all(
                     train_dataloader=data_loader.train_dataloader(),
                     val_dataloader=data_loader.val_dataloader(),
@@ -297,28 +293,9 @@ if __name__ == "__main__":
                 trainer.test_all(dataloader=test_loader, verbose=True)
                 timer_end = pd.Timestamp.now()
                 execution_time = (timer_end - timer_start).total_seconds()
-                after_stats = retrieve_hw_stats()
-                hw_stats_df = pd.concat(
-                    [
-                        hw_stats_df,
-                        pd.DataFrame(
-                            [
-                                collect_hw_stats_row(
-                                    run=r,
-                                    dataset=dataset_name,
-                                    model=model,
-                                    before_stats=before_stats,
-                                    after_stats=after_stats,
-                                    execution_time=execution_time,
-                                )
-                            ]
-                        ),
-                    ],
-                    ignore_index=True,
-                )
+                print(f"Time for run {r + 1}/{run} on {dataset_name}: {execution_time:.2f} seconds")
             # del config
 
         del prepared_datasets[dataset_name]  # free memory
     print("Merging all results into a single CSV file...")
     merge_all_results(dir_path="benchmark/results_nc", output_file="merged_results.csv")
-    hw_stats_df.to_csv("benchmark/results_nc/hw_usage_stats.csv", index=False)
