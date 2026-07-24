@@ -109,13 +109,15 @@ class DataLoader(TorchDataLoader):
         train_dataset: Dataset | None = None,
         val_dataset: Dataset | None = None,
         test_dataset: Dataset | None = None,
+        test_loader_kwargs: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> DataModule:
         """
         Create a Lightning data module from datasets that share data loader parameters.
 
         Each provided dataset is wrapped in a separate `DataLoader`. The resulting data
-        module can be passed directly to Lightning or to `MultiModelTrainer`.
+        module can be passed directly to Lightning or to `MultiModelTrainer`. Parameters
+        in `test_loader_kwargs` override shared parameters for the test data loader only.
 
         Examples:
             ```python
@@ -127,6 +129,7 @@ class DataLoader(TorchDataLoader):
                 shuffle=False,
                 num_workers=4,
                 persistent_workers=True,
+                test_loader_kwargs={"batch_size": 256, "shuffle": False},
             )
             ```
 
@@ -134,15 +137,25 @@ class DataLoader(TorchDataLoader):
             train_dataset: Optional dataset used by the data module's training data loader.
             val_dataset: Optional dataset used by the data module's validation data loader.
             test_dataset: Optional dataset used by the data module's test data loader.
+            test_loader_kwargs: Optional parameters that override shared `kwargs` for the
+                test data loader.
             kwargs: Parameters passed to every created `DataLoader`.
 
         Returns:
             data_module: A Lightning data module containing the created data loaders.
         """
+        resolved_test_loader_kwargs = {
+            **kwargs,
+            **(test_loader_kwargs or {}),
+        }
         return DataLoaderDataModule(
             train_dataloader=cls(train_dataset, **kwargs) if train_dataset is not None else None,
             val_dataloader=cls(val_dataset, **kwargs) if val_dataset is not None else None,
-            test_dataloader=cls(test_dataset, **kwargs) if test_dataset is not None else None,
+            test_dataloader=(
+                cls(test_dataset, **resolved_test_loader_kwargs)
+                if test_dataset is not None
+                else None
+            ),
         )
 
     def collate(self, batch: list[HData]) -> HData:

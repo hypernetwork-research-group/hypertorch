@@ -88,8 +88,9 @@ with MultiModelTrainer(
     trainer.test_all(dataloader=test_loader)
 ```
 
-When the train, validation, and test loaders use the same parameters, create all three
-through a Lightning-compatible data module:
+When the train, validation, and test loaders share parameters, create all three through
+a Lightning-compatible data module. Use `test_loader_kwargs` for settings that should
+apply only to the test loader:
 
 ```python
 data_module = DataLoader.from_datasets(
@@ -100,6 +101,10 @@ data_module = DataLoader.from_datasets(
     shuffle=False,
     num_workers=4,
     persistent_workers=True,
+    test_loader_kwargs={
+        "batch_size": 1,
+        "sample_full_hypergraph": True,
+    },
 )
 
 with MultiModelTrainer(
@@ -115,8 +120,9 @@ with MultiModelTrainer(
     trainer.test_all(dataloader=data_module.test_dataloader())
 ```
 
-Datasets can be omitted when a split is not needed. Its corresponding data module hook
-then returns `None`.
+Values in `test_loader_kwargs` override shared values for the test loader without
+affecting the train or validation loaders. Datasets can be omitted when a split is not
+needed. Its corresponding data module hook then returns `None`.
 
 For hyperlink prediction, transductive splits keep the full hypergraph as context in each split and mark the supervised hyperedges with `hdata.target_hyperedge_mask`.
 
