@@ -1,21 +1,6 @@
 import os
 import pandas as pd
 
-hlp_list_models = [
-    "gcn",
-    "common_neighbors",
-    "hgnn",
-    "hgnnp",
-    "hnhn",
-    "hypergcn_no_mediator",
-    "hypergcn_with_mediator",
-    "mlp",
-    "nhp",
-    "villain_node",
-    "villain_hyperedge",
-    "node2vec",
-]
-
 
 def clean_model_name(model_name: str) -> str:
     model_name = model_name.replace("\\_", "_")
@@ -24,10 +9,15 @@ def clean_model_name(model_name: str) -> str:
     return model_name
 
 
-def create_results_csv(folder: str):
+def create_results_csv(folder: str, output_folder: str):
     path = os.path.join(os.path.dirname(__file__), folder)
+    output_path = os.path.join(path, output_folder)
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
 
     for dataset_name in os.listdir(path):
+        if dataset_name == "output":
+            continue
         dataset_df = pd.DataFrame(
             columns=pd.Index(
                 ["model", "accuracy", "roc-auc", "precision"],
@@ -66,7 +56,7 @@ def create_results_csv(folder: str):
                             roc_auc = clean_metric(split_line[2].strip())
                             precision = clean_metric(split_line[3].strip())
                             dataset_df.loc[len(dataset_df)] = [model, accuracy, roc_auc, precision]
-        dataset_df.to_csv(os.path.join(path, f"{dataset_name}_metrics.csv"))
+        dataset_df.to_csv(os.path.join(output_path, f"{dataset_name}_metrics.csv"))
 
 
 def clean_metric(value: str) -> float:
@@ -96,16 +86,20 @@ def build_table_with_std(folder: str):
             df.to_csv(os.path.join(path, f"{csvs.split('_metrics.csv')[0]}_metrics_mean_std.csv"))
 
 
-def create_latex_table(dataset_name: str, folder: str):
+def create_latex_table(dataset_name: str, task: str, folder: str, output_folder: str):
     path = os.path.join(os.path.dirname(__file__), folder)
     setup_latex = (
         r"""
 \begin{table}[htbp]
-\label{tab:hlp_results_"""
+\label{tab:"""
+        + task
+        + r"""_results_"""
         + dataset_name
         + r"""}
 \centering
-\caption{Results for HLP - dataset """
+\caption{Results for """
+        + task
+        + r""" - dataset """
         + dataset_name
         + r""".}
 \begin{tabular}{lccc}
@@ -114,16 +108,37 @@ def create_latex_table(dataset_name: str, folder: str):
 \multicolumn{4}{c}{\textbf{Test Results}} \\
 \midrule
 Model & accuracy & roc-auc & precision \\
-    """
+"""
     )
 
     df = pd.read_csv(os.path.join(path, f"{dataset_name}_metrics_mean_std.csv"), index_col=0)
     lines = []
+    accuracies = df["accuracy"].apply(lambda x: float(x.split("±")[0].strip()))
+    best_three_accuracy = sorted(accuracies.nlargest(3).values, reverse=True)
+    rocs_auc = df["roc-auc"].apply(lambda x: float(x.split("±")[0].strip()))
+    best_three_roc_auc = sorted(rocs_auc.nlargest(3).values, reverse=True)
+    precisions = df["precision"].apply(lambda x: float(x.split("±")[0].strip()))
+    best_three_precision = sorted(precisions.nlargest(3).values, reverse=True)
+    list_of_colors = ["green!40", "yellow!40", "orange!40"]
+
     for _, row in df.iterrows():
         model = row["model"]
+        model: str = model.replace("_", "\\_")
         accuracy = row["accuracy"]
         roc_auc = row["roc-auc"]
         precision = row["precision"]
+        if float(accuracy.split("±")[0].strip()) in best_three_accuracy:
+            # use the index of the value in best_three_accuracy to get the color
+            color_index = best_three_accuracy.index(float(accuracy.split("±")[0].strip()))
+            accuracy = f"\\cellcolor{{{list_of_colors[color_index]}}} {accuracy}"
+        if float(roc_auc.split("±")[0].strip()) in best_three_roc_auc:
+            # use the index of the value in best_three_roc_auc to get the color
+            color_index = best_three_roc_auc.index(float(roc_auc.split("±")[0].strip()))
+            roc_auc = f"\\cellcolor{{{list_of_colors[color_index]}}} {roc_auc}"
+        if float(precision.split("±")[0].strip()) in best_three_precision:
+            # use the index of the value in best_three_precision to get the color
+            color_index = best_three_precision.index(float(precision.split("±")[0].strip()))
+            precision = f"\\cellcolor{{{list_of_colors[color_index]}}} {precision}"
         line = f"{model} & {accuracy} & {roc_auc} & {precision} \\\\"
         lines.append(line)
 
@@ -133,17 +148,21 @@ Model & accuracy & roc-auc & precision \\
 \end{table}
     """
 
-    with open(os.path.join(path, f"{dataset_name}_metrics_mean_std.tex"), "w") as f:
+    output_path = os.path.join(path, output_folder)
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
+    with open(os.path.join(output_path, f"{dataset_name}_metrics_mean_std.tex"), "w") as f:
         f.write(setup_latex)
         f.write("\n".join(lines))
         f.write(end_latex)
 
 
 if __name__ == "__main__":
-    # create_results_csv("results_hlp")
-    # build_table_with_std("results_hlp")
-    path = os.path.join(os.path.dirname(__file__), "results_hlp")
+    task = "hlp"  # TODO: change to "nc" for node classification
+    create_results_csv(f"results_{task}", "output")
+    build_table_with_std(f"results_{task}/output")
+    path = os.path.join(os.path.dirname(__file__), f"results_{task}/output")
     for csvs in os.listdir(path):
         if csvs.endswith("metrics_mean_std.csv"):
             dataset_name = csvs.split("_metrics_mean_std.csv")[0]
-            create_latex_table(dataset_name, "results_hlp")
+            create_latex_table(dataset_name, task, f"results_{task}/output", "latex")
