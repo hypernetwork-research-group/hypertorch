@@ -743,7 +743,7 @@ def parse_arguments():
     parser.add_argument("--run", type=int, default=3)
     parser.add_argument("--num-workers", type=int, default=8)
     parser.add_argument("--num-features", type=int, default=32)
-    parser.add_argument("--seed", type=int, nargs=3, default=[42, 43, 44])
+    parser.add_argument("--seed", type=int, nargs="+", default=[42, 43, 44])
     parser.add_argument("--k-nodes", type=int, default=2)
     parser.add_argument("--test-set-negative-ratio", type=float, default=0.6)
     parser.add_argument("--split-ratios", type=float, nargs=3, default=[0.7, 0.1, 0.2])
