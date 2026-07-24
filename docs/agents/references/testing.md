@@ -36,17 +36,18 @@
 import pytest
 from myapp.user import User, UserService
 
+
 # Simple test function
 def test_user_creation() -> None:
     user = User(id=1, name="Alice", email="alice@example.com")
     assert user.name == "Alice"
     assert user.is_active is True
 
+
 # Test with multiple assertions
 def test_user_validation() -> None:
     with pytest.raises(ValueError, match="Invalid email"):
         User(id=1, name="Alice", email="invalid")
-
 ```
 
 ## Mocking and patching
@@ -92,6 +93,7 @@ import pytest
 from typing import Iterator
 from myapp.database import Database, Session
 
+
 @pytest.fixture
 def db() -> Iterator[Database]:
     """Provide database instance with cleanup."""
@@ -101,6 +103,7 @@ def db() -> Iterator[Database]:
     database.drop_tables()
     database.close()
 
+
 @pytest.fixture
 def db_session(db: Database) -> Iterator[Session]:
     """Provide database session with rollback."""
@@ -109,10 +112,12 @@ def db_session(db: Database) -> Iterator[Session]:
     session.rollback()
     session.close()
 
+
 @pytest.fixture
 def sample_user() -> User:
     """Provide test user."""
     return User(id=1, name="Test User", email="test@example.com")
+
 
 # Using fixtures in tests
 def test_user_creation(db_session: Session, sample_user: User) -> None:
@@ -122,14 +127,17 @@ def test_user_creation(db_session: Session, sample_user: User) -> None:
     retrieved = db_session.query(User).filter_by(id=1).first()
     assert retrieved.name == "Test User"
 
+
 # Fixture with parameters
 @pytest.fixture(params=["sqlite", "postgresql", "mysql"])
 def db_engine(request: pytest.FixtureRequest) -> str:
     return request.param
 
+
 def test_connection(db_engine: str) -> None:
     # Test runs 3 times with different engines
     assert create_connection(db_engine)
+
 
 # Autouse fixture (runs automatically)
 @pytest.fixture(autouse=True)
@@ -145,6 +153,7 @@ def reset_state() -> Iterator[None]:
 ```python
 import pytest
 
+
 # Parametrize test function
 @pytest.mark.parametrize(
     ("value", "expected"),
@@ -157,6 +166,7 @@ import pytest
 )
 def test_square(value: int, expected: int) -> None:
     assert square(value) == expected
+
 
 # Multiple parameters (single table is usually clearer than stacked decorators)
 @pytest.mark.parametrize(
@@ -173,6 +183,7 @@ def test_square(value: int, expected: int) -> None:
 def test_power(base: int, exponent: int, expected: int) -> None:
     assert base**exponent == expected
 
+
 # Parametrize with IDs
 @pytest.mark.parametrize(
     ("email", "valid"),
@@ -186,12 +197,15 @@ def test_power(base: int, exponent: int, expected: int) -> None:
 def test_email_validation(email: str, valid: bool) -> None:
     assert is_valid_email(email) == valid
 
+
 # Parametrize with fixtures
 @pytest.fixture
 def user_factory():
     def _make_user(name: str, active: bool = True) -> User:
         return User(name=name, active=active)
+
     return _make_user
+
 
 @pytest.mark.parametrize("name", ["Alice", "Bob", "Charlie"])
 def test_user_names(user_factory, name: str) -> None:
@@ -205,6 +219,7 @@ def test_user_names(user_factory, name: str) -> None:
 from unittest.mock import Mock, MagicMock, patch, AsyncMock, call
 import pytest
 
+
 # Mock object
 def test_api_call_with_mock() -> None:
     mock_client = Mock()
@@ -216,6 +231,7 @@ def test_api_call_with_mock() -> None:
     mock_client.get.assert_called_once_with("/api/data")
     assert result["status"] == "ok"
 
+
 # Patch function/method
 def test_database_call() -> None:
     with patch("myapp.database.connect") as mock_connect:
@@ -226,16 +242,15 @@ def test_database_call() -> None:
 
         mock_connect.assert_called_once()
 
+
 # Patch as decorator
 @patch("myapp.user.send_email")
 def test_user_registration(mock_send_email: Mock) -> None:
     service = UserService()
     service.register("user@example.com")
 
-    mock_send_email.assert_called_with(
-        to="user@example.com",
-        subject="Welcome"
-    )
+    mock_send_email.assert_called_with(to="user@example.com", subject="Welcome")
+
 
 # Multiple patches
 @patch("myapp.api.requests.get")
@@ -249,18 +264,20 @@ def test_cached_api(mock_cache: Mock, mock_requests: Mock) -> None:
     mock_cache.assert_called_once_with("key")
     mock_requests.assert_called_once()
 
+
 # Mock side effects
 def test_retry_logic() -> None:
     mock_api = Mock()
     mock_api.call.side_effect = [
         ConnectionError("Failed"),
         ConnectionError("Failed"),
-        {"status": "ok"}
+        {"status": "ok"},
     ]
 
     result = retry_api_call(mock_api)
     assert result["status"] == "ok"
     assert mock_api.call.call_count == 3
+
 
 # Async mock
 @pytest.mark.asyncio
@@ -281,11 +298,13 @@ async def test_async_function() -> None:
 import pytest
 import asyncio
 
+
 # Mark async test
 @pytest.mark.asyncio
 async def test_async_fetch() -> None:
     result = await fetch_data("https://api.example.com")
     assert result["status"] == "ok"
+
 
 # Async fixture
 @pytest.fixture
@@ -295,10 +314,12 @@ async def async_db() -> AsyncIterator[AsyncDatabase]:
     yield db
     await db.disconnect()
 
+
 @pytest.mark.asyncio
 async def test_async_query(async_db: AsyncDatabase) -> None:
     result = await async_db.query("SELECT * FROM users")
     assert len(result) > 0
+
 
 # Test concurrent operations
 @pytest.mark.asyncio
@@ -313,20 +334,24 @@ async def test_concurrent_requests() -> None:
 ```python
 import pytest
 
+
 # Skip test
 @pytest.mark.skip(reason="Not implemented yet")
 def test_future_feature() -> None:
     pass
+
 
 # Conditional skip
 @pytest.mark.skipif(sys.version_info < (3, 11), reason="Requires Python 3.11+")
 def test_new_feature() -> None:
     pass
 
+
 # Expected failure
 @pytest.mark.xfail(reason="Known bug #123")
 def test_known_bug() -> None:
     assert buggy_function() == expected_value
+
 
 # Custom markers
 @pytest.mark.slow
@@ -334,9 +359,11 @@ def test_slow_operation() -> None:
     time.sleep(5)
     assert True
 
+
 @pytest.mark.integration
 def test_integration() -> None:
     assert external_service.ping()
+
 
 # Run with: pytest -m "not slow"
 ```
@@ -345,7 +372,7 @@ def test_integration() -> None:
 
 ```python
 # Run with coverage
-# uv run pytest --cov --cov-branch --cov-report=xml
+# uv run pytest --cov --cov-branch --cov-report=xml
 
 # pytest.ini or pyproject.toml
 """
@@ -365,10 +392,12 @@ testpaths = ["hypertorch/tests"]
 ```python
 from hypothesis import given, strategies as st
 
+
 # Property-based test
 @given(st.integers(), st.integers())
 def test_addition_commutative(a: int, b: int) -> None:
     assert a + b == b + a
+
 
 @given(st.lists(st.integers()))
 def test_sorted_is_ordered(lst: list[int]) -> None:
@@ -376,15 +405,18 @@ def test_sorted_is_ordered(lst: list[int]) -> None:
     for i in range(len(sorted_lst) - 1):
         assert sorted_lst[i] <= sorted_lst[i + 1]
 
+
 # Custom strategies
 @given(st.emails())
 def test_email_validation(email: str) -> None:
     assert "@" in email
     assert validate_email(email)
 
+
 # Composite strategies
 from hypothesis import strategies as st
 from hypothesis.strategies import composite
+
 
 @composite
 def users(draw) -> User:
@@ -392,8 +424,9 @@ def users(draw) -> User:
         id=draw(st.integers(min_value=1)),
         name=draw(st.text(min_size=1, max_size=50)),
         email=draw(st.emails()),
-        age=draw(st.integers(min_value=18, max_value=120))
+        age=draw(st.integers(min_value=18, max_value=120)),
     )
+
 
 @given(users())
 def test_user_creation(user: User) -> None:

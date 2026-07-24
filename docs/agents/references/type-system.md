@@ -34,9 +34,11 @@ Before finishing a typed change, check:
 from typing import Any
 from collections.abc import Sequence, Mapping
 
+
 # Function signatures
 def process_user(name: str, age: int, active: bool = True) -> dict[str, Any]:
     return {"name": name, "age": age, "active": active}
+
 
 # Use | for unions (Python 3.10+)
 def find_user(user_id: int | str) -> dict[str, Any] | None:
@@ -44,10 +46,12 @@ def find_user(user_id: int | str) -> dict[str, Any] | None:
         return {"id": user_id}
     return None
 
+
 # Collections - prefer collections.abc
 def process_items(items: Sequence[str]) -> list[str]:
     """Accepts list, tuple, or any sequence."""
     return [item.upper() for item in items]
+
 
 def merge_configs(base: Mapping[str, int], override: dict[str, int]) -> dict[str, int]:
     """Mapping for read-only, dict for mutable."""
@@ -60,13 +64,15 @@ def merge_configs(base: Mapping[str, int], override: dict[str, int]) -> dict[str
 from typing import TypeVar, Generic, Protocol
 from collections.abc import Callable
 
-T = TypeVar('T')
-K = TypeVar('K')
-V = TypeVar('V')
+T = TypeVar("T")
+K = TypeVar("K")
+V = TypeVar("V")
+
 
 # Generic function
 def first_element(items: Sequence[T]) -> T | None:
     return items[0] if items else None
+
 
 # Generic class
 class Cache(Generic[K, V]):
@@ -79,13 +85,16 @@ class Cache(Generic[K, V]):
     def set(self, key: K, value: V) -> None:
         self._data[key] = value
 
+
 # Usage
 user_cache: Cache[int, str] = Cache()
 user_cache.set(1, "Alice")
 
 # Constrained TypeVar
 from numbers import Number
-NumT = TypeVar('NumT', bound=Number)
+
+NumT = TypeVar("NumT", bound=Number)
+
 
 def add_numbers(a: NumT, b: NumT) -> NumT:
     return a + b  # type: ignore[return-value]
@@ -96,14 +105,14 @@ def add_numbers(a: NumT, b: NumT) -> NumT:
 ```python
 from typing import Protocol, runtime_checkable
 
+
 # Define interface without inheritance
 class Drawable(Protocol):
-    def draw(self) -> str:
-        ...
+    def draw(self) -> str: ...
 
     @property
-    def color(self) -> str:
-        ...
+    def color(self) -> str: ...
+
 
 class Circle:
     def __init__(self, radius: float, color: str) -> None:
@@ -117,15 +126,17 @@ class Circle:
     def color(self) -> str:
         return self._color
 
+
 # Circle implements Drawable without inheriting
 def render(shape: Drawable) -> str:
     return shape.draw()
 
+
 # Runtime checkable protocol
 @runtime_checkable
 class Closeable(Protocol):
-    def close(self) -> None:
-        ...
+    def close(self) -> None: ...
+
 
 def cleanup(resource: Closeable) -> None:
     if isinstance(resource, Closeable):
@@ -140,12 +151,14 @@ from typing import Literal, TypeAlias, TypedDict, NotRequired, Self, overload
 # Literal types for constants
 Mode = Literal["read", "write", "append"]
 
-def open_file(path: str, mode: Mode) -> None:
-    ...
+
+def open_file(path: str, mode: Mode) -> None: ...
+
 
 # Type aliases for complex types
 JsonDict: TypeAlias = dict[str, Any]
 UserId: TypeAlias = int | str
+
 
 # TypedDict for structured dictionaries
 class UserDict(TypedDict):
@@ -154,8 +167,10 @@ class UserDict(TypedDict):
     email: str
     age: NotRequired[int]  # Optional field
 
+
 def create_user(data: UserDict) -> None:
     print(data["name"])  # Type-safe access
+
 
 # Self type for method chaining
 class Builder:
@@ -170,12 +185,15 @@ class Builder:
         self._value *= n
         return self
 
+
 # Overload for different signatures
 @overload
 def process(data: str) -> str: ...
 
+
 @overload
 def process(data: int) -> int: ...
+
 
 def process(data: str | int) -> str | int:
     if isinstance(data, str):
@@ -189,28 +207,33 @@ def process(data: str | int) -> str | int:
 from collections.abc import Callable
 from typing import ParamSpec, Concatenate
 
+
 # Basic callable
 def apply(func: Callable[[int, int], int], a: int, b: int) -> int:
     return func(a, b)
 
+
 # ParamSpec for preserving signatures
-P = ParamSpec('P')
-R = TypeVar('R')
+P = ParamSpec("P")
+R = TypeVar("R")
+
 
 def logging_decorator(func: Callable[P, R]) -> Callable[P, R]:
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
         print(f"Calling {func.__name__}")
         return func(*args, **kwargs)
+
     return wrapper
 
+
 # Concatenate for dependency injection
-def with_connection(
-    func: Callable[Concatenate[Connection, P], R]
-) -> Callable[P, R]:
+def with_connection(func: Callable[Concatenate[Connection, P], R]) -> Callable[P, R]:
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
         conn = get_connection()
         return func(conn, *args, **kwargs)
+
     return wrapper
+
 
 # Usage
 @with_connection
@@ -224,20 +247,25 @@ def query_user(conn: Connection, user_id: int) -> User:
 # Result type pattern
 from dataclasses import dataclass
 
+
 @dataclass
 class Success(Generic[T]):
     value: T
+
 
 @dataclass
 class Error:
     message: str
 
+
 Result = Success[T] | Error
+
 
 def divide(a: int, b: int) -> Result[float]:
     if b == 0:
         return Error("Division by zero")
     return Success(a / b)
+
 
 # Option/Maybe type
 def safe_get(items: Sequence[T], index: int) -> T | None:
@@ -246,10 +274,12 @@ def safe_get(items: Sequence[T], index: int) -> T | None:
     except IndexError:
         return None
 
+
 # Sentinel value with typing
 from typing import Final
 
 MISSING: Final = object()
+
 
 def get_value(key: str, default: T | type[MISSING] = MISSING) -> T:
     if default is MISSING:
@@ -261,6 +291,7 @@ def get_value(key: str, default: T | type[MISSING] = MISSING) -> T:
 
 ```python
 from typing import assert_type, assert_never
+
 
 def process_value(value: int | str | None) -> str:
     # Type guards
@@ -274,6 +305,7 @@ def process_value(value: int | str | None) -> str:
     # Type narrowed to str
     return value.upper()
 
+
 # Exhaustiveness checking
 def handle_mode(mode: Literal["read", "write"]) -> str:
     if mode == "read":
@@ -283,6 +315,7 @@ def handle_mode(mode: Literal["read", "write"]) -> str:
     else:
         # A static type checker will error if mode can be anything else
         assert_never(mode)
+
 
 # Custom type guard
 def is_string_list(val: list[Any]) -> bool:
