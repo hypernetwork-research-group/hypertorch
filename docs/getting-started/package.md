@@ -61,4 +61,4 @@ The core development team includes:
 
 ## License
 
-This project is under the MIT license. See [LICENSE](https://github.com/hypernetwork-research-group/hypertorch/blob/main/LICENSE).
+This project is under the Apache License 2.0 license. See [LICENSE](https://github.com/hypernetwork-research-group/hypertorch/blob/main/LICENSE).
