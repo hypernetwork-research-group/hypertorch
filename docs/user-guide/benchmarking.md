@@ -5,6 +5,33 @@ Benchmarking in HyperTorch typically means:
 - Using the same negative sampling and feature enrichment.
 - Producing comparable metrics and summary tables.
 
+## Running the benchmark suite
+
+In the benchmark folder, we provide a `bench_hlp.py` script that runs multiple models on a given dataset. The script is designed to be run from the command line and accepts various arguments to customize the benchmarking process.
+
+```bash
+bash benchmark/bench.sh hlp -- \
+    --num-workers 4 \
+    --num-features 16 \
+    --seed 1 2 3 \
+    --k-nodes 2 \
+    --test-set-negative-ratio 0.5 \
+    --split-ratios 0.7 0.15 0.15 \
+    --datasets cora citeseer
+```
+
+You can specify:
+- `--num-workers`: Number of workers for data loading.
+- `--num-features`: Number of features for the model.
+- `--seed`: Random seeds for reproducibility.
+- `--k-nodes`: Number of nodes for negative sampling.
+- `--test-set-negative-ratio`: Ratio of negative samples in the test set.
+- `--split-ratios`: Ratios for train, validation, and test splits.
+- `--datasets`: List of datasets to benchmark.
+
+
+
+
 ## Comparing multiple models
 
 The recommended pattern is to pass multiple `ModelConfig` objects to `MultiModelTrainer`:

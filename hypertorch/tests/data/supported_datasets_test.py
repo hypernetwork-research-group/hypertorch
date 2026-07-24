@@ -1,7 +1,7 @@
 import pytest
 import re
 from hypertorch.data import AlgebraDataset, get_dataset_by_name, list_datasets
-from hypertorch.types import HData
+from hypertorch.types import HData, TaskEnum
 from unittest.mock import patch
 
 
@@ -60,6 +60,24 @@ def test_get_dataset_by_name_returns_dataset_instance():
 
     assert dataset_name == getattr(dataset, "DATASET_NAME", None)
     assert dataset.hdata is expected_hdata
+
+
+def test_get_dataset_by_name_passes_task():
+    expected_hdata = HData.empty(task=TaskEnum.NODE_CLASSIFICATION)
+
+    with patch(
+        "hypertorch.data.supported_datasets.HIFLoader.load_by_name",
+        return_value=(expected_hdata, None),
+    ) as load_by_name:
+        dataset = get_dataset_by_name("algebra", task=TaskEnum.NODE_CLASSIFICATION)
+
+    assert dataset.task == TaskEnum.NODE_CLASSIFICATION
+    load_by_name.assert_called_once_with(
+        dataset_name="algebra",
+        hf_sha=AlgebraDataset.HF_SHA,
+        task=TaskEnum.NODE_CLASSIFICATION,
+        save_on_disk=True,
+    )
 
 
 def test_get_dataset_by_name_rejects_unknown_name():

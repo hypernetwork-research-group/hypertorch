@@ -15,3 +15,19 @@ warnings.filterwarnings(
         "'typing._eval_type' is deprecated.*"
     ),
 )
+
+warnings.filterwarnings(
+    "ignore",
+    message=(
+        "The usage of `scatter\\(reduce='max'\\)` can be accelerated via the "
+        "'torch-scatter' package, but it was not found"
+    ),
+)
+
+warnings.filterwarnings(
+    "ignore",
+    message=(
+        "The usage of `scatter\\(reduce='min'\\)` can be accelerated via the "
+        "'torch-scatter' package, but it was not found"
+    ),
+)

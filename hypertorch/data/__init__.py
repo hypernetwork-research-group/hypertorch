@@ -5,6 +5,7 @@ from .hif import HIFLoader, HIFProcessor
 from .supported_datasets import (
     AlgebraDataset,
     AmazonDataset,
+    CiteseerDataset,
     ContactHighSchoolDataset,
     ContactPrimarySchoolDataset,
     CoraDataset,
@@ -82,6 +83,7 @@ __all__ = [
     "AlgebraDataset",
     "AmazonDataset",
     "BaseSampler",
+    "CiteseerDataset",
     "CliqueNegativeSampler",
     "ContactHighSchoolDataset",
     "ContactPrimarySchoolDataset",

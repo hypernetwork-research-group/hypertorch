@@ -54,10 +54,15 @@ explicit = true
 [dependency-groups]
 dev = [
   "pre-commit>=4.5.1,<5.0.0",
+  "psutil>=7.2.2,<8.0.0",
   "ruff>=0.15.11,<1.0.0",
   "ty>=0.0.34,<1.0.0",
   { include-group = "docs" },
   { include-group = "test" },
+  { include-group = "benchmark" },
+]
+benchmark = [
+  "pandas>=2.3.3,<3.0.0",
 ]
 docs = ["mkdocstrings[python]>=1.0.4,<2.0.0", "zensical>=0.0.44,<1.0.0"]
 test = [
@@ -86,6 +91,8 @@ filterwarnings = [
   "ignore:Failing to pass a value to the 'type_params' parameter of 'typing._eval_type' is deprecated.*",
   "ignore:The '(test|train|val)_dataloader' does not have many workers which may be a bottleneck.*",
   "ignore:.*hf_xet\\.download_files\\(\\) is deprecated.*",
+  "ignore:The usage of `scatter\\(reduce='max'\\)` can be accelerated via the 'torch-scatter' package, but it was not found",
+  "ignore:The usage of `scatter\\(reduce='min'\\)` can be accelerated via the 'torch-scatter' package, but it was not found",
 ]
 
 [tool.coverage.run]

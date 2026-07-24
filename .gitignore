@@ -129,3 +129,6 @@ lightning_logs/
 **/datasets/*.zst
 .plans/
 plans/
+
+benchmark/results_*/
+

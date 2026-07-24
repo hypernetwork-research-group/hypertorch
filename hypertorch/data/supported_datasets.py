@@ -111,13 +111,18 @@ def list_datasets() -> list[str]:
     return sorted(_PreloadedDataset._registry)
 
 
-def get_dataset_by_name(dataset_name: str) -> Dataset:
+def get_dataset_by_name(
+    dataset_name: str,
+    task: Task = TaskEnum.HYPERLINK_PREDICTION,
+    sampling_strategy: SamplingStrategy = SamplingStrategyEnum.HYPEREDGE,
+) -> Dataset:
     """
     Instantiate a supported dataset by name.
 
     Args:
         dataset_name: Name returned by ``list_datasets``.
-
+        task: Learning task used to initialize the dataset.
+        sampling_strategy: Sampling strategy used to initialize the dataset.
     Returns:
         dataset: Loaded dataset instance.
 
@@ -127,7 +132,7 @@ def get_dataset_by_name(dataset_name: str) -> Dataset:
     dataset_cls = _PreloadedDataset._registry.get(dataset_name)
     if dataset_cls is None:
         raise ValueError(f"Dataset not found: {dataset_name}")
-    return dataset_cls()
+    return dataset_cls(task=task, sampling_strategy=sampling_strategy)
 
 
 class AlgebraDataset(_PreloadedDataset):
