@@ -621,6 +621,7 @@ def load_n2v(
 
 def prepare(
     dataset_name: str,
+    num_features: int,
     split_ratios: list[float],
     k_nodes: int = 2,
     seed: int = 42,
@@ -630,11 +631,8 @@ def prepare(
 
     dataset = get_dataset_by_name(dataset_name=dataset_name, sampling_strategy="node", task=task)
     dataset.remove_hyperedges_with_fewer_than_k_nodes(k=k_nodes)
-    # dataset.hdata.y = node_labels_from_node_degrees(
-    #     node_incidences=dataset.hdata.hyperedge_index[0],
-    #     num_nodes=dataset.hdata.num_nodes,
-    # )
-    num_features = dataset.hdata.x.shape[1] if dataset.hdata.x is not None else 32
+    _, dataset_num_features = dataset.hdata.x.shape
+    resolved_num_features = dataset_num_features if dataset_num_features > 1 else num_features
     # Split dataset into train, val and test (70/10/20)
     train_dataset, val_dataset, test_dataset = dataset.split(
         ratios=split_ratios,
@@ -648,7 +646,7 @@ def prepare(
         val_dataset,
         test_dataset,
         dataset.hdata.num_nodes,
-        num_features,
+        resolved_num_features,
     )
 
 

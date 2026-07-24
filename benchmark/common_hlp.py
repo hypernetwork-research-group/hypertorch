@@ -663,6 +663,7 @@ def load_n2v_joint(
 
 def prepare(
     dataset_name: str,
+    num_features: int,
     split_ratios: list[float],
     k_nodes: int = 2,
     seed: int = 42,
@@ -673,7 +674,9 @@ def prepare(
     dataset = get_dataset_by_name(dataset_name=dataset_name, task=task)
     dataset.remove_hyperedges_with_fewer_than_k_nodes(k=k_nodes)
 
-    num_features = dataset.hdata.x.shape[1] if dataset.hdata.x is not None else 32
+    _, dataset_num_features = dataset.hdata.x.shape
+
+    resolved_num_features = dataset_num_features if dataset_num_features > 1 else num_features
 
     # Split dataset into train, val and test (70/10/20)
     train_dataset, val_dataset, test_dataset = dataset.split(
@@ -683,36 +686,33 @@ def prepare(
         seed=seed,
     )
 
-    if dataset.is_hyperedge_related_task:
-        # Add negative samples to all splits for hyperlink prediction.
-        for name, ds in [("Train", train_dataset), ("Val", val_dataset), ("Test", test_dataset)]:
-            num_positive_samples = len(ds)
-            num_negative_samples = (
-                num_positive_samples
-                if name in ["Train", "Val"]  # 1:1 ratio of pos:neg samples
-                else int(
-                    num_positive_samples * test_set_negative_ratio
-                )  # 60% negatives for test set
-            )
-            negative_sampler = RandomNegativeSampler(
-                num_negative_samples=num_negative_samples,
-                num_nodes_per_sample=int(ds.stats()["avg_degree_hyperedge"]),
-            )
-            ds_with_negatives = ds.add_negative_samples(negative_sampler, seed=seed)
+    # Add negative samples to all splits for hyperlink prediction.
+    for name, ds in [("Train", train_dataset), ("Val", val_dataset), ("Test", test_dataset)]:
+        num_positive_samples = len(ds)
+        num_negative_samples = (
+            num_positive_samples
+            if name in ["Train", "Val"]  # 1:1 ratio of pos:neg samples
+            else int(num_positive_samples * test_set_negative_ratio)  # 60% negatives for test set
+        )
+        negative_sampler = RandomNegativeSampler(
+            num_negative_samples=num_negative_samples,
+            num_nodes_per_sample=int(ds.stats()["avg_degree_hyperedge"]),
+        )
+        ds_with_negatives = ds.add_negative_samples(negative_sampler, seed=seed)
 
-            if name == "Train":
-                train_dataset = ds_with_negatives
-            elif name == "Val":
-                val_dataset = ds_with_negatives
-            else:
-                test_dataset = ds_with_negatives
+        if name == "Train":
+            train_dataset = ds_with_negatives
+        elif name == "Val":
+            val_dataset = ds_with_negatives
+        else:
+            test_dataset = ds_with_negatives
 
     return (
         train_dataset,
         val_dataset,
         test_dataset,
         dataset.hdata.num_nodes,
-        num_features,
+        resolved_num_features,
     )
 
 

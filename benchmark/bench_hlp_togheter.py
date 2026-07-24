@@ -51,6 +51,7 @@ if __name__ == "__main__":
             picked_seed = seed[r]
             train_dataset, val_dataset, test_dataset, num_nodes, num_features = prepare(
                 dataset_name=dataset_name,
+                num_features=num_features,
                 k_nodes=k_nodes,
                 split_ratios=split_ratios,
                 seed=picked_seed,
