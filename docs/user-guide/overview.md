@@ -9,3 +9,4 @@
 | **Benchmarking** | How to run benchmarks and compare results | [Benchmarking](../user-guide/benchmarking.md) |
 | **Loggers** | Built-in loggers and how to implement custom loggers | [Loggers](../user-guide/loggers.md) |
 | **TensorBoard** | Using TensorBoard with HyperTorch | [TensorBoard](../user-guide/tensorboard.md) |
+| **Plotting** | How to visualize plots from HyperTorch's training data | [Plotting] (../user-guide/plotting.md) |
