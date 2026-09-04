@@ -81,7 +81,7 @@ class LogParser:
             FileNotFoundError: If the path does not exist or is not a file.
         """
         target_path = Path(path)
-        if not target_path.is_absolute():
+        if not target_path.is_absolute() and not target_path.is_relative_to(self.base_logs_dir):
             target_path = self.base_logs_dir / target_path
 
         if target_path.suffix.lower() != ".csv":
