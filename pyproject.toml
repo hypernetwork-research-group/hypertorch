@@ -12,7 +12,7 @@ authors = [
 dependencies = [
   "fastjsonschema>=2.21.2,<3.0.0",
   "huggingface-hub>=1.16.4,<2.0.0",
-  "lightning>=2.6.1,<3.0.0",
+  "lightning>=2.6.5,<3.0.0",
   "numpy>=2.2.6,<3.0.0 ; python_full_version < '3.11'",
   "numpy>=2.4.4,<3.0.0 ; python_full_version >= '3.11'",
   "pyg-lib>=0.6.0,<1.0.0 ; (sys_platform == 'linux' and platform_machine == 'x86_64') or (sys_platform == 'win32' and platform_machine == 'AMD64') or (sys_platform == 'darwin' and platform_machine == 'arm64')",
