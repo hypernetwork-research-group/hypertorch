@@ -8,7 +8,11 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 
-
+"""
+    To do:
+    Plotter shouldn't accept the datafram from logparser,
+    but from ParsedMetrics instead
+"""
 class Plotter(ABC):
     """
     Abstract Base Class (ABC) for all experiment plotters in HyperTorch.
@@ -29,7 +33,7 @@ class Plotter(ABC):
 
     @abstractmethod
     def plot(self, df: pd.DataFrame, csv_path: Path) -> list[Path]:
-        """
+        """s
         Abstract method that must be implemented by subclasses.
 
         Args:
@@ -91,6 +95,7 @@ class LinePlotter(Plotter):
         sns.set_theme(style="darkgrid")
         saved_plots: list[Path] = []
 
+        #This should be added to logparser
         for var_name in sorted(variables):
             matching_cols = [
                 c

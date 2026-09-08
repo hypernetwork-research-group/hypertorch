@@ -8,7 +8,7 @@ from .markdown_logger import MarkdownTableLogger
 
 from .trainer import MultiModelTrainer
 
-from .logparser import LogParser
+from .log_parser import LogParser
 
 from .plotter import LinePlotter, Plotter
 
