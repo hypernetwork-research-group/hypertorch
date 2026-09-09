@@ -5,25 +5,19 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-import pandas as pd
 import seaborn as sns
 
-"""
-    To do:
-    Plotter shouldn't accept the datafram from logparser,
-    but from ParsedMetrics instead
-"""
-class Plotter(ABC):
-    """
-    Abstract Base Class (ABC) for all experiment plotters in HyperTorch.
+from .parsed_metrics import ParsedMetrics
 
-    Establishes a common structure, to be inherited by all the future classes
-    that specilize in a type of plot (Line, Scatter, etc etc)
+
+class Plotter(ABC):
+    """Abstract Base Class (ABC) for all experiment plotters in HyperTorch.
+
+    Establishes a common structure for plotters specializing in specific
+    visualizations (Line, Scatter, etc.).
 
     Args:
         experiment_dir: Path to the experiment directory (e.g., 'hypertorch_logs/experiment_0').
-
-    Note: generates the "plot" folder inside the experiment folder, where the plot will be placed.
     """
 
     def __init__(self, experiment_dir: str | Path) -> None:
@@ -32,13 +26,17 @@ class Plotter(ABC):
         self.plots_dir.mkdir(parents=True, exist_ok=True)
 
     @abstractmethod
-    def plot(self, df: pd.DataFrame, csv_path: Path) -> list[Path]:
-        """s
-        Abstract method that must be implemented by subclasses.
+    def plot(
+        self,
+        metrics: ParsedMetrics,
+        metric_names: list[str] | None = None,
+    ) -> list[Path]:
+        """Renders and saves plot images from parsed metrics.
 
         Args:
-            df: Metric DataFrame parsed from the CSV.
-            csv_path: Path to the source CSV file.
+            metrics: ParsedMetrics container holding tidy metric DataFrames.
+            metric_names: Optional subset of metric variables to plot.
+                         If None, plots all available metrics.
 
         Returns:
             A list of Paths pointing to created image files.
@@ -55,78 +53,45 @@ class LinePlotter(Plotter):
 
     def plot(
         self,
-        df: pd.DataFrame,
-        csv_path: Path,
-        metrics: list[str] | None = None,
+        metrics: ParsedMetrics,
+        metric_names: list[str] | None = None,
     ) -> list[Path]:
-        """
-        Renders and saves line plots for metrics across epochs/steps.
+        """Renders and saves line plots for metrics across epochs/steps.
 
         Args:
-            df: Metric DataFrame returned by LogParser.
-            csv_path: Source CSV path returned by LogParser.
-            metrics: Optional list of specific base variables to plot (e.g. ['loss']).
-                     If None, plots all available variables.
+            metrics: ParsedMetrics container holding tidy metric DataFrames.
+            metric_names: Optional subset of metric variables to plot (e.g., ['loss']).
+                         If None, plots all metrics present in the container.
 
         Returns:
             List of generated plot image file paths.
-
-        Output:
-            LinePlot_{variable}_{num_exp}.png
         """
-        x_col = (
-            "epoch"
-            if "epoch" in df.columns
-            else ("step" if "step" in df.columns else df.columns[0])
-        )
-
-        tracking_cols = {"epoch", "step"}
-        metric_cols = [c for c in df.columns if c not in tracking_cols]
-
-        variables = set()
-        for col in metric_cols:
-            clean_var = col.split("/", 1)[1] if "/" in col else col
-            if clean_var not in tracking_cols:
-                variables.add(clean_var)
-
-        if metrics:
-            variables = {v for v in variables if v in metrics}
-
         sns.set_theme(style="darkgrid")
         saved_plots: list[Path] = []
 
-        #This should be added to logparser
-        for var_name in sorted(variables):
-            matching_cols = [
-                c
-                for c in metric_cols
-                if c == var_name or ("/" in c and c.split("/", 1)[1] == var_name)
-            ]
+        # Determine which variables to plot
+        targets = metric_names if metric_names is not None else metrics.names()
+        x_col = metrics.x_col
 
-            melted = df.melt(
-                id_vars=[x_col],
-                value_vars=matching_cols,
-                var_name="Split",
-                value_name="value",
-            ).dropna()
-
-            if melted.empty:
+        for var_name in targets:
+            if var_name not in metrics:
                 continue
 
-            melted["Split"] = melted["Split"].apply(
-                lambda s: str(s).split("/", 1)[0] if "/" in str(s) else str(s)
-            )
+            # Directly fetch the tidy DataFrame
+            tidy_df = metrics.fetch(var_name)
 
             fig, ax = plt.subplots(figsize=(8, 5))
 
-            split_counts = melted["Split"].value_counts()
+            # Separate single-point evaluations from curves
+            split_counts = tidy_df["split"].value_counts()
             single_point_splits = split_counts[split_counts == 1].index.tolist()
 
-            continuous_melted = melted[~melted["Split"].isin(single_point_splits)]
-            single_melted = melted[melted["Split"].isin(single_point_splits)]
+            continuous_df = tidy_df[~tidy_df["split"].isin(single_point_splits)]
+            single_df = tidy_df[tidy_df["split"].isin(single_point_splits)]
 
+            # Draw baseline horizontal lines for single-evaluation splits
             for split in single_point_splits:
-                val = single_melted[single_melted["Split"] == split]["value"].values[0]
+                val = single_df[single_df["split"] == split]["value"].iloc[0]
                 ax.axhline(
                     y=val,
                     color="#4C72B0" if split == "test" else "gray",
@@ -137,12 +102,13 @@ class LinePlotter(Plotter):
                     label=f"{split} ({val:.4f})",
                 )
 
-            if not continuous_melted.empty:
+            # Draw curves for multi-point metrics
+            if not continuous_df.empty:
                 sns.lineplot(
-                    data=continuous_melted,
+                    data=continuous_df,
                     x=x_col,
                     y="value",
-                    hue="Split",
+                    hue="split",
                     marker="o",
                     ax=ax,
                     zorder=3,
