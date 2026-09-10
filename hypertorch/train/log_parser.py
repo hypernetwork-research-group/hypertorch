@@ -54,25 +54,12 @@ class LogParser:
         return csv_files[0]
 
     def _resolve_and_read_csv(self, path: str | Path) -> tuple[pd.DataFrame, Path]:
-        """Internal helper to validate paths and load raw CSV data.
-
-        Args:
-            path: Relative or absolute path to the CSV file.
-
-        Returns:
-            A tuple of (DataFrame, resolved Path).
-
-        Raises:
-            ValueError: If the file does not have a .csv extension.
-            FileNotFoundError: If the target file does not exist.
-        """
+        """Internal helper to validate paths and load raw CSV data."""
         target_path = Path(path)
-        if not target_path.is_absolute():
-            try:
-                if not target_path.is_relative_to(self.base_logs_dir):
-                    target_path = self.base_logs_dir / target_path
-            except ValueError:
-                target_path = self.base_logs_dir / target_path
+        if not target_path.is_absolute() and not target_path.is_relative_to(
+            self.base_logs_dir
+        ):
+            target_path = self.base_logs_dir / target_path
 
         if target_path.suffix.lower() != ".csv":
             raise ValueError(f"File '{target_path}' is not a CSV file.")
@@ -80,7 +67,19 @@ class LogParser:
         if not target_path.is_file():
             raise FileNotFoundError(f"CSV file '{target_path}' does not exist.")
 
-        return pd.read_csv(target_path), target_path
+        try:
+            raw_df = pd.read_csv(target_path)
+        except pd.errors.EmptyDataError:
+            raise ValueError(
+                f"CSV file '{target_path}' contains no data or columns."
+            ) from None
+
+        if raw_df.empty or len(raw_df.columns) == 0:
+            raise ValueError(
+                f"CSV file '{target_path}' contains no data or columns."
+            )
+
+        return raw_df, target_path
 
     def parse(self, csv_path: str | Path | None = None) -> ParsedMetrics:
         """Loads and reshapes experiment metrics into a ParsedMetrics container.
@@ -98,10 +97,7 @@ class LogParser:
         target_csv = self.find_latest_metrics_csv() if csv_path is None else csv_path
         raw_df, resolved_path = self._resolve_and_read_csv(target_csv)
 
-        if raw_df.empty or len(raw_df.columns) == 0:
-            raise ValueError(f"CSV file '{resolved_path}' contains no data or columns.")
-
-        #Identify primary tracking dimension
+        # Identify primary tracking dimension
         x_col = (
             "epoch"
             if "epoch" in raw_df.columns
@@ -111,7 +107,7 @@ class LogParser:
         tracking_cols = {"epoch", "step"}
         metric_cols = [c for c in raw_df.columns if c not in tracking_cols]
 
-        #Extract base metric names (e.g., 'val/loss' -> 'loss')
+        # Extract base metric names ('val/loss' -> 'loss')
         variables = set()
         for col in metric_cols:
             clean_var = col.split("/", 1)[1] if "/" in col else col
@@ -120,7 +116,7 @@ class LogParser:
 
         parsed = ParsedMetrics(x_col=x_col, csv_path=resolved_path)
 
-        #Reshape each metric into a tidy DataFrame
+        # Reshape each metric into a tidy DataFrame
         for var_name in sorted(variables):
             matching_cols = [
                 c
