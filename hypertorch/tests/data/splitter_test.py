@@ -34,7 +34,7 @@ def mock_hdata_five_hyperedges() -> HData:
 
 def test_splitter_is_abstract():
     with pytest.raises(TypeError, match="abstract"):
-        Splitter()
+        Splitter()  # ty: ignore[call-non-callable]
 
 
 def test_hyperedge_hdata_splitter_materializes_inductive_split():
