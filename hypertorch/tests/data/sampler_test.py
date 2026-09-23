@@ -36,7 +36,7 @@ def mock_empty_hdata():
 
 def test_base_sampler_cannot_be_instantiated():
     with pytest.raises(TypeError):
-        BaseSampler()
+        BaseSampler()  # ty: ignore[call-non-callable]
 
 
 @pytest.mark.parametrize(
