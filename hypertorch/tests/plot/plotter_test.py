@@ -2,7 +2,8 @@ from pathlib import Path
 import matplotlib.axes._axes as maxes
 import pandas as pd
 import pytest
-from hypertorch.train import LinePlotter, ParsedMetrics
+from hypertorch.train import LinePlotter
+from hypertorch.types import ParsedMetrics
 
 
 def test_line_plotter_initialization(tmp_path: Path) -> None:

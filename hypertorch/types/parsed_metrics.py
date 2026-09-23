@@ -17,7 +17,7 @@ class ParsedMetrics:
 
     def add(self, name: str, df: pd.DataFrame) -> None:
         """Adds a tidy DataFrame for a specific metric variable.
-        
+
         Args:
             name: Metric variable name (e.g., 'loss', 'f1').
             df: DataFrame containing (x_col, split, value).
@@ -46,7 +46,7 @@ class ParsedMetrics:
 
         Returns:
             A shallow copy dictionary mapping metric names to DataFrames.
-        """        
+        """
         return self._metrics.copy()
 
     def names(self) -> list[str]:

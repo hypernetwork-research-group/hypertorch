@@ -7,7 +7,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from .parsed_metrics import ParsedMetrics
+from hypertorch.types import ParsedMetrics
 
 
 class Plotter(ABC):
