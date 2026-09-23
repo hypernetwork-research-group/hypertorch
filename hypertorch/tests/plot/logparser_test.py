@@ -1,6 +1,7 @@
 from pathlib import Path
 import pytest
-from hypertorch.train import LogParser, ParsedMetrics
+from hypertorch.train import LogParser
+from hypertorch.types import ParsedMetrics
 
 
 def test_logparser_find_and_parse_latest(tmp_path: Path) -> None:
@@ -9,11 +10,7 @@ def test_logparser_find_and_parse_latest(tmp_path: Path) -> None:
     exp_dir.mkdir(parents=True)
 
     csv_path = exp_dir / "metrics.csv"
-    csv_path.write_text(
-        "epoch,step,train/loss,val/loss,test/acc\n"
-        "0,1,0.5,0.6,0.85\n"
-        "1,2,0.3,0.4,\n"
-    )
+    csv_path.write_text("epoch,step,train/loss,val/loss,test/acc\n0,1,0.5,0.6,0.85\n1,2,0.3,0.4,\n")
 
     parser = LogParser(logs_dir)
     assert parser.find_latest_experiment_dir() == logs_dir / "experiment_0"
@@ -60,11 +57,7 @@ def test_logparser_fallback_tracking_columns(tmp_path: Path) -> None:
     exp_dir.mkdir(parents=True)
 
     csv_path = exp_dir / "metrics.csv"
-    csv_path.write_text(
-        "custom_index,unslashed_loss,train/epoch,all_nan\n"
-        "0,0.5,10,\n"
-        "1,0.4,20,\n"
-    )
+    csv_path.write_text("custom_index,unslashed_loss,train/epoch,all_nan\n0,0.5,10,\n1,0.4,20,\n")
 
     parser = LogParser(logs_dir)
     parsed = parser.parse(csv_path)
@@ -131,11 +124,7 @@ def test_logparser_all_nan_metric_is_skipped(tmp_path: Path) -> None:
     exp_dir.mkdir(parents=True)
 
     csv_path = exp_dir / "metrics.csv"
-    csv_path.write_text(
-        "epoch,loss,empty_metric\n"
-        "0,0.5,\n"
-        "1,0.3,\n"
-    )
+    csv_path.write_text("epoch,loss,empty_metric\n0,0.5,\n1,0.3,\n")
 
     parser = LogParser(logs_dir)
     parsed = parser.parse(csv_path)

@@ -1,7 +1,7 @@
 from pathlib import Path
 import pandas as pd
 
-from .parsed_metrics import ParsedMetrics
+from hypertorch.types import ParsedMetrics
 
 
 class LogParser:
@@ -56,9 +56,7 @@ class LogParser:
     def _resolve_and_read_csv(self, path: str | Path) -> tuple[pd.DataFrame, Path]:
         """Internal helper to validate paths and load raw CSV data."""
         target_path = Path(path)
-        if not target_path.is_absolute() and not target_path.is_relative_to(
-            self.base_logs_dir
-        ):
+        if not target_path.is_absolute() and not target_path.is_relative_to(self.base_logs_dir):
             target_path = self.base_logs_dir / target_path
 
         if target_path.suffix.lower() != ".csv":
@@ -70,14 +68,10 @@ class LogParser:
         try:
             raw_df = pd.read_csv(target_path)
         except pd.errors.EmptyDataError:
-            raise ValueError(
-                f"CSV file '{target_path}' contains no data or columns."
-            ) from None
+            raise ValueError(f"CSV file '{target_path}' contains no data or columns.") from None
 
         if raw_df.empty or len(raw_df.columns) == 0:
-            raise ValueError(
-                f"CSV file '{target_path}' contains no data or columns."
-            )
+            raise ValueError(f"CSV file '{target_path}' contains no data or columns.")
 
         return raw_df, target_path
 

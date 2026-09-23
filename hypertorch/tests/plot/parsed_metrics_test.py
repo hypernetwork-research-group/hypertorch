@@ -1,7 +1,7 @@
 from pathlib import Path
 import pandas as pd
 import pytest
-from hypertorch.train import ParsedMetrics
+from hypertorch.types import ParsedMetrics
 
 
 def test_parsed_metrics_initialization() -> None:

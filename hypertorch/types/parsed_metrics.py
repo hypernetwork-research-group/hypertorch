@@ -13,8 +13,6 @@ class ParsedMetrics:
 
     x_col: str
     csv_path: Path | None = None
-    experiment_dir: Path | None = None
-    experiment_name: str = "0"
     _metrics: dict[str, pd.DataFrame] = field(default_factory=dict, init=False)
 
     def add(self, name: str, df: pd.DataFrame) -> None:
@@ -58,30 +56,6 @@ class ParsedMetrics:
             Sorted list of metric names.
         """
         return sorted(self._metrics.keys())
-
-    def average(self) -> "ParsedMetrics":
-        """Averages multiple intra-epoch steps to produce exactly 1 point per epoch."""
-        averaged = ParsedMetrics(
-            x_col=self.x_col,
-            csv_path=self.csv_path,
-            experiment_dir=self.experiment_dir,
-            experiment_name=self.experiment_name,
-        )
-
-        for name, df in self._metrics.items():
-            if self.x_col not in df.columns:
-                averaged.add(name, df.copy())
-                continue
-
-            if df.duplicated(subset=[self.x_col, "split"]).any():
-                avg_df = df.groupby([self.x_col, "split"], as_index=False, sort=False)[
-                    "value"
-                ].mean()
-                averaged.add(name, avg_df)
-            else:
-                averaged.add(name, df.copy())
-
-        return averaged
 
     def __contains__(self, name: str) -> bool:
         return name in self._metrics
