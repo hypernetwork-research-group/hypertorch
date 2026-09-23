@@ -12,8 +12,6 @@ from .log_parser import LogParser
 
 from .plotter import LinePlotter, Plotter
 
-from .parsed_metrics import ParsedMetrics
-
 logging.getLogger("lightning.pytorch").setLevel(logging.ERROR)
 
 __all__ = [
@@ -24,7 +22,6 @@ __all__ = [
     "LogParser",
     "MarkdownTableLogger",
     "MultiModelTrainer",
-    "ParsedMetrics",
     "Plotter",
     "colorize_metric_value",
 ]
