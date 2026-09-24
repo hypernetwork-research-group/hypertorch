@@ -13,6 +13,8 @@ class ParsedMetrics:
 
     x_col: str
     csv_path: Path | None = None
+    experiment_dir: Path | None = None
+    experiment_name: str = "0"
     _metrics: dict[str, pd.DataFrame] = field(default_factory=dict, init=False)
 
     def add(self, name: str, df: pd.DataFrame) -> None:
