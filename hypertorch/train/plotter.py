@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-import re
 import matplotlib
 
 matplotlib.use("Agg")
@@ -13,23 +12,17 @@ from hypertorch.types import ParsedMetrics
 class Plotter(ABC):
     """Abstract Base Class (ABC) for all experiment plotters in HyperTorch.
 
-    Establishes a common structure for plotters specializing in specific
-    visualizations (Line, Scatter, etc.).
-
-    Args:
-        experiment_dir: Path to the experiment directory (e.g., 'hypertorch_logs/experiment_0').
+    Establishes a common structure, to be inherited by all the future classes
+    that specialize in a type of plot (Line, Scatter, etc.).
     """
-
-    def __init__(self, experiment_dir: str | Path) -> None:
-        self.experiment_dir = Path(experiment_dir)
-        self.plots_dir = self.experiment_dir / "plots"
-        self.plots_dir.mkdir(parents=True, exist_ok=True)
 
     @abstractmethod
     def plot(
         self,
         metrics: ParsedMetrics,
         metric_names: list[str] | None = None,
+        output_dir: str | Path | None = None,
+        create_subfolder: bool = True,
     ) -> list[Path]:
         """Renders and saves plot images from parsed metrics.
 
@@ -37,35 +30,74 @@ class Plotter(ABC):
             metrics: ParsedMetrics container holding tidy metric DataFrames.
             metric_names: Optional subset of metric variables to plot.
                          If None, plots all available metrics.
+            output_dir: Optional path where the plots will be saved. If None,
+                        defaults to metrics.experiment_dir.
+            create_subfolder: If True, creates and saves into a 'plots' subfolder
+                              within the target directory. Defaults to True.
 
         Returns:
             A list of Paths pointing to created image files.
+
+        Raises:
+            TypeError: when unimplemented by concrete classes
         """
 
 
 class LinePlotter(Plotter):
     """Generates Seaborn line plots for training and evaluation metrics."""
 
-    def __init__(self, experiment_dir: str | Path) -> None:
-        super().__init__(experiment_dir)
-        match = re.search(r"experiment_(\d+)", self.experiment_dir.name)
-        self.num_exp = match.group(1) if match else "0"
-
     def plot(
         self,
         metrics: ParsedMetrics,
         metric_names: list[str] | None = None,
+        output_dir: str | Path | None = None,
+        create_subfolder: bool = True,
     ) -> list[Path]:
         """Renders and saves line plots for metrics across epochs/steps.
 
         Args:
             metrics: ParsedMetrics container holding tidy metric DataFrames.
-            metric_names: Optional subset of metric variables to plot (e.g., ['loss']).
-                         If None, plots all metrics present in the container.
+            metric_names: Optional subset of metric variables to plot.
+                         If None, plots all available metrics.
+            output_dir: Optional path where the plots will be saved. If None,
+                        defaults to metrics.experiment_dir.
+            create_subfolder: If True, creates and saves into a 'plots' subfolder
+                              within the target directory. Defaults to True.
 
         Returns:
             List of generated plot image file paths.
+
+        Raises:
+            ValueError: If parsedMetrics contains no destination path and no further path was given,
+                        if metrics.x_col is None or empty, or if parsedMetrics contains no metrics.
+            FileNotFoundError: If the destination folder does not exist.
+            NotADirectoryError: If the destination path doesn't point to a directory.
         """
+        # Validate ParsedMetrics contents
+        if not getattr(metrics, "x_col", None):
+            raise ValueError("ParsedMetrics contains no primary column.")
+        if len(metrics) == 0:
+            raise ValueError("ParsedMetrics contains no metrics to plot.")
+
+        # Resolve base destination directory
+        if output_dir is not None:
+            base_dir = Path(output_dir)
+        elif metrics.experiment_dir is not None:
+            base_dir = Path(metrics.experiment_dir)
+        else:
+            raise ValueError("Could not find a destination path.")
+
+        if not base_dir.exists():
+            raise FileNotFoundError(f"Destination directory '{base_dir}' does not exist.")
+        if not base_dir.is_dir():
+            raise NotADirectoryError(f"Destination path '{base_dir}' is not a directory.")
+
+        num_exp = metrics.experiment_name or "0"
+
+        # Apply subfolder rule
+        plots_dir = base_dir / "plots" if create_subfolder else base_dir
+        plots_dir.mkdir(parents=True, exist_ok=True)
+
         sns.set_theme(style="darkgrid")
         saved_plots: list[Path] = []
 
@@ -119,13 +151,13 @@ class LinePlotter(Plotter):
                 ax.legend(handles=handles, labels=labels, title="Split", loc="best")
 
             formatted_title = var_name.replace("_", " ").capitalize()
-            ax.set_title(f"Experiment {self.num_exp} — {formatted_title}")
+            ax.set_title(f"Experiment {num_exp} — {formatted_title}")
             ax.set_xlabel(x_col.capitalize())
             ax.set_ylabel(formatted_title)
 
             clean_filename_var = var_name.replace("/", "_")
-            output_filename = f"LinePlot_{clean_filename_var}_{self.num_exp}.png"
-            output_path = self.plots_dir / output_filename
+            output_filename = f"LinePlot_{clean_filename_var}_{num_exp}.png"
+            output_path = plots_dir / output_filename
 
             plt.tight_layout()
             plt.savefig(output_path, dpi=300)
