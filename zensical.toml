@@ -31,6 +31,7 @@ nav = [
     { "Benchmarking" = "user-guide/benchmarking.md" },
     { "Loggers" = "user-guide/loggers.md" },
     { "TensorBoard" = "user-guide/tensorboard.md" },
+    { "Plotting" = "user-guide/plotting.md"},
   ] },
   { "Development" = [
     { "Overview" = "development/development.md" },

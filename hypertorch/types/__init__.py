@@ -1,5 +1,7 @@
 from .graph import EdgeIndex, Graph
 
+from .parsed_metrics import ParsedMetrics
+
 from .hypergraph import (
     HIFHypergraph,
     HyperedgeIndex,
@@ -36,6 +38,7 @@ __all__ = [
     "Hypergraph",
     "ModelConfig",
     "Neighborhood",
+    "ParsedMetrics",
     "Task",
     "TaskEnum",
     "TaskLiteral",
