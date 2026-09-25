@@ -1,5 +1,6 @@
 from pathlib import Path
 import re
+import warnings
 import pandas as pd
 
 from hypertorch.types import ParsedMetrics
@@ -163,7 +164,11 @@ class LogParser:
             raise ValueError(f"CSV file '{resolved_path}' is completely empty.") from None
 
         if raw_df.empty:
-            raise ValueError(f"CSV file '{resolved_path}' contains headers but no data rows.")
+            warnings.warn(
+                f"CSV file '{resolved_path}' contains headers but no data rows.",
+                category=UserWarning,
+                stacklevel=2,
+            )
 
         return raw_df, resolved_path
 
