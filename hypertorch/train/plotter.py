@@ -1,10 +1,7 @@
 from abc import ABC, abstractmethod
+import importlib
+import importlib.util
 from pathlib import Path
-import matplotlib
-
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import seaborn as sns
 
 from hypertorch.types import ParsedMetrics
 
@@ -15,6 +12,60 @@ class Plotter(ABC):
     Establishes a common structure, to be inherited by all the future classes
     that specialize in a type of plot (Line, Scatter, etc.).
     """
+
+    @staticmethod
+    def _is_plotting_available() -> bool:
+        """Check whether matplotlib and seaborn are importable.
+
+        Returns:
+            available: ``True`` when both matplotlib and seaborn are installed.
+        """
+        return (
+            importlib.util.find_spec("matplotlib") is not None
+            and importlib.util.find_spec("seaborn") is not None
+        )
+
+    @staticmethod
+    def _validate_metrics(metrics: ParsedMetrics) -> None:
+        """Validates that ParsedMetrics contains the necessary plotting data.
+
+        Raises:
+            ValueError: If primary tracking column (x_col) is missing or if
+                        no metrics are stored.
+        """
+        if not getattr(metrics, "x_col", None):
+            raise ValueError("ParsedMetrics contains no primary column.")
+        if len(metrics) == 0:
+            raise ValueError("ParsedMetrics contains no metrics to plot.")
+
+    @staticmethod
+    def _resolve_plots_dir(
+        metrics: ParsedMetrics,
+        output_dir: str | Path | None,
+        create_subfolder: bool,
+    ) -> Path:
+        """Resolves, validates, and creates the target directory for plots.
+
+        Raises:
+            ValueError: If no destination path can be found.
+            FileNotFoundError: If the target directory does not exist.
+            NotADirectoryError: If the target path is not a directory.
+        """
+        if output_dir is not None:
+            base_dir = Path(output_dir)
+        elif metrics.experiment_dir is not None:
+            base_dir = Path(metrics.experiment_dir)
+        else:
+            raise ValueError("Could not find a destination path.")
+
+        if not base_dir.exists():
+            raise FileNotFoundError(f"Destination directory '{base_dir}' does not exist.")
+        if not base_dir.is_dir():
+            raise NotADirectoryError(f"Destination path '{base_dir}' is not a directory.")
+
+        plots_dir = base_dir / "plots" if create_subfolder else base_dir
+        plots_dir.mkdir(parents=True, exist_ok=True)
+        return plots_dir
 
     @abstractmethod
     def plot(
@@ -39,6 +90,7 @@ class Plotter(ABC):
             A list of Paths pointing to created image files.
 
         Raises:
+            ImportError: If matplotlib or seaborn is not installed.
             TypeError: when unimplemented by concrete classes
         """
 
@@ -68,35 +120,27 @@ class LinePlotter(Plotter):
             List of generated plot image file paths.
 
         Raises:
+            ImportError: If matplotlib or seaborn is not installed.
             ValueError: If parsedMetrics contains no destination path and no further path was given,
                         if metrics.x_col is None or empty, or if parsedMetrics contains no metrics.
             FileNotFoundError: If the destination folder does not exist.
             NotADirectoryError: If the destination path doesn't point to a directory.
         """
-        # Validate ParsedMetrics contents
-        if not getattr(metrics, "x_col", None):
-            raise ValueError("ParsedMetrics contains no primary column.")
-        if len(metrics) == 0:
-            raise ValueError("ParsedMetrics contains no metrics to plot.")
+        if not self._is_plotting_available():
+            raise ImportError(
+                "Plotting dependencies are not available. "
+                "Install them with `pip install hypertorch[plotting]`"
+            )
 
-        # Resolve base destination directory
-        if output_dir is not None:
-            base_dir = Path(output_dir)
-        elif metrics.experiment_dir is not None:
-            base_dir = Path(metrics.experiment_dir)
-        else:
-            raise ValueError("Could not find a destination path.")
-
-        if not base_dir.exists():
-            raise FileNotFoundError(f"Destination directory '{base_dir}' does not exist.")
-        if not base_dir.is_dir():
-            raise NotADirectoryError(f"Destination path '{base_dir}' is not a directory.")
-
+        # Base class validation and destination resolution
+        self._validate_metrics(metrics)
+        plots_dir = self._resolve_plots_dir(metrics, output_dir, create_subfolder)
         num_exp = metrics.experiment_name or "0"
 
-        # Apply subfolder rule
-        plots_dir = base_dir / "plots" if create_subfolder else base_dir
-        plots_dir.mkdir(parents=True, exist_ok=True)
+        matplotlib = importlib.import_module("matplotlib")
+        matplotlib.use("Agg")
+        plt = importlib.import_module("matplotlib.pyplot")
+        sns = importlib.import_module("seaborn")
 
         sns.set_theme(style="darkgrid")
         saved_plots: list[Path] = []
@@ -109,9 +153,7 @@ class LinePlotter(Plotter):
             if var_name not in metrics:
                 continue
 
-            # Directly fetch the tidy DataFrame
             tidy_df = metrics.fetch(var_name)
-
             fig, ax = plt.subplots(figsize=(8, 5))
 
             # Separate single-point evaluations from curves
@@ -121,7 +163,6 @@ class LinePlotter(Plotter):
             continuous_df = tidy_df[~tidy_df["split"].isin(single_point_splits)]
             single_df = tidy_df[tidy_df["split"].isin(single_point_splits)]
 
-            # Draw baseline horizontal lines for single-evaluation splits
             for split in single_point_splits:
                 val = single_df[single_df["split"] == split]["value"].iloc[0]
                 ax.axhline(
@@ -134,7 +175,6 @@ class LinePlotter(Plotter):
                     label=f"{split} ({val:.4f})",
                 )
 
-            # Draw curves for multi-point metrics
             if not continuous_df.empty:
                 sns.lineplot(
                     data=continuous_df,
