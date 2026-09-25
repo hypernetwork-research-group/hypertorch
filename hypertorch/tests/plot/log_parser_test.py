@@ -115,11 +115,14 @@ def test_logparser_empty_csv_file_states(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="is completely empty"):
         parser.parse(empty_csv)
 
-    # 2. Header only, 0 data rows (raw_df.empty)
+    # 2. Header only, 0 data rows (Warning)
     header_only_csv = exp_dir / "header_only.csv"
     header_only_csv.write_text("epoch,loss\n")
-    with pytest.raises(ValueError, match="contains headers but no data rows"):
-        parser.parse(header_only_csv)
+    with pytest.warns(UserWarning, match="contains headers but no data rows"):
+        parsed = parser.parse(header_only_csv)
+
+    assert isinstance(parsed, ParsedMetrics)
+    assert len(parsed) == 0
 
 
 def test_logparser_parse_default_latest_run(tmp_path: Path) -> None:
