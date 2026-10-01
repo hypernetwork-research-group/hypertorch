@@ -2,8 +2,10 @@ from pathlib import Path
 import sys
 from typing import Any
 from unittest.mock import MagicMock, patch
+
 import pandas as pd
 import pytest
+
 from hypertorch.train import LinePlotter, Plotter
 from hypertorch.types import ParsedMetrics
 
@@ -46,8 +48,9 @@ def mock_plotting_backend(monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
 
 def test_plotter_abstract_instantiation() -> None:
     """Verifies that Plotter cannot be instantiated directly."""
+    abstract_class: Any = Plotter
     with pytest.raises(TypeError, match="Can't instantiate abstract class"):
-        Plotter()  # type: ignore[abstract]
+        abstract_class()
 
 
 def test_is_plotting_available_true() -> None:
@@ -90,7 +93,7 @@ def test_line_plotter_raises_when_plotting_unavailable(
 
 def test_line_plotter_validation_missing_primary_column(tmp_path: Path) -> None:
     plotter = LinePlotter()
-    metrics = ParsedMetrics(x_col="")  # Empty primary column
+    metrics = ParsedMetrics(x_col="")
     metrics.add("loss", pd.DataFrame({"val": [1.0]}))
 
     with pytest.raises(ValueError, match="ParsedMetrics contains no primary column"):
@@ -99,7 +102,7 @@ def test_line_plotter_validation_missing_primary_column(tmp_path: Path) -> None:
 
 def test_line_plotter_validation_no_metrics(tmp_path: Path) -> None:
     plotter = LinePlotter()
-    metrics = ParsedMetrics(x_col="epoch")  # No metrics added
+    metrics = ParsedMetrics(x_col="epoch")
 
     with pytest.raises(ValueError, match="ParsedMetrics contains no metrics to plot"):
         plotter.plot(metrics, output_dir=tmp_path)

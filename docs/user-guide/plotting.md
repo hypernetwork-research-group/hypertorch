@@ -17,9 +17,9 @@ The visualization pipeline centers around three primary components:
 
 ## Basic Plot Generation
 
-Initializing `LogParser` automatically points it to the default `hypertorch_logs/` folder. Calling `parse()` locates the latest experiment run and reshapes its metrics into a `ParsedMetrics` container. 
+Initializing `LogParser` validates and points to the base logging directory (default: `hypertorch_logs/`).
 
-By default, calling `plot()` renders every metric found across all splits (train, validation, test) onto individual metric charts:
+To plot the most recent experiment run, discover it via `discover_latest(num=1)`, parse the queued runs with `parse_all()`, and render the curves using `LinePlotter`:
 
 ```python
 from hypertorch.train import LinePlotter, LogParser
@@ -28,8 +28,9 @@ from hypertorch.train import LinePlotter, LogParser
 parser = LogParser()
 plotter = LinePlotter()
 
-# Automatically locate and parse the latest experiment run
-metrics = parser.parse()
+# Locate the most recent run directory and parse it
+parser.discover_latest(num=1)
+metrics = parser.parse_all()[0]
 
 # Generate line plots directly from the parsed metrics
 plotter.plot(metrics)
@@ -47,21 +48,62 @@ hypertorch_logs/
 ```
 ---
 
-### Specified Parsing and Refresh (Lazy Caching)
-`parse()` can accept an explicit path to a CSV file instead of auto-discovering the latest run. When called without arguments, `LogParser` caches the resolved experiment path so subsequent calls reuse it until `refresh()` is called.
+## Discovery & Batch Parsing
+`LogParser` maintains an internal queue (`directory_paths`) mapping discovered run folders to their metric files without performing redundant filesystem scans during parsing.
 
-Pass a new path to refresh() to scan a different base directory:
+### Discovering Recent Runs
+Queue the latest $N$ runs across all experiment folders using `discover_latest(num=N)`:
 
 ```python
 parser = LogParser()
-metrics = parser.parse()
+parser.discover_latest(num=3)
 
-# Refresh cached paths after running a new experiment
-parser.refresh()
-new_metrics = parser.parse()
+# Parse all queued runs and plot them individually
+for metrics in parser.parse_all():
+    plotter.plot(metrics)
+```
 
-# Switch to a custom base directory
-parser.refresh("custom_logs_dir")
+### Discovering Runs by Folder Name
+Queue all subdirectories containing metric logs within a specific experiment folder using `discover_directory()`:
+```python
+parser = LogParser()
+
+# Queue all runs inside 'hypertorch_logs/experiment_3'
+parser.discover_directory("experiment_3")
+
+for metrics in parser.parse_all():
+    plotter.plot(metrics)
+```
+---
+
+## Direct Path Parsing
+If you already know the folder or CSV file you want to inspect, `parse_from_path()` parses it directly without modifying the internal discovery queue:
+
+```python
+parser = LogParser()
+
+# Parse directly from a run directory (automatically loads the newest CSV inside it)
+metrics = parser.parse_from_path("experiment_3/mlp/version_0")
+plotter.plot(metrics)
+
+# Or parse directly from an explicit CSV file
+metrics = parser.parse_from_path("experiment_3/mlp/version_0/metrics.csv")
+plotter.plot(metrics)
+```
+
+## Switching the Base Directory
+To retarget `LogParser` to another root directory without losing previously discovered runs, use `move_base_dir()`:
+
+```python
+parser = LogParser("hypertorch_logs")
+parser.discover_directory("experiment_1")
+
+# Move base directory to a new location (validates existence immediately)
+parser.move_base_dir("archived_logs")
+parser.discover_directory("experiment_old")
+
+# parse_all() now parses runs from both locations
+all_metrics = parser.parse_all()
 ```
 
 ---

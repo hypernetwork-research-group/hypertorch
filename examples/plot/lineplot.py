@@ -83,10 +83,10 @@ def main() -> None:
     model_configs = [ModelConfig(name="mlp", version="mean", model=model)]
 
     # 3-epoch experiment to populate experiment metrics
-    print("\nTraining MLP model for 3 epochs...")
+    print("\nTraining MLP model for 15 epochs...")
     with MultiModelTrainer(
         model_configs=model_configs,
-        max_epochs=3,
+        max_epochs=15,
         accelerator="auto",
         devices=1,
         log_every_n_steps=1,
@@ -98,19 +98,22 @@ def main() -> None:
 
     """Application of LogParser and LinePlot can be seen here:"""
 
-    # Instancing LogParser to find and parse the latest metrics
+    # Instancing LogParser to discover and parse the latest metrics run
     print("\nParsing experiment metrics...")
     parser = LogParser()
-    metrics = parser.parse()
+    parser.discover_latest(num=1)
+    parsed_runs = parser.parse_all()
 
-    # Metrics stores the directory as well as the names of the metrics found
-    print(f"Discovered experiment directory: {metrics.experiment_dir}")
-    print(f"Available metrics to plot: {metrics.names()}")
-
-    # instantiating LinePlotter to plot metrics
+    # Instantiating LinePlotter to plot metrics
     print("Generating line plots...")
     plotter = LinePlotter()
-    saved_plots = plotter.plot(metrics)
+    saved_plots: list[Path] = []
+
+    for metrics in parsed_runs:
+        # Metrics stores the directory as well as the names of the metrics found
+        print(f"Discovered experiment directory: {metrics.experiment_dir}")
+        print(f"Available metrics to plot: {metrics.names()}")
+        saved_plots.extend(plotter.plot(metrics))
 
     print(f"\nGenerated {len(saved_plots)} plot(s):")
     for plot_path in saved_plots:
