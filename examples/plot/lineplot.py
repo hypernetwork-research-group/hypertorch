@@ -101,7 +101,7 @@ def main() -> None:
     # Instancing LogParser to discover and parse the latest metrics run
     print("\nParsing experiment metrics...")
     parser = LogParser()
-    parser.discover_latest(num=1)
+    parser.discover_from_latest_dir(num=1)
     parsed_runs = parser.parse_all()
 
     # Instantiating LinePlotter to plot metrics

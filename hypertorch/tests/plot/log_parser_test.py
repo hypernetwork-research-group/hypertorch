@@ -46,7 +46,7 @@ def test_logparser_move_base_dir_retains_queued_paths(tmp_path: Path) -> None:
     dir_b.mkdir()
 
     parser = LogParser(dir_a)
-    parser.discover_latest(num=1)
+    parser.discover_from_latest_dir(num=1)
     assert len(parser.directory_paths) == 1
 
     parser.move_base_dir(dir_b)
@@ -118,25 +118,25 @@ def test_logparser_register_csv_branches(tmp_path: Path) -> None:
     assert len(parser.dir_to_csvs[exp_dir.resolve()]) == 2
 
 
-def test_logparser_discover_latest_num_validation(tmp_path: Path) -> None:
+def test_logparser_discover_from_latest_dir_num_validation(tmp_path: Path) -> None:
     logs_dir = tmp_path / "hypertorch_logs"
     logs_dir.mkdir()
     parser = LogParser(logs_dir)
 
     with pytest.raises(ValueError, match="requires num >= 1"):
-        parser.discover_latest(num=0)
+        parser.discover_from_latest_dir(num=0)
 
 
-def test_logparser_discover_latest_empty_root_raises_error(tmp_path: Path) -> None:
+def test_logparser_discover_from_latest_dir_empty_root_raises_error(tmp_path: Path) -> None:
     logs_dir = tmp_path / "hypertorch_logs"
     logs_dir.mkdir()
     parser = LogParser(logs_dir)
 
     with pytest.raises(FileNotFoundError, match="No experiment folders found inside"):
-        parser.discover_latest(num=1)
+        parser.discover_from_latest_dir(num=1)
 
 
-def test_logparser_discover_latest_no_csvs_raises_error(tmp_path: Path) -> None:
+def test_logparser_discover_from_latest_dir_no_csvs_raises_error(tmp_path: Path) -> None:
     logs_dir = tmp_path / "hypertorch_logs"
     (logs_dir / "experiment_0").mkdir(parents=True)
     parser = LogParser(logs_dir)
@@ -145,10 +145,12 @@ def test_logparser_discover_latest_no_csvs_raises_error(tmp_path: Path) -> None:
         FileNotFoundError,
         match="No CSV metric files found inside any experiment folder",
     ):
-        parser.discover_latest(num=1)
+        parser.discover_from_latest_dir(num=1)
 
 
-def test_logparser_discover_latest_oserror(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_logparser_discover_from_latest_dir_oserror(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     logs_dir = tmp_path / "hypertorch_logs"
     logs_dir.mkdir()
     parser = LogParser(logs_dir)
@@ -158,15 +160,16 @@ def test_logparser_discover_latest_oserror(tmp_path: Path, monkeypatch: pytest.M
 
     monkeypatch.setattr(os, "scandir", mock_scandir)
     with pytest.raises(OSError, match="Failed to scan directory"):
-        parser.discover_latest(num=1)
+        parser.discover_from_latest_dir(num=1)
 
 
-def test_logparser_discover_latest_orders_by_recency_and_skips_checkpoints(
+def test_logparser_discover_from_latest_dir_orders_and_includes_all_models(
     tmp_path: Path,
 ) -> None:
     logs_dir = tmp_path / "hypertorch_logs"
     logs_dir.mkdir()
 
+    # Exp 0 (Older)
     exp_0 = logs_dir / "experiment_0" / "mlp" / "version_0"
     exp_0.mkdir(parents=True)
     csv_0 = exp_0 / "metrics.csv"
@@ -174,24 +177,32 @@ def test_logparser_discover_latest_orders_by_recency_and_skips_checkpoints(
 
     time.sleep(0.05)
 
-    exp_1 = logs_dir / "experiment_1" / "mlp" / "version_0"
-    exp_1.mkdir(parents=True)
-    csv_1 = exp_1 / "metrics.csv"
-    csv_1.write_text("epoch,loss\n0,0.2\n")
+    # Exp 1 (Newer) with two models and adjacent checkpoints
+    exp_1 = logs_dir / "experiment_1"
+    run_mlp = exp_1 / "mlp" / "version_0"
+    run_gat = exp_1 / "gat" / "version_0"
+    run_mlp.mkdir(parents=True)
+    run_gat.mkdir(parents=True)
 
-    ckpt_dir = exp_1 / "checkpoints"
+    csv_mlp = run_mlp / "metrics.csv"
+    csv_gat = run_gat / "metrics.csv"
+    csv_mlp.write_text("epoch,loss\n0,0.2\n")
+    csv_gat.write_text("epoch,loss\n0,0.15\n")
+
+    ckpt_dir = run_mlp / "checkpoints"
     ckpt_dir.mkdir()
     (ckpt_dir / "ignored.csv").write_text("epoch,loss\n0,999.0\n")
 
     parser = LogParser(logs_dir)
-    parser.discover_latest(num=1)
+    parser.discover_from_latest_dir(num=1)
 
-    assert len(parser.directory_paths) == 1
-    assert parser.directory_paths[0] == exp_1.resolve()
-    assert parser.dir_to_csvs[exp_1.resolve()] == [csv_1.resolve()]
+    # Both models within the latest folder must be discovered
+    assert len(parser.directory_paths) == 2
+    assert set(parser.directory_paths) == {run_mlp.resolve(), run_gat.resolve()}
+    assert exp_0.resolve() not in parser.directory_paths
 
 
-def test_logparser_discover_latest_multiple_runs(tmp_path: Path) -> None:
+def test_logparser_discover_from_latest_dir_multiple_folders(tmp_path: Path) -> None:
     logs_dir = tmp_path / "hypertorch_logs"
     logs_dir.mkdir()
 
@@ -206,11 +217,102 @@ def test_logparser_discover_latest_multiple_runs(tmp_path: Path) -> None:
     (exp_1 / "metrics.csv").write_text("epoch,loss\n0,0.2\n")
 
     parser = LogParser(logs_dir)
-    parser.discover_latest(num=2)
+    parser.discover_from_latest_dir(num=2)
 
     assert len(parser.directory_paths) == 2
     assert parser.directory_paths[0] == exp_1.resolve()
     assert parser.directory_paths[1] == exp_0.resolve()
+
+
+def test_logparser_discover_latest_metrics_num_validation(tmp_path: Path) -> None:
+    logs_dir = tmp_path / "hypertorch_logs"
+    logs_dir.mkdir()
+    parser = LogParser(logs_dir)
+
+    with pytest.raises(ValueError, match="requires num >= 1"):
+        parser.discover_latest_metrics(num=0)
+
+
+def test_logparser_discover_latest_metrics_empty_root_raises_error(tmp_path: Path) -> None:
+    logs_dir = tmp_path / "hypertorch_logs"
+    logs_dir.mkdir()
+    parser = LogParser(logs_dir)
+
+    with pytest.raises(FileNotFoundError, match="No experiment folders found inside"):
+        parser.discover_latest_metrics(num=1)
+
+
+def test_logparser_discover_latest_metrics_no_csvs_raises_error(tmp_path: Path) -> None:
+    logs_dir = tmp_path / "hypertorch_logs"
+    (logs_dir / "experiment_0").mkdir(parents=True)
+    parser = LogParser(logs_dir)
+
+    with pytest.raises(
+        FileNotFoundError,
+        match="No CSV metric files found inside any experiment folder",
+    ):
+        parser.discover_latest_metrics(num=1)
+
+
+def test_logparser_discover_latest_metrics_oserror(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    logs_dir = tmp_path / "hypertorch_logs"
+    logs_dir.mkdir()
+    parser = LogParser(logs_dir)
+
+    def mock_scandir(_: Path) -> None:
+        raise OSError("Filesystem unreadable")
+
+    monkeypatch.setattr(os, "scandir", mock_scandir)
+    with pytest.raises(OSError, match="Failed to scan directory"):
+        parser.discover_latest_metrics(num=1)
+
+
+def test_logparser_discover_latest_metrics_halts_at_num_csvs(tmp_path: Path) -> None:
+    logs_dir = tmp_path / "hypertorch_logs"
+    logs_dir.mkdir()
+
+    exp_1 = logs_dir / "experiment_1"
+    run_a = exp_1 / "mlp" / "version_0"
+    run_b = exp_1 / "gat" / "version_0"
+    run_a.mkdir(parents=True)
+    run_b.mkdir(parents=True)
+
+    csv_a = run_a / "metrics.csv"
+    csv_b = run_b / "metrics.csv"
+    csv_a.write_text("epoch,loss\n0,0.1\n")
+    csv_b.write_text("epoch,loss\n0,0.2\n")
+
+    parser = LogParser(logs_dir)
+
+    # Asking for num=1 halts immediately after the first CSV is found
+    parser.discover_latest_metrics(num=1)
+    all_csvs = [csv for csvs in parser.dir_to_csvs.values() for csv in csvs]
+    assert len(all_csvs) == 1
+
+
+def test_logparser_discover_latest_metrics_fewer_csvs_than_requested(tmp_path: Path) -> None:
+    logs_dir = tmp_path / "hypertorch_logs"
+    logs_dir.mkdir()
+
+    exp_1 = logs_dir / "experiment_1"
+    run_a = exp_1 / "mlp" / "version_0"
+    run_b = exp_1 / "gat" / "version_0"
+    run_a.mkdir(parents=True)
+    run_b.mkdir(parents=True)
+
+    csv_a = run_a / "metrics.csv"
+    csv_b = run_b / "metrics.csv"
+    csv_a.write_text("epoch,loss\n0,0.1\n")
+    csv_b.write_text("epoch,loss\n0,0.2\n")
+
+    parser = LogParser(logs_dir)
+
+    # Asking for num=5 when only 2 exist exercises both the continuation and clean exit branches
+    parser.discover_latest_metrics(num=5)
+    all_csvs = [csv for csvs in parser.dir_to_csvs.values() for csv in csvs]
+    assert len(all_csvs) == 2
 
 
 def test_logparser_discover_directory_by_name_and_relative_path(tmp_path: Path) -> None:
@@ -229,8 +331,8 @@ def test_logparser_discover_directory_by_name_and_relative_path(tmp_path: Path) 
     csv_b.write_text("epoch,loss\n0,0.2\n")
 
     parser = LogParser(logs_dir)
-    parser.discover_directory("experiment_3")
 
+    parser.discover_directory("experiment_3")
     assert len(parser.directory_paths) == 2
     assert set(parser.directory_paths) == {run_a.resolve(), run_b.resolve()}
 
