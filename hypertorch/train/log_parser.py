@@ -1,4 +1,5 @@
 from collections.abc import Iterator
+import heapq
 import os
 from pathlib import Path
 import re
@@ -20,7 +21,9 @@ class LogParser:
 
     def __init__(self, base_logs_dir: str | Path = "hypertorch_logs") -> None:
         self._base_logs_dir: Path = self._validate_base_dir(base_logs_dir)
-        self._dir_to_csvs: dict[Path, list[Path]] = {}
+        self._dir_to_csvs: dict[
+            Path, list[Path]
+        ] = {}  # Once explored, retrieving csv is a O(1) operation
 
     @staticmethod
     def _validate_base_dir(path: str | Path) -> Path:
@@ -47,7 +50,7 @@ class LogParser:
 
     @classmethod
     def _iter_csvs(cls, root: str | Path, max_depth: int = 4) -> Iterator[Path]:
-        """Lazily yields CSV files newest-to-oldest, bypassing checkpoint folders.
+        """explore depth first CSV files newest-to-oldest, bypassing checkpoint folders.
 
         Args:
             root: Root path to begin scanning.
@@ -156,10 +159,10 @@ class LogParser:
         return matching_csvs
 
     def discover_latest(self, num: int = 1) -> None:
-        """Finds the latest `num` run directories and links their CSV files.
+        """Finds the latest `num` experiment directories and links all CSVs within them.
 
         Args:
-            num: Number of recent run directories to discover. Defaults to 1.
+            num: Number of recent experiment folders to inspect. Defaults to 1.
 
         Raises:
             ValueError: If `num` is less than 1.
@@ -173,26 +176,24 @@ class LogParser:
 
         try:
             with os.scandir(self._base_logs_dir) as it:
-                top_dirs = [entry for entry in it if entry.is_dir()]
+                latest_exp_dirs = heapq.nlargest(
+                    num,
+                    (entry for entry in it if entry.is_dir()),
+                    key=self._safe_mtime,
+                )
         except OSError as err:
             raise OSError(f"Failed to scan directory '{self._base_logs_dir}': {err}") from err
 
-        if not top_dirs:
+        if not latest_exp_dirs:
             raise FileNotFoundError(f"No experiment folders found inside '{self._base_logs_dir}'.")
 
-        top_dirs.sort(key=self._safe_mtime, reverse=True)
-
-        found_dirs: set[Path] = set()
-        for entry in top_dirs:
+        found_any = False
+        for entry in latest_exp_dirs:
             for csv_path in self._iter_csvs(entry.path, max_depth=4):
-                run_dir = csv_path.parent
-                if run_dir not in found_dirs and len(found_dirs) >= num:
-                    return
-
-                found_dirs.add(run_dir)
                 self._register_csv(csv_path)
+                found_any = True
 
-        if not self._dir_to_csvs:
+        if not found_any:
             raise FileNotFoundError(
                 "No CSV metric files found inside any experiment folder in "
                 f"'{self._base_logs_dir}'."
