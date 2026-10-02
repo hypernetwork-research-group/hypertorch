@@ -158,7 +158,7 @@ class LogParser:
 
         return matching_csvs
 
-    def discover_latest(self, num: int = 1) -> None:
+    def discover_from_latest_dir(self, num: int = 1) -> None:
         """Finds the latest `num` experiment directories and links all CSVs within them.
 
         Args:
@@ -194,6 +194,50 @@ class LogParser:
                 found_any = True
 
         if not found_any:
+            raise FileNotFoundError(
+                "No CSV metric files found inside any experiment folder in "
+                f"'{self._base_logs_dir}'."
+            )
+
+    def discover_latest_metrics(self, num: int = 1) -> None:
+        """Finds the latest `num` CSV metric files across experiment folders and links them.
+
+        Scans top-level experiment folders newest-to-oldest and halts traversal
+        as soon as `num` individual CSV files are discovered.
+
+        Args:
+            num: Number of recent metric CSV files to discover. Defaults to 1.
+
+        Raises:
+            ValueError: If `num` is less than 1.
+            FileNotFoundError: If base_logs_dir has no experiment folders or no CSVs.
+            OSError: If directory traversal fails.
+        """
+        if num < 1:
+            raise ValueError(f"discover_latest_metrics() requires num >= 1, but got {num}.")
+
+        self._validate_base_dir(self._base_logs_dir)
+
+        try:
+            with os.scandir(self._base_logs_dir) as it:
+                top_dirs = [entry for entry in it if entry.is_dir()]
+        except OSError as err:
+            raise OSError(f"Failed to scan directory '{self._base_logs_dir}': {err}") from err
+
+        if not top_dirs:
+            raise FileNotFoundError(f"No experiment folders found inside '{self._base_logs_dir}'.")
+
+        top_dirs.sort(key=self._safe_mtime, reverse=True)
+
+        found_count = 0
+        for entry in top_dirs:
+            for csv_path in self._iter_csvs(entry.path, max_depth=4):
+                self._register_csv(csv_path)
+                found_count += 1
+                if found_count >= num:
+                    return
+
+        if found_count == 0:
             raise FileNotFoundError(
                 "No CSV metric files found inside any experiment folder in "
                 f"'{self._base_logs_dir}'."
