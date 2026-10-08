@@ -76,7 +76,6 @@ def test_parsed_metrics_all_returns_shallow_copy() -> None:
     all_dict = metrics.all()
     assert "loss" in all_dict
 
-    # Mutating the returned copy should not affect ParsedMetrics internal store
     all_dict["ghost_metric"] = df
     assert "ghost_metric" not in metrics
 
@@ -101,3 +100,67 @@ def test_parsed_metrics_repr() -> None:
     )
 
     assert repr(metrics) == "ParsedMetrics(x_col='step', metrics=['loss'])"
+
+
+def test_parsed_metrics_average_reduces_duplicates(tmp_path: Path) -> None:
+    csv_file = tmp_path / "metrics.csv"
+    exp_dir = tmp_path / "experiment_1"
+
+    metrics = ParsedMetrics(
+        x_col="epoch",
+        csv_path=csv_file,
+        experiment_dir=exp_dir,
+        experiment_name="1",
+    )
+
+    # Epoch 0 has two train values (10.0 and 20.0), averaging to 15.0
+    loss_df = pd.DataFrame(
+        {
+            "epoch": [0, 0, 1],
+            "split": ["train", "train", "train"],
+            "value": [10.0, 20.0, 5.0],
+        }
+    )
+    metrics.add("loss", loss_df)
+
+    averaged = metrics.average()
+
+    # Metadata must be preserved on the new instance
+    assert averaged.x_col == "epoch"
+    assert averaged.csv_path == csv_file
+    assert averaged.experiment_dir == exp_dir
+    assert averaged.experiment_name == "1"
+
+    # Original instance must not be modified
+    assert len(metrics.fetch("loss")) == 3
+
+    # Averaged instance must collapse the duplicate epoch entries
+    avg_df = averaged.fetch("loss")
+    assert len(avg_df) == 2
+    expected_df = pd.DataFrame(
+        {
+            "epoch": [0, 1],
+            "split": ["train", "train"],
+            "value": [15.0, 5.0],
+        }
+    )
+    pd.testing.assert_frame_equal(avg_df, expected_df)
+
+
+def test_parsed_metrics_average_without_duplicates() -> None:
+    metrics = ParsedMetrics(x_col="epoch")
+    df = pd.DataFrame({"epoch": [0, 1], "split": ["train", "train"], "value": [0.4, 0.2]})
+    metrics.add("loss", df)
+
+    averaged = metrics.average()
+    pd.testing.assert_frame_equal(averaged.fetch("loss"), df)
+
+
+def test_parsed_metrics_average_missing_x_col_in_dataframe() -> None:
+    metrics = ParsedMetrics(x_col="epoch")
+    # DataFrame without the primary x_col column
+    df = pd.DataFrame({"step": [10, 20], "split": ["train", "train"], "value": [0.5, 0.3]})
+    metrics.add("loss", df)
+
+    averaged = metrics.average()
+    pd.testing.assert_frame_equal(averaged.fetch("loss"), df)
