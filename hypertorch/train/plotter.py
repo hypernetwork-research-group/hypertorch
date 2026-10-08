@@ -1,10 +1,13 @@
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
+import colorsys
 import importlib
 import importlib.util
 import itertools
+import math
 from pathlib import Path
 
+import pandas as pd
 from hypertorch.types import ParsedMetrics
 from hypertorch.utils.file_utils import validate_base_dir
 
@@ -16,8 +19,6 @@ class Plotter(ABC):
     in specific chart types (Line, Scatter, etc.).
     """
 
-    MARKERS: tuple[str, ...] = ("o", "s", "^", "D", "v", "<", ">", "P", "X", "*")
-
     @staticmethod
     def _is_plotting_available() -> bool:
         """Check whether matplotlib and seaborn are importable."""
@@ -25,6 +26,25 @@ class Plotter(ABC):
             importlib.util.find_spec("matplotlib") is not None
             and importlib.util.find_spec("seaborn") is not None
         )
+
+    @staticmethod
+    def _get_shade(
+        base_color: tuple[float, ...] | list[float],
+        split_idx: int,
+        num_splits: int,
+    ) -> tuple[float, float, float]:
+        """Generates a shade of base_color based on split index while keeping the hue."""
+        if num_splits <= 1:
+            return (base_color[0], base_color[1], base_color[2])
+
+        r, g, b = base_color[:3]
+        h, _, s = colorsys.rgb_to_hls(r, g, b)
+
+        min_l, max_l = 0.30, 0.72
+        new_l = min_l + (split_idx / (num_splits - 1)) * (max_l - min_l)
+        new_s = min(1.0, max(s, 0.65))
+
+        return colorsys.hls_to_rgb(h, new_l, new_s)
 
     @staticmethod
     def _normalize_metrics(
@@ -138,7 +158,6 @@ class LinePlotter(Plotter):
         plots_dir = self._resolve_plots_dir(metrics_list, output_dir, create_subfolder)
         targets = self._resolve_target_metrics(metrics_list, metric_names)
 
-        is_multi = len(metrics_list) > 1
         x_col = metrics_list[0].x_col
 
         matplotlib = importlib.import_module("matplotlib")
@@ -147,8 +166,7 @@ class LinePlotter(Plotter):
         sns = importlib.import_module("seaborn")
         sns.set_theme(style="darkgrid")
 
-        n_colors = max(len(metrics_list), 10)
-        palette = sns.color_palette("tab10" if n_colors <= 10 else "tab20", n_colors=n_colors)
+        palette = sns.color_palette("colorblind")
         saved_plots: list[Path] = []
 
         for var_name in targets:
@@ -158,9 +176,13 @@ class LinePlotter(Plotter):
             if not runs_with_metric:
                 continue
 
-            fig, ax = plt.subplots(figsize=(8.5, 5.2))
+            is_multi = len(runs_with_metric) > 1
 
-            # Dynamically identify all unique splits in order of appearance
+            # Resolve subfolder based on whether this metric belongs to multiple runs
+            subfolder_name = "comparison" if is_multi else "unique"
+            dest_dir = plots_dir / subfolder_name if create_subfolder else plots_dir
+            dest_dir.mkdir(parents=True, exist_ok=True)
+
             unique_splits: list[str] = []
             for _, m in runs_with_metric:
                 for s in m.fetch(var_name)["split"].unique():
@@ -168,10 +190,16 @@ class LinePlotter(Plotter):
                     if s_str not in unique_splits:
                         unique_splits.append(s_str)
 
-            split_markers = {
-                s: self.MARKERS[i % len(self.MARKERS)]
-                for i, s in enumerate(unique_splits)
-            }
+            total_curves = sum(
+                1
+                for _, m in runs_with_metric
+                for split_name in unique_splits
+                if not m.fetch(var_name)[m.fetch(var_name)["split"] == split_name].empty
+            )
+
+            is_busy = total_curves > 2
+            fig_size = (11.2, 5.2) if is_busy else (8.5, 5.0)
+            fig, ax = plt.subplots(figsize=fig_size)
 
             for run_idx, m in runs_with_metric:
                 tidy_df = m.fetch(var_name)
@@ -184,59 +212,71 @@ class LinePlotter(Plotter):
                     if group.empty:
                         continue
 
-                    marker = split_markers[split_name]
+                    s_idx = unique_splits.index(split_name)
 
                     if is_multi:
-                        color = run_color
+                        color = self._get_shade(run_color, s_idx, len(unique_splits))
                         label = f"{run_label} ({split_name})"
                     else:
-                        s_idx = unique_splits.index(split_name)
                         color = palette[s_idx % len(palette)]
                         label = split_name
 
-                    # Single-point evaluation (benchmark line)
+                    marker = None if is_busy else "."
+
                     if len(group) == 1:
                         val = float(group["value"].iloc[0])
                         ax.axhline(
                             y=val,
                             color=color,
                             linestyle=":",
-                            linewidth=1.6,
-                            alpha=0.75,
+                            linewidth=1.3,
+                            alpha=0.8,
                             zorder=base_zorder,
                             label=f"{label}: {val:.4f}",
                         )
                     else:
                         sorted_group = group.sort_values(by=x_col)
-                        # Spacing markers prevents a dense bead-string on 100+ epoch runs
-                        markevery = max(1, len(sorted_group) // 10) if len(sorted_group) > 20 else 1
-
                         ax.plot(
                             sorted_group[x_col],
                             sorted_group["value"],
                             color=color,
                             linestyle="-",
+                            linewidth=1.4,
                             marker=marker,
-                            markersize=6,
-                            markevery=markevery,
-                            linewidth=2.0,
+                            markersize=5.5 if marker else None,
                             zorder=base_zorder + 1,
                             label=label,
                         )
 
             formatted_metric = var_name.replace("_", " ").capitalize()
-            title_prefix = "Comparison" if is_multi else f"Experiment {metrics_list[0].experiment_name or '0'}"
+            first_run_name = runs_with_metric[0][1].experiment_name or "0"
+            title_prefix = "Comparison" if is_multi else f"Experiment {first_run_name}"
+            suffix = "comparison" if is_multi else first_run_name
+
             ax.set_title(f"{title_prefix} — {formatted_metric}", fontsize=12, pad=10)
             ax.set_xlabel(x_col.capitalize())
             ax.set_ylabel(formatted_metric)
-            ax.legend(title="Runs & Splits" if is_multi else "Split", loc="best", frameon=True)
+
+            if is_busy:
+                ax.legend(
+                    title="Runs & Splits" if is_multi else "Split",
+                    bbox_to_anchor=(1.02, 1.0),
+                    loc="upper left",
+                    borderaxespad=0.0,
+                    frameon=True,
+                )
+            else:
+                ax.legend(
+                    title="Runs & Splits" if is_multi else "Split",
+                    loc="best",
+                    framealpha=0.85,
+                )
 
             clean_var = var_name.replace("/", "_")
-            suffix = "comparison" if is_multi else (metrics_list[0].experiment_name or "0")
-            output_path = plots_dir / f"LinePlot_{clean_var}_{suffix}.png"
+            output_path = dest_dir / f"LinePlot_{clean_var}_{suffix}.png"
 
             plt.tight_layout()
-            plt.savefig(output_path, dpi=300)
+            plt.savefig(output_path, dpi=300, bbox_inches="tight")
             plt.close(fig)
             saved_plots.append(output_path)
 
@@ -244,7 +284,7 @@ class LinePlotter(Plotter):
 
 
 class ScatterPlotter(Plotter):
-    """Generates pairwise Seaborn scatter plots comparing metrics against each other."""
+    """Generates composite pairwise scatter plots, cleanly chunked and separated by split."""
 
     def plot(
         self,
@@ -253,7 +293,7 @@ class ScatterPlotter(Plotter):
         output_dir: str | Path | None = None,
         create_subfolder: bool = True,
     ) -> list[Path]:
-        """Renders and saves pairwise metric scatter plots across runs."""
+        """Renders pairwise metric subplots across models, separated by data split."""
         if not self._is_plotting_available():
             raise ImportError(
                 "Plotting dependencies are not available. "
@@ -271,7 +311,6 @@ class ScatterPlotter(Plotter):
             )
 
         plots_dir = self._resolve_plots_dir(metrics_list, output_dir, create_subfolder)
-        is_multi = len(metrics_list) > 1
         x_col = metrics_list[0].x_col
 
         matplotlib = importlib.import_module("matplotlib")
@@ -280,100 +319,202 @@ class ScatterPlotter(Plotter):
         sns = importlib.import_module("seaborn")
         sns.set_theme(style="darkgrid")
 
-        n_colors = max(len(metrics_list), 10)
-        palette = sns.color_palette("tab10" if n_colors <= 10 else "tab20", n_colors=n_colors)
+        palette = sns.color_palette("colorblind", n_colors=max(len(metrics_list), 10))
+
+        unique_splits: list[str] = []
+        for m in metrics_list:
+            for var in targets:
+                if var in m:
+                    for s in m.fetch(var)["split"].unique():
+                        s_str = str(s)
+                        if s_str not in unique_splits:
+                            unique_splits.append(s_str)
+
+        all_candidate_pairs = list(itertools.combinations(targets, 2))
+        max_plots_per_fig = 6
         saved_plots: list[Path] = []
 
-        for var_x, var_y in itertools.combinations(targets, 2):
-            runs_with_both = [
-                (idx, m) for idx, m in enumerate(metrics_list) if var_x in m and var_y in m
-            ]
-            if not runs_with_both:
-                continue
+        for split_name in unique_splits:
+            pair_data: dict[tuple[str, str], dict[int, tuple[str, pd.DataFrame]]] = {}
 
-            fig, ax = plt.subplots(figsize=(8.5, 5.2))
-
-            unique_splits: list[str] = []
-            for _, m in runs_with_both:
-                for s in m.fetch(var_x)["split"].unique():
-                    s_str = str(s)
-                    if s_str not in unique_splits:
-                        unique_splits.append(s_str)
-
-            split_markers = {
-                s: self.MARKERS[i % len(self.MARKERS)]
-                for i, s in enumerate(unique_splits)
-            }
-
-            has_plotted_points = False
-
-            for run_idx, m in runs_with_both:
-                df_x = m.fetch(var_x)
-                df_y = m.fetch(var_y)
-                merged = df_x.merge(
-                    df_y,
-                    on=[x_col, "split"],
-                    suffixes=(f"_{var_x}", f"_{var_y}"),
-                )
-                if merged.empty:
-                    continue
-
-                run_label = m.experiment_name or f"run_{run_idx}"
-                run_color = palette[run_idx % len(palette)]
-                base_zorder = 2 + (run_idx * 2)
-
+            for var_x, var_y in all_candidate_pairs:
+                run_matches: dict[int, tuple[str, pd.DataFrame]] = {}
                 col_x = f"value_{var_x}"
                 col_y = f"value_{var_y}"
+                is_redundant_alias = True
 
-                for split_name in unique_splits:
-                    group = merged[merged["split"] == split_name]
-                    if group.empty:
+                for run_idx, m in enumerate(metrics_list):
+                    if var_x not in m or var_y not in m:
                         continue
 
-                    has_plotted_points = True
-                    marker = split_markers[split_name]
+                    df_x = m.fetch(var_x)
+                    df_y = m.fetch(var_y)
+                    df_x_split = df_x[df_x["split"] == split_name]
+                    df_y_split = df_y[df_y["split"] == split_name]
 
-                    if is_multi:
-                        color = run_color
-                        label = f"{run_label} ({split_name})"
-                    else:
-                        s_idx = unique_splits.index(split_name)
-                        color = palette[s_idx % len(palette)]
-                        label = split_name
+                    if df_x_split.empty or df_y_split.empty:
+                        continue
 
-                    ax.scatter(
-                        group[col_x],
-                        group[col_y],
-                        color=color,
-                        marker=marker,
-                        s=60,
-                        alpha=0.85,
-                        edgecolors="white",
-                        linewidths=0.6,
-                        zorder=base_zorder + 1,
-                        label=label,
-                    )
+                    merged = df_x_split.merge(
+                        df_y_split,
+                        on=[x_col, "split"],
+                        suffixes=(f"_{var_x}", f"_{var_y}"),
+                    ).sort_values(by=x_col)
 
-            if not has_plotted_points:
-                plt.close(fig)
+                    if len(merged) < 2:
+                        continue
+
+                    # Check if the metrics contain different values
+                    diff = (merged[col_x] - merged[col_y]).abs()
+                    if (diff > 1e-4).any():
+                        is_redundant_alias = False
+
+                    run_label = m.experiment_name or f"run_{run_idx}"
+                    run_matches[run_idx] = (run_label, merged)
+
+                # Prune pairs with 0 data OR pairs that are identical aliases across all runs
+                if run_matches and not is_redundant_alias:
+                    pair_data[(var_x, var_y)] = run_matches
+
+            if not pair_data:
                 continue
 
-            label_x = var_x.replace("_", " ").capitalize()
-            label_y = var_y.replace("_", " ").capitalize()
-            title_prefix = "Comparison" if is_multi else f"Experiment {metrics_list[0].experiment_name or '0'}"
-            ax.set_title(f"{title_prefix} — {label_y} vs {label_x}", fontsize=12, pad=10)
-            ax.set_xlabel(label_x)
-            ax.set_ylabel(label_y)
-            ax.legend(title="Runs & Splits" if is_multi else "Split", loc="best", frameon=True)
+            # Separate multi-run comparisons from single-run metrics
+            comparison_pairs: list[tuple[str, str]] = []
+            single_run_pairs: dict[int, list[tuple[str, str]]] = {}
 
-            clean_x = var_x.replace("/", "_")
-            clean_y = var_y.replace("/", "_")
-            suffix = "comparison" if is_multi else (metrics_list[0].experiment_name or "0")
-            output_path = plots_dir / f"ScatterPlot_{clean_y}_vs_{clean_x}_{suffix}.png"
+            for pair, runs in pair_data.items():
+                if len(runs) >= 2:
+                    comparison_pairs.append(pair)
+                else:
+                    run_idx = next(iter(runs.keys()))
+                    single_run_pairs.setdefault(run_idx, []).append(pair)
 
-            plt.tight_layout()
-            plt.savefig(output_path, dpi=300)
-            plt.close(fig)
-            saved_plots.append(output_path)
+            def _render_chunks(
+                pairs_to_plot: list[tuple[str, str]],
+                title_prefix: str,
+                file_stem: str,
+                is_comparison: bool,
+            ) -> None:
+                """Splits pair lists into chunks <= 6 and renders them into separate files."""
+                subfolder_name = "comparison" if is_comparison else "unique"
+                dest_dir = plots_dir / subfolder_name if create_subfolder else plots_dir
+                dest_dir.mkdir(parents=True, exist_ok=True)
+
+                total_chunks = math.ceil(len(pairs_to_plot) / max_plots_per_fig)
+
+                for chunk_idx in range(total_chunks):
+                    chunk = pairs_to_plot[
+                        chunk_idx * max_plots_per_fig : (chunk_idx + 1) * max_plots_per_fig
+                    ]
+                    n_plots = len(chunk)
+
+                    if n_plots == 1:
+                        n_cols, n_rows = 1, 1
+                    elif n_plots == 2:
+                        n_cols, n_rows = 2, 1
+                    elif n_plots <= 4:
+                        n_cols, n_rows = 2, math.ceil(n_plots / 2)
+                    else:
+                        n_cols, n_rows = 3, math.ceil(n_plots / 3)
+
+                    fig, axes = plt.subplots(
+                        n_rows,
+                        n_cols,
+                        figsize=(6.8 * n_cols, 5.8 * n_rows),
+                        squeeze=False,
+                    )
+                    flat_axes = axes.flatten()
+
+                    for idx, (var_x, var_y) in enumerate(chunk):
+                        ax = flat_axes[idx]
+                        col_x = f"value_{var_x}"
+                        col_y = f"value_{var_y}"
+
+                        for run_idx, (run_label, merged) in pair_data[(var_x, var_y)].items():
+                            run_color = palette[run_idx % len(palette)]
+
+                            ax.scatter(
+                                merged[col_x],
+                                merged[col_y],
+                                color=run_color,
+                                marker=".",
+                                s=65,
+                                alpha=0.8,
+                                zorder=2,
+                                label=run_label if idx == 0 else None,
+                            )
+
+                            ax.scatter(
+                                merged[col_x].iloc[-1],
+                                merged[col_y].iloc[-1],
+                                color=run_color,
+                                s=120,
+                                marker="X",
+                                edgecolors="black",
+                                linewidths=1.0,
+                                zorder=3,
+                            )
+
+                        label_x = var_x.replace("_", " ").capitalize()
+                        label_y = var_y.replace("_", " ").capitalize()
+                        ax.set_title(f"{label_y} vs {label_x}", fontsize=12, pad=10)
+                        ax.set_xlabel(label_x, fontsize=10)
+                        ax.set_ylabel(label_y, fontsize=10)
+                        ax.margins(x=0.08, y=0.08)
+
+                    for empty_idx in range(n_plots, len(flat_axes)):
+                        flat_axes[empty_idx].set_visible(False)
+
+                    handles, labels = flat_axes[0].get_legend_handles_labels()
+                    if handles:
+                        leg_title = (
+                            f"{title_prefix} ({split_name.capitalize()} — X = Final)"
+                            if is_comparison
+                            else f"{title_prefix} ({split_name.capitalize()})"
+                        )
+                        fig.legend(
+                            handles,
+                            labels,
+                            bbox_to_anchor=(1.02, 1.0),
+                            loc="upper left",
+                            borderaxespad=0.0,
+                            frameon=True,
+                            title=leg_title,
+                        )
+
+                    fig.suptitle(
+                        f"{title_prefix} — Metric Relationships",
+                        fontsize=12,
+                        y=1.03,
+                    )
+
+                    part_suffix = f"_part{chunk_idx + 1}" if total_chunks > 1 else ""
+                    out_path = (
+                        dest_dir
+                        / f"ScatterPlot_relationships_{split_name}_{file_stem}{part_suffix}.png"
+                    )
+
+                    plt.tight_layout()
+                    plt.savefig(out_path, dpi=300, bbox_inches="tight")
+                    plt.close(fig)
+                    saved_plots.append(out_path)
+
+            if comparison_pairs:
+                _render_chunks(
+                    pairs_to_plot=comparison_pairs,
+                    title_prefix="Comparison",
+                    file_stem="comparison",
+                    is_comparison=True,
+                )
+
+            for run_idx, r_pairs in single_run_pairs.items():
+                run_label = metrics_list[run_idx].experiment_name or f"run_{run_idx}"
+                _render_chunks(
+                    pairs_to_plot=r_pairs,
+                    title_prefix=f"Experiment {run_label}",
+                    file_stem=run_label,
+                    is_comparison=False,
+                )
 
         return saved_plots
