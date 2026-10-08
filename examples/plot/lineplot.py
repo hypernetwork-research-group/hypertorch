@@ -82,7 +82,7 @@ def main() -> None:
 
     model_configs = [ModelConfig(name="mlp", version="mean", model=model)]
 
-    # 3-epoch experiment to populate experiment metrics
+    # 15-epoch experiment to populate experiment metrics
     print("\nTraining MLP model for 15 epochs...")
     with MultiModelTrainer(
         model_configs=model_configs,
@@ -110,10 +110,11 @@ def main() -> None:
     saved_plots: list[Path] = []
 
     for metrics in parsed_runs:
+        m = metrics.average()
         # Metrics stores the directory as well as the names of the metrics found
         print(f"Discovered experiment directory: {metrics.experiment_dir}")
         print(f"Available metrics to plot: {metrics.names()}")
-        saved_plots.extend(plotter.plot(metrics))
+        saved_plots.extend(plotter.plot(m))
 
     print(f"\nGenerated {len(saved_plots)} plot(s):")
     for plot_path in saved_plots:
