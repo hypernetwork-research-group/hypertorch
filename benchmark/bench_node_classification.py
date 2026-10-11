@@ -1,6 +1,7 @@
 import pandas as pd
 import torch
 
+from lightning.pytorch.callbacks import Callback
 from torchmetrics import MetricCollection
 from torchmetrics.classification import MulticlassAUROC, MulticlassAccuracy, MulticlassF1Score
 from hypertorch.train import MultiModelTrainer
@@ -270,7 +271,7 @@ if __name__ == "__main__":
 
             print(f"Starting training and evaluation for dataset: {dataset_name}...")
 
-            callbacks = (
+            callbacks: list[Callback] = (
                 [
                     ResourceMonitor(
                         csv_path=f"benchmark/resources_nc/resource_usage/{dataset_name}.csv",

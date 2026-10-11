@@ -150,7 +150,7 @@ class LaTexTableLogger(ExperimentSharedLogger):
         super().__init__()
         validate_is_non_negative("precision", precision)
 
-        self.__save_dir: str | Path = save_dir
+        self.__save_dir: str = str(save_dir)
         self.__model_name: str = model_name
         self.__experiment_name: str = experiment_name
         self.__precision: int = precision
@@ -187,12 +187,12 @@ class LaTexTableLogger(ExperimentSharedLogger):
         return dict(self.__shared_stores.get(self.__experiment_name, {}))
 
     @property
-    def save_dir(self) -> str | Path:
+    def save_dir(self) -> str:
         """
         Return the logger save directory.
 
         Returns:
-            save_dir: Base directory for comparison files.
+            save_dir: Base directory for comparison files as a string.
         """
         return self.__save_dir
 
