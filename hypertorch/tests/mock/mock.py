@@ -3,7 +3,7 @@ import torch
 from os import PathLike
 from torch import Tensor
 from typing import IO, Any
-from collections.abc import Iterator
+from collections.abc import Generator
 from unittest.mock import MagicMock
 from contextlib import contextmanager
 from hypertorch.types import HData
@@ -69,7 +69,7 @@ def new_mock_villain() -> MagicMock:
 def new_mock_named_temporary_file(
     path: str | PathLike[str],
     mode: str = "wb",
-) -> Iterator[IO[Any]]:
+) -> Generator[IO[Any], None, None]:
     with open(path, mode) as file_handle:
         yield file_handle
 
