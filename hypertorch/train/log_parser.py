@@ -7,6 +7,7 @@ import warnings
 
 import pandas as pd
 from hypertorch.types import ParsedMetrics
+from hypertorch.utils import validate_base_dir
 
 
 class LogParser:
@@ -20,25 +21,10 @@ class LogParser:
     """
 
     def __init__(self, base_logs_dir: str | Path = "hypertorch_logs") -> None:
-        self._base_logs_dir: Path = self._validate_base_dir(base_logs_dir)
+        self._base_logs_dir: Path = validate_base_dir(base_logs_dir)
         self._dir_to_csvs: dict[
             Path, list[Path]
         ] = {}  # Once explored, retrieving csv is a O(1) operation
-
-    @staticmethod
-    def _validate_base_dir(path: str | Path) -> Path:
-        """Validates that the base directory exists and is a directory.
-
-        Raises:
-            FileNotFoundError: If the directory does not exist.
-            NotADirectoryError: If the path points to a file or special node.
-        """
-        resolved = Path(path).resolve()
-        if not resolved.exists():
-            raise FileNotFoundError(f"Logs root directory '{resolved}' does not exist.")
-        if not resolved.is_dir():
-            raise NotADirectoryError(f"Logs root path '{resolved}' is not a directory.")
-        return resolved
 
     @staticmethod
     def _safe_mtime(entry: os.DirEntry) -> float:
@@ -106,7 +92,7 @@ class LogParser:
             FileNotFoundError: If new_base_dir does not exist.
             NotADirectoryError: If new_base_dir is not a directory.
         """
-        self._base_logs_dir = self._validate_base_dir(new_base_dir)
+        self._base_logs_dir = validate_base_dir(new_base_dir)
 
     def _normalize_path(self, path: str | Path) -> Path:
         """Resolves path against cwd if existing, or base_logs_dir otherwise."""
@@ -172,7 +158,7 @@ class LogParser:
         if num < 1:
             raise ValueError(f"discover_latest() requires num >= 1, but got {num}.")
 
-        self._validate_base_dir(self._base_logs_dir)
+        validate_base_dir(self._base_logs_dir)
 
         try:
             with os.scandir(self._base_logs_dir) as it:
@@ -216,7 +202,7 @@ class LogParser:
         if num < 1:
             raise ValueError(f"discover_latest_metrics() requires num >= 1, but got {num}.")
 
-        self._validate_base_dir(self._base_logs_dir)
+        validate_base_dir(self._base_logs_dir)
 
         try:
             with os.scandir(self._base_logs_dir) as it:

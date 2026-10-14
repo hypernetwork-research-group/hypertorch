@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -15,6 +16,7 @@ from hypertorch.utils import (
     write_dataset_to_disk_as_zst,
     find_project_root,
     get_cache_dir,
+    validate_base_dir,
 )
 
 
@@ -266,3 +268,21 @@ def test_get_cache_dir_can_skip_creation(tmp_path, monkeypatch):
 
     assert result == current_dir / "cache" / "subdir"
     mock_mkdir.assert_not_called()
+
+
+def test_validate_base_dir_success(tmp_path: Path) -> None:
+    valid_dir = tmp_path / "valid"
+    valid_dir.mkdir()
+    assert validate_base_dir(valid_dir) == valid_dir.resolve()
+
+
+def test_validate_base_dir_missing_raises_error(tmp_path: Path) -> None:
+    with pytest.raises(FileNotFoundError, match="does not exist"):
+        validate_base_dir(tmp_path / "missing")
+
+
+def test_validate_base_dir_file_raises_error(tmp_path: Path) -> None:
+    file_path = tmp_path / "file.txt"
+    file_path.write_text("hello")
+    with pytest.raises(NotADirectoryError, match="is not a directory"):
+        validate_base_dir(file_path)

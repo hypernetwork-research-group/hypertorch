@@ -4,6 +4,7 @@ import importlib.util
 from pathlib import Path
 
 from hypertorch.types import ParsedMetrics
+from hypertorch.utils.file_utils import validate_base_dir
 
 
 class Plotter(ABC):
@@ -52,16 +53,13 @@ class Plotter(ABC):
             NotADirectoryError: If the target path is not a directory.
         """
         if output_dir is not None:
-            base_dir = Path(output_dir)
+            target = output_dir
         elif metrics.experiment_dir is not None:
-            base_dir = Path(metrics.experiment_dir)
+            target = metrics.experiment_dir
         else:
             raise ValueError("Could not find a destination path.")
 
-        if not base_dir.exists():
-            raise FileNotFoundError(f"Destination directory '{base_dir}' does not exist.")
-        if not base_dir.is_dir():
-            raise NotADirectoryError(f"Destination path '{base_dir}' is not a directory.")
+        base_dir = validate_base_dir(target)
 
         plots_dir = base_dir / "plots" if create_subfolder else base_dir
         plots_dir.mkdir(parents=True, exist_ok=True)
@@ -117,7 +115,7 @@ class LinePlotter(Plotter):
                               within the target directory. Defaults to True.
 
         Returns:
-            List of generated plot image file paths.
+            saved_plots: List of generated plot image file paths.
 
         Raises:
             ImportError: If matplotlib or seaborn is not installed.
