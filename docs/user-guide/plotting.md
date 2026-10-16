@@ -52,16 +52,25 @@ hypertorch_logs/
 `LogParser` maintains an internal queue (`directory_paths`) mapping discovered run folders to their metric files without performing redundant filesystem scans during parsing.
 
 ### Discovering Recent Runs
-Queue the latest $N$ runs across all experiment folders using `discover_latest(num=N)`:
+Queue the latest $N$ runs across all experiment folders using `discover_latest_metrics(num=N)`:
 
 ```python
 parser = LogParser()
-parser.discover_latest(num=3)
+# Find the latest 3 metrics.csv files
+parser.discover_latest_metrics(num=3)
 
-# Parse all queued runs and plot them individually
 for metrics in parser.parse_all():
     plotter.plot(metrics)
 ```
+
+Another way to discover recent runs is to use `discover_from_latest_dir(num=N)`, which finds all the metrics files in the latest $N$ dirs:
+
+```python
+parser = LogParser()
+# Find the metrics.csv in the latest folder
+parser.discover_latest_metrics(num=1)
+```
+
 
 ### Discovering Runs by Folder Name
 Queue all subdirectories containing metric logs within a specific experiment folder using `discover_directory()`:
