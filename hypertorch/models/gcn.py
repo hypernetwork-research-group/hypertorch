@@ -110,7 +110,7 @@ class GCN(nn.Module):
             cached=cached,
         )
 
-    def forward(self, x: Tensor, edge_index: Tensor) -> Tensor:
+    def forward(self, x: Tensor, edge_index: Tensor) -> Tensor:  # ty: ignore[invalid-mutable-override]
         """
         Apply the GCN stack to node features.
 

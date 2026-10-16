@@ -32,7 +32,7 @@ class CommonNeighbors(nn.Module):
             scorer if scorer is not None else CommonNeighborsHyperedgeScorer(aggregation)
         )
 
-    def forward(
+    def forward(  # ty: ignore[invalid-mutable-override]
         self,
         candidate_nodes: Tensor,
         hyperedge_index: Tensor | None = None,

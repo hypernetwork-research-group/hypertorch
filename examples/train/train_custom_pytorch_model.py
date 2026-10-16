@@ -26,7 +26,7 @@ class CustomPyTorchHlpPredictor(nn.Module):
             nn.Linear(hidden_channels, 1),
         )
 
-    def forward(self, x: Tensor) -> Tensor:
+    def forward(self, x: Tensor) -> Tensor:  # ty: ignore[invalid-mutable-override]
         """
         Compute one binary-classification logit per sample.
 
