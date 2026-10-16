@@ -65,6 +65,7 @@ from .file_utils import (
     write_dataset_to_disk_as_zst,
     get_cache_dir,
     find_project_root,
+    validate_base_dir,
 )
 
 __all__ = [
@@ -104,6 +105,7 @@ __all__ = [
     "sparse_dropout",
     "to_0based_ids",
     "to_non_empty_edgeattr",
+    "validate_base_dir",
     "validate_floating_tensor_dtype",
     "validate_hif_data",
     "validate_hif_json",
