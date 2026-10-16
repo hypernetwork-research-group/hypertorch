@@ -92,7 +92,7 @@ class Node2Vec(nn.Module):
             sparse=sparse,
         )
 
-    def forward(self, batch: Tensor | None = None) -> Tensor:
+    def forward(self, batch: Tensor | None = None) -> Tensor:  # ty: ignore[invalid-mutable-override]
         """
         Return Node2Vec embeddings for optional node batches.
 
@@ -219,7 +219,7 @@ class Node2VecGCN(nn.Module):
         self.node2vec: Node2Vec = Node2Vec(**node2vec_config)
         self.gcn: GCN = GCN(**gcn_config)
 
-    def forward(
+    def forward(  # ty: ignore[invalid-mutable-override]
         self,
         batch: Tensor | None = None,
         edge_index: Tensor | None = None,

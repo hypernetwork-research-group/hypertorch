@@ -108,7 +108,7 @@ class MLP(nn.Module):
 
         self.layers: nn.Sequential = nn.Sequential(*layers)
 
-    def forward(self, x: Tensor) -> Tensor:
+    def forward(self, x: Tensor) -> Tensor:  # ty: ignore[invalid-mutable-override]
         """
         Apply the MLP to input features.
 

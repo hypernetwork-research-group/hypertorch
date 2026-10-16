@@ -58,7 +58,7 @@ class HGNNP(nn.Module):
             ]
         )
 
-    def forward(self, x: Tensor, hyperedge_index: Tensor) -> Tensor:
+    def forward(self, x: Tensor, hyperedge_index: Tensor) -> Tensor:  # ty: ignore[invalid-mutable-override]
         """
         Apply two stacked ``HGNNPConv`` layers to produce node embeddings.
 
