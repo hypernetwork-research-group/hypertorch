@@ -152,3 +152,7 @@ ignore = [
   "PLR2004", # magic numbers (https://docs.astral.sh/ruff/rules/magic-value-comparison)
   "RET504",  # unnecessary assignment (https://docs.astral.sh/ruff/rules/unnecessary-assign)
 ]
+[tool.ty]
+# Disable mutable attribute/method override checks to accommodate PyTorch's unannotated base modules
+rules = { invalid-mutable-override = "ignore" }
+
