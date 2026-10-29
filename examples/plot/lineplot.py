@@ -8,7 +8,8 @@ from hypertorch.data import (
     RandomNegativeSampler,
 )
 from hypertorch.hyperlink_prediction import MLPPredictor
-from hypertorch.train import LinePlotter, LogParser, MultiModelTrainer
+from hypertorch.plot import LinePlotter, LogParser
+from hypertorch.train import MultiModelTrainer
 from hypertorch.types import ModelConfig
 
 

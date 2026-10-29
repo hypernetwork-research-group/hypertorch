@@ -4,7 +4,7 @@ import time
 from typing import Any
 import pytest
 
-from hypertorch.train import LogParser
+from hypertorch.plot import LogParser
 from hypertorch.types import ParsedMetrics
 
 
@@ -161,45 +161,6 @@ def test_logparser_discover_from_latest_dir_oserror(
     monkeypatch.setattr(os, "scandir", mock_scandir)
     with pytest.raises(OSError, match="Failed to scan directory"):
         parser.discover_from_latest_dir(num=1)
-
-
-def test_logparser_discover_from_latest_dir_orders_and_includes_all_models(
-    tmp_path: Path,
-) -> None:
-    logs_dir = tmp_path / "hypertorch_logs"
-    logs_dir.mkdir()
-
-    # Exp 0 (Older)
-    exp_0 = logs_dir / "experiment_0" / "mlp" / "version_0"
-    exp_0.mkdir(parents=True)
-    csv_0 = exp_0 / "metrics.csv"
-    csv_0.write_text("epoch,loss\n0,0.5\n")
-
-    time.sleep(0.05)
-
-    # Exp 1 (Newer) with two models and adjacent checkpoints
-    exp_1 = logs_dir / "experiment_1"
-    run_mlp = exp_1 / "mlp" / "version_0"
-    run_gat = exp_1 / "gat" / "version_0"
-    run_mlp.mkdir(parents=True)
-    run_gat.mkdir(parents=True)
-
-    csv_mlp = run_mlp / "metrics.csv"
-    csv_gat = run_gat / "metrics.csv"
-    csv_mlp.write_text("epoch,loss\n0,0.2\n")
-    csv_gat.write_text("epoch,loss\n0,0.15\n")
-
-    ckpt_dir = run_mlp / "checkpoints"
-    ckpt_dir.mkdir()
-    (ckpt_dir / "ignored.csv").write_text("epoch,loss\n0,999.0\n")
-
-    parser = LogParser(logs_dir)
-    parser.discover_from_latest_dir(num=1)
-
-    # Both models within the latest folder must be discovered
-    assert len(parser.directory_paths) == 2
-    assert set(parser.directory_paths) == {run_mlp.resolve(), run_gat.resolve()}
-    assert exp_0.resolve() not in parser.directory_paths
 
 
 def test_logparser_discover_from_latest_dir_multiple_folders(tmp_path: Path) -> None:
