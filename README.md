@@ -114,6 +114,7 @@ Use HyperTorch to:
 | **Node classification** | Use ready-to-train node classification pipelines | `hypertorch.node_classification` |
 | **Models and neural components** | Reuse model implementations, layers, aggregators, losses, activations, and normalization helpers | `hypertorch.models`, `hypertorch.nn` |
 | **Training and benchmarking** | Train and compare multiple models with shared data, callbacks, device settings, checkpoints, and per-model trainer options | `hypertorch.train`, `hypertorch.types` |
+| **Plotting benchmark results** | Visualize and compare the logs of multiple models; generate line plot and scatter plot | `hypetorch.plot` |
 | **Logging and visualization** | Write CSV metrics and Markdown/LaTeX comparison tables; optionally log to and auto-start TensorBoard | `hypertorch.train` |
 
 ## Getting started
