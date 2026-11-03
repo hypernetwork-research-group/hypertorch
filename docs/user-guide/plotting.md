@@ -30,8 +30,8 @@ from hypertorch.plot import LinePlotter, LogParser
 parser = LogParser()
 plotter = LinePlotter()
 
-# Locate the most recent run directory and parse it
-parser.discover_latest(num=1)
+# Locate the most recent metrics file and parse it
+parser.discover_latest_metrics(num=1)
 metrics = parser.parse_all()[0]
 
 # Generate line plots directly from the parsed metrics
@@ -71,14 +71,14 @@ When comparing metrics from multiple sources, each source will be automatically 
 The `plot()` function can accept a sequence of ParsedMetrics instead of a single one. When multiple ParsedMetrics are given like this, the result will compairison plot - both ParsedMetrics' metrics will be mapped on each plot image in order to visualize both at the same time.
 
 ```python
-from hypertorch.train import LinePlotter, LogParser
+from hypertorch.plot import LinePlotter, LogParser
 
 # Initialize parser and plotter
 parser = LogParser()
 plotter = LinePlotter()
 
-# Locate the most recent run directory and parse it
-parser.discover_latest(num=3)
+# Locate the most recent 3 runs and parse them
+parser.discover_latest_metrics(num=3)
 metrics = parser.parse_all()
 
 # Generate line plots directly from the parsed metrics
@@ -133,7 +133,7 @@ Another way to discover recent runs is to use `discover_from_latest_dir(num=N)`,
 ```python
 parser = LogParser()
 # Find the metrics.csv in the latest folder
-parser.discover_latest_metrics(num=1)
+parser.discover_from_latest_dir(num=1)
 ```
 
 
