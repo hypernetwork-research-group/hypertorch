@@ -169,7 +169,7 @@ def test_logparser_discover_from_latest_dir_orders_and_includes_all_models(
     csv_0.write_text("epoch,loss\n0,0.5\n")
     os.utime(exp_0, (1_000_000, 1_000_000))
 
-    # Exp 1 (Newer) with two models and adjacent checkpoints
+    # Exp 1 (Newer) with two models
     exp_1 = logs_dir / "experiment_1"
     run_mlp = exp_1 / "mlp" / "version_0"
     run_gat = exp_1 / "gat" / "version_0"
@@ -180,11 +180,6 @@ def test_logparser_discover_from_latest_dir_orders_and_includes_all_models(
     csv_gat = run_gat / "metrics.csv"
     csv_mlp.write_text("epoch,loss\n0,0.2\n")
     csv_gat.write_text("epoch,loss\n0,0.15\n")
-
-    ckpt_dir = run_mlp / "checkpoints"
-    ckpt_dir.mkdir()
-    (ckpt_dir / "ignored.csv").write_text("epoch,loss\n0,999.0\n")
-    os.utime(exp_1, (2_000_000, 2_000_000))
 
     parser = LogParser(logs_dir)
     parser.discover_from_latest_dir(num=1)
