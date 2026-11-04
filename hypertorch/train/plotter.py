@@ -76,7 +76,7 @@ class Plotter(ABC):
         """Renders and saves plot images from parsed metrics.
 
         Args:
-            metrics: ParsedMetrics container holding tidy metric DataFrames.
+            metrics: ParsedMetrics container.
             metric_names: Optional subset of metric variables to plot.
                          If None, plots all available metrics.
             output_dir: Optional path where the plots will be saved. If None,
@@ -106,7 +106,7 @@ class LinePlotter(Plotter):
         """Renders and saves line plots for metrics across epochs/steps.
 
         Args:
-            metrics: ParsedMetrics container holding tidy metric DataFrames.
+            metrics: ParsedMetrics container.
             metric_names: Optional subset of metric variables to plot.
                          If None, plots all available metrics.
             output_dir: Optional path where the plots will be saved. If None,
