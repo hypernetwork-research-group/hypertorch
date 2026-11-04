@@ -22,14 +22,14 @@ Initializing `LogParser` validates and points to the base logging directory (def
 To plot the most recent experiment run, discover it via `discover_latest(num=1)`, parse the queued runs with `parse_all()`, and render the curves using `LinePlotter`:
 
 ```python
-from hypertorch.train import LinePlotter, LogParser
+from hypertorch.plot import LinePlotter, LogParser
 
 # Initialize parser and plotter
 parser = LogParser()
 plotter = LinePlotter()
 
-# Locate the most recent run directory and parse it
-parser.discover_latest(num=1)
+# Locate the most recent metrics file and parse it
+parser.discover_latest_metrics(num=1)
 metrics = parser.parse_all()[0]
 
 # Generate line plots directly from the parsed metrics
@@ -46,12 +46,51 @@ hypertorch_logs/
         ├── LinePlot_loss_0.png
         └── LinePlot_accuracy_0.png
 ```
+
 ---
 
-## Discovery & Batch Parsing
+## Plotter Types
+
+
+#### Line Plots
+Implemented by `LinePlotter`. Requires a x_col (Prefers Epoch over Step) and a metric, will map the test, val and train values over each step of the Epoch. A new image will be created for each metric.
+
+---
+
+## Plotter Expanded
+
+
+#### Filtering Metrics
+If you only want to visualize specific curves, the `plot()` function can filter them with the `metric_names=[]` argument:
+
+```python
+# When wishing for only certain metrics:
+saved_plots = plotter.plot(metrics, metric_names=["loss", "f1"])
+```
+
+---
+
+
+#### Custom Plotting Directory
+Override the destination directory or toggle the creation of the `plots/` subfolder using keyword arguments:
+
+```python
+# Save directly into custom_dir/ without creating a plots/ subfolder
+saved_plots = plotter.plot(
+    metrics,
+    output_dir="custom_dir",
+    create_subfolder=False,
+)
+```
+
+---
+
+## LogParser Functions
+#### Discovery & Batch Parsing
 `LogParser` maintains an internal queue (`directory_paths`) mapping discovered run folders to their metric files without performing redundant filesystem scans during parsing.
 
-### Discovering Recent Runs
+
+#### Discovering Recent Runs
 Queue the latest $N$ runs across all experiment folders using `discover_latest_metrics(num=N)`:
 
 ```python
@@ -68,11 +107,11 @@ Another way to discover recent runs is to use `discover_from_latest_dir(num=N)`,
 ```python
 parser = LogParser()
 # Find the metrics.csv in the latest folder
-parser.discover_latest_metrics(num=1)
+parser.discover_from_latest_dir(num=1)
 ```
 
 
-### Discovering Runs by Folder Name
+#### Discovering Runs by Folder Name
 Queue all subdirectories containing metric logs within a specific experiment folder using `discover_directory()`:
 ```python
 parser = LogParser()
@@ -83,9 +122,9 @@ parser.discover_directory("experiment_3")
 for metrics in parser.parse_all():
     plotter.plot(metrics)
 ```
----
 
-## Direct Path Parsing
+
+#### Direct Path Parsing
 If you already know the folder or CSV file you want to inspect, `parse_from_path()` parses it directly without modifying the internal discovery queue:
 
 ```python
@@ -100,7 +139,8 @@ metrics = parser.parse_from_path("experiment_3/mlp/version_0/metrics.csv")
 plotter.plot(metrics)
 ```
 
-## Switching the Base Directory
+
+#### Switching the Base Directory
 To retarget `LogParser` to another root directory without losing previously discovered runs, use `move_base_dir()`:
 
 ```python
@@ -113,30 +153,4 @@ parser.discover_directory("experiment_old")
 
 # parse_all() now parses runs from both locations
 all_metrics = parser.parse_all()
-```
-
----
-
-### Selective Plotting (Filtering Metrics)
-
-If you only want to visualize specific curves, the `plot()` function can filter them with the `metric_names=[]` argument:
-
-```python
-# When wishing for only certain metrics:
-saved_plots = plotter.plot(metrics, metric_names=["loss", "f1"])
-```
-
----
-
-### Custom Plotting Directory
-
-Override the destination directory or toggle the creation of the `plots/` subfolder using keyword arguments:
-
-```python
-# Save directly into custom_dir/ without creating a plots/ subfolder
-saved_plots = plotter.plot(
-    metrics,
-    output_dir="custom_dir",
-    create_subfolder=False,
-)
 ```
