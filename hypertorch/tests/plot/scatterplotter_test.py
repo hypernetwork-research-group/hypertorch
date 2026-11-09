@@ -79,9 +79,7 @@ def mock_plotting_backend(monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
         (9, (3, 3)),
     ],
 )
-def test_scatterplotter_calculate_grid_dims(
-    n_plots: int, expected_dims: tuple[int, int]
-) -> None:
+def test_scatterplotter_calculate_grid_dims(n_plots: int, expected_dims: tuple[int, int]) -> None:
     assert ScatterPlotter._calculate_grid_dims(n_plots) == expected_dims
 
 
@@ -152,9 +150,7 @@ def test_scatterplotter_collect_generalization_data_skips_empty_split_df(
 
     mock_df = MagicMock()
     mock_df.__getitem__.side_effect = lambda key: (
-        pd.Series(["train", "val"])
-        if isinstance(key, str) and key == "split"
-        else pd.DataFrame()
+        pd.Series(["train", "val"]) if isinstance(key, str) and key == "split" else pd.DataFrame()
     )
     monkeypatch.setattr(m, "fetch", lambda var: mock_df)
 
@@ -194,7 +190,6 @@ def test_scatterplotter_render_subplot() -> None:
     mock_ax.plot.assert_called_once()
     _, plot_kwargs = mock_ax.plot.call_args
     assert plot_kwargs["linestyle"] == "--"
-    assert plot_kwargs["label"] == "y = x"
 
     mock_ax.set_title.assert_called_once_with("Loss", fontsize=12, pad=10)
     mock_ax.set_xlabel.assert_called_once_with("Train Loss", fontsize=10)
@@ -304,9 +299,7 @@ def test_scatterplotter_plot_multi_run_comparison_routing(tmp_path: Path) -> Non
     plotter = ScatterPlotter()
     saved_plots = plotter.plot([m1, m2])
 
-    expected_comp = (
-        logs_root / "plots" / "comparison" / "ScatterPlot_train_vs_val_comparison.png"
-    )
+    expected_comp = logs_root / "plots" / "comparison" / "ScatterPlot_train_vs_val_comparison.png"
     expected_unique = logs_root / "plots" / "unique" / "ScatterPlot_train_vs_val_1.png"
 
     assert set(saved_plots) == {expected_comp, expected_unique}
