@@ -2,6 +2,8 @@ from pathlib import Path
 import sys
 from typing import Any
 from unittest.mock import MagicMock
+import warnings
+
 import pandas as pd
 import pytest
 
@@ -77,169 +79,129 @@ def mock_plotting_backend(monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
         (9, (3, 3)),
     ],
 )
-def test_scatterplotter_calculate_grid_dims(n_plots: int, expected_dims: tuple[int, int]) -> None:
+def test_scatterplotter_calculate_grid_dims(
+    n_plots: int, expected_dims: tuple[int, int]
+) -> None:
     assert ScatterPlotter._calculate_grid_dims(n_plots) == expected_dims
 
 
-def test_scatterplotter_hide_unused_axes() -> None:
-    mock_axes = [MagicMock() for _ in range(6)]
-    ScatterPlotter._hide_unused_axes(axes=mock_axes, active_count=4)
-
-    for i in range(4):
-        mock_axes[i].set_visible.assert_not_called()
-    for i in range(4, 6):
-        mock_axes[i].set_visible.assert_called_once_with(False)
+""" Data Extraction & Warning Tests """
 
 
-""" Data Splitting, Pairing, & Pruning Tests """
-
-
-def test_scatterplotter_get_unique_splits() -> None:
-    m1 = ParsedMetrics(x_col="epoch")
-    m1.add("loss", pd.DataFrame({"epoch": [0], "split": ["train"], "value": [0.5]}))
-    m1.add("auc", pd.DataFrame({"epoch": [0], "split": ["val"], "value": [0.8]}))
-
-    m2 = ParsedMetrics(x_col="epoch")
-    m2.add("loss", pd.DataFrame({"epoch": [0], "split": ["test"], "value": [0.4]}))
-
-    splits = ScatterPlotter._get_unique_splits([m1, m2], targets=["loss", "auc"])
-    assert splits == ["train", "val", "test"]
-
-
-def test_scatterplotter_collect_pair_data_prunes_identical_aliases() -> None:
+def test_scatterplotter_collect_generalization_data_success() -> None:
     m = ParsedMetrics(x_col="epoch", experiment_name="run_0")
-    df_data = {"epoch": [0, 1], "split": ["train", "train"], "value": [0.5, 0.3]}
-    m.add("loss", pd.DataFrame(df_data))
-    m.add("loss_alias", pd.DataFrame(df_data))
-
-    pair_data = ScatterPlotter._collect_pair_data(
-        metrics_list=[m],
-        candidate_pairs=[("loss", "loss_alias")],
-        split_name="train",
-        x_col="epoch",
+    m.add(
+        "loss",
+        pd.DataFrame(
+            {
+                "epoch": [0, 1, 0, 1],
+                "split": ["train", "train", "val", "val"],
+                "value": [0.8, 0.4, 0.9, 0.5],
+            }
+        ),
     )
 
-    assert ("loss", "loss_alias") not in pair_data
+    data = ScatterPlotter._collect_generalization_data([m], targets=["loss"])
+    assert "loss" in data
+    assert 0 in data["loss"]
+    run_label, final_train, final_val = data["loss"][0]
+    assert run_label == "run_0"
+    assert final_train == 0.4
+    assert final_val == 0.5
 
 
-def test_scatterplotter_collect_pair_data_skips_insufficient_or_missing_points() -> None:
-    m = ParsedMetrics(x_col="epoch", experiment_name="run_0")
+def test_scatterplotter_collect_generalization_data_warning_missing_val() -> None:
+    m = ParsedMetrics(x_col="epoch", experiment_name="run_no_val")
+    m.add(
+        "accuracy",
+        pd.DataFrame({"epoch": [0, 1], "split": ["train", "train"], "value": [0.6, 0.8]}),
+    )
+
+    with pytest.warns(UserWarning, match="no validation split"):
+        data = ScatterPlotter._collect_generalization_data([m], targets=["accuracy"])
+    assert data == {}
+
+
+def test_scatterplotter_collect_generalization_data_warning_missing_train() -> None:
+    m = ParsedMetrics(x_col="epoch", experiment_name="run_no_train")
+    m.add(
+        "accuracy",
+        pd.DataFrame({"epoch": [0, 1], "split": ["val", "val"], "value": [0.55, 0.75]}),
+    )
+
+    with pytest.warns(UserWarning, match="no training split"):
+        data = ScatterPlotter._collect_generalization_data([m], targets=["accuracy"])
+    assert data == {}
+
+
+def test_scatterplotter_collect_generalization_data_skips_neither_train_nor_val() -> None:
+    m = ParsedMetrics(x_col="epoch", experiment_name="run_test_only")
+    m.add("loss", pd.DataFrame({"epoch": [0], "split": ["test"], "value": [0.5]}))
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        data = ScatterPlotter._collect_generalization_data([m], targets=["loss"])
+    assert data == {}
+
+
+def test_scatterplotter_collect_generalization_data_skips_empty_split_df(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    m = ParsedMetrics(x_col="epoch", experiment_name="run_empty_split")
     m.add("loss", pd.DataFrame({"epoch": [0], "split": ["train"], "value": [0.5]}))
-    m.add("auc", pd.DataFrame({"epoch": [0], "split": ["train"], "value": [0.8]}))
 
-    f1_df = pd.DataFrame({"epoch": [0, 1], "split": ["test", "test"], "value": [0.7, 0.9]})
-    m.add("f1", f1_df)
-
-    pair_data_len1 = ScatterPlotter._collect_pair_data(
-        metrics_list=[m],
-        candidate_pairs=[("loss", "auc")],
-        split_name="train",
-        x_col="epoch",
+    mock_df = MagicMock()
+    mock_df.__getitem__.side_effect = lambda key: (
+        pd.Series(["train", "val"])
+        if isinstance(key, str) and key == "split"
+        else pd.DataFrame()
     )
-    assert pair_data_len1 == {}
+    monkeypatch.setattr(m, "fetch", lambda var: mock_df)
 
-    pair_data_missing_split = ScatterPlotter._collect_pair_data(
-        metrics_list=[m],
-        candidate_pairs=[("loss", "f1")],
-        split_name="val",
-        x_col="epoch",
-    )
-    assert pair_data_missing_split == {}
+    data = ScatterPlotter._collect_generalization_data([m], targets=["loss"])
+    assert data == {}
 
 
-def test_scatterplotter_partition_pairs_and_group_by_anchor() -> None:
-    dummy_df = pd.DataFrame(
-        {
-            "epoch": [0, 1],
-            "split": ["train", "train"],
-            "value_a": [1, 2],
-            "value_b": [3, 4],
-        }
-    )
-
-    pair_data: dict[tuple[str, str], dict[int, tuple[str, pd.DataFrame]]] = {
-        ("loss", "auc"): {
-            0: ("run_0", dummy_df),
-            1: ("run_1", dummy_df),
-        },
-        ("loss", "f1"): {
-            0: ("run_0", dummy_df),
-        },
+def test_scatterplotter_partition_metrics() -> None:
+    metric_data = {
+        "loss": {0: ("run_0", 0.3, 0.4), 1: ("run_1", 0.25, 0.35)},
+        "accuracy": {0: ("run_0", 0.85, 0.80)},
     }
 
-    comparison_pairs, single_run_pairs = ScatterPlotter._partition_pairs(pair_data)
-    assert comparison_pairs == [("loss", "auc")]
-    assert single_run_pairs == {0: [("loss", "f1")]}
-
-    anchor_groups = ScatterPlotter._group_by_anchor(comparison_pairs)
-    assert anchor_groups == {"loss": [("loss", "auc")]}
+    comparison_metrics, single_run_metrics = ScatterPlotter._partition_metrics(metric_data)
+    assert comparison_metrics == ["loss"]
+    assert single_run_metrics == {0: ["accuracy"]}
 
 
-""" Subplot & Legend Drawing Tests """
+""" Subplot & Reference Diagonal Tests """
 
 
-def test_scatterplotter_draw_run_scatter() -> None:
+def test_scatterplotter_render_subplot() -> None:
     mock_ax = MagicMock()
-    merged = pd.DataFrame(
-        {
-            "value_loss": [0.5, 0.3],
-            "value_auc": [0.7, 0.9],
-        }
-    )
+    plotter = ScatterPlotter()
+    run_matches = {0: ("model_a", 0.2, 0.3), 1: ("model_b", 0.15, 0.22)}
+    palette = ["#1f77b4", "#ff7f0e"]
 
-    ScatterPlotter._draw_run_scatter(
+    plotter._render_subplot(
         ax=mock_ax,
-        merged=merged,
-        col_x="value_loss",
-        col_y="value_auc",
-        run_color="#1f77b4",
-        label="model_a",
+        var_name="loss",
+        run_matches=run_matches,
+        palette=palette,
+        show_label=True,
     )
 
     assert mock_ax.scatter.call_count == 2
+    mock_ax.plot.assert_called_once()
+    _, plot_kwargs = mock_ax.plot.call_args
+    assert plot_kwargs["linestyle"] == "--"
+    assert plot_kwargs["label"] == "y = x"
 
-    args1, kwargs1 = mock_ax.scatter.call_args_list[0]
-    assert list(args1[0]) == [0.5, 0.3]
-    assert list(args1[1]) == [0.7, 0.9]
-    assert kwargs1["marker"] == "."
-    assert kwargs1["s"] == 32
-    assert kwargs1["label"] == "model_a"
-
-    args2, kwargs2 = mock_ax.scatter.call_args_list[1]
-    assert args2[0] == 0.3
-    assert args2[1] == 0.9
-    assert kwargs2["marker"] == "X"
-    assert kwargs2["s"] == 60
+    mock_ax.set_title.assert_called_once_with("Loss", fontsize=12, pad=10)
+    mock_ax.set_xlabel.assert_called_once_with("Train Loss", fontsize=10)
+    mock_ax.set_ylabel.assert_called_once_with("Val Loss", fontsize=10)
 
 
-def test_scatterplotter_attach_chunk_legend_with_and_without_handles() -> None:
-    mock_fig = MagicMock()
-    mock_ax = MagicMock()
-
-    mock_ax.get_legend_handles_labels.return_value = ([MagicMock()], ["run_0"])
-    ScatterPlotter._attach_chunk_legend(
-        fig=mock_fig,
-        reference_ax=mock_ax,
-        title_prefix="Comparison",
-        split_name="train",
-        is_comparison=True,
-    )
-    mock_fig.legend.assert_called_once()
-
-    mock_fig.reset_mock()
-
-    mock_ax.get_legend_handles_labels.return_value = ([], [])
-    ScatterPlotter._attach_chunk_legend(
-        fig=mock_fig,
-        reference_ax=mock_ax,
-        title_prefix="Experiment 0",
-        split_name="val",
-        is_comparison=False,
-    )
-    mock_fig.legend.assert_not_called()
-
-
-""" Validation & Error Handling Tests """
+""" Dependency & Validation Tests """
 
 
 def test_scatterplotter_missing_dependencies_raises_import_error(
@@ -256,36 +218,44 @@ def test_scatterplotter_missing_dependencies_raises_import_error(
         plotter.plot(metrics)
 
 
-def test_scatterplotter_fewer_than_two_metrics_raises_value_error(tmp_path: Path) -> None:
-    exp_dir = tmp_path / "exp_0"
+def test_scatterplotter_plot_returns_empty_when_no_targets(tmp_path: Path) -> None:
+    exp_dir = tmp_path / "exp_empty"
     exp_dir.mkdir()
 
     metrics = ParsedMetrics(x_col="epoch", experiment_dir=exp_dir)
-    df_data = {"epoch": [0, 1], "split": ["train", "train"], "value": [0.5, 0.3]}
-    metrics.add("loss", pd.DataFrame(df_data))
+    metrics.add(
+        "loss",
+        pd.DataFrame({"epoch": [0], "split": ["train"], "value": [0.5]}),
+    )
 
     plotter = ScatterPlotter()
-    with pytest.raises(ValueError, match="requires at least two metrics to plot relationships"):
-        plotter.plot(metrics)
+    saved_plots = plotter.plot(metrics, metric_names=["non_existent_metric"])
+    assert saved_plots == []
 
 
 """ Plot Generation & Subfolder Routing Tests """
 
 
 def test_scatterplotter_plot_single_run_defaults(tmp_path: Path) -> None:
-    exp_dir = tmp_path / "exp_10"
+    exp_dir = tmp_path / "exp_42"
     exp_dir.mkdir()
 
-    metrics = ParsedMetrics(x_col="epoch", experiment_dir=exp_dir, experiment_name="10")
-    loss_df = pd.DataFrame({"epoch": [0, 1, 2], "split": ["train"] * 3, "value": [0.8, 0.5, 0.2]})
-    auc_df = pd.DataFrame({"epoch": [0, 1, 2], "split": ["train"] * 3, "value": [0.6, 0.75, 0.9]})
-    metrics.add("loss", loss_df)
-    metrics.add("auc", auc_df)
+    metrics = ParsedMetrics(x_col="epoch", experiment_dir=exp_dir, experiment_name="42")
+    metrics.add(
+        "loss",
+        pd.DataFrame(
+            {
+                "epoch": [0, 1, 0, 1],
+                "split": ["train", "train", "val", "val"],
+                "value": [0.8, 0.4, 0.85, 0.45],
+            }
+        ),
+    )
 
     plotter = ScatterPlotter()
     saved_plots = plotter.plot(metrics)
 
-    expected_path = exp_dir / "plots" / "ScatterPlot_rel_train_10_vs_auc.png"
+    expected_path = exp_dir / "plots" / "ScatterPlot_train_vs_val_42.png"
     assert saved_plots == [expected_path]
     assert expected_path.is_file()
 
@@ -298,27 +268,50 @@ def test_scatterplotter_plot_multi_run_comparison_routing(tmp_path: Path) -> Non
     exp_2.mkdir(parents=True)
 
     m1 = ParsedMetrics(x_col="epoch", experiment_dir=exp_1, experiment_name="1")
-    m1.add("loss", pd.DataFrame({"epoch": [0, 1], "split": ["train"] * 2, "value": [0.8, 0.4]}))
-    m1.add("auc", pd.DataFrame({"epoch": [0, 1], "split": ["train"] * 2, "value": [0.6, 0.9]}))
-    m1.add("f1", pd.DataFrame({"epoch": [0, 1], "split": ["train"] * 2, "value": [0.5, 0.85]}))
+    m1.add(
+        "loss",
+        pd.DataFrame(
+            {
+                "epoch": [0, 1, 0, 1],
+                "split": ["train", "train", "val", "val"],
+                "value": [0.7, 0.3, 0.75, 0.38],
+            }
+        ),
+    )
+    m1.add(
+        "auc",
+        pd.DataFrame(
+            {
+                "epoch": [0, 1, 0, 1],
+                "split": ["train", "train", "val", "val"],
+                "value": [0.6, 0.9, 0.55, 0.88],
+            }
+        ),
+    )
 
     m2 = ParsedMetrics(x_col="epoch", experiment_dir=exp_2, experiment_name="2")
-    m2.add("loss", pd.DataFrame({"epoch": [0, 1], "split": ["train"] * 2, "value": [0.7, 0.3]}))
-    m2.add("auc", pd.DataFrame({"epoch": [0, 1], "split": ["train"] * 2, "value": [0.65, 0.92]}))
+    m2.add(
+        "loss",
+        pd.DataFrame(
+            {
+                "epoch": [0, 1, 0, 1],
+                "split": ["train", "train", "val", "val"],
+                "value": [0.65, 0.28, 0.7, 0.32],
+            }
+        ),
+    )
 
     plotter = ScatterPlotter()
     saved_plots = plotter.plot([m1, m2])
 
     expected_comp = (
-        logs_root / "plots" / "comparison" / "ScatterPlot_rel_train_comparison_vs_auc.png"
+        logs_root / "plots" / "comparison" / "ScatterPlot_train_vs_val_comparison.png"
     )
-    expected_unique_auc = logs_root / "plots" / "unique" / "ScatterPlot_rel_train_1_vs_auc.png"
-    expected_unique_f1 = logs_root / "plots" / "unique" / "ScatterPlot_rel_train_1_vs_f1.png"
+    expected_unique = logs_root / "plots" / "unique" / "ScatterPlot_train_vs_val_1.png"
 
-    assert set(saved_plots) == {expected_comp, expected_unique_auc, expected_unique_f1}
+    assert set(saved_plots) == {expected_comp, expected_unique}
     assert expected_comp.is_file()
-    assert expected_unique_auc.is_file()
-    assert expected_unique_f1.is_file()
+    assert expected_unique.is_file()
 
 
 def test_scatterplotter_plot_custom_output_dir_without_subfolder(tmp_path: Path) -> None:
@@ -326,10 +319,16 @@ def test_scatterplotter_plot_custom_output_dir_without_subfolder(tmp_path: Path)
     custom_dir.mkdir()
 
     metrics = ParsedMetrics(x_col="epoch", experiment_name="custom_run")
-    acc_df = pd.DataFrame({"epoch": [0, 1], "split": ["val"] * 2, "value": [0.7, 0.9]})
-    loss_df = pd.DataFrame({"epoch": [0, 1], "split": ["val"] * 2, "value": [0.6, 0.2]})
-    metrics.add("accuracy", acc_df)
-    metrics.add("loss", loss_df)
+    metrics.add(
+        "accuracy",
+        pd.DataFrame(
+            {
+                "epoch": [0, 1, 0, 1],
+                "split": ["train", "train", "val", "val"],
+                "value": [0.7, 0.9, 0.65, 0.85],
+            }
+        ),
+    )
 
     plotter = ScatterPlotter()
     saved_plots = plotter.plot(
@@ -338,7 +337,7 @@ def test_scatterplotter_plot_custom_output_dir_without_subfolder(tmp_path: Path)
         create_subfolder=False,
     )
 
-    expected_path = custom_dir / "ScatterPlot_rel_val_custom_run_vs_accuracy.png"
+    expected_path = custom_dir / "ScatterPlot_train_vs_val_custom_run.png"
     assert saved_plots == [expected_path]
     assert expected_path.is_file()
     assert not (custom_dir / "plots").exists()
@@ -349,32 +348,75 @@ def test_scatterplotter_plot_chunking_exceeding_max_plots(tmp_path: Path) -> Non
     exp_dir.mkdir()
 
     metrics = ParsedMetrics(x_col="epoch", experiment_dir=exp_dir, experiment_name="chunk_exp")
-    anchor_df = pd.DataFrame({"epoch": [0, 1], "split": ["train"] * 2, "value": [0.1, 0.2]})
-    metrics.add("anchor", anchor_df)
     for i in range(7):
-        m_df = pd.DataFrame({"epoch": [0, 1], "split": ["train"] * 2, "value": [0.3 + i, 0.4 + i]})
-        metrics.add(f"metric_{i}", m_df)
-
-    plotter = ScatterPlotter()
-    metric_names = ["anchor"] + [f"metric_{i}" for i in range(7)]
-    saved_plots = plotter.plot(metrics, metric_names=metric_names)
-
-    part_files = [p.name for p in saved_plots if "vs_anchor" in p.name]
-    assert len(part_files) == 2
-    assert "ScatterPlot_rel_train_chunk_exp_vs_anchor_part1.png" in part_files
-    assert "ScatterPlot_rel_train_chunk_exp_vs_anchor_part2.png" in part_files
-
-
-def test_scatterplotter_plot_skips_when_pair_data_empty(tmp_path: Path) -> None:
-    exp_dir = tmp_path / "exp_no_data"
-    exp_dir.mkdir()
-
-    metrics = ParsedMetrics(x_col="epoch", experiment_dir=exp_dir, experiment_name="0")
-    df_data = {"epoch": [0, 1], "split": ["train", "train"], "value": [0.5, 0.3]}
-    metrics.add("loss", pd.DataFrame(df_data))
-    metrics.add("loss_dup", pd.DataFrame(df_data))
+        metrics.add(
+            f"metric_{i}",
+            pd.DataFrame(
+                {
+                    "epoch": [0, 1, 0, 1],
+                    "split": ["train", "train", "val", "val"],
+                    "value": [0.1 + i, 0.2 + i, 0.15 + i, 0.25 + i],
+                }
+            ),
+        )
 
     plotter = ScatterPlotter()
     saved_plots = plotter.plot(metrics)
 
+    part_files = [p.name for p in saved_plots]
+    assert len(part_files) == 2
+    assert "ScatterPlot_train_vs_val_chunk_exp_part1.png" in part_files
+    assert "ScatterPlot_train_vs_val_chunk_exp_part2.png" in part_files
+
+
+def test_scatterplotter_plot_skips_when_generalization_data_empty(tmp_path: Path) -> None:
+    exp_dir = tmp_path / "exp_no_pairs"
+    exp_dir.mkdir()
+
+    metrics = ParsedMetrics(x_col="epoch", experiment_dir=exp_dir, experiment_name="0")
+    metrics.add(
+        "loss",
+        pd.DataFrame({"epoch": [0, 1], "split": ["train", "train"], "value": [0.5, 0.3]}),
+    )
+
+    plotter = ScatterPlotter()
+    with pytest.warns(UserWarning, match="no validation split"):
+        saved_plots = plotter.plot(metrics)
+
     assert saved_plots == []
+
+
+def test_scatterplotter_plot_skips_legend_when_handles_empty(
+    tmp_path: Path, mock_plotting_backend: dict[str, Any]
+) -> None:
+    exp_dir = tmp_path / "exp_no_handles"
+    exp_dir.mkdir()
+
+    metrics = ParsedMetrics(x_col="epoch", experiment_dir=exp_dir, experiment_name="no_handles")
+    metrics.add(
+        "loss",
+        pd.DataFrame(
+            {
+                "epoch": [0, 1, 0, 1],
+                "split": ["train", "train", "val", "val"],
+                "value": [0.5, 0.3, 0.6, 0.4],
+            }
+        ),
+    )
+
+    def fake_subplots_empty(*args: Any, **kwargs: Any) -> tuple[MagicMock, MagicMock]:
+        fig = MagicMock()
+        axes_list = [MagicMock() for _ in range(12)]
+        for ax in axes_list:
+            ax.get_legend_handles_labels.return_value = ([], [])
+        ax_container = MagicMock()
+        ax_container.flatten.return_value = axes_list
+        return fig, ax_container
+
+    mock_plotting_backend["plt"].subplots.side_effect = fake_subplots_empty
+
+    plotter = ScatterPlotter()
+    saved_plots = plotter.plot(metrics)
+
+    assert len(saved_plots) == 1
+    assert saved_plots[0].is_file()
