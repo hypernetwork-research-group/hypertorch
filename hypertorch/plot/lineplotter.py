@@ -29,10 +29,6 @@ class LinePlotter(Plotter):
 
         Returns:
             saved_plots: List of file paths to saved line plot PNG files.
-
-        Raises:
-            ImportError: If matplotlib or seaborn is not installed.
-            ValueError: If metrics validation fails or primary tracking columns mismatch.
         """
         plt, sns = self._init_plotting()
         metrics_list = self._normalize_metrics(metrics)
@@ -64,17 +60,27 @@ class LinePlotter(Plotter):
         return saved_plots
 
     @staticmethod
-    def _draw_singular(ax: Any, val: float, color: Any, zorder: int, label: str) -> None:
-        """
-        Render a horizontal reference line for single-point evaluations.
+    def _resolve_curve_styling(total_curves: int) -> tuple[float, float]:
+        """Calculate dynamic linewidth and markersize scaled down by curve count."""
+        if total_curves <= 1:
+            return 1.6, 4.0
+        linewidth = max(0.9, 1.6 - (total_curves - 1) * 0.06)
+        markersize = max(2.2, 4.0 - (total_curves - 1) * 0.16)
+        return round(linewidth, 2), round(markersize, 2)
 
-        Args:
-            ax: Matplotlib axes to draw on.
-            val: Scalar metric value to mark.
-            color: Resolved line color.
-            zorder: Layer drawing order.
-            label: Text label for the legend entry.
-        """
+    @staticmethod
+    def _get_split_marker(split_name: str) -> str:
+        """Resolve point marker character based on split category."""
+        clean_split = split_name.lower()
+        if "train" in clean_split:
+            return "o"
+        if "val" in clean_split:
+            return "s"
+        return "d"
+
+    @staticmethod
+    def _draw_singular(ax: Any, val: float, color: Any, zorder: int, label: str) -> None:
+        """Render a horizontal reference line for single-point evaluations."""
         ax.axhline(
             y=val,
             color=color,
@@ -94,139 +100,23 @@ class LinePlotter(Plotter):
         marker: str | None,
         zorder: int,
         label: str,
+        linewidth: float,
+        markersize: float,
     ) -> None:
-        """
-        Render a continuous line progression across training epochs or steps.
-
-        Args:
-            ax: Matplotlib axes to draw on.
-            group: DataFrame containing step or epoch coordinates and metric values.
-            x_col: Primary tracking column name.
-            color: Curve line color.
-            marker: Marker style character or None.
-            zorder: Layer drawing order.
-            label: Text label for the legend entry.
-        """
+        """Render a continuous line progression across training epochs or steps."""
         sorted_group = group.sort_values(by=x_col)
         ax.plot(
             sorted_group[x_col],
             sorted_group["value"],
             color=color,
             linestyle="-",
-            linewidth=1.4,
+            linewidth=linewidth,
             marker=marker,
-            markersize=5.0 if marker else None,
+            markersize=markersize if marker else None,
             markeredgewidth=0.5 if marker else None,
             zorder=zorder,
             label=label,
         )
-
-    @staticmethod
-    def _get_split_marker(split_name: str) -> str:
-        """
-        Resolve standard point marker character based on split category.
-
-        Args:
-            split_name: Data split name (e.g., 'train', 'val', 'test').
-
-        Returns:
-            marker: Point marker ('o' for train, 's' for val, 'd' for others).
-        """
-        clean_split = split_name.lower()
-        if "train" in clean_split:
-            return "o"
-        if "val" in clean_split:
-            return "s"
-        return "d"
-
-    def _draw_split(
-        self,
-        ax: Any,
-        group: pd.DataFrame,
-        split_name: str,
-        x_col: str,
-        color: Any,
-        base_zorder: int,
-        label: str,
-    ) -> None:
-        """
-        Dispatch split rendering to either a benchmark reference line or a curve.
-
-        Args:
-            ax: Matplotlib axes to draw on.
-            group: Split-specific metric DataFrame.
-            split_name: Evaluation split name.
-            x_col: Primary tracking column name.
-            color: Resolved color for this split.
-            base_zorder: Baseline layer index for the parent run.
-            label: Text label for the legend entry.
-        """
-        if len(group) == 1:
-            val = float(group["value"].iloc[0])
-            self._draw_singular(ax, val=val, color=color, zorder=base_zorder, label=label)
-        else:
-            marker = self._get_split_marker(split_name)
-            self._draw_curve(
-                ax=ax,
-                group=group,
-                x_col=x_col,
-                color=color,
-                marker=marker,
-                zorder=base_zorder + 1,
-                label=label,
-            )
-
-    def _render_run_curves(
-        self,
-        ax: Any,
-        m: ParsedMetrics,
-        run_idx: int,
-        var_name: str,
-        unique_splits: list[str],
-        palette: list[Any],
-        x_col: str,
-        is_multi: bool,
-    ) -> None:
-        """
-        Iterate through and render all split curves for an individual model run.
-
-        Args:
-            ax: Matplotlib axes to draw on.
-            m: ParsedMetrics instance for the run.
-            run_idx: Index of the current run in the comparison palette.
-            var_name: Metric variable name.
-            unique_splits: Ordered list of all data splits present across runs.
-            palette: Active color palette.
-            x_col: Primary tracking column name.
-            is_multi: Whether multiple experiment runs are being compared.
-        """
-        tidy_df = m.fetch(var_name)
-        run_label = m.experiment_name or f"run_{run_idx}"
-        run_color = palette[run_idx % len(palette)]
-        base_zorder = 2 + (run_idx * 2)
-
-        for split_name in unique_splits:
-            group = tidy_df[tidy_df["split"] == split_name]
-            if group.empty:
-                continue
-
-            s_idx = unique_splits.index(split_name)
-            if is_multi:
-                color = self._get_shade(run_color, s_idx, len(unique_splits))
-                label = f"{run_label} ({split_name})"
-            else:
-                color = palette[s_idx % len(palette)]
-                label = split_name
-
-            self._draw_split(
-                ax=ax,
-                group=group,
-                split_name=split_name,
-                x_col=x_col,
-                color=color,
-                base_zorder=base_zorder,
-                label=label,
-            )
 
     def _render_metric_plot(
         self,
@@ -239,22 +129,7 @@ class LinePlotter(Plotter):
         plt: Any,
         create_subfolder: bool,
     ) -> Path:
-        """
-        Construct, render, and save an individual metric line plot to disk.
-
-        Args:
-            var_name: Metric variable name.
-            runs_with_metric: Paired run indices and ParsedMetrics containing the metric.
-            metrics_list: Full list of all parsed runs.
-            plots_dir: Root directory for plot outputs.
-            x_col: Primary tracking column name.
-            palette: Active color palette.
-            plt: Matplotlib pyplot module.
-            create_subfolder: Whether to save into categorized subfolders.
-
-        Returns:
-            output_path: File path of the saved line plot PNG.
-        """
+        """Construct, render, and save an individual metric line plot to disk."""
         is_multi = len(runs_with_metric) > 1
         first_run_name = runs_with_metric[0][1].experiment_name or "0"
         title_prefix, suffix = self._resolve_run_naming(is_multi, first_run_name)
@@ -280,21 +155,53 @@ class LinePlotter(Plotter):
             if not m.fetch(var_name)[m.fetch(var_name)["split"] == split_name].empty
         )
 
+        linewidth, markersize = self._resolve_curve_styling(total_curves)
+
         is_busy = total_curves > 2
         fig_size = (11.2, 5.2) if is_busy else (8.5, 5.0)
         fig, ax = plt.subplots(figsize=fig_size)
 
         for run_idx, m in runs_with_metric:
-            self._render_run_curves(
-                ax=ax,
-                m=m,
-                run_idx=run_idx,
-                var_name=var_name,
-                unique_splits=unique_splits,
-                palette=palette,
-                x_col=x_col,
-                is_multi=is_multi,
-            )
+            tidy_df = m.fetch(var_name)
+            run_label = m.experiment_name or f"run_{run_idx}"
+            run_color = palette[run_idx % len(palette)]
+            base_zorder = 2 + (run_idx * 2)
+
+            for split_name in unique_splits:
+                group = tidy_df[tidy_df["split"] == split_name]
+                if group.empty:
+                    continue
+
+                s_idx = unique_splits.index(split_name)
+                if is_multi:
+                    color = self._get_shade(run_color, s_idx, len(unique_splits))
+                    label = f"{run_label} ({split_name})"
+                else:
+                    color = palette[s_idx % len(palette)]
+                    label = split_name
+
+                if len(group) == 1:
+                    val = float(group["value"].iloc[0])
+                    self._draw_singular(
+                        ax=ax,
+                        val=val,
+                        color=color,
+                        zorder=base_zorder,
+                        label=label,
+                    )
+                else:
+                    marker = self._get_split_marker(split_name)
+                    self._draw_curve(
+                        ax=ax,
+                        group=group,
+                        x_col=x_col,
+                        color=color,
+                        marker=marker,
+                        zorder=base_zorder + 1,
+                        label=label,
+                        linewidth=linewidth,
+                        markersize=markersize,
+                    )
 
         formatted_metric = self._format_label(var_name)
         ax.set_title(f"{title_prefix} — {formatted_metric}", fontsize=12, pad=10)

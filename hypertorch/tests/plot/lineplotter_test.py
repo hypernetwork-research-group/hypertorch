@@ -72,6 +72,24 @@ def test_lineplotter_get_split_marker(split_name: str, expected_marker: str) -> 
     assert LinePlotter._get_split_marker(split_name) == expected_marker
 
 
+@pytest.mark.parametrize(
+    "total_curves, expected_linewidth, expected_markersize",
+    [
+        (1, 1.6, 4.0),
+        (5, 1.36, 3.36),
+        (15, 0.9, 2.2),
+        (25, 0.9, 2.2),
+    ],
+)
+def test_lineplotter_resolve_curve_styling(
+    total_curves: int, expected_linewidth: float, expected_markersize: float
+) -> None:
+    """Verify dynamic line width and marker size scaling and floor caps."""
+    lw, ms = LinePlotter._resolve_curve_styling(total_curves)
+    assert lw == expected_linewidth
+    assert ms == expected_markersize
+
+
 def test_lineplotter_draw_singular() -> None:
     mock_ax = MagicMock()
     LinePlotter._draw_singular(
@@ -110,6 +128,8 @@ def test_lineplotter_draw_curve() -> None:
         marker="s",
         zorder=4,
         label="val",
+        linewidth=1.6,
+        markersize=4.0,
     )
 
     mock_ax.plot.assert_called_once()
@@ -118,47 +138,41 @@ def test_lineplotter_draw_curve() -> None:
     assert list(args[1]) == [0.7, 0.5, 0.3]
     assert kwargs["color"] == "#2ca02c"
     assert kwargs["linestyle"] == "-"
-    assert kwargs["linewidth"] == 1.4
+    assert kwargs["linewidth"] == 1.6
     assert kwargs["marker"] == "s"
-    assert kwargs["markersize"] == 5.0
+    assert kwargs["markersize"] == 4.0
     assert kwargs["markeredgewidth"] == 0.5
     assert kwargs["zorder"] == 4
     assert kwargs["label"] == "val"
 
 
-def test_lineplotter_draw_split_dispatches_singular_vs_curve() -> None:
-    plotter = LinePlotter()
-    mock_ax = MagicMock()
+def test_lineplotter_dispatches_singular_vs_curve(
+    tmp_path: Path, mock_plotting_backend: dict[str, Any]
+) -> None:
+    """Verify singular split calls axhline and multi-point split calls plot."""
+    exp_dir = tmp_path / "exp_dispatch"
+    exp_dir.mkdir()
 
-    single_df = pd.DataFrame({"epoch": [0], "value": [0.85]})
-    plotter._draw_split(
-        ax=mock_ax,
-        group=single_df,
-        split_name="test",
-        x_col="epoch",
-        color="gray",
-        base_zorder=2,
-        label="test",
+    metrics = ParsedMetrics(x_col="epoch", experiment_dir=exp_dir)
+    metrics.add(
+        "loss",
+        pd.DataFrame(
+            {
+                "epoch": [0, 1, 0],
+                "split": ["train", "train", "test"],
+                "value": [0.8, 0.4, 0.5],
+            }
+        ),
     )
-    mock_ax.axhline.assert_called_once()
-    mock_ax.plot.assert_not_called()
 
+    mock_ax = mock_plotting_backend["ax"]
     mock_ax.reset_mock()
 
-    curve_df = pd.DataFrame({"epoch": [0, 1], "value": [0.6, 0.4]})
-    plotter._draw_split(
-        ax=mock_ax,
-        group=curve_df,
-        split_name="train",
-        x_col="epoch",
-        color="blue",
-        base_zorder=2,
-        label="train",
-    )
+    plotter = LinePlotter()
+    plotter.plot(metrics)
+
+    mock_ax.axhline.assert_called_once()
     mock_ax.plot.assert_called_once()
-    _, kwargs = mock_ax.plot.call_args
-    assert kwargs["marker"] == "o"
-    mock_ax.axhline.assert_not_called()
 
 
 """ Dependency & Validation Tests """
@@ -332,7 +346,6 @@ def test_lineplotter_only_single_point_evaluations(tmp_path: Path) -> None:
     assert created_plots[0].exists()
 
 
-# 50
 def test_lineplotter_plot_skips_when_no_runs_contain_target(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -359,7 +372,6 @@ def test_lineplotter_plot_skips_when_no_runs_contain_target(
 """ Multi-Run & Layout Behavior Tests """
 
 
-# 215
 def test_lineplotter_plot_multi_run_comparison_routing(tmp_path: Path) -> None:
     logs_root = tmp_path / "logs"
     exp_1 = logs_root / "experiment_1"
@@ -396,7 +408,10 @@ def test_lineplotter_plot_multi_run_unique_metric_routing(tmp_path: Path) -> Non
     m1.add(
         "loss", pd.DataFrame({"epoch": [0, 1], "split": ["train", "train"], "value": [0.5, 0.3]})
     )
-    m1.add("auc", pd.DataFrame({"epoch": [0, 1], "split": ["train", "train"], "value": [0.7, 0.9]}))
+    m1.add(
+        "auc",
+        pd.DataFrame({"epoch": [0, 1], "split": ["train", "train"], "value": [0.7, 0.9]}),
+    )
 
     m2 = ParsedMetrics(x_col="epoch", experiment_dir=exp_2, experiment_name="2")
     m2.add(
@@ -414,7 +429,6 @@ def test_lineplotter_plot_multi_run_unique_metric_routing(tmp_path: Path) -> Non
     assert expected_unique.is_file()
 
 
-# 211; 273->271
 def test_lineplotter_render_run_curves_skips_empty_split_group(tmp_path: Path) -> None:
     logs_root = tmp_path / "logs"
     exp_1 = logs_root / "experiment_1"
