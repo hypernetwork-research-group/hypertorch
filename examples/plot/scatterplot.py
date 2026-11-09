@@ -1,6 +1,7 @@
 from pathlib import Path
 from torchmetrics import MetricCollection
 from torchmetrics.classification import BinaryAccuracy, BinaryAUROC
+
 from hypertorch.data import (
     AlgebraDataset,
     DataLoader,
@@ -8,20 +9,40 @@ from hypertorch.data import (
     RandomNegativeSampler,
 )
 from hypertorch.hyperlink_prediction import MLPPredictor
-from hypertorch.plot import ScatterPlotter, LogParser
+from hypertorch.plot import LogParser, ScatterPlotter
 from hypertorch.train import MultiModelTrainer
 from hypertorch.types import ModelConfig
 
 
+def build_mlp_model(
+    num_features: int,
+    hidden_channels: int,
+    aggregation: str,
+    drop_rate: float,
+    metrics: MetricCollection,
+) -> MLPPredictor:
+    """Helper to instantiate MLPPredictor models with varied hyperparameters."""
+    return MLPPredictor(
+        encoder_config={
+            "in_channels": num_features,
+            "out_channels": num_features,
+            "hidden_channels": hidden_channels,
+            "num_layers": 2,
+            "drop_rate": drop_rate,
+        },
+        aggregation=aggregation,
+        metrics=metrics,
+    )
+
+
 def main() -> None:
     """
-    Creating a basic model and running it in order to generate the necessary
-    experiment folder in order to showcase the parsing and plotting functions
+    Train 3 distinct model configurations for 3 epochs each and generate
+    Train vs. Val generalization scatter plots comparing them on the y = x line.
     """
     print("Loading and preparing AlgebraDataset...")
     dataset = AlgebraDataset(sampling_strategy="hyperedge")
 
-    # Split dataset into train, val, and test splits
     train_dataset, val_dataset, test_dataset = dataset.split(
         ratios=[0.7, 0.1, 0.2],
         node_space_setting="transductive",
@@ -29,7 +50,6 @@ def main() -> None:
         seed=42,
     )
 
-    # Add negative samples to all splits
     for name, ds in [("Train", train_dataset), ("Val", val_dataset), ("Test", test_dataset)]:
         negative_sampler = RandomNegativeSampler(
             num_negative_samples=len(ds),
@@ -43,7 +63,6 @@ def main() -> None:
         else:
             test_dataset = ds_with_negatives
 
-    # Enrich node features
     num_features = 32
     train_dataset.enrich_node_features(
         enricher=LaplacianPositionalEncodingEnricher(
@@ -55,12 +74,11 @@ def main() -> None:
     val_dataset.enrich_node_features_from(train_dataset)
     test_dataset.enrich_node_features_from(train_dataset)
 
-    # Create dataloaders
     train_loader = DataLoader(train_dataset, sample_full_hypergraph=True)
     val_loader = DataLoader(val_dataset, batch_size=128)
     test_loader = DataLoader(test_dataset, batch_size=128)
 
-    # Configure metrics
+    # Shared metrics collection
     metrics_collection = MetricCollection(
         {
             "auc": BinaryAUROC(),
@@ -68,26 +86,47 @@ def main() -> None:
         }
     )
 
-    # Configure model
-    model = MLPPredictor(
-        encoder_config={
-            "in_channels": num_features,
-            "out_channels": num_features,
-            "hidden_channels": 64,
-            "num_layers": 2,
-            "drop_rate": 0.2,
-        },
-        aggregation="mean",
-        metrics=metrics_collection,
-    )
+    model_configs = [
+        ModelConfig(
+            name="mlp",
+            version="mean_h64",
+            model=build_mlp_model(
+                num_features=num_features,
+                hidden_channels=64,
+                aggregation="mean",
+                drop_rate=0.2,
+                metrics=metrics_collection,
+            ),
+        ),
+        ModelConfig(
+            name="mlp",
+            version="sum_h32",
+            model=build_mlp_model(
+                num_features=num_features,
+                hidden_channels=32,
+                aggregation="sum",
+                drop_rate=0.1,
+                metrics=metrics_collection,
+            ),
+        ),
+        ModelConfig(
+            name="mlp",
+            version="max_h128",
+            model=build_mlp_model(
+                num_features=num_features,
+                hidden_channels=128,
+                aggregation="max",
+                drop_rate=0.3,
+                metrics=metrics_collection,
+            ),
+        ),
+    ]
 
-    model_configs = [ModelConfig(name="mlp", version="mean", model=model)]
-
-    # 15-epoch experiment to populate experiment metrics
-    print("\nTraining MLP model for 15 epochs...")
+    # Train all 3 models for 3 epochs
+    print("\nTraining 3 MLP variants for 3 epochs each...")
     with MultiModelTrainer(
         model_configs=model_configs,
-        max_epochs=15,
+        max_epochs=3,
         accelerator="auto",
         devices=1,
         log_every_n_steps=1,
@@ -97,25 +136,21 @@ def main() -> None:
         trainer.fit_all(train_dataloader=train_loader, val_dataloader=val_loader)
         trainer.test_all(dataloader=test_loader)
 
-    """Application of LogParser and Scatterplot can be seen here:"""
+    """Scatterplot implementation here."""
 
-    # Instancing LogParser to discover and parse the latest metrics run
     print("\nParsing experiment metrics...")
     parser = LogParser()
-    parser.discover_from_latest_dir(num=1)
+    parser.discover_from_latest_dir(num=3)
     parsed_runs = parser.parse_all()
 
-    # Instantiating LinePlotter to plot metrics
-    print("Generating scatter plots...")
+    print("Generating Train vs. Val generalization scatter plots...")
     plotter = ScatterPlotter()
-    saved_plots: list[Path] = []
+    averaged_runs = [metrics.average() for metrics in parsed_runs]
 
-    for metrics in parsed_runs:
-        m = metrics.average()
-        # Metrics stores the directory as well as the names of the metrics found
-        print(f"Discovered experiment directory: {metrics.experiment_dir}")
-        print(f"Available metrics to plot: {metrics.names()}")
-        saved_plots.extend(plotter.plot(m))
+    for metrics in averaged_runs:
+        print(f"Loaded run: '{metrics.experiment_name}' with metrics {metrics.names()}")
+
+    saved_plots = plotter.plot(averaged_runs)
 
     print(f"\nGenerated {len(saved_plots)} plot(s):")
     for plot_path in saved_plots:
