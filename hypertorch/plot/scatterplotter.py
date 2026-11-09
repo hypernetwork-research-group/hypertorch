@@ -268,10 +268,9 @@ class ScatterPlotter(Plotter):
             [lim_min, lim_max],
             linestyle="--",
             color="gray",
-            linewidth=1.2,
-            alpha=0.7,
+            linewidth=0.8,
+            alpha=0.4,
             zorder=2,
-            label="y = x" if show_label else None,
         )
 
         ax.set_xlim(lim_min, lim_max)
