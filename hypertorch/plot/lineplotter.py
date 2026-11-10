@@ -223,6 +223,7 @@ class LinePlotter(Plotter):
         clean_var = self._sanitize(var_name)
         output_path = dest_dir / f"LinePlot_{clean_var}_{suffix}.png"
 
+        ax.set_xlim(left=0)
         plt.tight_layout()
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
         plt.close(fig)
