@@ -33,25 +33,23 @@ class Plotter(ABC):
     @staticmethod
     def _is_plotting_available() -> bool:
         """
-        Check whether matplotlib and seaborn are importable in the environment.
+        Check whether matplotlib is importable in the environment.
 
         Returns:
-            available: True when both matplotlib and seaborn can be imported.
+            available: True when both matplotlib can be imported.
         """
-        return (
-            importlib.util.find_spec("matplotlib") is not None
-        )
+        return importlib.util.find_spec("matplotlib") is not None
 
     @classmethod
     def _init_plotting(cls) -> Any:
         """
-        Validate plotting dependencies and configure matplotlib and seaborn backends.
+        Validate plotting dependencies and configure matplotlib backend.
 
         Returns:
-            modules: Tuple of (matplotlib.pyplot, seaborn) modules.
+            modules: matplotlib.pyplot
 
         Raises:
-            ImportError: If matplotlib or seaborn is not installed.
+            ImportError: If matplotlib is not installed.
         """
         if not cls._is_plotting_available():
             raise ImportError(
@@ -61,7 +59,7 @@ class Plotter(ABC):
         matplotlib = importlib.import_module("matplotlib")
         matplotlib.use("Agg")
         plt = importlib.import_module("matplotlib.pyplot")
-        plt.style.use("seaborn-v0_8-white")
+        plt.style.use("seaborn-v0_8-whitegrid")
         return plt
 
     @staticmethod

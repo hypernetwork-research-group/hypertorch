@@ -40,7 +40,7 @@ def mock_plotting_backend(monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
 
     monkeypatch.setattr(
         "hypertorch.plot.plotter.importlib.util.find_spec",
-        lambda name: MagicMock() if name in {"matplotlib"} else None,
+        lambda name: MagicMock() if name == "matplotlib" else None,
     )
     monkeypatch.setitem(sys.modules, "matplotlib", mock_matplotlib)
     monkeypatch.setitem(sys.modules, "matplotlib.pyplot", mock_plt)
