@@ -108,7 +108,15 @@ class LogParser:
     @property
     def directory_paths(self) -> list[Path]:
         """
-        Queued directories containing CSV files ready for parsing.
+        if updated_base_folder is not None:
+            self._base_logs_dir = Path(updated_base_folder)
+        self._latest_experiment_dir = None
+        self._latest_csv_file = None
+        Loads and reshapes experiment metrics into a ParsedMetrics container.
+
+        Args:
+            csv_path: Optional path to a specific CSV file. If None,
+                      automatically finds and parses the latest run.
 
         Returns:
             paths: List of directory Paths queued in memory.
