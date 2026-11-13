@@ -73,7 +73,7 @@ class LogParser:
         Yields:
             csv_path: Paths to matching .csv files.
         """
-        skip_dirs = {"checkpoints", "checkpoint", "weights", "comparison"}
+        skip_dirs = {"comparison"}
 
         def _walk(current: str, depth: int) -> Iterator[Path]:
             if depth > max_depth:

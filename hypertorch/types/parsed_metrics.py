@@ -47,9 +47,9 @@ class ParsedMetrics:
                 averaged.add(name, avg_df)
             else:
                 averaged.add(name, df.copy())
-            
+
         return averaged
-    
+
     def fetch(self, name: str) -> pd.DataFrame:
         """Retrieves the tidy DataFrame for a given metric.
 

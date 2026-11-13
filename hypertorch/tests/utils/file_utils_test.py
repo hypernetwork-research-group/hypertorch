@@ -285,8 +285,4 @@ def test_validate_base_dir_file_raises_error(tmp_path: Path) -> None:
     file_path = tmp_path / "file.txt"
     file_path.write_text("hello")
     with pytest.raises(NotADirectoryError, match="is not a directory"):
-<<<<<<< HEAD
         validate_base_dir(file_path)
-=======
-        validate_base_dir(file_path)
->>>>>>> 22a84a8 (refractoring plotter code into multiple subfunctions. Should make own plot folder for this and break it further.)

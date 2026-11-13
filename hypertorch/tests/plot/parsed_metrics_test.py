@@ -101,6 +101,7 @@ def test_parsed_metrics_repr() -> None:
 
     assert repr(metrics) == "ParsedMetrics(x_col='step', metrics=['loss'])"
 
+
 def test_parsed_metrics_average_reduces_duplicates(tmp_path: Path) -> None:
     csv_file = tmp_path / "metrics.csv"
     exp_dir = tmp_path / "experiment_1"
