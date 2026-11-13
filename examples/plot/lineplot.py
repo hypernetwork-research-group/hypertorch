@@ -126,15 +126,6 @@ def main() -> None:
     print(f"\nGenerated {len(saved_plots)} plot(s):")
     for plot_path in saved_plots:
         print(f" -> {Path(plot_path).resolve()}")
-
-    # Instantiating ScatterPlotter to plot metrics
-    print("Generating scatter plots...")
-    sc_plotter = ScatterPlotter()
-    saved_plots = sc_plotter.plot(metrics)
-
-    print(f"\nGenerated {len(saved_plots)} plot(s):")
-    for plot_path in saved_plots:
-        print(f" -> {Path(plot_path).resolve()}")
     
 
 
