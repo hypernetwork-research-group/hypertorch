@@ -8,7 +8,7 @@ from hypertorch.data import (
     RandomNegativeSampler,
 )
 from hypertorch.hyperlink_prediction import MLPPredictor
-from hypertorch.train import LinePlotter, LogParser, MultiModelTrainer
+from hypertorch.train import LinePlotter, LogParser, ScatterPlotter, MultiModelTrainer
 from hypertorch.types import ModelConfig
 
 
@@ -104,6 +104,13 @@ def main() -> None:
     parser.discover_from_latest_dir(num=1)
     parsed_runs = parser.parse_all()
 
+<<<<<<< HEAD
+=======
+    # Metrics stores the directory as well as the names of the metrics found
+    print(f"Discovered experiment directory: {metrics.experiment_dir}")
+    print(f"Available metrics to plot: {metrics.names()}")
+
+>>>>>>> 91952f8 (Initial scatterplot implementation)
     # Instantiating LinePlotter to plot metrics
     print("Generating line plots...")
     plotter = LinePlotter()
@@ -119,6 +126,16 @@ def main() -> None:
     print(f"\nGenerated {len(saved_plots)} plot(s):")
     for plot_path in saved_plots:
         print(f" -> {Path(plot_path).resolve()}")
+
+    # Instantiating ScatterPlotter to plot metrics
+    print("Generating scatter plots...")
+    sc_plotter = ScatterPlotter()
+    saved_plots = sc_plotter.plot(metrics)
+
+    print(f"\nGenerated {len(saved_plots)} plot(s):")
+    for plot_path in saved_plots:
+        print(f" -> {Path(plot_path).resolve()}")
+    
 
 
 if __name__ == "__main__":
