@@ -8,6 +8,7 @@ import warnings
 import pandas as pd
 from hypertorch.types import ParsedMetrics
 from hypertorch.utils import validate_base_dir
+from hypertorch.utils import validate_base_dir
 
 
 class LogParser:
@@ -16,7 +17,9 @@ class LogParser:
 
     Tracks directories and maps each directory to its associated CSV log paths.
 
-    Tracks directories and maps each directory to its associated CSV log paths.
+    Args:
+        base_logs_dir: Root directory path where experiment logs are stored.
+            Defaults to "hypertorch_logs".
 
     Raises:
         FileNotFoundError: If base_logs_dir does not exist.
@@ -24,29 +27,33 @@ class LogParser:
     """
 
     def __init__(self, base_logs_dir: str | Path = "hypertorch_logs") -> None:
-        self._base_logs_dir: Path = self._validate_base_dir(base_logs_dir)
-        self._dir_to_csvs: dict[
-            Path, list[Path]
-        ] = {}  # Once explored, retrieving csv is a O(1) operation
+        """
+        Initialize the LogParser with a validated base logs directory.
 
-    @staticmethod
-    def _validate_base_dir(path: str | Path) -> Path:
-        """Validates that the base directory exists and is a directory.
+        Args:
+            base_logs_dir: Root directory path where experiment logs are stored.
+                Defaults to "hypertorch_logs".
 
         Raises:
-            FileNotFoundError: If the directory does not exist.
-            NotADirectoryError: If the path points to a file or special node.
+            FileNotFoundError: If base_logs_dir does not exist.
+            NotADirectoryError: If base_logs_dir is not a directory.
         """
-        resolved = Path(path).resolve()
-        if not resolved.exists():
-            raise FileNotFoundError(f"Logs root directory '{resolved}' does not exist.")
-        if not resolved.is_dir():
-            raise NotADirectoryError(f"Logs root path '{resolved}' is not a directory.")
-        return resolved
+        self._base_logs_dir: Path = validate_base_dir(base_logs_dir)
+        self._dir_to_csvs: dict[
+            Path, list[Path]
+        ] = {}  # Once explored, retrieving csv is an O(1) operation
 
     @staticmethod
     def _safe_mtime(entry: os.DirEntry) -> float:
-        """Safely fetches modification time from a DirEntry."""
+        """
+        Safely fetch the modification time from a filesystem DirEntry.
+
+        Args:
+            entry: Directory entry object from an active scandir iterator.
+
+        Returns:
+            mtime: Last modification timestamp in seconds since epoch, or 0.0 on error.
+        """
         try:
             return entry.stat().st_mtime
         except OSError:
@@ -54,14 +61,17 @@ class LogParser:
 
     @classmethod
     def _iter_csvs(cls, root: str | Path, max_depth: int = 4) -> Iterator[Path]:
-        """explore depth first CSV files newest-to-oldest, bypassing checkpoint folders.
+        """
+        Explore directory depth-first yielding CSV files ordered newest to oldest.
+
+        Prunes non-metric directories such as checkpoint and weight folders.
 
         Args:
-            root: Root path to begin scanning.
-            max_depth: Maximum recursion depth from the root.
+            root: Root directory path to begin scanning.
+            max_depth: Maximum recursion depth from root. Defaults to 4.
 
         Yields:
-            Paths to matching .csv files.
+            csv_path: Paths to matching .csv files.
         """
         skip_dirs = {"checkpoints", "checkpoint", "weights", "comparison"}
 
@@ -76,12 +86,10 @@ class LogParser:
 
             entries.sort(key=cls._safe_mtime, reverse=True)
 
-            # Yield CSVs directly inside current directory
             for entry in entries:
                 if entry.is_file() and entry.name.lower().endswith(".csv"):
                     yield Path(entry.path)
 
-            # Recurse into subdirectories, pruning skip_dirs
             for entry in entries:
                 if entry.is_dir() and entry.name.lower() not in skip_dirs:
                     yield from _walk(entry.path, depth + 1)
@@ -96,36 +104,69 @@ class LogParser:
         Returns:
             path: Absolute Path to the base logs directory.
         """
+        """
+        Root directory where experiment logs are located.
+
+        Returns:
+            path: Absolute Path to the base logs directory.
+        """
         return self._base_logs_dir
 
     @property
     def directory_paths(self) -> list[Path]:
-        """Queued directories containing CSV files ready for parsing."""
+        """
+        Queued directories containing CSV files ready for parsing.
+
+        Returns:
+            paths: List of directory Paths queued in memory.
+        """
         return list(self._dir_to_csvs.keys())
 
     @property
     def dir_to_csvs(self) -> dict[Path, list[Path]]:
-        """Mapping of queued directory paths to their linked CSV file paths."""
+        """
+        Mapping of queued directory paths to their linked CSV file paths.
+
+        Returns:
+            mapping: Shallow copy mapping of directory Paths to lists of linked CSV Paths.
+        """
         return {d: list(csvs) for d, csvs in self._dir_to_csvs.items()}
 
     def move_base_dir(self, new_base_dir: str | Path) -> None:
-        """Updates the root search directory without clearing queued directories.
+        """
+        Update the root search directory without clearing queued directories.
+
+        Args:
+            new_base_dir: New base directory path to search within.
 
         Raises:
             FileNotFoundError: If new_base_dir does not exist.
             NotADirectoryError: If new_base_dir is not a directory.
         """
-        self._base_logs_dir = self._validate_base_dir(new_base_dir)
+        self._base_logs_dir = validate_base_dir(new_base_dir)
 
     def _normalize_path(self, path: str | Path) -> Path:
-        """Resolves path against cwd if existing, or base_logs_dir otherwise."""
+        """
+        Resolve path against the working directory or fallback to base_logs_dir.
+
+        Args:
+            path: Target path to resolve.
+
+        Returns:
+            target: Absolute, normalized Path instance.
+        """
         target = Path(path)
         if not target.is_absolute() and not target.exists():
             target = self._base_logs_dir / target
         return target.resolve()
 
     def _register_csv(self, csv_path: Path) -> None:
-        """Internal helper to link a CSV path with its parent folder."""
+        """
+        Link a CSV file path with its parent directory in the internal lookup cache.
+
+        Args:
+            csv_path: Path to the CSV file to link.
+        """
         resolved_csv = csv_path.resolve()
         run_dir = resolved_csv.parent.resolve()
         if run_dir not in self._dir_to_csvs:
@@ -134,10 +175,21 @@ class LogParser:
             self._dir_to_csvs[run_dir].append(resolved_csv)
 
     def get_csvs_for_directory(self, directory: str | Path) -> list[Path]:
-        """Retrieves linked CSV paths for a directory, scanning disk only on cache miss."""
+        """
+        Retrieve linked CSV paths for a directory, scanning disk only on cache miss.
+
+        Args:
+            directory: Directory path or folder name to retrieve linked CSVs for.
+
+        Returns:
+            matching_csvs: List of linked CSV Paths found for the directory.
+
+        Raises:
+            FileNotFoundError: If the directory does not exist or contains no CSV files.
+            NotADirectoryError: If the target path is not a directory.
+        """
         target_dir = self._normalize_path(directory)
 
-        # Check in-memory map for target_dir or any of its subfolders
         matching_csvs = [
             csv
             for run_dir, csvs in self._dir_to_csvs.items()
@@ -152,7 +204,6 @@ class LogParser:
         if not target_dir.is_dir():
             raise NotADirectoryError(f"Path '{target_dir}' is not a directory.")
 
-        # Cache miss: discover and link on demand
         for csv_path in self._iter_csvs(target_dir, max_depth=4):
             self._register_csv(csv_path)
 
@@ -168,20 +219,21 @@ class LogParser:
         return matching_csvs
 
     def discover_from_latest_dir(self, num: int = 1) -> None:
-        """Finds the latest `num` experiment directories and links all CSVs within them.
+        """
+        Find the latest experiment directories and link all CSVs within them.
 
         Args:
             num: Number of recent experiment folders to inspect. Defaults to 1.
 
         Raises:
-            ValueError: If `num` is less than 1.
+            ValueError: If num is less than 1.
             FileNotFoundError: If base_logs_dir has no experiment folders or no CSVs.
             OSError: If directory traversal fails.
         """
         if num < 1:
             raise ValueError(f"discover_latest() requires num >= 1, but got {num}.")
 
-        self._validate_base_dir(self._base_logs_dir)
+        validate_base_dir(self._base_logs_dir)
 
         try:
             with os.scandir(self._base_logs_dir) as it:
@@ -209,23 +261,24 @@ class LogParser:
             )
 
     def discover_latest_metrics(self, num: int = 1) -> None:
-        """Finds the latest `num` CSV metric files across experiment folders and links them.
+        """
+        Find the latest CSV metric files across experiment folders and link them.
 
         Scans top-level experiment folders newest-to-oldest and halts traversal
-        as soon as `num` individual CSV files are discovered.
+        as soon as num individual CSV files are discovered.
 
         Args:
             num: Number of recent metric CSV files to discover. Defaults to 1.
 
         Raises:
-            ValueError: If `num` is less than 1.
+            ValueError: If num is less than 1.
             FileNotFoundError: If base_logs_dir has no experiment folders or no CSVs.
             OSError: If directory traversal fails.
         """
         if num < 1:
             raise ValueError(f"discover_latest_metrics() requires num >= 1, but got {num}.")
 
-        self._validate_base_dir(self._base_logs_dir)
+        validate_base_dir(self._base_logs_dir)
 
         try:
             with os.scandir(self._base_logs_dir) as it:
@@ -253,7 +306,8 @@ class LogParser:
             )
 
     def discover_directory(self, directory_name: str | Path) -> None:
-        """Scans a specific directory, linking all subdirectories and their CSVs.
+        """
+        Scan a specific directory, linking all subdirectories and their CSVs.
 
         Args:
             directory_name: Folder name or relative/absolute path to search within.
@@ -279,18 +333,20 @@ class LogParser:
             raise FileNotFoundError(f"No CSV files found inside '{target_dir}'.")
 
     def parse_from_path(self, csv_or_dir_path: str | Path) -> ParsedMetrics:
-        """Parses a single metric run from an explicit CSV file or run folder.
+        """
+        Parse a single metric run from an explicit CSV file or run folder.
 
-        If a directory is given, uses the linked (newest) CSV file.
+        If a directory is given, uses the newest linked CSV file found.
 
         Args:
             csv_or_dir_path: Path to a CSV file or directory containing one.
 
         Returns:
-            A ParsedMetrics instance.
+            parsed: Tidy ParsedMetrics container representing the run.
 
         Raises:
             FileNotFoundError: If the target path or CSV does not exist.
+            ValueError: If the path does not point to a valid CSV file.
         """
         path = self._normalize_path(csv_or_dir_path)
 
@@ -303,13 +359,14 @@ class LogParser:
         return self._parse_file(target_csv)
 
     def parse(self, *directories: str | Path) -> list[ParsedMetrics]:
-        """Parses all CSV metrics linked to the specified directories.
+        """
+        Parse all CSV metrics linked to the specified directories.
 
         Args:
-            directories: One or more directory paths to parse.
+            *directories: One or more directory paths or names to parse.
 
         Returns:
-            A list of ParsedMetrics instances for all CSVs in those directories.
+            parsed_metrics: List of ParsedMetrics instances for all linked CSVs.
 
         Raises:
             ValueError: If no directories are provided.
@@ -325,13 +382,14 @@ class LogParser:
         return parsed_metrics
 
     def parse_all(self) -> list[ParsedMetrics]:
-        """Parses all CSV metrics across all queued directories in memory.
+        """
+        Parse all CSV metrics across all queued directories in memory.
 
         Returns:
-            A list of ParsedMetrics instances corresponding to all linked CSVs.
+            parsed_metrics: List of ParsedMetrics instances for all queued CSVs.
 
         Raises:
-            ValueError: If no directories are queued.
+            ValueError: If no directories are currently queued in memory.
         """
         if not self._dir_to_csvs:
             raise ValueError(
@@ -347,7 +405,15 @@ class LogParser:
         return parsed_metrics
 
     def _parse_file(self, csv_path: Path) -> ParsedMetrics:
-        """Internal worker that validates, reshapes, and loads CSV into ParsedMetrics."""
+        """
+        Validate, reshape, and load raw CSV data into a tidy ParsedMetrics container.
+
+        Args:
+            csv_path: Path to the target CSV metric log file.
+
+        Returns:
+            parsed: Tidy ParsedMetrics container holding split-indexed metrics.
+        """
         raw_df, resolved_path = self._load_csv(csv_path)
 
         if resolved_path.is_relative_to(self._base_logs_dir):
@@ -365,7 +431,6 @@ class LogParser:
         match = re.search(r"experiment_(\d+)", exp_dir.name)
         exp_id = match.group(1) if match else exp_dir.name
 
-        # Determine model and version relative to the experiment root folder
         model_label = ""
         rel_to_exp = resolved_path.relative_to(exp_dir)
         if len(rel_to_exp.parts) >= 3:
@@ -427,7 +492,19 @@ class LogParser:
         return parsed
 
     def _resolve_and_validate_path(self, path: str | Path) -> Path:
-        """Internal helper to validate file existence and extensions."""
+        """
+        Validate that a file exists and has a valid CSV extension.
+
+        Args:
+            path: Target file path to validate.
+
+        Returns:
+            target_path: Validated, absolute Path to the CSV file.
+
+        Raises:
+            ValueError: If the file does not have a .csv extension.
+            FileNotFoundError: If the CSV file does not exist on disk.
+        """
         target_path = self._normalize_path(path)
 
         if target_path.suffix.lower() != ".csv":
@@ -439,7 +516,19 @@ class LogParser:
         return target_path
 
     def _load_csv(self, path: str | Path) -> tuple[pd.DataFrame, Path]:
-        """Internal helper to load raw CSV data into a DataFrame."""
+        """
+        Load raw CSV log data into a pandas DataFrame.
+
+        Args:
+            path: File path of the CSV log to read.
+
+        Returns:
+            result: Tuple of (raw_df, resolved_path).
+
+        Raises:
+            ValueError: If the CSV file is completely empty.
+            FileNotFoundError: If the CSV file does not exist.
+        """
         resolved_path = self._resolve_and_validate_path(path)
         try:
             raw_df = pd.read_csv(resolved_path)
