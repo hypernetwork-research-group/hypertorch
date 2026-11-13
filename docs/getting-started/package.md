@@ -19,6 +19,7 @@ HyperTorch is organized as a flat Python package: the `hypertorch/` package live
 │   ├── models              # Model implementations
 │   ├── nc                  # Node classification pipelines
 │   ├── nn                  # Neural-network layers and reusable modules
+│   ├── plot                # Parsing metrics and plotting
 │   ├── tests               # Unit test suite
 │   ├── train               # Training and benchmarking logic, and loggers
 │   ├── types               # Shared type definitions
