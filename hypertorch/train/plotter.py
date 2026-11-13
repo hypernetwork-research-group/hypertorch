@@ -232,10 +232,7 @@ class Plotter(ABC):
             targets: Ordered list of target metric names to plot.
         """
         if metric_names is not None:
-            return [
-                name for name in metric_names
-                if any(name in m for m in metrics_list)
-            ]
+            return [name for name in metric_names if any(name in m for m in metrics_list)]
         seen: set[str] = set()
         targets: list[str] = []
         for m in metrics_list:
@@ -343,9 +340,7 @@ class LinePlotter(Plotter):
 
         saved_plots: list[Path] = []
         for var_name in targets:
-            runs_with_metric = [
-                (idx, m) for idx, m in enumerate(metrics_list) if var_name in m
-            ]
+            runs_with_metric = [(idx, m) for idx, m in enumerate(metrics_list) if var_name in m]
             if not runs_with_metric:
                 continue
 
@@ -415,18 +410,37 @@ class LinePlotter(Plotter):
             linestyle="-",
             linewidth=1.4,
             marker=marker,
-            markersize=5.5 if marker else None,
+            markersize=5.0 if marker else None,
+            markeredgewidth=0.5 if marker else None,
             zorder=zorder,
             label=label,
         )
+
+    @staticmethod
+    def _get_split_marker(split_name: str) -> str:
+        """
+        Resolve standard point marker character based on split category.
+
+        Args:
+            split_name: Data split name (e.g., 'train', 'val', 'test').
+
+        Returns:
+            marker: Point marker ('o' for train, 's' for val, 'd' for others).
+        """
+        clean_split = split_name.lower()
+        if "train" in clean_split:
+            return "o"
+        if "val" in clean_split:
+            return "s"
+        return "d"
 
     def _draw_split(
         self,
         ax: Any,
         group: pd.DataFrame,
+        split_name: str,
         x_col: str,
         color: Any,
-        is_busy: bool,
         base_zorder: int,
         label: str,
     ) -> None:
@@ -436,9 +450,9 @@ class LinePlotter(Plotter):
         Args:
             ax: Matplotlib axes to draw on.
             group: Split-specific metric DataFrame.
+            split_name: Evaluation split name.
             x_col: Primary tracking column name.
             color: Resolved color for this split.
-            is_busy: Whether dense curves require suppressing individual point markers.
             base_zorder: Baseline layer index for the parent run.
             label: Text label for the legend entry.
         """
@@ -446,7 +460,7 @@ class LinePlotter(Plotter):
             val = float(group["value"].iloc[0])
             self._draw_singular(ax, val=val, color=color, zorder=base_zorder, label=label)
         else:
-            marker = None if is_busy else "."
+            marker = self._get_split_marker(split_name)
             self._draw_curve(
                 ax=ax,
                 group=group,
@@ -467,7 +481,6 @@ class LinePlotter(Plotter):
         palette: list[Any],
         x_col: str,
         is_multi: bool,
-        is_busy: bool,
     ) -> None:
         """
         Iterate through and render all split curves for an individual model run.
@@ -481,7 +494,6 @@ class LinePlotter(Plotter):
             palette: Active color palette.
             x_col: Primary tracking column name.
             is_multi: Whether multiple experiment runs are being compared.
-            is_busy: Whether dense curves require suppressing individual point markers.
         """
         tidy_df = m.fetch(var_name)
         run_label = m.experiment_name or f"run_{run_idx}"
@@ -504,9 +516,9 @@ class LinePlotter(Plotter):
             self._draw_split(
                 ax=ax,
                 group=group,
+                split_name=split_name,
                 x_col=x_col,
                 color=color,
-                is_busy=is_busy,
                 base_zorder=base_zorder,
                 label=label,
             )
@@ -577,7 +589,6 @@ class LinePlotter(Plotter):
                 palette=palette,
                 x_col=x_col,
                 is_multi=is_multi,
-                is_busy=is_busy,
             )
 
         formatted_metric = self._format_label(var_name)
