@@ -284,7 +284,7 @@ class LinePlotter(Plotter):
 
 
 class ScatterPlotter(Plotter):
-    """Generates composite pairwise scatter plots, cleanly chunked and separated by split."""
+    """Generates composite pairwise scatter plots, dynamically sized and grouped by reference metric."""
 
     def plot(
         self,
@@ -293,7 +293,7 @@ class ScatterPlotter(Plotter):
         output_dir: str | Path | None = None,
         create_subfolder: bool = True,
     ) -> list[Path]:
-        """Renders pairwise metric subplots across models, separated by data split."""
+        """Renders pairwise metric subplots across models, separated by data split and anchor metric."""
         if not self._is_plotting_available():
             raise ImportError(
                 "Plotting dependencies are not available. "
@@ -364,7 +364,6 @@ class ScatterPlotter(Plotter):
                     if len(merged) < 2:
                         continue
 
-                    # Check if the metrics contain different values
                     diff = (merged[col_x] - merged[col_y]).abs()
                     if (diff > 1e-4).any():
                         is_redundant_alias = False
@@ -372,7 +371,6 @@ class ScatterPlotter(Plotter):
                     run_label = m.experiment_name or f"run_{run_idx}"
                     run_matches[run_idx] = (run_label, merged)
 
-                # Prune pairs with 0 data OR pairs that are identical aliases across all runs
                 if run_matches and not is_redundant_alias:
                     pair_data[(var_x, var_y)] = run_matches
 
@@ -390,13 +388,14 @@ class ScatterPlotter(Plotter):
                     run_idx = next(iter(runs.keys()))
                     single_run_pairs.setdefault(run_idx, []).append(pair)
 
-            def _render_chunks(
+            def _render_anchor_group(
                 pairs_to_plot: list[tuple[str, str]],
                 title_prefix: str,
                 file_stem: str,
+                anchor_name: str,
                 is_comparison: bool,
             ) -> None:
-                """Splits pair lists into chunks <= 6 and renders them into separate files."""
+                """Renders pairs sharing the same anchor into dynamically sized figures"""
                 subfolder_name = "comparison" if is_comparison else "unique"
                 dest_dir = plots_dir / subfolder_name if create_subfolder else plots_dir
                 dest_dir.mkdir(parents=True, exist_ok=True)
@@ -409,13 +408,16 @@ class ScatterPlotter(Plotter):
                     ]
                     n_plots = len(chunk)
 
+                    # Dynamic geometry based on plot count
                     if n_plots == 1:
                         n_cols, n_rows = 1, 1
                     elif n_plots == 2:
                         n_cols, n_rows = 2, 1
-                    elif n_plots <= 4:
-                        n_cols, n_rows = 2, math.ceil(n_plots / 2)
-                    else:
+                    elif n_plots == 3:
+                        n_cols, n_rows = 3, 1
+                    elif n_plots == 4:
+                        n_cols, n_rows = 2, 2
+                    else:  # 5 or 6 plots
                         n_cols, n_rows = 3, math.ceil(n_plots / 3)
 
                     fig, axes = plt.subplots(
@@ -434,25 +436,27 @@ class ScatterPlotter(Plotter):
                         for run_idx, (run_label, merged) in pair_data[(var_x, var_y)].items():
                             run_color = palette[run_idx % len(palette)]
 
+                            # Trajectory points halved to s=32
                             ax.scatter(
                                 merged[col_x],
                                 merged[col_y],
                                 color=run_color,
                                 marker=".",
-                                s=65,
+                                s=32,
                                 alpha=0.8,
                                 zorder=2,
                                 label=run_label if idx == 0 else None,
                             )
 
+                            # Final epoch marker halved to s=60
                             ax.scatter(
                                 merged[col_x].iloc[-1],
                                 merged[col_y].iloc[-1],
                                 color=run_color,
-                                s=120,
+                                s=60,
                                 marker="X",
                                 edgecolors="black",
-                                linewidths=1.0,
+                                linewidths=0.8,
                                 zorder=3,
                             )
 
@@ -463,6 +467,7 @@ class ScatterPlotter(Plotter):
                         ax.set_ylabel(label_y, fontsize=10)
                         ax.margins(x=0.08, y=0.08)
 
+                    # Hide unused axes in non-full grids (e.g. 5 plots in a 3x2)
                     for empty_idx in range(n_plots, len(flat_axes)):
                         flat_axes[empty_idx].set_visible(False)
 
@@ -483,16 +488,19 @@ class ScatterPlotter(Plotter):
                             title=leg_title,
                         )
 
+                    formatted_anchor = anchor_name.replace("_", " ").capitalize()
                     fig.suptitle(
-                        f"{title_prefix} — Metric Relationships",
-                        fontsize=12,
-                        y=1.03,
+                        f"{title_prefix} — Relationships vs {formatted_anchor}",
+                        fontsize=13,
+                        y=1.02,
                     )
 
                     part_suffix = f"_part{chunk_idx + 1}" if total_chunks > 1 else ""
+                    clean_file_stem = file_stem.replace("/", "_")
+                    clean_anchor = anchor_name.replace("/", "_")
                     out_path = (
                         dest_dir
-                        / f"ScatterPlot_relationships_{split_name}_{file_stem}{part_suffix}.png"
+                        / f"ScatterPlot_relationships_{split_name}_{clean_file_stem}_vs_{clean_anchor}{part_suffix}.png"
                     )
 
                     plt.tight_layout()
@@ -500,21 +508,34 @@ class ScatterPlotter(Plotter):
                     plt.close(fig)
                     saved_plots.append(out_path)
 
-            if comparison_pairs:
-                _render_chunks(
-                    pairs_to_plot=comparison_pairs,
+            # Group multi-run comparisons by anchor 
+            comparison_by_anchor: dict[str, list[tuple[str, str]]] = {}
+            for var_x, var_y in comparison_pairs:
+                comparison_by_anchor.setdefault(var_x, []).append((var_x, var_y))
+
+            for anchor, pairs in comparison_by_anchor.items():
+                _render_anchor_group(
+                    pairs_to_plot=pairs,
                     title_prefix="Comparison",
                     file_stem="comparison",
+                    anchor_name=anchor,
                     is_comparison=True,
                 )
 
+            # Group single-run metrics by run and anchor
             for run_idx, r_pairs in single_run_pairs.items():
                 run_label = metrics_list[run_idx].experiment_name or f"run_{run_idx}"
-                _render_chunks(
-                    pairs_to_plot=r_pairs,
-                    title_prefix=f"Experiment {run_label}",
-                    file_stem=run_label,
-                    is_comparison=False,
-                )
+                single_by_anchor: dict[str, list[tuple[str, str]]] = {}
+                for var_x, var_y in r_pairs:
+                    single_by_anchor.setdefault(var_x, []).append((var_x, var_y))
+
+                for anchor, pairs in single_by_anchor.items():
+                    _render_anchor_group(
+                        pairs_to_plot=pairs,
+                        title_prefix=f"Experiment {run_label}",
+                        file_stem=run_label,
+                        anchor_name=anchor,
+                        is_comparison=False,
+                    )
 
         return saved_plots

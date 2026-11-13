@@ -27,11 +27,7 @@ class ParsedMetrics:
         self._metrics[name] = df
 
     def average(self) -> "ParsedMetrics":
-        """Returns a new ParsedMetrics instance with duplicate x_col points averaged per split.
-
-        If a metric has multiple logged values for the same epoch/step within a split,
-        they are reduced to their arithmetic mean.
-        """
+        """Averages multiple intra-epoch steps to produce exactly 1 point per epoch."""
         averaged = ParsedMetrics(
             x_col=self.x_col,
             csv_path=self.csv_path,
@@ -40,15 +36,18 @@ class ParsedMetrics:
         )
 
         for name, df in self._metrics.items():
-            if not df.duplicated(subset=[self.x_col, "split"]).any():
+            if self.x_col not in df.columns:
                 averaged.add(name, df.copy())
-            else:
-                avg_df = (
-                    df.groupby([self.x_col, "split"], as_index=False, sort=False)["value"]
-                    .mean()
-                )
-                averaged.add(name, avg_df)
+                continue
 
+            if df.duplicated(subset=[self.x_col, "split"]).any():
+                avg_df = df.groupby([self.x_col, "split"], as_index=False, sort=False)[
+                    "value"
+                ].mean()
+                averaged.add(name, avg_df)
+            else:
+                averaged.add(name, df.copy())
+            
         return averaged
     
     def fetch(self, name: str) -> pd.DataFrame:
