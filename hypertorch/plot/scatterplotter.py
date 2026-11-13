@@ -37,7 +37,7 @@ class ScatterPlotter(Plotter):
             ImportError: If matplotlib or seaborn is not installed.
             ValueError: If metrics validation fails or no valid data is found.
         """
-        plt, sns = self._init_plotting()
+        plt = self._init_plotting()
         metrics_list = self._normalize_metrics(metrics)
         self._validate_metrics_list(metrics_list)
         targets = self._resolve_target_metrics(metrics_list, metric_names)
@@ -50,7 +50,7 @@ class ScatterPlotter(Plotter):
             return []
 
         plots_dir = self._resolve_plots_dir(metrics_list, output_dir, create_subfolder)
-        palette = sns.color_palette("colorblind", n_colors=max(len(metrics_list), 10))
+        palette = self.colourblind_palette
 
         comparison_metrics, single_run_metrics = self._partition_metrics(metric_data)
         saved_plots: list[Path] = []

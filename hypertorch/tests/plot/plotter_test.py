@@ -34,9 +34,8 @@ def test_plotter_is_plotting_available_missing_dependency(monkeypatch: pytest.Mo
 
 
 def test_plotter_init_plotting_success() -> None:
-    plt, sns = Plotter._init_plotting()
+    plt = Plotter._init_plotting()
     assert plt is not None
-    assert sns is not None
 
 
 def test_plotter_init_plotting_missing_raises_import_error(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -30,14 +30,14 @@ class LinePlotter(Plotter):
         Returns:
             saved_plots: List of file paths to saved line plot PNG files.
         """
-        plt, sns = self._init_plotting()
+        plt = self._init_plotting()
         metrics_list = self._normalize_metrics(metrics)
         self._validate_metrics_list(metrics_list)
 
         plots_dir = self._resolve_plots_dir(metrics_list, output_dir, create_subfolder)
         targets = self._resolve_target_metrics(metrics_list, metric_names)
         x_col = metrics_list[0].x_col
-        palette = sns.color_palette("colorblind")
+        palette = self.colourblind_palette
 
         saved_plots: list[Path] = []
         for var_name in targets:
