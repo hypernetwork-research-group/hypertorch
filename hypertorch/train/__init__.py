@@ -10,7 +10,7 @@ from .trainer import MultiModelTrainer
 
 from .log_parser import LogParser
 
-from .plotter import LinePlotter, Plotter
+from .plotter import LinePlotter, ScatterPlotter, Plotter
 
 logging.getLogger("lightning.pytorch").setLevel(logging.ERROR)
 
@@ -18,6 +18,7 @@ __all__ = [
     "ExperimentSharedLogger",
     "LaTexTableConfig",
     "LaTexTableLogger",
+    "ScatterPlotter",
     "LinePlotter",
     "LogParser",
     "MarkdownTableLogger",
