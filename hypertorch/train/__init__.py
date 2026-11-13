@@ -18,11 +18,11 @@ __all__ = [
     "ExperimentSharedLogger",
     "LaTexTableConfig",
     "LaTexTableLogger",
-    "ScatterPlotter",
     "LinePlotter",
     "LogParser",
     "MarkdownTableLogger",
     "MultiModelTrainer",
     "Plotter",
+    "ScatterPlotter",
     "colorize_metric_value",
 ]
