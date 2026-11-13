@@ -4,7 +4,7 @@ import colorsys
 import importlib
 import importlib.util
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 from hypertorch.types import ParsedMetrics
 from hypertorch.utils import validate_base_dir
@@ -17,6 +17,19 @@ class Plotter(ABC):
     in specific chart types (Line, Scatter, etc.).
     """
 
+    colourblind_palette: ClassVar = [
+        "#0173B2",
+        "#DE8F05",
+        "#007848",
+        "#D55E00",
+        "#CC78BC",
+        "#A37D50",
+        "#F2A9DC",
+        "#949494",
+        "#ECE133",
+        "#56B4E9",
+    ]
+
     @staticmethod
     def _is_plotting_available() -> bool:
         """
@@ -27,11 +40,10 @@ class Plotter(ABC):
         """
         return (
             importlib.util.find_spec("matplotlib") is not None
-            and importlib.util.find_spec("seaborn") is not None
         )
 
     @classmethod
-    def _init_plotting(cls) -> tuple[Any, Any]:
+    def _init_plotting(cls) -> Any:
         """
         Validate plotting dependencies and configure matplotlib and seaborn backends.
 
@@ -49,9 +61,8 @@ class Plotter(ABC):
         matplotlib = importlib.import_module("matplotlib")
         matplotlib.use("Agg")
         plt = importlib.import_module("matplotlib.pyplot")
-        sns = importlib.import_module("seaborn")
-        sns.set_theme(style="darkgrid")
-        return plt, sns
+        plt.style.use("seaborn-v0_8-white")
+        return plt
 
     @staticmethod
     def _format_label(name: str) -> str:
@@ -125,7 +136,7 @@ class Plotter(ABC):
 
     @staticmethod
     def _get_shade(
-        base_color: tuple[float, ...] | list[float],
+        base_color: tuple[float, ...] | list[float] | str,
         split_idx: int,
         num_splits: int,
     ) -> tuple[float, float, float]:
@@ -133,17 +144,26 @@ class Plotter(ABC):
         Generate a shade of a base color by adjusting lightness while preserving hue.
 
         Args:
-            base_color: Base RGB or RGBA color tuple or list.
+            base_color: Base color as hex string ('#RRGGBB').
             split_idx: Zero-based index of the current data split.
             num_splits: Total number of splits sharing this base color.
 
         Returns:
             color: Adjusted RGB color tuple maintaining hue with scaled lightness.
         """
-        if num_splits <= 1:
-            return (base_color[0], base_color[1], base_color[2])
+        if isinstance(base_color, str):
+            clean_hex = base_color.lstrip("#")
+            r, g, b = (
+                int(clean_hex[0:2], 16) / 255.0,
+                int(clean_hex[2:4], 16) / 255.0,
+                int(clean_hex[4:6], 16) / 255.0,
+            )
+        else:
+            r, g, b = float(base_color[0]), float(base_color[1]), float(base_color[2])
 
-        r, g, b = base_color[:3]
+        if num_splits <= 1:
+            return (r, g, b)
+
         h, _, s = colorsys.rgb_to_hls(r, g, b)
 
         min_l, max_l = 0.30, 0.72

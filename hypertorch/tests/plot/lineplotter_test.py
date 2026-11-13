@@ -12,11 +12,10 @@ from hypertorch.types import ParsedMetrics
 @pytest.fixture(autouse=True)
 def mock_plotting_backend(monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
     """
-    Mock matplotlib and seaborn in sys.modules and importlib to run headless.
+    Mock matplotlib in sys.modules and importlib to run headless.
     """
     mock_matplotlib = MagicMock()
     mock_plt = MagicMock()
-    mock_sns = MagicMock()
     mock_fig = MagicMock()
     mock_ax = MagicMock()
 
@@ -31,27 +30,16 @@ def mock_plotting_backend(monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
     mock_plt.savefig.side_effect = fake_savefig
     mock_matplotlib.pyplot = mock_plt
 
-    mock_sns.color_palette.return_value = [
-        (0.12, 0.47, 0.71),
-        (1.0, 0.5, 0.05),
-        (0.17, 0.63, 0.17),
-        (0.84, 0.15, 0.16),
-        (0.58, 0.4, 0.74),
-        (0.55, 0.34, 0.29),
-    ]
-
     monkeypatch.setattr(
         "hypertorch.plot.plotter.importlib.util.find_spec",
-        lambda name: MagicMock() if name in {"matplotlib", "seaborn"} else None,
+        lambda name: MagicMock() if name in {"matplotlib"} else None,
     )
     monkeypatch.setitem(sys.modules, "matplotlib", mock_matplotlib)
     monkeypatch.setitem(sys.modules, "matplotlib.pyplot", mock_plt)
-    monkeypatch.setitem(sys.modules, "seaborn", mock_sns)
 
     return {
         "matplotlib": mock_matplotlib,
         "plt": mock_plt,
-        "sns": mock_sns,
         "fig": mock_fig,
         "ax": mock_ax,
     }
@@ -449,7 +437,7 @@ def test_lineplotter_render_run_curves_skips_empty_split_group(tmp_path: Path) -
         ),
     )
 
-    # Run 2 only has 'train' (its 'val' group is completely empty)
+    # Run 2 only has 'train'
     m2 = ParsedMetrics(x_col="epoch", experiment_dir=exp_2, experiment_name="2")
     m2.add(
         "loss",
