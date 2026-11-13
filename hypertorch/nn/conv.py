@@ -70,7 +70,7 @@ class HyperGCNConv(nn.Module):
 
         self.seed: int | None = seed
 
-    def forward(  # ty: ignore[invalid-mutable-override]
+    def forward(
         self,
         x: Tensor,
         hyperedge_index: Tensor,
@@ -178,7 +178,7 @@ class HGNNConv(nn.Module):
         self.dropout: nn.Dropout = nn.Dropout(drop_rate)
         self.theta: nn.Linear = nn.Linear(in_channels, out_channels, bias=bias)
 
-    def forward(self, x: Tensor, hyperedge_index: Tensor) -> Tensor:  # ty: ignore[invalid-mutable-override]
+    def forward(self, x: Tensor, hyperedge_index: Tensor) -> Tensor:
         """
         Apply one HGNN convolution layer: project features, smooth via hypergraph Laplacian,
         then apply activation, batch norm, and dropout (unless this is the last layer).
@@ -268,7 +268,7 @@ class HGNNPConv(nn.Module):
         self.dropout: nn.Dropout = nn.Dropout(drop_rate)
         self.theta: nn.Linear = nn.Linear(in_channels, out_channels, bias=bias)
 
-    def forward(self, x: Tensor, hyperedge_index: Tensor) -> Tensor:  # ty: ignore[invalid-mutable-override]
+    def forward(self, x: Tensor, hyperedge_index: Tensor) -> Tensor:
         """
         Apply one HGNN+ convolution layer using row-stochastic hypergraph smoothing.
 
@@ -350,7 +350,7 @@ class HNHNConv(nn.Module):
         self.theta_v2e: nn.Linear = nn.Linear(in_channels, out_channels, bias=bias)
         self.theta_e2v: nn.Linear = nn.Linear(out_channels, out_channels, bias=bias)
 
-    def forward(self, x: Tensor, hyperedge_index: Tensor) -> Tensor:  # ty: ignore[invalid-mutable-override]
+    def forward(self, x: Tensor, hyperedge_index: Tensor) -> Tensor:
         """
         Apply one HNHN convolution layer using two learned projections around node-to-hyperedge and
         hyperedge-to-node mean aggregation.

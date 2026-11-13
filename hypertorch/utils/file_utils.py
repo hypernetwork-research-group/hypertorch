@@ -236,3 +236,21 @@ def get_cache_dir(
         cache_dir.mkdir(parents=True, exist_ok=True)
 
     return cache_dir
+
+
+def validate_base_dir(path: str | Path) -> Path:
+    """Validates that the base directory exists and is a directory.
+
+    Raises:
+        FileNotFoundError: If the directory does not exist.
+        NotADirectoryError: If the path points to a file or special node.
+
+    Returns:
+        resolved: absolute, normalized path to the directory.
+    """
+    resolved = Path(path).resolve()
+    if not resolved.exists():
+        raise FileNotFoundError(f"Logs root directory '{resolved}' does not exist.")
+    if not resolved.is_dir():
+        raise NotADirectoryError(f"Logs root path '{resolved}' is not a directory.")
+    return resolved
