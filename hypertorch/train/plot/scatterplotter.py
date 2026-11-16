@@ -5,7 +5,7 @@ from typing import Any
 import warnings
 
 
-from hypertorch.plot.plotter import Plotter
+from hypertorch.train.plot.plotter import Plotter
 from hypertorch.types.parsed_metrics import ParsedMetrics
 
 
@@ -360,11 +360,11 @@ class ScatterPlotter(Plotter):
                     loc="upper left",
                     borderaxespad=0.0,
                     frameon=True,
-                    title=f"{title_prefix} (Runs)",
+                    title=f"{title_prefix}",
                 )
 
             fig.suptitle(
-                f"{title_prefix} — Train vs Val Generalization",
+                f"{title_prefix} — Train vs Val",
                 fontsize=13,
                 y=1.02,
             )

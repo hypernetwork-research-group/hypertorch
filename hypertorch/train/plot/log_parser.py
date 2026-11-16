@@ -8,7 +8,6 @@ import warnings
 import pandas as pd
 from hypertorch.types import ParsedMetrics
 from hypertorch.utils import validate_base_dir
-from hypertorch.utils import validate_base_dir
 
 
 class LogParser:

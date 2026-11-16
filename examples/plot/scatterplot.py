@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Literal
 from torchmetrics import MetricCollection
 from torchmetrics.classification import BinaryAccuracy, BinaryAUROC
 
@@ -9,7 +10,7 @@ from hypertorch.data import (
     RandomNegativeSampler,
 )
 from hypertorch.hyperlink_prediction import MLPPredictor
-from hypertorch.plot import LogParser, ScatterPlotter
+from hypertorch.train.plot import LogParser, ScatterPlotter
 from hypertorch.train import MultiModelTrainer
 from hypertorch.types import ModelConfig
 
@@ -17,7 +18,7 @@ from hypertorch.types import ModelConfig
 def build_mlp_model(
     num_features: int,
     hidden_channels: int,
-    aggregation: str,
+    aggregation: Literal["mean", "max", "min", "sum"],
     drop_rate: float,
     metrics: MetricCollection,
 ) -> MLPPredictor:
