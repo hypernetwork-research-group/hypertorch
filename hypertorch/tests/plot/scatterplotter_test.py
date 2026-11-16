@@ -7,7 +7,7 @@ import warnings
 import pandas as pd
 import pytest
 
-from hypertorch.plot import ScatterPlotter
+from hypertorch.train.plot import ScatterPlotter
 from hypertorch.types import ParsedMetrics
 
 
@@ -39,7 +39,7 @@ def mock_plotting_backend(monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
     mock_matplotlib.pyplot = mock_plt
 
     monkeypatch.setattr(
-        "hypertorch.plot.plotter.importlib.util.find_spec",
+        "hypertorch.train.plot.plotter.importlib.util.find_spec",
         lambda name: MagicMock() if name == "matplotlib" else None,
     )
     monkeypatch.setitem(sys.modules, "matplotlib", mock_matplotlib)
@@ -191,7 +191,7 @@ def test_scatterplotter_missing_dependencies_raises_import_error(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(
-        "hypertorch.plot.plotter.Plotter._is_plotting_available",
+        "hypertorch.train.plot.plotter.Plotter._is_plotting_available",
         staticmethod(lambda: False),
     )
     plotter = ScatterPlotter()

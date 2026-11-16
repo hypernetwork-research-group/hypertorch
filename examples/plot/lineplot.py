@@ -1,6 +1,7 @@
 from pathlib import Path
 from torchmetrics import MetricCollection
-from torchmetrics.classification import BinaryAccuracy, BinaryAUROC
+from torchmetrics.classification import BinaryAccuracy
+from torchmetrics.classification.auroc import BinaryAUROC
 from hypertorch.data import (
     AlgebraDataset,
     DataLoader,
@@ -8,7 +9,7 @@ from hypertorch.data import (
     RandomNegativeSampler,
 )
 from hypertorch.hyperlink_prediction import MLPPredictor
-from hypertorch.plot import LinePlotter, LogParser
+from hypertorch.train.plot import LinePlotter, LogParser
 from hypertorch.train import MultiModelTrainer
 from hypertorch.types import ModelConfig
 
@@ -105,7 +106,6 @@ def main() -> None:
     parser.discover_from_latest_dir(num=1)
     parsed_runs = parser.parse_all()
 
->>>>>>> 91952f8 (Initial scatterplot implementation)
     # Instantiating LinePlotter to plot metrics
     print("Generating line plots...")
     plotter = LinePlotter()

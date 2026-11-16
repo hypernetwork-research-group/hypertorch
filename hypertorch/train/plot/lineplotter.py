@@ -4,7 +4,7 @@ from typing import Any
 
 import pandas as pd
 
-from hypertorch.plot.plotter import Plotter
+from hypertorch.train.plot.plotter import Plotter
 from hypertorch.types.parsed_metrics import ParsedMetrics
 
 

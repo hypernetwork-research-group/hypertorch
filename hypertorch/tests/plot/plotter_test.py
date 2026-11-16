@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 import pandas as pd
 
-from hypertorch.plot import Plotter
+from hypertorch.train.plot import Plotter
 from hypertorch.types import ParsedMetrics
 
 

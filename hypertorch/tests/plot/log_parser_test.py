@@ -4,7 +4,7 @@ import time
 from typing import Any
 import pytest
 
-from hypertorch.plot import LogParser
+from hypertorch.train.plot import LogParser
 from hypertorch.types import ParsedMetrics
 
 
