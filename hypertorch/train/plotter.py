@@ -1,168 +1,124 @@
 from abc import ABC, abstractmethod
-import importlib
-import importlib.util
 from pathlib import Path
-
-from hypertorch.types import ParsedMetrics
-from hypertorch.utils.file_utils import validate_base_dir
+import re
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
 
 
 class Plotter(ABC):
-    """Abstract Base Class (ABC) for all experiment plotters in HyperTorch.
+    """
+    Abstract Base Class (ABC) for all experiment plotters in HyperTorch.
 
     Establishes a common structure, to be inherited by all the future classes
-    that specialize in a type of plot (Line, Scatter, etc.).
+    that specilize in a type of plot (Line, Scatter, etc etc)
+
+    Args:
+        experiment_dir: Path to the experiment directory (e.g., 'hypertorch_logs/experiment_0').
+
+    Note: generates the "plot" folder inside the experiment folder, where the plot will be placed.
     """
 
-    @staticmethod
-    def _is_plotting_available() -> bool:
-        """Check whether matplotlib and seaborn are importable.
-
-        Returns:
-            available: ``True`` when both matplotlib and seaborn are installed.
-        """
-        return (
-            importlib.util.find_spec("matplotlib") is not None
-            and importlib.util.find_spec("seaborn") is not None
-        )
-
-    @staticmethod
-    def _validate_metrics(metrics: ParsedMetrics) -> None:
-        """Validates that ParsedMetrics contains the necessary plotting data.
-
-        Raises:
-            ValueError: If primary tracking column (x_col) is missing or if
-                        no metrics are stored.
-        """
-        if not getattr(metrics, "x_col", None):
-            raise ValueError("ParsedMetrics contains no primary column.")
-        if len(metrics) == 0:
-            raise ValueError("ParsedMetrics contains no metrics to plot.")
-
-    @staticmethod
-    def _resolve_plots_dir(
-        metrics: ParsedMetrics,
-        output_dir: str | Path | None,
-        create_subfolder: bool,
-    ) -> Path:
-        """Resolves, validates, and creates the target directory for plots.
-
-        Raises:
-            ValueError: If no destination path can be found.
-            FileNotFoundError: If the target directory does not exist.
-            NotADirectoryError: If the target path is not a directory.
-        """
-        if output_dir is not None:
-            target = output_dir
-        elif metrics.experiment_dir is not None:
-            target = metrics.experiment_dir
-        else:
-            raise ValueError("Could not find a destination path.")
-
-        base_dir = validate_base_dir(target)
-
-        plots_dir = base_dir / "plots" if create_subfolder else base_dir
-        plots_dir.mkdir(parents=True, exist_ok=True)
-        return plots_dir
+    def __init__(self, experiment_dir: str | Path) -> None:
+        self.experiment_dir = Path(experiment_dir)
+        self.plots_dir = self.experiment_dir / "plots"
+        self.plots_dir.mkdir(parents=True, exist_ok=True)
 
     @abstractmethod
-    def plot(
-        self,
-        metrics: ParsedMetrics,
-        metric_names: list[str] | None = None,
-        output_dir: str | Path | None = None,
-        create_subfolder: bool = True,
-    ) -> list[Path]:
-        """Renders and saves plot images from parsed metrics.
+    def plot(self, df: pd.DataFrame, csv_path: Path) -> list[Path]:
+        """
+        Abstract method that must be implemented by subclasses.
 
         Args:
-            metrics: ParsedMetrics container.
-            metric_names: Optional subset of metric variables to plot.
-                         If None, plots all available metrics.
-            output_dir: Optional path where the plots will be saved. If None,
-                        defaults to metrics.experiment_dir.
-            create_subfolder: If True, creates and saves into a 'plots' subfolder
-                              within the target directory. Defaults to True.
+            df: Metric DataFrame parsed from the CSV.
+            csv_path: Path to the source CSV file.
 
         Returns:
             A list of Paths pointing to created image files.
-
-        Raises:
-            ImportError: If matplotlib or seaborn is not installed.
-            TypeError: when unimplemented by concrete classes
         """
 
 
 class LinePlotter(Plotter):
     """Generates Seaborn line plots for training and evaluation metrics."""
 
+    def __init__(self, experiment_dir: str | Path) -> None:
+        super().__init__(experiment_dir)
+        match = re.search(r"experiment_(\d+)", self.experiment_dir.name)
+        self.num_exp = match.group(1) if match else "0"
+
     def plot(
         self,
-        metrics: ParsedMetrics,
-        metric_names: list[str] | None = None,
-        output_dir: str | Path | None = None,
-        create_subfolder: bool = True,
+        df: pd.DataFrame,
+        csv_path: Path,
+        metrics: list[str] | None = None,
     ) -> list[Path]:
-        """Renders and saves line plots for metrics across epochs/steps.
+        """
+        Renders and saves line plots for metrics across epochs/steps.
 
         Args:
-            metrics: ParsedMetrics container.
-            metric_names: Optional subset of metric variables to plot.
-                         If None, plots all available metrics.
-            output_dir: Optional path where the plots will be saved. If None,
-                        defaults to metrics.experiment_dir.
-            create_subfolder: If True, creates and saves into a 'plots' subfolder
-                              within the target directory. Defaults to True.
+            df: Metric DataFrame returned by LogParser.
+            csv_path: Source CSV path returned by LogParser.
+            metrics: Optional list of specific base variables to plot (e.g. ['loss']).
+                     If None, plots all available variables.
 
         Returns:
-            saved_plots: List of generated plot image file paths.
+            List of generated plot image file paths.
 
-        Raises:
-            ImportError: If matplotlib or seaborn is not installed.
-            ValueError: If parsedMetrics contains no destination path and no further path was given,
-                        if metrics.x_col is None or empty, or if parsedMetrics contains no metrics.
-            FileNotFoundError: If the destination folder does not exist.
-            NotADirectoryError: If the destination path doesn't point to a directory.
+        Output:
+            LinePlot_{variable}_{num_exp}.png
         """
-        if not self._is_plotting_available():
-            raise ImportError(
-                "Plotting dependencies are not available. "
-                "Install them with `pip install hypertorch[plotting]`"
-            )
+        x_col = (
+            "epoch"
+            if "epoch" in df.columns
+            else ("step" if "step" in df.columns else df.columns[0])
+        )
 
-        # Base class validation and destination resolution
-        self._validate_metrics(metrics)
-        plots_dir = self._resolve_plots_dir(metrics, output_dir, create_subfolder)
-        num_exp = metrics.experiment_name or "0"
+        tracking_cols = {"epoch", "step"}
+        metric_cols = [c for c in df.columns if c not in tracking_cols]
 
-        matplotlib = importlib.import_module("matplotlib")
-        matplotlib.use("Agg")
-        plt = importlib.import_module("matplotlib.pyplot")
-        sns = importlib.import_module("seaborn")
+        variables = set()
+        for col in metric_cols:
+            clean_var = col.split("/", 1)[1] if "/" in col else col
+            if clean_var not in tracking_cols:
+                variables.add(clean_var)
+
+        if metrics:
+            variables = {v for v in variables if v in metrics}
 
         sns.set_theme(style="darkgrid")
         saved_plots: list[Path] = []
 
-        # Determine which variables to plot
-        targets = metric_names if metric_names is not None else metrics.names()
-        x_col = metrics.x_col
+        for var_name in sorted(variables):
+            matching_cols = [
+                c
+                for c in metric_cols
+                if c == var_name or ("/" in c and c.split("/", 1)[1] == var_name)
+            ]
 
-        for var_name in targets:
-            if var_name not in metrics:
+            melted = df.melt(
+                id_vars=[x_col],
+                value_vars=matching_cols,
+                var_name="Split",
+                value_name="value",
+            ).dropna()
+
+            if melted.empty:
                 continue
 
-            tidy_df = metrics.fetch(var_name)
+            melted["Split"] = melted["Split"].apply(
+                lambda s: str(s).split("/", 1)[0] if "/" in str(s) else str(s)
+            )
+
             fig, ax = plt.subplots(figsize=(8, 5))
 
-            # Separate single-point evaluations from curves
-            split_counts = tidy_df["split"].value_counts()
+            split_counts = melted["Split"].value_counts()
             single_point_splits = split_counts[split_counts == 1].index.tolist()
 
-            continuous_df = tidy_df[~tidy_df["split"].isin(single_point_splits)]
-            single_df = tidy_df[tidy_df["split"].isin(single_point_splits)]
+            continuous_melted = melted[~melted["Split"].isin(single_point_splits)]
+            single_melted = melted[melted["Split"].isin(single_point_splits)]
 
             for split in single_point_splits:
-                val = single_df[single_df["split"] == split]["value"].iloc[0]
+                val = single_melted[single_melted["Split"] == split]["value"].values[0]
                 ax.axhline(
                     y=val,
                     color="#4C72B0" if split == "test" else "gray",
@@ -173,12 +129,12 @@ class LinePlotter(Plotter):
                     label=f"{split} ({val:.4f})",
                 )
 
-            if not continuous_df.empty:
+            if not continuous_melted.empty:
                 sns.lineplot(
-                    data=continuous_df,
+                    data=continuous_melted,
                     x=x_col,
                     y="value",
-                    hue="split",
+                    hue="Split",
                     marker="o",
                     ax=ax,
                     zorder=3,
@@ -189,13 +145,13 @@ class LinePlotter(Plotter):
                 ax.legend(handles=handles, labels=labels, title="Split", loc="best")
 
             formatted_title = var_name.replace("_", " ").capitalize()
-            ax.set_title(f"Experiment {num_exp} — {formatted_title}")
+            ax.set_title(f"Experiment {self.num_exp} — {formatted_title}")
             ax.set_xlabel(x_col.capitalize())
             ax.set_ylabel(formatted_title)
 
             clean_filename_var = var_name.replace("/", "_")
-            output_filename = f"LinePlot_{clean_filename_var}_{num_exp}.png"
-            output_path = plots_dir / output_filename
+            output_filename = f"LinePlot_{clean_filename_var}_{self.num_exp}.png"
+            output_path = self.plots_dir / output_filename
 
             plt.tight_layout()
             plt.savefig(output_path, dpi=300)

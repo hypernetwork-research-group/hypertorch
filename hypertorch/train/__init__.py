@@ -8,9 +8,10 @@ from .markdown_logger import MarkdownTableLogger
 
 from .trainer import MultiModelTrainer
 
-from .log_parser import LogParser
+from .logparser import LogParser
 
 from .plotter import LinePlotter, Plotter
+
 
 logging.getLogger("lightning.pytorch").setLevel(logging.ERROR)
 
