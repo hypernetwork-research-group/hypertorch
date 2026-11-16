@@ -1,156 +1,87 @@
 # Plotting
 
-HyperTorch provides lightweight utilities to inspect, parse, and visualize training metrics logged across experiments.
-The visualization pipeline centers around three primary components:
+HyperTorch provides lightweight utilities to inspect, parse, and visualize training metrics logged across experiments. 
+The visualization pipeline centers around two primary components:
 
-* **`LogParser`**: Scans the experiment logging tree (default: `hypertorch_logs/`), discovers experiment runs, and reshapes raw CSV metric logs into a tidy `ParsedMetrics` container.
-* **`ParsedMetrics`**: Stores the tidied DataFrames optimized for Seaborn, alongside metric names and experiment directory metadata.
-* **`Plotter`**: Abstract base class for chart generation from `ParsedMetrics`. Currently implemented via `LinePlotter`.
+* **`LogParser`**: Scans the experiment logging tree (`hypertorch_logs/`), locates experiment runs, and extracts tabular data into Pandas DataFrames.
+* **`LinePlotter`**: Generates publication-ready metric line charts from parsed logs, organizing them by model and metric tag.
 
-!!! note "Optional Dependencies"
-    Plotting requires `matplotlib` and `seaborn`. Install them with:
-    ```bash
-    pip install "hypertorch[plotting]"
-    ```
+For a runnable example script, see: 
+- [`examples/plot/lineplot.py`](../../examples/plot/lineplot.py)
 
 ---
 
 ## Basic Plot Generation
 
-Initializing `LogParser` validates and points to the base logging directory (default: `hypertorch_logs/`).
-
-To plot the most recent experiment run, discover it via `discover_latest(num=1)`, parse the queued runs with `parse_all()`, and render the curves using `LinePlotter`:
+By default, calling `plot()` plots every numerical metric tracked in the CSV:
 
 ```python
-from hypertorch.plot import LinePlotter, LogParser
+from hypertorch.train import LinePlotter, LogParser
 
-# Initialize parser and plotter
+#Initialize parser (defaults to "hypertorch_logs")
 parser = LogParser()
-plotter = LinePlotter()
 
-# Locate the most recent metrics file and parse it
-parser.discover_latest_metrics(num=1)
-metrics = parser.parse_all()[0]
+# Locate the latest experiment directory and load metrics
+latest_dir = parser.find_latest_experiment_dir()
+df, csv_path = parser.load_latest_metrics()
 
-# Generate line plots directly from the parsed metrics
-plotter.plot(metrics)
+#Generate line plots for all available metrics
+plotter = LinePlotter(latest_dir)
+saved_plots = plotter.plot(df, csv_path)
 ```
 
-By default, plots are saved to an isolated `plots/` subdirectory inside the experiment folder:
+Plots are saved to an isolated `plots/` subdirectory inside the experiment folder:
 
 ```text
 hypertorch_logs/
 └── experiment_*/
     ├── <model_name>/
     └── plots/
-        ├── LinePlot_loss_0.png
-        └── LinePlot_accuracy_0.png
+        ├── train_loss.png
+        ├── val_loss.png
+        └── val_accuracy.png
 ```
 
 ---
 
-## Plotter Types
+### Selective Plotting (Filtering Metrics)
 
-
-#### Line Plots
-Implemented by `LinePlotter`. Requires a x_col (Prefers Epoch over Step) and a metric, will map the test, val and train values over each step of the Epoch. A new image will be created for each metric.
-
----
-
-## Plotter Expanded
-
-
-#### Filtering Metrics
-If you only want to visualize specific curves, the `plot()` function can filter them with the `metric_names=[]` argument:
+If you only want to visualize specific curves—such as loss curves or evaluation metrics—pass 
+a list of metric column names via the `metrics` argument:
 
 ```python
-# When wishing for only certain metrics:
-saved_plots = plotter.plot(metrics, metric_names=["loss", "f1"])
-```
+from hypertorch.train import LinePlotter, LogParser
 
----
-
-
-#### Custom Plotting Directory
-Override the destination directory or toggle the creation of the `plots/` subfolder using keyword arguments:
-
-```python
-# Save directly into custom_dir/ without creating a plots/ subfolder
-saved_plots = plotter.plot(
-    metrics,
-    output_dir="custom_dir",
-    create_subfolder=False,
-)
-```
-
----
-
-## LogParser Functions
-#### Discovery & Batch Parsing
-`LogParser` maintains an internal queue (`directory_paths`) mapping discovered run folders to their metric files without performing redundant filesystem scans during parsing.
-
-
-#### Discovering Recent Runs
-Queue the latest $N$ runs across all experiment folders using `discover_latest_metrics(num=N)`:
-
-```python
 parser = LogParser()
-# Find the latest 3 metrics.csv files
-parser.discover_latest_metrics(num=3)
+latest_dir = parser.find_latest_experiment_dir()
+df, csv_path = parser.load_latest_metrics()
 
-for metrics in parser.parse_all():
-    plotter.plot(metrics)
+plotter = LinePlotter(latest_dir)
+
+#Only generate plots for training and validation loss
+target_metrics = ["train/loss", "val/loss"]
+saved_plots = plotter.plot(df, csv_path, metrics=target_metrics)
 ```
 
-Another way to discover recent runs is to use `discover_from_latest_dir(num=N)`, which finds all the metrics files in the latest $N$ dirs:
+Alternatively, you can filter the Pandas DataFrame directly before plotting:
 
 ```python
-parser = LogParser()
-# Find the metrics.csv in the latest folder
-parser.discover_from_latest_dir(num=1)
+#Keep metadata columns (epoch/step) and your desired metrics
+selected_cols = [col for col in ["epoch", "step", "val/accuracy"] if col in df.columns]
+filtered_df = df[selected_cols]
+
+saved_plots = plotter.plot(filtered_df, csv_path)
 ```
 
+### Loading Specific Runs with `load_csv`
 
-#### Discovering Runs by Folder Name
-Queue all subdirectories containing metric logs within a specific experiment folder using `discover_directory()`:
-```python
-parser = LogParser()
-
-# Queue all runs inside 'hypertorch_logs/experiment_3'
-parser.discover_directory("experiment_3")
-
-for metrics in parser.parse_all():
-    plotter.plot(metrics)
-```
-
-
-#### Direct Path Parsing
-If you already know the folder or CSV file you want to inspect, `parse_from_path()` parses it directly without modifying the internal discovery queue:
+To inspect a specific historical run or individual model directory, 
+pass either a relative or absolute path to `load_csv`:
 
 ```python
-parser = LogParser()
+# Relative paths resolve against base_logs_dir
+df, resolved_path = parser.load_csv("experiment_1/gcn/version_0/metrics.csv")
 
-# Parse directly from a run directory (automatically loads the newest CSV inside it)
-metrics = parser.parse_from_path("experiment_3/mlp/version_0")
-plotter.plot(metrics)
-
-# Or parse directly from an explicit CSV file
-metrics = parser.parse_from_path("experiment_3/mlp/version_0/metrics.csv")
-plotter.plot(metrics)
-```
-
-
-#### Switching the Base Directory
-To retarget `LogParser` to another root directory without losing previously discovered runs, use `move_base_dir()`:
-
-```python
-parser = LogParser("hypertorch_logs")
-parser.discover_directory("experiment_1")
-
-# Move base directory to a new location (validates existence immediately)
-parser.move_base_dir("archived_logs")
-parser.discover_directory("experiment_old")
-
-# parse_all() now parses runs from both locations
-all_metrics = parser.parse_all()
+# Absolute paths are accepted as-is
+df, resolved_path = parser.load_csv("C:/hypertorch_logs/experiment_0/metrics.csv")
 ```
