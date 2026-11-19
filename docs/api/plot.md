@@ -1,3 +1,3 @@
 # Plot
 
-::: hypertorch.plot
+::: hypertorch.train.plot
