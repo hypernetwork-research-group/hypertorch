@@ -18,7 +18,7 @@ class NHPRankingLoss(nn.Module):
         ... 0
     """
 
-    def forward(self, logits: Tensor, labels: Tensor) -> Tensor:  # ty: ignore[invalid-mutable-override]
+    def forward(self, logits: Tensor, labels: Tensor) -> Tensor:
         """
         Compute the ranking loss.
 

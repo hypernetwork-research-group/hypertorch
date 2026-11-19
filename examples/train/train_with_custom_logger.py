@@ -1,4 +1,5 @@
 from pathlib import Path
+from argparse import Namespace
 
 from torchmetrics import MetricCollection
 from torchmetrics.classification import (
@@ -53,7 +54,7 @@ class CustomLogger(Logger):
         """Access the shared store for the current experiment."""
         return dict(self.__shared_stores.get(self.__experiment_name, {}))
 
-    def log_hyperparams(self, params: dict[str, Any]) -> None:
+    def log_hyperparams(self, params: dict[str, Any] | Namespace) -> None:
         pass
 
     def log_metrics(self, metrics: dict[str, float], step: int | None = None) -> None:
