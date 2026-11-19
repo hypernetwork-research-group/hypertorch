@@ -99,7 +99,7 @@ class VilLain(nn.Module):
 
         self.reset_parameters()
 
-    def forward(  # ty: ignore[invalid-mutable-override]
+    def forward(
         self,
         hyperedge_index: Tensor,
         node_ids: Tensor | None = None,

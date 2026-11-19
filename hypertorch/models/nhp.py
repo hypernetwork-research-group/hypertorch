@@ -83,7 +83,7 @@ class NHP(nn.Module):
 
         self.hyperedge_score: nn.Linear = nn.Linear(hidden_channels, 1, bias=bias)
 
-    def forward(self, x: Tensor, hyperedge_index: Tensor) -> Tensor:  # ty: ignore[invalid-mutable-override]
+    def forward(self, x: Tensor, hyperedge_index: Tensor) -> Tensor:
         """
         Score each candidate hyperedge.
 

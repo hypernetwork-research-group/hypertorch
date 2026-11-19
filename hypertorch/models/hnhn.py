@@ -59,7 +59,7 @@ class HNHN(nn.Module):
             ]
         )
 
-    def forward(self, x: Tensor, hyperedge_index: Tensor) -> Tensor:  # ty: ignore[invalid-mutable-override]
+    def forward(self, x: Tensor, hyperedge_index: Tensor) -> Tensor:
         """
         Apply two stacked ``HNHNConv`` layers to produce node embeddings.
 

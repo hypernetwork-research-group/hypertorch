@@ -110,7 +110,7 @@ class GCN(nn.Module):
             cached=cached,
         )
 
-    def forward(self, x: Tensor, edge_index: Tensor) -> Tensor:  # ty: ignore[invalid-mutable-override]
+    def forward(self, x: Tensor, edge_index: Tensor) -> Tensor:
         """
         Apply the GCN stack to node features.
 
@@ -183,13 +183,13 @@ class GCN(nn.Module):
         }
 
         if num_layers == 1:
-            return nn.ModuleList([GCNConv(in_channels, out_channels, **common_kwargs)])  # ty: ignore[call-non-callable]
+            return nn.ModuleList([GCNConv(in_channels, out_channels, **common_kwargs)])  # ty: ignore[abstract-class-instantiation]
 
-        layers = [GCNConv(in_channels, hidden_channels, **common_kwargs)]  # ty: ignore[call-non-callable]
+        layers = [GCNConv(in_channels, hidden_channels, **common_kwargs)]  # ty: ignore[abstract-class-instantiation]
         layers.extend(
-            GCNConv(hidden_channels, hidden_channels, **common_kwargs)  # ty: ignore[call-non-callable]
+            GCNConv(hidden_channels, hidden_channels, **common_kwargs)  # ty: ignore[abstract-class-instantiation]
             for _ in range(num_layers - 2)
         )
-        layers.append(GCNConv(hidden_channels, out_channels, **common_kwargs))  # ty: ignore[call-non-callable]
+        layers.append(GCNConv(hidden_channels, out_channels, **common_kwargs))  # ty: ignore[abstract-class-instantiation]
 
         return nn.ModuleList(layers)
