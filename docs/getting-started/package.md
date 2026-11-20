@@ -21,6 +21,7 @@ HyperTorch is organized as a flat Python package: the `hypertorch/` package live
 │   ├── nn                  # Neural-network layers and reusable modules
 │   ├── tests               # Unit test suite
 │   ├── train               # Training and benchmarking logic, and loggers
+│   │   └── plot            # Data visualization through plot
 │   ├── types               # Shared type definitions
 │   └── utils               # General-purpose utility functions
 ├── hypertorch_logs         # Local logs and outputs from experiments
@@ -33,7 +34,7 @@ HyperTorch is organized as a flat Python package: the `hypertorch/` package live
 ├── uv.lock                 # Lockfile for dependencies
 └── zensical.toml           # Documentation build and site configuration
 ```
-
+    
 ## Getting support
 
 If you need help with HyperTorch, use these project channels:
