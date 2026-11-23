@@ -141,7 +141,7 @@ def main() -> None:
 
     print("\nParsing experiment metrics...")
     parser = LogParser()
-    parser.discover_latest_metrics(num=50)
+    parser.discover_from_latest_dir(num=3)
     parsed_runs = parser.parse_all()
 
     print("Generating Train vs. Val generalization scatter plots...")
