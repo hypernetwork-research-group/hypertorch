@@ -8,6 +8,7 @@ from collections.abc import Sequence
 from functools import cache
 from pathlib import Path
 from typing import Literal
+from torch import Tensor, nn, optim
 from torchmetrics import MetricCollection
 from torchmetrics.classification import (
     BinaryAUROC,
@@ -356,3 +357,39 @@ def __cached_split_dataset(
         node_space_setting=node_space_setting,
     )
     return train_dataset, val_dataset, test_dataset
+
+
+class TinyBinaryClassifier(L.LightningModule):
+    def __init__(self) -> None:
+        super().__init__()
+        self.layer = nn.Linear(2, 1)
+        self.loss = nn.BCEWithLogitsLoss()
+
+    def forward(self, x: Tensor) -> Tensor:
+        return self.layer(x).squeeze(-1)
+
+    def training_step(self, batch: HData, _: int) -> Tensor:
+        x, y = self.__target_features_and_labels(batch)
+        logits = self(x)
+        loss = self.loss(logits, y)
+        self.log("train/loss", loss, batch_size=y.size(0))
+        return loss
+
+    def validation_step(self, batch: HData, _: int) -> None:
+        x, y = self.__target_features_and_labels(batch)
+        logits = self(x)
+        loss = self.loss(logits, y)
+        self.log("val/loss", loss, batch_size=y.size(0))
+
+    def test_step(self, batch: HData, _: int) -> None:
+        x, y = self.__target_features_and_labels(batch)
+        logits = self(x)
+        loss = self.loss(logits, y)
+        self.log("test/loss", loss, batch_size=y.size(0))
+
+    def configure_optimizers(self) -> optim.Optimizer:
+        return optim.SGD(self.parameters(), lr=0.01)
+
+    def __target_features_and_labels(self, batch: HData) -> tuple[Tensor, Tensor]:
+        target_hyperedge_mask = batch.target_hyperedge_mask
+        return batch.x[target_hyperedge_mask], batch.y[target_hyperedge_mask]
