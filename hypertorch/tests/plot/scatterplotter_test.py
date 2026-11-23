@@ -401,3 +401,28 @@ def test_scatterplotter_plot_skips_legend_when_handles_empty(
 
     assert len(saved_plots) == 1
     assert saved_plots[0].is_file()
+
+
+def test_scatterplotter_render_subplot_cycles_markers_on_palette_wrap() -> None:
+    mock_ax = MagicMock()
+    plotter = ScatterPlotter()
+    palette = ["#1f77b4", "#ff7f0e"]
+    markers = plotter.marker_succession
+
+    total_runs = len(palette) * (len(markers) + 1)
+    run_matches = {i: (f"model_{i}", 0.1 * i, 0.1 * i + 0.05) for i in range(total_runs)}
+
+    plotter._render_subplot(
+        ax=mock_ax,
+        var_name="loss",
+        run_matches=run_matches,
+        palette=palette,
+        show_label=True,
+    )
+
+    assert mock_ax.scatter.call_count == total_runs
+    for i, call in enumerate(mock_ax.scatter.call_args_list):
+        expected_color = palette[i % len(palette)]
+        expected_marker = markers[(i // len(palette)) % len(markers)]
+        assert call.kwargs["color"] == expected_color
+        assert call.kwargs["marker"] == expected_marker

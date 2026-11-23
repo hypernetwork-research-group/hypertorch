@@ -30,6 +30,17 @@ class Plotter(ABC):
         "#56B4E9",
     ]
 
+    marker_succession: ClassVar = [
+        "o",
+        "P",
+        "*",
+        "s",
+        "X",
+        "D",
+    ]
+
+
+
     @staticmethod
     def _is_plotting_available() -> bool:
         """

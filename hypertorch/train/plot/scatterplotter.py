@@ -239,13 +239,17 @@ class ScatterPlotter(Plotter):
         all_train: list[float] = []
         all_val: list[float] = []
 
+        markers = self.marker_succession
+
         for run_idx, (run_label, train_val, val_val) in run_matches.items():
             run_color = palette[run_idx % len(palette)]
+            run_marker = markers[(run_idx // len(palette)) % len(markers)]
             label = run_label if show_label else None
             ax.scatter(
                 train_val,
                 val_val,
                 color=run_color,
+                marker=run_marker,
                 s=65,
                 alpha=0.9,
                 edgecolors="black",
