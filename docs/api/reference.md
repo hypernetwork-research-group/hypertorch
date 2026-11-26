@@ -12,6 +12,7 @@ Developer note: rendering is configured in `zensical.toml` under
 - [Models](models.md)
 - [Neural components (NN)](nn.md)
 - [Node classification (NC)](node_classification.md)
+- [Plotting](plot.md)
 - [Training](train.md)
 - [Types](types.md)
 - [Utils](utils.md)

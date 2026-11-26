@@ -1,11 +1,11 @@
 # Plotting
 
-HyperTorch provides lightweight utilities to inspect, parse, and visualize training metrics logged across experiments.
+HyperTorch provides lightweight utilities to inspect, parse, and visualize training metrics logged across experiments. 
 The visualization pipeline centers around three primary components:
 
 * **`LogParser`**: Scans the experiment logging tree (default: `hypertorch_logs/`), discovers experiment runs, and reshapes raw CSV metric logs into a tidy `ParsedMetrics` container.
 * **`ParsedMetrics`**: Stores the tidied DataFrames optimized for Seaborn, alongside metric names and experiment directory metadata.
-* **`Plotter`**: Abstract base class for chart generation from `ParsedMetrics`. Currently implemented via `LinePlotter`.
+* **`Plotter`**: Abstract base class for chart generation from `ParsedMetrics`. Currently implemented via `LinePlotter` and `ScatterPlotter`.
 
 !!! note "Optional Dependencies"
     Plotting requires `matplotlib` and `seaborn`. Install them with:
@@ -54,13 +54,37 @@ hypertorch_logs/
 
 #### Line Plots
 Implemented by `LinePlotter`. Requires a x_col (Prefers Epoch over Step) and a metric, will map the test, val and train values over each step of the Epoch. A new image will be created for each metric.
+When comparing metrics from multiple sources, each source will be automatically asigned a different colour, and lines related to the same source will have the same hue.
+
+#### Scatter Plot
+Implemented by `ScatterPlotter`. Requires at least two metrics. Will map a scatter plot for each unique combination of metrics found, separating val and train values. Each image generated will have multiple plot quadrant with the same starting metric, up to 6 images total.
+When comparing metrics from multiple sources, each source will be automatically assigned a different colour. 
 
 ---
 
 ## Plotter Expanded
 
 
-#### Filtering Metrics
+#### Compairison Plotting
+The `plot()` function can accept a sequence of ParsedMetrics instead of a single one. When multiple ParsedMetrics are given like this, the result will compairison plot - both ParsedMetrics' metrics will be mapped on each plot image in order to visualize both at the same time.
+
+```python
+from hypertorch.plot import LinePlotter, LogParser
+
+# Initialize parser and plotter
+parser = LogParser()
+plotter = LinePlotter()
+
+# Locate the most recent 3 runs and parse them
+parser.discover_latest_metrics(num=3)
+metrics = parser.parse_all()
+
+# Generate line plots directly from the parsed metrics
+plotter.plot(metrics)
+```
+
+
+#### Selective Plotting (Filtering Metrics)
 If you only want to visualize specific curves, the `plot()` function can filter them with the `metric_names=[]` argument:
 
 ```python

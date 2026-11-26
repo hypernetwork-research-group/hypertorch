@@ -8,9 +8,12 @@ from .markdown_logger import MarkdownTableLogger
 
 from .trainer import MultiModelTrainer
 
-from .log_parser import LogParser
 
-from .plotter import LinePlotter, Plotter
+from .plot.log_parser import LogParser
+
+from .plot.plotter import Plotter
+from .plot.lineplotter import LinePlotter
+from .plot.scatterplotter import ScatterPlotter
 
 logging.getLogger("lightning.pytorch").setLevel(logging.ERROR)
 
@@ -23,5 +26,6 @@ __all__ = [
     "MarkdownTableLogger",
     "MultiModelTrainer",
     "Plotter",
+    "ScatterPlotter",
     "colorize_metric_value",
 ]

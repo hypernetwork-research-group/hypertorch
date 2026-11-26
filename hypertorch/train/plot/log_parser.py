@@ -103,6 +103,12 @@ class LogParser:
         Returns:
             path: Absolute Path to the base logs directory.
         """
+        """
+        Root directory where experiment logs are located.
+
+        Returns:
+            path: Absolute Path to the base logs directory.
+        """
         return self._base_logs_dir
 
     @property
