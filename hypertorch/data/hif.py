@@ -207,7 +207,7 @@ class HIFProcessor:
             list_attr_label.append(label)
 
             if label is None:
-                missing_node_ids.append(node.get("id"))
+                missing_node_ids.append(node.get("node"))
 
         if len(list_attr_label) == len(missing_node_ids):
             return None, None

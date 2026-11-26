@@ -1068,7 +1068,9 @@ def test_process_hypergraph_with_label_values(mock_hypergraph_with_labels):
 
 
 def test_process_hypergraph_with_missing_labels(mock_hypergraph_with_missing_labels):
-    with pytest.raises(ValueError, match=r"Node label attribute is missing for nodes: \[.*?\]\."):
+    with pytest.raises(
+        ValueError, match=(re.escape("Node label attribute is missing for nodes: ['1']."))
+    ):
         HIFProcessor.process_hypergraph(
             mock_hypergraph_with_missing_labels, task=TaskEnum.NODE_CLASSIFICATION
         )
