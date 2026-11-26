@@ -39,8 +39,6 @@ class Plotter(ABC):
         "D",
     ]
 
-
-
     @staticmethod
     def _is_plotting_available() -> bool:
         """

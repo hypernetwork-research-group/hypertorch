@@ -18,9 +18,7 @@ The visualization pipeline centers around three primary components:
 ## Basic Plot Generation
 
 Initializing `LogParser` validates and points to the base logging directory (default: `hypertorch_logs/`).
-Initializing `LogParser` validates and points to the base logging directory (default: `hypertorch_logs/`).
 
-To plot the most recent experiment run, discover it via `discover_latest(num=1)`, parse the queued runs with `parse_all()`, and render the curves using `LinePlotter`:
 To plot the most recent experiment run, discover it via `discover_latest(num=1)`, parse the queued runs with `parse_all()`, and render the curves using `LinePlotter`:
 
 ```python
