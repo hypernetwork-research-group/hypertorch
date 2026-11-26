@@ -199,8 +199,17 @@ class HIFProcessor:
         Raises:
             ValueError: If the label attribute is missing for some nodes in the hypergraph.
         """
-        list_attr_label = [node.get("attrs", {}).get("label", None) for node in hypergraph.nodes]
-        if all(label is None for label in list_attr_label):
+        list_attr_label, missing_node_ids = [], []
+
+        for node in hypergraph.nodes:
+            label = node.get("attrs", {}).get("label", None)
+
+            list_attr_label.append(label)
+
+            if label is None:
+                missing_node_ids.append(node.get("node"))
+
+        if len(list_attr_label) == len(missing_node_ids):
             return None, None
 
         if (
@@ -215,7 +224,7 @@ class HIFProcessor:
             y = torch.tensor([map_label_to_index[label] for label in list_attr_label], dtype=dtype)
             return y, map_label_to_index
 
-        raise ValueError("Node label attribute is missing for some nodes in the hypergraph.")
+        raise ValueError(f"Node label attribute is missing for nodes: {missing_node_ids}.")
 
     @classmethod
     def __collect_attr_keys(cls, attr_keys: list[dict[str, Any]]) -> list[str]:
